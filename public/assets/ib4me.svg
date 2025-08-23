@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1506.89 859.76">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #8c6239;
+      }
+
+      .cls-2 {
+        letter-spacing: 0em;
+      }
+
+      .cls-3 {
+        fill: #c69c6d;
+      }
+
+      .cls-4 {
+        letter-spacing: -.01em;
+      }
+
+      .cls-5 {
+        letter-spacing: -.01em;
+      }
+
+      .cls-6, .cls-7 {
+        fill: #42210b;
+      }
+
+      .cls-8 {
+        letter-spacing: 0em;
+      }
+
+      .cls-9 {
+        fill: #0c0400;
+        font-family: Nexa-Bold, Nexa;
+        font-size: 86.33px;
+        font-weight: 700;
+      }
+
+      .cls-10 {
+        letter-spacing: 0em;
+      }
+
+      .cls-7 {
+        font-family: NexaText-Trial-Black, 'Nexa Text-Trial';
+        font-size: 269.72px;
+        font-weight: 800;
+      }
+
+      .cls-11 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-12 {
+        letter-spacing: -.03em;
+      }
+    </style>
+  </defs>
+  <g>
+    <circle class="cls-3" cx="610.3" cy="229.28" r="108.95"/>
+    <circle class="cls-1" cx="221.6" cy="617.65" r="108.95"/>
+    <circle class="cls-6" cx="221.6" cy="229.28" r="108.95"/>
+    <path class="cls-1" d="m71.29,447.76H0c3.1,46.65,13.86,91.98,32.09,135.09,21.16,50.04,51.46,94.98,90.04,133.56,38.58,38.58,83.52,68.88,133.56,90.04,43.11,18.23,88.43,28.99,135.09,32.09v-71.29c-169.84-13.78-305.71-149.65-319.49-319.49Z"/>
+    <path class="cls-3" d="m767.25,390.77h71.29c-3.1-46.65-13.86-91.98-32.09-135.08-21.16-50.04-51.46-94.98-90.04-133.56-38.58-38.58-83.52-68.88-133.56-90.04C539.74,13.86,494.42,3.1,447.76,0v71.29c169.84,13.78,305.71,149.65,319.49,319.48Z"/>
+    <path class="cls-6" d="m255.69,32.09c-50.04,21.16-94.98,51.46-133.56,90.04-38.58,38.58-68.88,83.52-90.04,133.56C13.86,298.79,3.1,344.12,0,390.77h71.29C85.07,220.93,220.93,85.07,390.78,71.29V0c-46.65,3.1-91.98,13.86-135.09,32.09Z"/>
+  </g>
+  <g>
+    <text class="cls-7" transform="translate(501.36 720.16)"><tspan class="cls-10" x="0" y="0">I</tspan><tspan x="90.9" y="0">b4</tspan><tspan class="cls-4" x="443.15" y="0">M</tspan><tspan class="cls-8" x="693.44" y="0">e</tspan></text>
+    <text class="cls-9" transform="translate(501.36 834.38)"><tspan class="cls-2" x="0" y="0">C</tspan><tspan class="cls-5" x="60.17" y="0">r</tspan><tspan class="cls-11" x="96.95" y="0">o</tspan><tspan class="cls-5" x="146.33" y="0">w</tspan><tspan x="218.32" y="0">dfunding &amp; Charity</tspan><tspan class="cls-12" x="958.75" y="0"></tspan></text>
+  </g>
+</svg>

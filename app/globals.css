@@ -12,10 +12,11 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Force light theme regardless of OS preference */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0b0f19; /* deep slate */
-    --foreground: #e5e7eb; /* slate-200 */
+    --background: #ffffff;
+    --foreground: #171717;
   }
 }
 
