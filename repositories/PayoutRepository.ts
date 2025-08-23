@@ -14,6 +14,25 @@ export class PayoutRepository extends BaseRepository<IPayout> {
       query: { sort: { createdAt: -1 } },
     });
   }
+
+  async listByCampaignIds(
+    campaignIds: mongoose.Types.ObjectId[]
+  ): Promise<IPayout[]> {
+    if (campaignIds.length === 0) return [];
+    return this.findMany({ campaignId: { $in: campaignIds } } as never, {
+      query: { sort: { createdAt: -1 } },
+    });
+  }
+
+  async listRecentByCampaignIds(
+    campaignIds: mongoose.Types.ObjectId[],
+    limit: number
+  ): Promise<IPayout[]> {
+    if (campaignIds.length === 0) return [];
+    return this.findMany({ campaignId: { $in: campaignIds } } as never, {
+      query: { sort: { createdAt: -1 }, limit },
+    });
+  }
 }
 
 export const payoutRepository = new PayoutRepository();

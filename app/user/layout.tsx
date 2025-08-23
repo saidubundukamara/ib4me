@@ -1,5 +1,11 @@
 import React from "react";
+
 import Link from "next/link";
+
+import Sidebar from "./_components/Sidebar";
+import Header from "./_components/Header";
+import PageTransition from "./_components/PageTransition";
+
 
 export const metadata = {
   title: "User | IB4ME",

@@ -12,6 +12,8 @@
 /old_ui
 .playwright-mcp
 
+.playwright-mcp/
+
 # testing
 /coverage
 
@@ -41,3 +43,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# project legacy UI
+old_ui/
