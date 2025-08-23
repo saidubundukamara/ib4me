@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 export interface IAuthCode extends mongoose.Document {
   userId: mongoose.Types.ObjectId;
   channel: "sms" | "email" | "whatsapp";
-  purpose: "login" | "verify_email" | "reset_password";
+  purpose: "login" | "verify_email" | "verify_phone" | "reset_password";
   codeHash: string;
   expiresAt: Date;
   consumedAt?: Date | null;
@@ -27,7 +27,7 @@ const authCodeSchema = new mongoose.Schema<IAuthCode>(
     },
     purpose: {
       type: String,
-      enum: ["login", "verify_email", "reset_password"],
+      enum: ["login", "verify_email", "verify_phone", "reset_password"],
       required: true,
     },
     codeHash: { type: String, required: true },
