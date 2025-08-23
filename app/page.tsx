@@ -112,7 +112,7 @@ function HeroSection() {
               Start a Campaign
               <ChevronRight className="ml-2 h-4 w-4" />
             </Link>
-            <Link href="/campaigns" className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-gray-700 hover:bg-gray-50">
+            <Link href="/campaigns" className="inline-flex items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-gray-900 hover:bg-gray-50">
               Ib4me Now
             </Link>
           </div>
@@ -320,7 +320,7 @@ function CategoriesSection() {
 
 function InfoSection() {
   return (
-    <section className="py-16 md:py-32 bg-[rgb(245,240,235)]">
+    <section className="py-16 md:py-32 bg-white">
       <div className="mx-auto max-w-6xl px-6">
         <div className="grid gap-6 md:grid-cols-2 md:gap-12">
           <h2 className="text-3xl sm:text-4xl font-medium">Fundraising on Ib4me is easy, powerful, and trusted.</h2>
@@ -376,17 +376,17 @@ function HowIb4meWorks() {
 
 function CoveredCard() {
   return (
-    <section className="py-16 md:py-32 bg-green-400">
+    <section className="py-16 md:py-32 bg-white">
       <div className="mx-auto max-w-7xl space-y-5 px-6">
-        <h2 className="max-w-xl text-4xl text-neutral-50 font-medium lg:text-5xl">We've got you covered.</h2>
+        <h2 className="max-w-xl text-4xl text-neutral-900 font-medium lg:text-5xl">We've got you covered.</h2>
         <div className="space-y-4">
-          <p className="text-xl text-neutral-200">
-            Ib4me is a trusted leader in online fundraising. With <Link href="#" className="text-white underline">simple pricing</Link> and a team of <Link href="#" className="text-white underline">Trust & Safety</Link> experts in your corner, you can raise money or make a donation with peace of mind.
+          <p className="text-xl text-neutral-700">
+            Ib4me is a trusted leader in online fundraising. With <Link href="#" className="text-gray-900 underline hover:text-gray-700">simple pricing</Link> and a team of <Link href="#" className="text-gray-900 underline hover:text-gray-700">Trust & Safety</Link> experts in your corner, you can raise money or make a donation with peace of mind.
           </p>
           <div className="flex items-center gap-2">
-            <svg className="size-4 text-neutral-50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            <p className="text-neutral-300 text-xs sm:text-sm">
-              <Link href="#" className="hover:text-white">Read the Ib4me Giving Guarantee</Link>
+            <svg className="size-4 text-neutral-700" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <p className="text-neutral-600 text-xs sm:text-sm">
+              <Link href="#" className="text-gray-900 hover:text-gray-700">Read the Ib4me Giving Guarantee</Link>
             </p>
           </div>
         </div>

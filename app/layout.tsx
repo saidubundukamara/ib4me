@@ -28,7 +28,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Providers>
-          <header className="sticky top-0 z-40 w-full bg-white/80 backdrop-blur border-b border-gray-100">
+          <header className="sticky top-0 z-40 w-full bg-white border-b border-gray-100">
             <div className="mx-auto max-w-screen-xl px-4">
               <nav className="flex h-16 items-center justify-between">
                 <div className="flex items-center gap-6">
