@@ -5,6 +5,8 @@ export interface IUser extends mongoose.Document {
   email?: string | null;
   phone?: string | null;
   photoUrl?: string | null;
+  passwordHash?: string | null;
+  emailVerified?: Date | null;
   roles?: string[];
   status?: "active" | "inactive" | "blocked";
   whatsappOptIn?: boolean;
@@ -25,6 +27,8 @@ const userSchema = new mongoose.Schema<IUser>(
     },
     phone: { type: String, default: null, index: true },
     photoUrl: { type: String, default: null },
+    passwordHash: { type: String, default: null },
+    emailVerified: { type: Date, default: null },
     roles: { type: [String], default: ["user"] },
     status: {
       type: String,
