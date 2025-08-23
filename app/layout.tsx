@@ -78,7 +78,7 @@ export default function RootLayout({
                     Start a Campaign
                   </Link>
                   <Link
-                    href="/auth/sign-in"
+                    href="/auth/signin"
                     className="inline-flex items-center rounded-md border px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                   >
                     Log in
