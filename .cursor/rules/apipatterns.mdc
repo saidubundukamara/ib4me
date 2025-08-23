@@ -1,0 +1,43 @@
+---
+description: >
+  Enforce Repository + Service Layer pattern and JSON API practices
+  when working on backend code. This ensures clean separation of concerns,
+  testability, and adherence to consistent API design.
+globs:
+  - "src/**/*.ts"
+  - "src/**/*.js"
+alwaysApply: false
+---
+
+## Repository Pattern
+
+The repository pattern separates data access logic from business logic, improving maintainability and testability.
+
+### Key Principles
+
+1. **Separation of Concerns**: Keep DB queries inside `repo` files, business rules inside `service` files.
+2. **Abstraction of Data Access**: Repositories define a consistent interface to query/update data.
+3. **Reusability**: Services should reuse repository methods, not duplicate queries.
+4. **Testability**: Business logic tests should mock repositories.
+5. **Flexibility**: Repositories can be swapped (e.g. Mongo → Postgres) without affecting services.
+
+### Implementation Rules
+
+- Place **DB logic in `repo` files**
+- Place **business logic in `service` files**
+- Controllers only call **services**, never repositories directly
+
+### API Schema
+
+- Follow [JSON:API](https://jsonapi.org/) spec when building JSON APIs
+
+### Validation
+
+- Perform validation in **service layer** (business rules, required fields)
+- Throw errors if validation fails
+- Controllers must catch errors and respond with proper status codes
+
+### Errors
+
+- Repositories & services should throw errors where appropriate
+- Controllers translate errors into API responses
