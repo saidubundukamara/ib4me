@@ -86,7 +86,7 @@ export default async function UserDashboardPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold">Dashboard</h2>
-        <p className="text-sm text-gray-600 mt-1">Overview of your campaigns and donations.</p>
+        <p className="text-sm text-slate-600 mt-1">Overview of your campaigns and donations.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -115,16 +115,16 @@ export default async function UserDashboardPage() {
         </Card>
 
         <Card className="p-5">
-          <p className="text-sm text-gray-500">Active Campaigns</p>
+          <p className="text-sm text-slate-600">Active Campaigns</p>
           <p className="text-3xl font-semibold mt-2">{activeCampaigns.length}</p>
           <div className="mt-4">
             <ProgressBar value={averageProgressPct} />
-            <div className="mt-2 text-xs text-gray-500">{averageProgressPct}% average progress</div>
+            <div className="mt-2 text-xs text-slate-600">{averageProgressPct}% average progress</div>
           </div>
         </Card>
 
         <Card className="p-5">
-          <p className="text-sm text-gray-500">Unique Donors</p>
+          <p className="text-sm text-slate-600">Unique Donors</p>
           <p className="text-3xl font-semibold mt-2">{uniqueDonorCount}</p>
           <div className="mt-4 grid grid-cols-6 gap-2">
             {months.map((m) => (
@@ -147,7 +147,7 @@ export default async function UserDashboardPage() {
               const progress = goalMinor ? Math.min(100, Math.round((raised / goalMinor) * 100)) : 0;
               const title = c.patient?.name || c.diagnosis || c.slug;
               return (
-                <div key={String(c._id)} className="rounded-xl border p-4 bg-white/70 dark:bg-white/5">
+                <div key={String(c._id)} className="rounded-xl border p-4 bg-white">
                   <div className="flex items-center gap-2">
                     <div className="h-8 w-8 rounded-lg bg-indigo-100 text-indigo-700 grid place-items-center">
                       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>
@@ -156,7 +156,7 @@ export default async function UserDashboardPage() {
                   </div>
                   <div className="mt-3">
                     <ProgressBar value={progress} />
-                    <div className="mt-1 text-xs text-gray-500 flex items-center justify-between">
+                    <div className="mt-1 text-xs text-slate-600 flex items-center justify-between">
                       <span>{progress}%</span>
                       <span>
                         {formatCurrency(raised, c.goal?.currency ?? currency)} / {goalMinor ? formatCurrency(goalMinor, c.goal?.currency ?? currency) : "No goal"}
@@ -176,17 +176,17 @@ export default async function UserDashboardPage() {
           </div>
           <ul className="mt-4 space-y-3">
             {recentDonations.length === 0 && (
-              <li className="text-sm text-gray-500">No recent donations yet.</li>
+              <li className="text-sm text-slate-600">No recent donations yet.</li>
             )}
             {recentDonations.map((d) => (
               <li key={String(d._id)} className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-3">
                   <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
-                  <span className="text-gray-700 dark:text-gray-200">
+                  <span className="text-slate-800">
                     {formatCurrency(d.amount.minor, d.amount.currency)}
                   </span>
                 </div>
-                <span className="text-gray-500">
+                <span className="text-slate-600">
                   {new Date(d.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                 </span>
               </li>

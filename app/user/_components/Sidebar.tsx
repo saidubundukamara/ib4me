@@ -72,7 +72,7 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="sticky top-0 h-screen p-4 border-r bg-white/80 dark:bg-black/20 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-black/30">
+    <aside className="sticky top-0 h-screen p-4 border-r bg-white">
       <div className="flex items-center gap-2 px-2">
         <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-sky-500" />
         <span className="font-semibold">IB4ME</span>
@@ -81,8 +81,8 @@ export function Sidebar() {
         {items.map((item) => {
           const active = pathname === item.href || (item.href !== "/user" && pathname.startsWith(item.href));
           return (
-            <Link key={item.href} href={item.href} className={`group flex items-center gap-3 px-3 py-2 rounded-xl transition-colors hover:bg-indigo-50 dark:hover:bg-white/10 ${active ? "bg-indigo-100 text-indigo-700 dark:bg-white/10" : "text-gray-700 dark:text-gray-200"}`}>
-              <span className={`transition-transform group-hover:scale-110 ${active ? "text-indigo-700" : "text-gray-500"}`}>{item.icon}</span>
+            <Link key={item.href} href={item.href} className={`group flex items-center gap-3 px-3 py-2 rounded-xl transition-colors hover:bg-indigo-50 ${active ? "bg-indigo-100 text-indigo-700" : "text-slate-700"}`}>
+              <span className={`transition-transform group-hover:scale-110 ${active ? "text-indigo-700" : "text-slate-600"}`}>{item.icon}</span>
               <span className="text-sm font-medium">{item.label}</span>
             </Link>
           );

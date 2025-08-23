@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
+import HideOnRoutes from "./HideOnRoutes";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,7 +29,8 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Providers>
-          <header className="sticky top-0 z-40 w-full bg-white border-b border-gray-100">
+          <HideOnRoutes hidePrefixes={["/user", "/admin"]}>
+            <header className="sticky top-0 z-40 w-full bg-white border-b border-gray-100">
             <div className="mx-auto max-w-screen-xl px-4">
               <nav className="flex h-16 items-center justify-between">
                 <div className="flex items-center gap-6">
@@ -86,9 +88,11 @@ export default function RootLayout({
                 </div>
               </nav>
             </div>
-          </header>
+            </header>
+          </HideOnRoutes>
           <main>{children}</main>
-          <footer className="mt-16 bg-neutral-100">
+          <HideOnRoutes hidePrefixes={["/user", "/admin"]}>
+            <footer className="mt-16 bg-neutral-100">
             <div className="mx-auto max-w-screen-xl px-6 py-12">
               <div className="grid grid-cols-2 gap-8 lg:grid-cols-6">
                 <div className="col-span-2">
@@ -138,7 +142,8 @@ export default function RootLayout({
                 </div>
               </div>
             </div>
-          </footer>
+            </footer>
+          </HideOnRoutes>
         </Providers>
       </body>
     </html>
