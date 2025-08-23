@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import { signOut } from "next-auth/react";
+import { logout } from "@/lib/authClient";
 
 export function Header() {
   const [open, setOpen] = React.useState(false);
@@ -76,7 +76,7 @@ export function Header() {
                 className="w-full text-left px-3 py-2 hover:bg-gray-50 text-rose-600"
                 onClick={async () => {
                   setOpen(false);
-                  await signOut({ callbackUrl: "/auth/signin" });
+                  await logout({ redirectTo: "/auth/signin" });
                 }}
               >
                 Sign out

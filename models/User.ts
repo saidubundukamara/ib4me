@@ -7,9 +7,19 @@ export interface IUser extends mongoose.Document {
   photoUrl?: string | null;
   passwordHash?: string | null;
   emailVerified?: Date | null;
+  phoneVerified?: Date | null;
+  passwordChangedAt?: Date | null;
   roles?: string[];
   status?: "active" | "inactive" | "blocked";
   whatsappOptIn?: boolean;
+  twoFactorEnabled?: boolean;
+  twoFactorMethod?: "sms" | "email" | "totp" | null;
+  twoFactorSecret?: string | null;
+  loginAttempts?: number;
+  lockUntil?: Date | null;
+  lastLoginAt?: Date | null;
+  lastLoginIp?: string | null;
+  lastLoginUserAgent?: string | null;
   payoutPreferences?: {
     mobileMoney?: {
       provider?: string | null;
@@ -45,6 +55,8 @@ const userSchema = new mongoose.Schema<IUser>(
     photoUrl: { type: String, default: null },
     passwordHash: { type: String, default: null },
     emailVerified: { type: Date, default: null },
+    phoneVerified: { type: Date, default: null },
+    passwordChangedAt: { type: Date, default: null },
     roles: { type: [String], default: ["user"] },
     status: {
       type: String,
@@ -53,6 +65,18 @@ const userSchema = new mongoose.Schema<IUser>(
       index: true,
     },
     whatsappOptIn: { type: Boolean, default: false },
+    twoFactorEnabled: { type: Boolean, default: false },
+    twoFactorMethod: {
+      type: String,
+      enum: ["sms", "email", "totp"],
+      default: null,
+    },
+    twoFactorSecret: { type: String, default: null },
+    loginAttempts: { type: Number, default: 0 },
+    lockUntil: { type: Date, default: null, index: true },
+    lastLoginAt: { type: Date, default: null },
+    lastLoginIp: { type: String, default: null },
+    lastLoginUserAgent: { type: String, default: null },
     payoutPreferences: {
       mobileMoney: {
         provider: { type: String, default: null },

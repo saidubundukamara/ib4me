@@ -9,6 +9,8 @@ import UserModel from "@/models/User";
 import bcrypt from "bcrypt";
 
 export const authConfig: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
+  trustHost: true,
   adapter: MongoDBAdapter(clientPromise),
   session: { strategy: "jwt" },
   providers: [
@@ -34,11 +36,35 @@ export const authConfig: NextAuthOptions = {
           $or: [{ email: identifier }, { phone: identifier }],
         });
         if (!user || !user.passwordHash) return null;
+        // Enforce lockout
+        if (user.lockUntil && user.lockUntil > new Date()) {
+          return null;
+        }
         const ok = await bcrypt.compare(
           String(credentials.password),
           user.passwordHash
         );
-        if (!ok) return null;
+        if (!ok) {
+          // increment attempts and set lock if threshold reached
+          const attempts = (user.loginAttempts ?? 0) + 1;
+          const MAX_ATTEMPTS = 5;
+          user.loginAttempts = attempts;
+          if (attempts >= MAX_ATTEMPTS) {
+            const LOCK_MINUTES = 15;
+            user.lockUntil = new Date(Date.now() + LOCK_MINUTES * 60 * 1000);
+            user.loginAttempts = 0;
+          }
+          await user.save();
+          return null;
+        }
+        // Reset attempts on success
+        user.loginAttempts = 0;
+        user.lockUntil = null;
+        user.lastLoginAt = new Date();
+        // Note: IP and UA are not available here; can set via custom route
+        await user.save();
+        // Block inactive/blocked
+        if (user.status !== "active") return null;
         return {
           id: String(user._id),
           name: user.name,

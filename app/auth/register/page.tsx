@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { toast } from "sonner";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -19,10 +21,26 @@ export default function RegisterPage() {
       body: JSON.stringify({ name, email: email || undefined, phone: phone || undefined, password }),
     });
     if (res.ok) {
-      router.push("/auth/signin");
+      const identifier = email || phone;
+      if (!identifier) {
+        toast.error("Registration succeeded, but missing identifier to sign in.");
+        router.push("/");
+        return;
+      }
+      const result = await signIn("credentials", {
+        redirect: true,
+        callbackUrl: "/",
+        identifier,
+        password,
+      });
+      if (result?.error) {
+        toast.error("Auto sign-in failed. Please log in manually.");
+        router.push("/auth/signin");
+      }
     } else {
       const data = await res.json().catch(() => ({}));
       setError(data.error || "Registration failed");
+      toast.error(data.error || "Registration failed");
     }
   };
 

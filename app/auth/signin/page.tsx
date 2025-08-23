@@ -1,6 +1,7 @@
 "use client";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export default function SignInPage() {
   const [identifier, setIdentifier] = useState("");
@@ -11,12 +12,23 @@ export default function SignInPage() {
     e.preventDefault();
     setError(null);
     const res = await signIn("credentials", {
-      redirect: true,
+      redirect: false,
       callbackUrl: "/",
       identifier,
       password,
     });
-    if (res?.error) setError(res.error);
+    if (res?.error) {
+      const message =
+        res.error === "CredentialsSignin"
+          ? "Invalid credentials"
+          : res.error;
+      setError(message);
+      toast.error(message);
+      return;
+    }
+    if (res?.ok) {
+      window.location.href = res.url ?? "/";
+    }
   };
 
   return (

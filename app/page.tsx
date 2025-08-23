@@ -56,7 +56,7 @@ function HeroSection() {
             healthcare needs, and help others in their journey to wellness.
           </p>
           <div className="flex w-full flex-col justify-center gap-2 sm:flex-row lg:justify-start">
-            <Link href="/create-campaign" className="inline-flex items-center justify-center rounded-md bg-gray-900 px-4 py-2 text-white">
+            <Link href="/user/campaigns/new" className="inline-flex items-center justify-center rounded-md bg-gray-900 px-4 py-2 text-white">
               Start a Campaign
               <ChevronRight className="ml-2 h-4 w-4" />
             </Link>
