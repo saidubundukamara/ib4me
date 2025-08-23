@@ -1,4 +1,4 @@
-import NextAuth, { type NextAuthConfig } from "next-auth";
+import NextAuth, { type NextAuthOptions } from "next-auth";
 import Google from "next-auth/providers/google";
 import Facebook from "next-auth/providers/facebook";
 import Credentials from "next-auth/providers/credentials";
@@ -8,12 +8,18 @@ import { connectDB } from "@/lib/db";
 import UserModel from "@/models/User";
 import bcrypt from "bcrypt";
 
-export const authConfig: NextAuthConfig = {
+export const authConfig: NextAuthOptions = {
   adapter: MongoDBAdapter(clientPromise),
   session: { strategy: "jwt" },
   providers: [
-    Google,
-    Facebook,
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+    }),
+    Facebook({
+      clientId: process.env.FACEBOOK_CLIENT_ID ?? "",
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET ?? "",
+    }),
     Credentials({
       name: "Credentials",
       credentials: {
@@ -88,7 +94,7 @@ export const authConfig: NextAuthConfig = {
       if (session.user) {
         session.user.id = String(token.userId ?? "");
         session.user.roles = (token.roles as string[]) ?? ["user"];
-        session.user.status = (token.status as string) ?? "active";
+        session.user.status = token.status ?? "active";
       }
       return session;
     },

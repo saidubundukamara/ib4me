@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 
 export const metadata = {
   title: "User | IB4ME",
@@ -14,12 +15,12 @@ export default function UserLayout({
       <aside className="border-r p-4">
         <h1 className="font-semibold text-lg">My Account</h1>
         <nav className="mt-4 space-y-2">
-          <a href="/user" className="block">Dashboard</a>
-          <a href="/user/campaigns" className="block">My Campaigns</a>
-          <a href="/user/donations" className="block">Donations</a>
-          <a href="/user/withdrawals" className="block">Withdrawals</a>
-          <a href="/user/notifications" className="block">Notifications</a>
-          <a href="/user/settings" className="block">Settings</a>
+          <Link href="/user" className="block">Dashboard</Link>
+          <Link href="/user/campaigns" className="block">My Campaigns</Link>
+          <Link href="/user/donations" className="block">Donations</Link>
+          <Link href="/user/withdrawals" className="block">Withdrawals</Link>
+          <Link href="/user/notifications" className="block">Notifications</Link>
+          <Link href="/user/settings" className="block">Settings</Link>
         </nav>
       </aside>
       <main className="p-6">{children}</main>

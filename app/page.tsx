@@ -10,59 +10,7 @@ import { FaResearchgate } from "react-icons/fa";
 import { RiMentalHealthLine, RiUserCommunityFill } from "react-icons/ri";
 import { TfiSupport } from "react-icons/tfi";
 
-type Campaign = {
-  id: string;
-  title: string;
-  slug: string;
-  imageUrl: string;
-  donationsCount: number;
-  amountRaised: number;
-  currency: string;
-  goalAmount: number;
-};
-
-const campaigns: Campaign[] = [
-  {
-    id: "1",
-    title: "Recovery from my stroke",
-    slug: "recovery-from-my-stroke",
-    imageUrl: "/assets/wan.jpg",
-    donationsCount: 1300,
-    amountRaised: 62843,
-    currency: "GBP",
-    goalAmount: 74050,
-  },
-  {
-    id: "2",
-    title: "Des's fight against cancer",
-    slug: "des-fight-against-cancer",
-    imageUrl: "/assets/wan.jpg",
-    donationsCount: 1600,
-    amountRaised: 42643,
-    currency: "GBP",
-    goalAmount: 60919,
-  },
-  {
-    id: "3",
-    title: "Churchtown Playground",
-    slug: "churchtown-playground",
-    imageUrl: "/assets/wan.jpg",
-    donationsCount: 9400,
-    amountRaised: 271678,
-    currency: "GBP",
-    goalAmount: 286029,
-  },
-  {
-    id: "4",
-    title: "Help Peter David",
-    slug: "help-peter-david",
-    imageUrl: "/assets/wan.jpg",
-    donationsCount: 500,
-    amountRaised: 15000,
-    currency: "GBP",
-    goalAmount: 25000,
-  },
-];
+import { sampleCampaigns } from "@/lib/campaignsData";
 
 function formatAmount(amount: number, currency: string) {
   return new Intl.NumberFormat("en-GB", {
@@ -258,7 +206,7 @@ function DiscoverCampaigns() {
         <Link href="/campaigns" className="inline-flex items-center rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800">View All Campaigns</Link>
       </div>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {campaigns.map((c) => {
+        {sampleCampaigns.map((c) => {
           const progress = Math.min(100, Math.round((c.amountRaised / c.goalAmount) * 100));
           return (
             <Link key={c.id} href={`/campaigns/${c.slug}`} className="block" aria-label={`View details for ${c.title}`}>
@@ -326,7 +274,7 @@ function InfoSection() {
           <h2 className="text-3xl sm:text-4xl font-medium">Fundraising on Ib4me is easy, powerful, and trusted.</h2>
           <div className="space-y-6">
             <p>
-              Get what you need to help your fundraiser succeed on Ib4me, whether you're raising money for yourself, friends, family, or charity. With no fee to start, Ib4me is the Sierra Leones's leading crowdfunding platform for medical emergencies. Whenever you need help, you can ask here.
+              Get what you need to help your fundraiser succeed on Ib4me, whether you&apos;re raising money for yourself, friends, family, or charity. With no fee to start, Ib4me is the Sierra Leones&apos;s leading crowdfunding platform for medical emergencies. Whenever you need help, you can ask here.
             </p>
             <p>Still have questions? Learn more about how Ib4me works.</p>
             <Link href="#" className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50">
@@ -378,7 +326,7 @@ function CoveredCard() {
   return (
     <section className="py-16 md:py-32 bg-white">
       <div className="mx-auto max-w-7xl space-y-5 px-6">
-        <h2 className="max-w-xl text-4xl text-neutral-900 font-medium lg:text-5xl">We've got you covered.</h2>
+        <h2 className="max-w-xl text-4xl text-neutral-900 font-medium lg:text-5xl">We&apos;ve got you covered.</h2>
         <div className="space-y-4">
           <p className="text-xl text-neutral-700">
             Ib4me is a trusted leader in online fundraising. With <Link href="#" className="text-gray-900 underline hover:text-gray-700">simple pricing</Link> and a team of <Link href="#" className="text-gray-900 underline hover:text-gray-700">Trust & Safety</Link> experts in your corner, you can raise money or make a donation with peace of mind.
