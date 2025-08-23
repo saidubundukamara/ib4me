@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { logout } from "@/lib/authClient";
 
 export default function UserMenu() {
   const { data: session, status } = useSession();
@@ -80,7 +81,7 @@ export default function UserMenu() {
             className="block w-full rounded-sm px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
             onClick={() => {
               setOpen(false);
-              signOut({ callbackUrl: "/" });
+              logout({ redirectTo: "/" });
             }}
           >
             Log out
