@@ -10,7 +10,7 @@ import { FaResearchgate } from "react-icons/fa";
 import { RiMentalHealthLine, RiUserCommunityFill } from "react-icons/ri";
 import { TfiSupport } from "react-icons/tfi";
 
-import { sampleCampaigns } from "@/lib/campaignsData";
+// Removed sampleCampaigns; DiscoverCampaigns now fetches from API
 
 function formatAmount(amount: number, currency: string) {
   return new Intl.NumberFormat("en-GB", {
@@ -199,6 +199,38 @@ function GetStartedSection() {
 }
 
 function DiscoverCampaigns() {
+  type Item = {
+    id: string;
+    slug: string;
+    title: string;
+    currency: string;
+    amountRaised: number;
+    goalAmount: number;
+    donationsCount: number;
+    imageUrl: string;
+  };
+
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/campaigns/active?limit=6")
+      .then((r) => r.json())
+      .then((data: Item[]) => {
+        if (!cancelled) setItems(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setItems([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <main className="container max-w-screen-xl mx-auto py-16 px-4">
       <div className="flex flex-col md:flex-row justify-start md:justify-between items-start md:items-center gap-4 py-5">
@@ -206,8 +238,8 @@ function DiscoverCampaigns() {
         <Link href="/campaigns" className="inline-flex items-center rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800">View All Campaigns</Link>
       </div>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {sampleCampaigns.map((c) => {
-          const progress = Math.min(100, Math.round((c.amountRaised / c.goalAmount) * 100));
+        {(loading ? [] : items).map((c) => {
+          const progress = c.goalAmount > 0 ? Math.min(100, Math.round((c.amountRaised / c.goalAmount) * 100)) : 0;
           return (
             <Link key={c.id} href={`/campaigns/${c.slug}`} className="block" aria-label={`View details for ${c.title}`}>
               <article className="overflow-hidden rounded-lg border bg-white group">
