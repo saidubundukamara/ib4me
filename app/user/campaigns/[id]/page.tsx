@@ -9,6 +9,7 @@ import React from "react";
 import Card from "../../_components/../_components/Card";
 import ProgressBar from "../../_components/../_components/ProgressBar";
 import DocumentUpload, { SelectedFile } from "../../_components/../_components/DocumentUpload";
+import { toast } from "sonner";
 
 export default function UserCampaignDetailPage({ params }: PageParams) {
   const [documents, setDocuments] = React.useState<SelectedFile[]>([]);
@@ -16,8 +17,28 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
   const [updates, setUpdates] = React.useState<{ id: string; content: string; createdAt: string }[]>([]);
   const [newUpdate, setNewUpdate] = React.useState<string>("");
   const [submitting, setSubmitting] = React.useState<boolean>(false);
+  const [campaign, setCampaign] = React.useState<null | {
+    id: string;
+    slug: string;
+    urgency: string;
+    diagnosis?: string;
+    patient?: { name?: string; age?: number };
+    hospital?: { name?: string };
+    goal?: { currency?: string; amountMinor?: number };
+    story?: string;
+    status: string;
+    totals?: { raisedMinor?: number; donationCount?: number };
+    verification?: { status: "pending" | "under_review" | "approved" | "rejected"; hospitalVerified?: boolean };
+  }>(null);
+  const [loading, setLoading] = React.useState<boolean>(true);
 
   React.useEffect(() => {
+    fetch(`/api/campaigns/${id}`).then(async (r) => {
+      if (r.ok) {
+        const data = await r.json();
+        setCampaign(data);
+      }
+    }).finally(() => setLoading(false));
     fetch(`/api/campaigns/${id}/updates`).then(async (r) => {
       if (r.ok) {
         const data = await r.json();
@@ -46,18 +67,122 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
     }
   }
 
+  async function handleShare() {
+    if (!campaign?.slug) {
+      toast.error("Campaign not loaded yet");
+      return;
+    }
+    const shareUrl = `${window.location.origin}/campaigns/${campaign.slug}`;
+    const shareData = {
+      title: campaign.slug,
+      text: campaign.story ? campaign.story.slice(0, 140) : "Support this campaign",
+      url: shareUrl,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData as ShareData);
+        toast.success("Share dialog opened");
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success("Link copied to clipboard");
+      }
+    } catch (e) {
+      toast.error("Unable to share");
+    }
+  }
+
+  function handlePreview() {
+    if (!campaign?.slug) {
+      toast.error("Campaign not loaded yet");
+      return;
+    }
+    const url = `/campaigns/${campaign.slug}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  async function handleEditStory() {
+    if (!campaign) {
+      toast.error("Campaign not loaded yet");
+      return;
+    }
+    const current = campaign.story || "";
+    // Using prompt for simplicity; consider a modal for richer UX
+    const updated = window.prompt("Edit campaign story", current);
+    if (updated === null) return; // cancelled
+    const nextStory = updated.trim();
+    try {
+      const res = await fetch(`/api/campaigns/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ story: nextStory }),
+      });
+      if (!res.ok) throw new Error("Failed to update story");
+      setCampaign((prev) => (prev ? { ...prev, story: nextStory } : prev));
+      toast.success("Story updated");
+    } catch (e) {
+      toast.error("Could not update story");
+    }
+  }
+
+  async function handleSettings() {
+    if (!campaign) {
+      toast.error("Campaign not loaded yet");
+      return;
+    }
+    const current = campaign.status;
+    const next = window.prompt(
+      "Set campaign status (draft, active, paused, completed, archived)",
+      current
+    );
+    if (next === null) return; // cancelled
+    const allowed = ["draft", "active", "paused", "completed", "archived"] as const;
+    if (!allowed.includes(next as typeof allowed[number])) {
+      toast.error("Invalid status");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/campaigns/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: next }),
+      });
+      if (!res.ok) throw new Error("Failed to update status");
+      setCampaign((prev) => (prev ? { ...prev, status: next } : prev));
+      toast.success("Status updated");
+    } catch (e) {
+      toast.error("Could not update status");
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-semibold">Campaign #{id}</h2>
-            <span className="text-xs rounded-full bg-indigo-100 text-indigo-700 px-2 py-0.5">active</span>
-            <span className="text-xs rounded-full bg-amber-100 text-amber-700 px-2 py-0.5">urgency: medium</span>
+            <h2 className="text-2xl font-semibold">{campaign?.slug || `Campaign #${id}`}</h2>
+            {campaign && <span className="text-xs rounded-full bg-indigo-100 text-indigo-700 px-2 py-0.5">{campaign.status}</span>}
+            {campaign?.verification?.status && (
+              <span className="text-xs rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5">
+                verification: {campaign.verification.status}
+              </span>
+            )}
+            {campaign && <span className="text-xs rounded-full bg-amber-100 text-amber-700 px-2 py-0.5">urgency: {campaign.urgency}</span>}
           </div>
           <p className="text-sm text-gray-600 mt-1">Manage details, documents, updates and withdrawals.</p>
         </div>
-        <a href="/user/withdrawals" className="rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm shadow hover:bg-indigo-700 transition">Withdraw</a>
+        <div className="flex items-center gap-2">
+          <a href="/user/withdrawals" className="rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm shadow hover:bg-indigo-700 transition">Withdraw</a>
+          <button
+            onClick={async () => {
+              if (!confirm("Delete this campaign?")) return;
+              const res = await fetch(`/api/campaigns/${id}`, { method: "DELETE" });
+              if (res.ok) {
+                window.location.href = "/user/campaigns";
+              }
+            }}
+            className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
+          >Delete</button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -67,27 +192,40 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="rounded-xl border p-3 bg-white/70 dark:bg-white/5">
                 <div className="text-xs text-gray-500">Raised</div>
-                <div className="text-xl font-semibold">SLE 9,178</div>
+                <div className="text-xl font-semibold">
+                  {(campaign?.goal?.currency || "SLE")} {((campaign?.totals?.raisedMinor ?? 0) / 100).toLocaleString()}
+                </div>
               </div>
               <div className="rounded-xl border p-3 bg-white/70 dark:bg-white/5">
                 <div className="text-xs text-gray-500">Target</div>
-                <div className="text-xl font-semibold">SLE 12,000</div>
+                <div className="text-xl font-semibold">
+                  {(campaign?.goal?.currency || "SLE")} {((campaign?.goal?.amountMinor ?? 0) / 100).toLocaleString()}
+                </div>
               </div>
               <div className="rounded-xl border p-3 bg-white/70 dark:bg-white/5">
                 <div className="text-xs text-gray-500">Donors</div>
-                <div className="text-xl font-semibold">128</div>
+                <div className="text-xl font-semibold">{campaign?.totals?.donationCount ?? 0}</div>
               </div>
             </div>
             <div className="mt-4">
-              <ProgressBar value={76} />
-              <div className="mt-1 text-xs text-gray-500">76% of goal</div>
+              {(() => {
+                const raised = campaign?.totals?.raisedMinor ?? 0;
+                const target = campaign?.goal?.amountMinor ?? 0;
+                const pct = target > 0 ? Math.min(100, Math.round((raised / target) * 100)) : 0;
+                return (
+                  <>
+                    <ProgressBar value={pct} />
+                    <div className="mt-1 text-xs text-gray-500">{pct}% of goal</div>
+                  </>
+                );
+              })()}
             </div>
           </Card>
 
           <Card className="p-4">
             <h3 className="font-medium">Story</h3>
-            <p className="text-sm text-gray-600 mt-2 leading-6">
-              This is where the campaign story will be shown. Explain what happened, the treatment plan, and how funds will be used.
+            <p className="text-sm text-gray-600 mt-2 leading-6 whitespace-pre-wrap">
+              {loading ? "Loading..." : (campaign?.story || "No story provided.")}
             </p>
           </Card>
 
@@ -133,27 +271,27 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
             <dl className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <div>
                 <dt className="text-gray-500">Patient</dt>
-                <dd>—</dd>
+                <dd>{campaign?.patient?.name || "—"}</dd>
               </div>
               <div>
                 <dt className="text-gray-500">Age</dt>
-                <dd>—</dd>
+                <dd>{campaign?.patient?.age ?? "—"}</dd>
               </div>
               <div>
                 <dt className="text-gray-500">Hospital</dt>
-                <dd>—</dd>
+                <dd>{campaign?.hospital?.name || "—"}</dd>
               </div>
               <div>
                 <dt className="text-gray-500">Diagnosis</dt>
-                <dd>—</dd>
+                <dd>{campaign?.diagnosis || "—"}</dd>
               </div>
               <div>
                 <dt className="text-gray-500">Emergency</dt>
-                <dd>—</dd>
+                <dd>{campaign?.slug || "—"}</dd>
               </div>
               <div>
                 <dt className="text-gray-500">Goal</dt>
-                <dd>SLE —</dd>
+                <dd>{campaign?.goal?.currency || "SLE"} {(campaign?.goal?.amountMinor ?? 0) / 100}</dd>
               </div>
             </dl>
           </Card>
@@ -161,10 +299,10 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
           <Card className="p-4">
             <h3 className="font-medium">Quick Actions</h3>
             <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-              <button className="rounded-lg border px-3 py-2 hover:bg-indigo-50 dark:hover:bg-white/10">Share</button>
-              <button className="rounded-lg border px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/10">Edit</button>
-              <button className="rounded-lg border px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/10">Preview</button>
-              <button className="rounded-lg border px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/10">Settings</button>
+              <button onClick={handleShare} className="rounded-lg border px-3 py-2 hover:bg-indigo-50 dark:hover:bg-white/10">Share</button>
+              <button onClick={handleEditStory} className="rounded-lg border px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/10">Edit</button>
+              <button onClick={handlePreview} className="rounded-lg border px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/10">Preview</button>
+              <button onClick={handleSettings} className="rounded-lg border px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/10">Settings</button>
             </div>
           </Card>
         </div>
