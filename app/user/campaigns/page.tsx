@@ -1,7 +1,21 @@
+"use client";
+import React from "react";
 import Card from "../_components/../_components/Card";
 import ProgressBar from "../_components/../_components/ProgressBar";
 
 export default function UserCampaignsPage() {
+  const [items, setItems] = React.useState<Array<{ id: string; slug: string; status: string; urgency: string; goal?: { currency?: string; amountMinor?: number }; createdAt: string }>>([]);
+  const [loading, setLoading] = React.useState<boolean>(true);
+
+  React.useEffect(() => {
+    fetch("/api/campaigns").then(async (r) => {
+      if (r.ok) {
+        const data = await r.json();
+        setItems(data);
+      }
+    }).finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -12,23 +26,30 @@ export default function UserCampaignsPage() {
         <a href="/user/campaigns/new" className="rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm shadow hover:bg-indigo-700 transition">New Campaign</a>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {[1,2,3].map((i) => (
-          <Card key={i} className="p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-medium">Healthcare Support #{i}</h3>
-                <p className="text-xs text-gray-500 mt-1">Updated 2 days ago</p>
+      {loading ? (
+        <div className="text-sm text-gray-500">Loading...</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {items.length === 0 && (
+            <Card className="p-5"><div className="text-sm text-gray-600">No campaigns yet. Create your first campaign.</div></Card>
+          )}
+          {items.map((c) => (
+            <Card key={c.id} className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="font-medium break-all">{c.slug}</h3>
+                  <p className="text-xs text-gray-500 mt-1">{new Date(c.createdAt).toLocaleDateString()}</p>
+                </div>
+                <a href={`/user/campaigns/${c.id}`} className="text-sm text-indigo-600">Open</a>
               </div>
-              <a href={`/user/campaigns/${i}`} className="text-sm text-indigo-600">Open</a>
-            </div>
-            <div className="mt-4">
-              <ProgressBar value={i * 25} />
-              <div className="mt-1 text-xs text-gray-500">{i * 25}% of goal</div>
-            </div>
-          </Card>
-        ))}
-      </div>
+              <div className="mt-4">
+                <ProgressBar value={Math.min(100, Math.round(((c.goal?.amountMinor ?? 0) === 0 ? 0 : 10)))} />
+                <div className="mt-1 text-xs text-gray-500">{c.goal?.currency ?? "SLE"} {(c.goal?.amountMinor ?? 0) / 100}</div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

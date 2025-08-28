@@ -58,7 +58,10 @@ export default function NewCampaignPage() {
   const step: StepKey = steps[stepIndex].key;
 
   function update<K extends keyof CampaignFormData>(key: K, value: CampaignFormData[K]) {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((prev) => {
+      if (prev[key] === value) return prev;
+      return { ...prev, [key]: value };
+    });
   }
 
   function validate(currentStep: StepKey): boolean {
@@ -95,19 +98,32 @@ export default function NewCampaignPage() {
 
   function submit() {
     if (!validate("review")) return;
-    const payload = {
-      slug: generateSlug(form.title),
-      diagnosis: form.diagnosis || undefined,
-      typeOfEmergency: form.typeOfEmergency || undefined,
-      urgency: form.urgency,
-      patient: { name: form.patient.name, age: form.patient.age === "" ? undefined : Number(form.patient.age) },
-      hospital: { name: form.hospital.name || undefined },
-      goal: { currency: form.goal.currency, amountMinor: form.goal.amountMajor === "" ? 0 : Math.round(Number(form.goal.amountMajor) * 100) },
-      story: form.story,
-      documents: form.documents.map((f) => ({ name: f.file.name, type: f.file.type, size: f.file.size })),
-    };
-    // TODO: Replace with API call / action
-    alert("Campaign draft prepared:\n" + JSON.stringify(payload, null, 2));
+    const fd = new FormData();
+    fd.set("slug", generateSlug(form.title));
+    if (form.diagnosis) fd.set("diagnosis", form.diagnosis);
+    if (form.typeOfEmergency) fd.set("typeOfEmergency", form.typeOfEmergency);
+    fd.set("urgency", form.urgency);
+    fd.set("patient.name", form.patient.name);
+    if (form.patient.age !== "" && form.patient.age !== undefined) fd.set("patient.age", String(form.patient.age));
+    if (form.hospital.name) fd.set("hospital.name", form.hospital.name);
+    fd.set("goal.currency", form.goal.currency);
+    fd.set("goal.amountMinor", String(form.goal.amountMajor === "" ? 0 : Math.round(Number(form.goal.amountMajor) * 100)));
+    fd.set("story", form.story);
+    for (const f of form.documents) {
+      fd.append("documents", f.file);
+    }
+    fetch("/api/campaigns", {
+      method: "POST",
+      body: fd,
+    }).then(async (res) => {
+      if (res.ok) {
+        const data = await res.json();
+        window.location.href = `/user/campaigns/${data.id}`;
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Failed to create campaign");
+      }
+    }).catch(() => alert("Network error creating campaign"));
   }
 
   return (
