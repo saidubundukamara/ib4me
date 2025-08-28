@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import mongoose from "mongoose";
 import { campaignService, mediaAssetService } from "@/services";
 import { CloudinaryService } from "@/lib/cloudinary";
+import { donationRepository, campaignUpdateRepository, userRepository } from "@/repositories";
+import CampaignTabs, { CampaignUpdateItem } from "./Tabs";
 
 type PageParams = { params: { slug: string } };
 
@@ -13,6 +15,14 @@ function formatAmount(amount: number, currency: string) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
+}
+
+function formatDate(date: Date) {
+  return new Date(date).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
 }
 
 export default async function CampaignDetailPage({ params }: PageParams) {
@@ -63,6 +73,30 @@ export default async function CampaignDetailPage({ params }: PageParams) {
     }
   }
 
+  // Sidebar data: organizer and donations
+  const organizer = campaign.ownerId
+    ? await userRepository.findById(String(campaign.ownerId))
+    : null;
+
+  const donations = await donationRepository.listByCampaign(
+    campaign._id as mongoose.Types.ObjectId
+  );
+  const recentDonations = donations
+    .filter((d) => d.status === "succeeded")
+    .slice(0, 5);
+
+  const updatesDocs = await campaignUpdateRepository.findMany({
+    campaignId: campaign._id as mongoose.Types.ObjectId,
+  } as never);
+  const updates: CampaignUpdateItem[] = updatesDocs.map((u) => ({
+    id: String(u._id),
+    content: u.content,
+    createdAt: new Date(u.createdAt).toISOString(),
+  }));
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+  const absoluteUrl = `${siteUrl}/campaigns/${campaign.slug}`;
+
   return (
     <main className="container mx-auto max-w-6xl px-4 py-8">
       <div className="grid gap-8 lg:grid-cols-3">
@@ -73,9 +107,8 @@ export default async function CampaignDetailPage({ params }: PageParams) {
             </div>
             <div className="p-4 md:p-6">
               <h1 className="text-2xl md:text-3xl font-semibold">{title}</h1>
-              <div className="mt-4 text-sm md:text-base text-gray-800">
-                {campaign.story ? <p>{campaign.story}</p> : null}
-              </div>
+
+              <CampaignTabs story={campaign.story} updates={updates} comments={[]} />
             </div>
           </div>
         </section>
@@ -87,13 +120,14 @@ export default async function CampaignDetailPage({ params }: PageParams) {
               <div className="text-sm text-gray-600">of {formatAmount(goalAmount, currency)} goal</div>
             </div>
             <div className="mt-3 h-2 w-full overflow-hidden rounded bg-neutral-200">
-              <div className="h-2 bg-green-500" style={{ width: `${progress}%` }} />
+              <div className="h-2 bg-green-600" style={{ width: `${progress}%` }} />
             </div>
             <div className="mt-4 flex items-center justify-between text-sm text-gray-700">
               <div className="flex items-center gap-2">
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-neutral-100">👥</span>
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-neutral-100">🤍</span>
                 <span>{campaign.totals?.donationCount ?? 0} supporters</span>
               </div>
+              {/* Days left not tracked; omit to keep accurate */}
             </div>
 
             <Link
@@ -102,6 +136,48 @@ export default async function CampaignDetailPage({ params }: PageParams) {
             >
               Donate Now
             </Link>
+          </div>
+
+          <div className="rounded-lg border p-4 md:p-6">
+            <div className="text-center font-medium text-gray-800">Help Share</div>
+            <div className="mt-4 flex items-center justify-center gap-3">
+              <a className="inline-flex h-9 w-9 items-center justify-center rounded-full border" href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(absoluteUrl)}`} aria-label="Share on Facebook">f</a>
+              <a className="inline-flex h-9 w-9 items-center justify-center rounded-full border" href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(absoluteUrl)}`} aria-label="Share on X">x</a>
+              <a className="inline-flex h-9 w-9 items-center justify-center rounded-full border" href={`https://www.instagram.com/?url=${encodeURIComponent(absoluteUrl)}`} aria-label="Share on Instagram">ig</a>
+              <a className="inline-flex h-9 w-9 items-center justify-center rounded-full border" href={`https://wa.me/?text=${encodeURIComponent(absoluteUrl)}`} aria-label="Share on WhatsApp">wa</a>
+              <a className="inline-flex h-9 w-9 items-center justify-center rounded-full border" href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(absoluteUrl)}`} aria-label="Share on LinkedIn">in</a>
+            </div>
+          </div>
+
+          <div className="rounded-lg border p-4 md:p-6">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-neutral-200" />
+              <div>
+                <div className="font-medium text-gray-900">{organizer?.name ?? "Organizer"}</div>
+                <div className="text-xs text-gray-600">Organizer • Campaign created {campaign.createdAt ? formatDate(campaign.createdAt) : ""}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border p-4 md:p-6">
+            <div className="font-medium text-gray-900">Recent Donations</div>
+            <div className="mt-4 space-y-4">
+              {recentDonations.length === 0 && (
+                <div className="text-sm text-gray-600">No donations yet.</div>
+              )}
+              {recentDonations.map((d) => (
+                <div key={String(d._id)} className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">{d.isAnonymous ? "Anonymous" : d.donorSnapshot?.name || "Donor"}</div>
+                    <div className="text-xs text-gray-600">{formatDate(d.createdAt)}</div>
+                    {d.message ? <div className="mt-1 text-sm text-gray-700">{d.message}</div> : null}
+                  </div>
+                  <div className="text-sm font-medium text-gray-900">{formatAmount(Math.floor((d.amount?.minor ?? 0) / 100), d.amount?.currency || currency)}</div>
+                </div>
+              ))}
+            </div>
+
+            <a href="#donations" className="mt-6 inline-flex w-full items-center justify-center rounded-md border px-4 py-2 text-gray-900 hover:bg-neutral-50">See All Donations</a>
           </div>
         </aside>
       </div>
