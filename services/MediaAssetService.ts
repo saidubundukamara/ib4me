@@ -8,6 +8,10 @@ export class MediaAssetService {
   ): Promise<IMediaAsset[]> {
     return mediaAssetRepository.listByCampaign(campaignId);
   }
+
+  async listByIds(ids: mongoose.Types.ObjectId[]): Promise<IMediaAsset[]> {
+    return mediaAssetRepository.listByIds(ids);
+  }
 }
 
 export const mediaAssetService = new MediaAssetService();

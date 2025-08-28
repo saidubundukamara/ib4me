@@ -1,46 +1,98 @@
-"use client";
-
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { sampleCampaigns } from "@/lib/campaignsData";
+import mongoose from "mongoose";
+import { campaignService, mediaAssetService } from "@/services";
+import { CloudinaryService } from "@/lib/cloudinary";
+import CampaignsGrid from "@/app/campaigns/CampaignsGrid";
 
-function formatAmount(amount: number, currency: string) {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+type CampaignListItem = {
+  id: string;
+  slug: string;
+  title: string;
+  currency: string;
+  amountRaised: number; // major units
+  goalAmount: number; // major units
+  donationsCount: number;
+  imageUrl: string;
+  imageSrcSet?: string;
+  imageSizes?: string;
+};
+
+async function getActiveCampaigns(): Promise<CampaignListItem[]> {
+  const campaigns = await campaignService.listActive();
+
+  // Collect first image assetIds per campaign
+  const campaignIdToFirstImageAssetId = new Map<string, string>();
+  for (const c of campaigns) {
+    const firstImageDoc = (c.documents || []).find((d) => d.type?.startsWith("image/"));
+    if (firstImageDoc?.assetId) {
+      campaignIdToFirstImageAssetId.set(String(c._id), String(firstImageDoc.assetId));
+    }
+  }
+
+  // Fetch media assets in batch
+  const allAssetIds = Array.from(campaignIdToFirstImageAssetId.values());
+  const uniqueAssetIds = Array.from(new Set(allAssetIds));
+  const assets = await mediaAssetService.listByIds(uniqueAssetIds.map((id) => new mongoose.Types.ObjectId(id)));
+  const assetIdToImage = new Map<string, { src: string; srcSet?: string; sizes?: string }>();
+  for (const a of assets) {
+    const key = a.storage?.key;
+    if (key) {
+      const widths = [320, 480, 640, 768, 1024, 1280];
+      const srcSet = widths
+        .map((w) =>
+          `${CloudinaryService.generateTransformationUrl(key, {
+            width: w,
+            crop: "fill",
+            gravity: "auto",
+            aspect_ratio: "16:9",
+            fetch_format: "auto",
+            quality: "auto",
+          })} ${w}w`
+        )
+        .join(", ");
+      const src = CloudinaryService.generateTransformationUrl(key, {
+        width: 768,
+        crop: "fill",
+        gravity: "auto",
+        aspect_ratio: "16:9",
+        fetch_format: "auto",
+        quality: "auto",
+      });
+      const sizes = "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw";
+      assetIdToImage.set(String(a._id), { src, srcSet, sizes });
+    } else {
+      const url = a.url || "";
+      assetIdToImage.set(String(a._id), { src: url });
+    }
+  }
+
+  return campaigns.map((c) => {
+    const raisedMinor = c.totals?.raisedMinor ?? 0;
+    const goalMinor = c.goal?.amountMinor ?? 0;
+    const currency = c.goal?.currency || "SLE";
+    const titleBase = c.patient?.name?.trim() || c.hospital?.name?.trim() || c.diagnosis?.trim() || c.slug;
+    const imageAssetId = campaignIdToFirstImageAssetId.get(String(c._id));
+    const img = imageAssetId ? assetIdToImage.get(imageAssetId) : undefined;
+    const imageUrl = img?.src || "/assets/Hero.png";
+    const imageSrcSet = img?.srcSet;
+    const imageSizes = img?.sizes;
+    return {
+      id: String(c._id),
+      slug: c.slug,
+      title: titleBase,
+      currency,
+      amountRaised: Math.max(0, Math.floor(raisedMinor) / 100),
+      goalAmount: Math.max(0, Math.floor(goalMinor) / 100),
+      donationsCount: c.totals?.donationCount ?? 0,
+      imageUrl,
+      imageSrcSet,
+      imageSizes,
+    };
+  });
 }
 
-function formatDonationsCount(count: number) {
-  if (count >= 1000) return `${(count / 1000).toFixed(1).replace(/\.0$/, "")}K donations`;
-  return `${count} donations`;
-}
-
-const allCategories = [
-  "All",
-  "Treatments & Procedures",
-  "Research & Innovation",
-  "Mental Health & Therapy",
-  "Equipment & Devices",
-  "Patient & Caregiver Support",
-  "Community Health Initiatives",
-];
-
-export default function CampaignsListPage() {
-  const [query, setQuery] = useState("");
-  const [category] = useState("All");
-  const [urgency] = useState("All");
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return sampleCampaigns.filter((c) => {
-      if (!q) return true;
-      return c.title.toLowerCase().includes(q);
-    });
-  }, [query]);
-
+export default async function CampaignsListPage() {
+  const items = await getActiveCampaigns();
   return (
     <main className="py-8 md:py-16">
       <div className="container mx-auto max-w-screen-xl px-4">
@@ -50,64 +102,7 @@ export default function CampaignsListPage() {
           <Link href="/user/campaigns/new" className="inline-flex items-center rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 w-full sm:w-auto">Start a Campaign</Link>
         </div>
 
-        <div className="flex flex-col items-center space-y-6">
-          <div className="w-full max-w-2xl">
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search"
-              className="w-full rounded-md border px-3 py-2"
-              aria-label="Search"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="inline-flex items-center rounded-md border px-3 py-2 text-sm">Category: {category}</button>
-            <button className="inline-flex items-center rounded-md border px-3 py-2 text-sm">Urgency: {urgency}</button>
-          </div>
-        </div>
-
-        <div className="mt-8 flex items-center justify-between">
-          <p className="text-sm text-gray-600">Showing {filtered.length} campaigns</p>
-          <div className="flex items-center gap-2 text-sm">
-            <span>Sort by:</span>
-            <select className="border rounded px-2 py-1">
-              <option value="trending">Trending</option>
-              <option value="newest">Newest</option>
-              <option value="most-funded">Most Funded</option>
-              <option value="ending-soon">Ending Soon</option>
-            </select>
-          </div>
-        </div>
-
-        <section className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((c) => {
-            const progress = Math.min(100, Math.round((c.amountRaised / c.goalAmount) * 100));
-            return (
-              <Link key={c.id} href={`/campaign/${c.id}`} className="block" aria-label={`View details for ${c.title}`}>
-                <article className="overflow-hidden rounded-lg border bg-white group">
-                  <div className="relative">
-                    <div className="aspect-[16/9] overflow-hidden relative">
-                      <img src={c.imageUrl} alt={c.title} className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105" />
-                    </div>
-                    <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs sm:text-sm font-medium px-3 py-1 rounded-full">
-                      {formatDonationsCount(c.donationsCount)}
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <h4 className="font-semibold text-sm sm:text-lg line-clamp-2 mb-2">{c.title}</h4>
-                    <div className="flex flex-col gap-2">
-                      <div className="h-2 w-full overflow-hidden rounded bg-neutral-200">
-                        <div className="h-2 bg-green-500" style={{ width: `${progress}%` }} />
-                      </div>
-                      <p className="font-bold text-sm sm:text-lg">{formatAmount(c.amountRaised, c.currency)} raised</p>
-                    </div>
-                  </div>
-                </article>
-              </Link>
-            );
-          })}
-        </section>
+        <CampaignsGrid items={items} />
 
         <div className="flex flex-col items-center justify-center space-y-3 py-8 md:py-16">
           <h2 className="text-balance my-5 text-3xl font-medium lg:text-4xl">Start a fundraiser for yourself or someone else.</h2>
