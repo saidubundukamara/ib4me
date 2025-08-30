@@ -18,6 +18,11 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
   const [updates, setUpdates] = React.useState<{ id: string; content: string; createdAt: string }[]>([]);
   const [newUpdate, setNewUpdate] = React.useState<string>("");
   const [submitting, setSubmitting] = React.useState<boolean>(false);
+  const [shareLoading, setShareLoading] = React.useState<boolean>(false);
+  const [editLoading, setEditLoading] = React.useState<boolean>(false);
+  const [previewLoading, setPreviewLoading] = React.useState<boolean>(false);
+  const [settingsLoading, setSettingsLoading] = React.useState<boolean>(false);
+  const [deleteLoading, setDeleteLoading] = React.useState<boolean>(false);
   const [campaign, setCampaign] = React.useState<null | {
     id: string;
     slug: string;
@@ -72,17 +77,17 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
   }
 
   async function handleShare() {
-    if (!campaign?.slug) {
-      toast.error("Campaign not loaded yet");
-      return;
-    }
-    const shareUrl = `${window.location.origin}/campaigns/${campaign.slug}`;
-    const shareData = {
-      title: campaign.slug,
-      text: campaign.story ? campaign.story.slice(0, 140) : "Support this campaign",
-      url: shareUrl,
-    };
+    if (!campaign?.slug || shareLoading) return;
+    
+    setShareLoading(true);
     try {
+      const shareUrl = `${window.location.origin}/campaigns/${campaign.slug}`;
+      const shareData = {
+        title: campaign.slug,
+        text: campaign.story ? campaign.story.slice(0, 140) : "Support this campaign",
+        url: shareUrl,
+      };
+      
       if (navigator.share) {
         await navigator.share(shareData as ShareData);
         toast.success("Share dialog opened");
@@ -92,36 +97,34 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
       }
     } catch (e) {
       toast.error("Unable to share");
+    } finally {
+      setShareLoading(false);
     }
   }
 
   async function handlePreview() {
-    console.log("Generating shareable image for campaign page ege:", campaign);
-    if (!campaign?.slug) {
-      toast.error("Campaign not loaded yet");
-      return;
-    }
-
-    // Check if we're in the browser environment
-    if (typeof window === 'undefined' || typeof document === 'undefined') {
-      toast.error("Image generation not supported in this environment");
-      return;
-    }
-
-    // Check for Canvas support
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      toast.error("Canvas not supported in this browser");
-      // Fallback to original behavior
-      const url = `/campaigns/${campaign.slug}`;
-      window.open(url, "_blank", "noopener,noreferrer");
-      return;
-    }
-
-    console.log("Generating shareable image for campaign page ege:", campaign);
+    if (!campaign?.slug || previewLoading) return;
     
+    setPreviewLoading(true);
+
     try {
+      // Check if we're in the browser environment
+      if (typeof window === 'undefined' || typeof document === 'undefined') {
+        toast.error("Image generation not supported in this environment");
+        return;
+      }
+
+      // Check for Canvas support
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        toast.error("Canvas not supported in this browser");
+        // Fallback to original behavior
+        const url = `/campaigns/${campaign.slug}`;
+        window.open(url, "_blank", "noopener,noreferrer");
+        return;
+      }
+
       const loadingToast = toast.loading("Generating shareable image...");
       
       const campaignData: CampaignImageData = {
@@ -152,20 +155,21 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
       // Fallback to original behavior
       const url = `/campaigns/${campaign.slug}`;
       window.open(url, "_blank", "noopener,noreferrer");
+    } finally {
+      setPreviewLoading(false);
     }
   }
 
   async function handleEditStory() {
-    if (!campaign) {
-      toast.error("Campaign not loaded yet");
-      return;
-    }
+    if (!campaign || editLoading) return;
+    
     const current = campaign.story || "";
-    // Using prompt for simplicity; consider a modal for richer UX
     const updated = window.prompt("Edit campaign story", current);
     if (updated === null) return; // cancelled
-    const nextStory = updated.trim();
+    
+    setEditLoading(true);
     try {
+      const nextStory = updated.trim();
       const res = await fetch(`/api/campaigns/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -176,25 +180,28 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
       toast.success("Story updated");
     } catch (e) {
       toast.error("Could not update story");
+    } finally {
+      setEditLoading(false);
     }
   }
 
   async function handleSettings() {
-    if (!campaign) {
-      toast.error("Campaign not loaded yet");
-      return;
-    }
+    if (!campaign || settingsLoading) return;
+    
     const current = campaign.status;
     const next = window.prompt(
       "Set campaign status (draft, active, paused, completed, archived)",
       current
     );
     if (next === null) return; // cancelled
+    
     const allowed = ["draft", "active", "paused", "completed", "archived"] as const;
     if (!allowed.includes(next as typeof allowed[number])) {
       toast.error("Invalid status");
       return;
     }
+    
+    setSettingsLoading(true);
     try {
       const res = await fetch(`/api/campaigns/${id}`, {
         method: "PATCH",
@@ -206,6 +213,8 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
       toast.success("Status updated");
     } catch (e) {
       toast.error("Could not update status");
+    } finally {
+      setSettingsLoading(false);
     }
   }
 
@@ -229,14 +238,24 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
           <a href="/user/withdrawals" className="rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm shadow hover:bg-indigo-700 transition">Withdraw</a>
           <button
             onClick={async () => {
-              if (!confirm("Delete this campaign?")) return;
-              const res = await fetch(`/api/campaigns/${id}`, { method: "DELETE" });
-              if (res.ok) {
-                window.location.href = "/user/campaigns";
+              if (!confirm("Delete this campaign?") || deleteLoading) return;
+              setDeleteLoading(true);
+              try {
+                const res = await fetch(`/api/campaigns/${id}`, { method: "DELETE" });
+                if (res.ok) {
+                  window.location.href = "/user/campaigns";
+                } else {
+                  toast.error("Failed to delete campaign");
+                }
+              } catch (error) {
+                toast.error("Network error deleting campaign");
+              } finally {
+                setDeleteLoading(false);
               }
             }}
-            className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
-          >Delete</button>
+            className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={deleteLoading}
+          >{deleteLoading ? "Deleting..." : "Delete"}</button>
         </div>
       </div>
 
@@ -354,10 +373,34 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
           <Card className="p-4">
             <h3 className="font-medium">Quick Actions</h3>
             <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-              <button onClick={handleShare} className="rounded-lg border px-3 py-2 hover:bg-indigo-50 dark:hover:bg-white/10">Share</button>
-              <button onClick={handleEditStory} className="rounded-lg border px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/10">Edit</button>
-              <button onClick={handlePreview} className="rounded-lg border px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/10">Download Share Image</button>
-              <button onClick={handleSettings} className="rounded-lg border px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/10">Settings</button>
+              <button 
+                onClick={handleShare} 
+                className="rounded-lg border px-3 py-2 hover:bg-indigo-50 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={shareLoading}
+              >
+                {shareLoading ? "Sharing..." : "Share"}
+              </button>
+              <button 
+                onClick={handleEditStory} 
+                className="rounded-lg border px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={editLoading}
+              >
+                {editLoading ? "Saving..." : "Edit"}
+              </button>
+              <button 
+                onClick={handlePreview} 
+                className="rounded-lg border px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={previewLoading}
+              >
+                {previewLoading ? "Generating..." : "Download Share Image"}
+              </button>
+              <button 
+                onClick={handleSettings} 
+                className="rounded-lg border px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={settingsLoading}
+              >
+                {settingsLoading ? "Saving..." : "Settings"}
+              </button>
             </div>
           </Card>
         </div>

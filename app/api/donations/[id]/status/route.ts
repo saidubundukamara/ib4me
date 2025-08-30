@@ -3,11 +3,10 @@ import mongoose from "mongoose";
 import { donationService } from "@/services";
 import { monimeService } from "@/lib/monime";
 
-type RouteParams = {
-  params: { id: string };
-};
-
-export async function GET(req: NextRequest, { params }: RouteParams) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id: donationId } = await params;
 
@@ -62,9 +61,8 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         createdAt: donation.createdAt,
         updatedAt: donation.updatedAt,
         checkoutSession: checkoutSessionStatus,
-      }
+      },
     });
-
   } catch (error) {
     console.error("Error checking donation status:", error);
     return NextResponse.json(

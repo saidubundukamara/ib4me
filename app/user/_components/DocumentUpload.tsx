@@ -27,7 +27,7 @@ function formatBytes(bytes: number): string {
 export default function DocumentUpload({ accept = ["image/*", "application/pdf"], maxFiles = 10, onChange, value, label = "Add documents" }: DocumentUploadProps) {
   const [files, setFiles] = React.useState<SelectedFile[]>(value || []);
   const inputRef = React.useRef<HTMLInputElement | null>(null);
-  const onChangeRef = React.useRef<DocumentUploadProps["onChange"]>();
+  const onChangeRef = React.useRef<DocumentUploadProps["onChange"] | undefined>(undefined);
 
   // Keep a stable reference to onChange to avoid effect loops when parent passes new function each render
   React.useEffect(() => {

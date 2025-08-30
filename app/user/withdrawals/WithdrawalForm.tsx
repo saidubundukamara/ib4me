@@ -25,27 +25,39 @@ function formatCurrency(minor: number, currency: string): string {
 
 interface WithdrawalFormProps {
   campaignOptions: CampaignOption[];
-  requestPayout: (formData: FormData) => Promise<{success: boolean, error?: string}>;
+  onSuccess?: () => void;
 }
 
-export function WithdrawalForm({ campaignOptions, requestPayout }: WithdrawalFormProps) {
+export function WithdrawalForm({ campaignOptions, onSuccess }: WithdrawalFormProps) {
   const [payoutType, setPayoutType] = useState<"mobile_money" | "bank">("mobile_money");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+    
     setIsSubmitting(true);
     
     try {
-      const result = await requestPayout(formData);
+      const formData = new FormData(e.currentTarget);
       
-      if (result.success) {
+      const response = await fetch("/api/payouts", {
+        method: "POST",
+        body: formData,
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
         toast.success("Payout request submitted successfully!", {
           description: "Your withdrawal is being processed and will be sent to your selected destination."
         });
         // Reset form
         formRef.current?.reset();
         setPayoutType("mobile_money");
+        // Call success callback to refresh data
+        onSuccess?.();
       } else {
         toast.error(result.error || "Failed to submit payout request", {
           description: "Please check your information and try again."
@@ -64,7 +76,7 @@ export function WithdrawalForm({ campaignOptions, requestPayout }: WithdrawalFor
   return (
     <form 
       ref={formRef}
-      action={handleSubmit} 
+      onSubmit={handleSubmit} 
       className={`space-y-4 rounded-2xl border p-4 bg-white/80 dark:bg-white/5 ${isSubmitting ? 'opacity-75 pointer-events-none' : ''}`}
     >
       <div>

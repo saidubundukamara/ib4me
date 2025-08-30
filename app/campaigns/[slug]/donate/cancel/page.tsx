@@ -5,7 +5,7 @@ import { campaignService } from "@/services";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ donation_id?: string }>;
+  searchParams?: Promise<{ donation_id?: string }>;
 };
 
 async function DonationCancelContent({ params }: PageProps) {

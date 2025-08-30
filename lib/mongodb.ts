@@ -6,7 +6,7 @@ declare global {
    
   var _mongoClientPromise: Promise<MongoClient> | undefined;
    
-  var __memoryMongo: { getUri: () => string; stop: () => Promise<void> } | undefined;
+  var __memoryMongo: { getUri: () => string; stop: () => Promise<boolean> } | undefined;
 }
 
 async function ensureUri(): Promise<string> {
@@ -17,7 +17,8 @@ async function ensureUri(): Promise<string> {
       const { MongoMemoryServer } = await import("mongodb-memory-server");
       global.__memoryMongo = await MongoMemoryServer.create();
     }
-    uri = global.__memoryMongo.getUri();
+    const mem = global.__memoryMongo!;
+    uri = mem.getUri();
     return uri;
   }
   throw new Error("Please define MONGO_URI or MONGODB_URI in environment");
