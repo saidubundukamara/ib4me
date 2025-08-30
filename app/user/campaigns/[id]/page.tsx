@@ -95,7 +95,7 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
         await navigator.clipboard.writeText(shareUrl);
         toast.success("Link copied to clipboard");
       }
-    } catch (e) {
+    } catch {
       toast.error("Unable to share");
     } finally {
       setShareLoading(false);
@@ -178,7 +178,7 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
       if (!res.ok) throw new Error("Failed to update story");
       setCampaign((prev) => (prev ? { ...prev, story: nextStory } : prev));
       toast.success("Story updated");
-    } catch (e) {
+    } catch {
       toast.error("Could not update story");
     } finally {
       setEditLoading(false);
@@ -211,7 +211,7 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
       if (!res.ok) throw new Error("Failed to update status");
       setCampaign((prev) => (prev ? { ...prev, status: next } : prev));
       toast.success("Status updated");
-    } catch (e) {
+    } catch {
       toast.error("Could not update status");
     } finally {
       setSettingsLoading(false);
@@ -247,7 +247,7 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
                 } else {
                   toast.error("Failed to delete campaign");
                 }
-              } catch (error) {
+              } catch {
                 toast.error("Network error deleting campaign");
               } finally {
                 setDeleteLoading(false);

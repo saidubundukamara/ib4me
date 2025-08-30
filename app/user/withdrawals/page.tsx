@@ -65,7 +65,7 @@ export default function UserWithdrawalsPage() {
         setCampaigns(campaignsData);
         
         // Transform campaigns into options
-        const options = campaignsData.map((c: any) => {
+        const options = campaignsData.map((c: Campaign & { totals?: { raisedMinor?: number }; withdrawals?: { totalPaidMinor?: number } }) => {
           const raised = c.totals?.raisedMinor ?? 0;
           const paid = c.withdrawals?.totalPaidMinor ?? 0;
           const available = Math.max(0, raised - paid);

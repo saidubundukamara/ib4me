@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     const campaignIdStr = String(campaign._id);
     const successUrl = `${baseUrl}/campaigns/${validatedData.campaignSlug}/donate/success?donation_id=${donationIdStr}&session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${baseUrl}/campaigns/${validatedData.campaignSlug}/donate/cancel?donation_id=${donationIdStr}`;
-    const webhookUrl = `${baseUrl}/api/donations/webhook`;
+    // const webhookUrl = `${baseUrl}/api/donations/webhook`;
 
     // Create Monime checkout session with idempotency key
     const checkoutSession = await monimeService.createCheckoutSession({

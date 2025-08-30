@@ -15,7 +15,7 @@ export async function logout(options?: LogoutOptions): Promise<void> {
     // Use redirect: false to avoid full reload timing before we control navigation
     await signOut({ redirect: false });
     window.location.href = redirectTo;
-  } catch (error) {
+  } catch {
     if (showToast) toast.error("Failed to sign out");
   }
 }

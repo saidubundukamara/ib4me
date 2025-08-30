@@ -370,7 +370,7 @@ export class MonimeService {
   }
 
   // Note: Webhook signature verification removed - check Monime docs for actual webhook authentication
-  verifyWebhookSignature(_payload: string, _signature: string): boolean {
+  verifyWebhookSignature(): boolean {
     console.warn(
       "Webhook signature verification not implemented - check Monime documentation for proper webhook authentication"
     );
@@ -412,7 +412,7 @@ export class MonimeService {
     // Validate base URL format
     try {
       new URL(config.baseUrl);
-    } catch (urlError) {
+    } catch {
       throw new Error(`Invalid MONIME_BASE_URL format: ${config.baseUrl}`);
     }
 

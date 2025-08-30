@@ -44,7 +44,7 @@ export default function DocumentUpload({ accept = ["image/*", "application/pdf"]
     if (value && value !== files) {
       setFiles(value);
     }
-  }, [value]);
+  }, [value, files]);
 
   function pick() {
     inputRef.current?.click();

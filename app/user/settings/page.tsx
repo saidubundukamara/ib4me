@@ -85,7 +85,7 @@ export default function UserSettingsPage() {
         const error = await res.json();
         toast.error(error.error || "Failed to update profile");
       }
-    } catch (error) {
+    } catch {
       toast.error("Network error updating profile");
     } finally {
       setProfileLoading(false);
@@ -119,7 +119,7 @@ export default function UserSettingsPage() {
         const error = await res.json();
         toast.error(error.error || "Failed to update address");
       }
-    } catch (error) {
+    } catch {
       toast.error("Network error updating address");
     } finally {
       setAddressLoading(false);
@@ -161,7 +161,7 @@ export default function UserSettingsPage() {
         const error = await res.json();
         toast.error(error.error || "Failed to update payout details");
       }
-    } catch (error) {
+    } catch {
       toast.error("Network error updating payout details");
     } finally {
       setPayoutsLoading(false);

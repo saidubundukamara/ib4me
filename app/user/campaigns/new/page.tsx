@@ -133,7 +133,7 @@ export default function NewCampaignPage() {
         const err = await res.json().catch(() => ({}));
         toast.error(err.error || "Failed to create campaign");
       }
-    } catch (error) {
+    } catch {
       toast.error("Network error creating campaign");
     } finally {
       setIsSubmitting(false);

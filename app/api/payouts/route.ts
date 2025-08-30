@@ -46,9 +46,9 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    const raised = campaign.totals?.raisedMinor ?? 0;
-    const paid = campaign.withdrawals?.totalPaidMinor ?? 0;
-    const availableMinor = Math.max(0, raised - paid);
+    // const raised = campaign.totals?.raisedMinor ?? 0;
+    // const paid = campaign.withdrawals?.totalPaidMinor ?? 0;
+    // const availableMinor = Math.max(0, raised - paid);
 
     const amountMinor = Math.round(Number(amountStr) * 100);
     if (!Number.isFinite(amountMinor) || amountMinor <= 0) {

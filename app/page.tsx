@@ -133,7 +133,7 @@ function GetStartedSection() {
       });
     }, 100);
     return () => clearInterval(timer);
-  }, []);
+  }, [features.length]);
 
   return (
     <div className="py-10 p-8 md:p-12 flex items-center justify-center">

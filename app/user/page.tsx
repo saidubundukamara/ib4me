@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
+import Link from "next/link";
 import { authConfig } from "@/app/api/auth/[...nextauth]/route";
 import { connectDB } from "@/lib/db";
 import { campaignService } from "@/services/CampaignService";
@@ -138,7 +139,7 @@ export default async function UserDashboardPage() {
         <Card className="p-5 lg:col-span-2">
           <div className="flex items-center justify-between">
             <h3 className="font-medium">Your Campaigns</h3>
-            <a href="/user/campaigns" className="text-sm text-indigo-600">View all</a>
+            <Link href="/user/campaigns" className="text-sm text-indigo-600">View all</Link>
           </div>
           <div className="mt-4 grid sm:grid-cols-2 gap-3">
             {campaigns.slice(0, 6).map((c) => {

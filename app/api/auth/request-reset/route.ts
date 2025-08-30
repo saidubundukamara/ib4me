@@ -31,11 +31,11 @@ export async function POST(req: NextRequest) {
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
   await authCodeRepository.create({
     userId: user._id,
-    channel: (channel ?? (user.email ? "email" : "sms")) as any,
+    channel: (channel ?? (user.email ? "email" : "sms")) as "email" | "sms",
     purpose: "reset_password",
     codeHash,
     expiresAt,
-  } as never);
+  });
   // TODO: send code via email/SMS provider
   return NextResponse.json({ success: true }, { status: 200 });
 }

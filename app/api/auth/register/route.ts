@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
   await connectDB();
-  const identifier = (email ?? phone ?? "").toLowerCase();
+  // const identifier = (email ?? phone ?? "").toLowerCase();
   const exists = await UserModel.findOne({
     $or: [{ email: email?.toLowerCase() ?? null }, { phone: phone ?? null }],
   });

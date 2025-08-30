@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import Link from "next/link";
 import Card from "../_components/../_components/Card";
 import ProgressBar from "../_components/../_components/ProgressBar";
 
@@ -23,7 +24,7 @@ export default function UserCampaignsPage() {
           <h2 className="text-2xl font-semibold">My Campaigns</h2>
           <p className="text-sm text-gray-600 mt-1">Create and manage your campaigns.</p>
         </div>
-        <a href="/user/campaigns/new" className="rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm shadow hover:bg-indigo-700 transition">New Campaign</a>
+        <Link href="/user/campaigns/new" className="rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm shadow hover:bg-indigo-700 transition">New Campaign</Link>
       </div>
 
       {loading ? (

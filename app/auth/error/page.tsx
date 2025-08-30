@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
 const errorMessages: Record<string, string> = {
   Configuration: "Authentication configuration error.",
@@ -14,7 +15,7 @@ const errorMessages: Record<string, string> = {
   SessionRequired: "Please sign in to continue.",
 };
 
-export default function AuthErrorPage() {
+function AuthError() {
   const params = useSearchParams();
   const code = params.get("error") ?? "";
   const message = errorMessages[code] || "An error occurred during authentication.";
@@ -32,6 +33,14 @@ export default function AuthErrorPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthErrorPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto max-w-xl p-6">Loading...</div>}>
+      <AuthError />
+    </Suspense>
   );
 }
 
