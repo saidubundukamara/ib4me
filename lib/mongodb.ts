@@ -3,14 +3,16 @@ import { MongoClient } from "mongodb";
 let uri = process.env.MONGO_URI || process.env.MONGODB_URI || "";
 
 declare global {
-   
   var _mongoClientPromise: Promise<MongoClient> | undefined;
-   
-  var __memoryMongo: { getUri: () => string; stop: () => Promise<boolean> } | undefined;
+
+  var __memoryMongo:
+    | { getUri: () => string; stop: () => Promise<boolean> }
+    | undefined;
 }
 
 async function ensureUri(): Promise<string> {
-  const isTestEnv = process.env.NODE_ENV === "test" || process.env.PLAYWRIGHT === "1";
+  const isTestEnv =
+    process.env.NODE_ENV === "test" || process.env.PLAYWRIGHT === "1";
   if (uri) return uri;
   if (isTestEnv) {
     if (!global.__memoryMongo) {
