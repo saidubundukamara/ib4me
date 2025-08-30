@@ -6,6 +6,7 @@ import { connectDB } from "@/lib/db";
 import CampaignModel from "@/models/Campaign";
 import MediaAssetModel from "@/models/MediaAsset";
 import CloudinaryService from "@/lib/cloudinary";
+import { campaignService } from "@/services/CampaignService";
 
 async function ensureUniqueSlug(baseSlug: string): Promise<string> {
   await connectDB();
@@ -14,7 +15,7 @@ async function ensureUniqueSlug(baseSlug: string): Promise<string> {
   let counter = 2;
   while (true) {
     const attempt = `${baseSlug}-${counter}`;
-    // eslint-disable-next-line no-await-in-loop
+     
     const hit = await CampaignModel.findOne({ slug: attempt });
     if (!hit) return attempt;
     counter += 1;
@@ -93,53 +94,63 @@ export async function POST(req: NextRequest) {
     ? Number.parseInt(patientAgeRaw, 10)
     : undefined;
 
-  const created = await CampaignModel.create({
-    ownerId,
-    slug,
-    diagnosis: diagnosis || undefined,
-    typeOfEmergency: typeOfEmergency || undefined,
-    urgency,
-    patient: {
-      name: patientName,
-      age: Number.isFinite(patientAge as number) ? patientAge : undefined,
-    },
-    hospital: { name: hospitalName || undefined },
-    goal: { currency: goalCurrency || "SLE", amountMinor: goalAmountMinor },
-    story,
-  });
-
-  const files = form.getAll("documents").filter(Boolean) as unknown as File[];
-  const uploadedAssets: { type: string; assetId: mongoose.Types.ObjectId }[] =
-    [];
-  for (const f of files) {
-    // eslint-disable-next-line no-await-in-loop
-    const buffer = Buffer.from(await f.arrayBuffer());
-    // eslint-disable-next-line no-await-in-loop
-    const result = await CloudinaryService.uploadBuffer(buffer, {
-      folder: `campaigns/${session.user.id}`,
-      resource_type: "auto",
-    });
-    // eslint-disable-next-line no-await-in-loop
-    const asset = await MediaAssetModel.create({
+  try {
+    // Create campaign using service (includes financial account creation)
+    const created = await campaignService.createCampaign({
       ownerId,
-      campaignId: created._id,
-      type: f.type || "file",
-      storage: { provider: "cloudinary", key: result.public_id },
-      url: result.secure_url,
-      size: (f as unknown as { size?: number }).size ?? result.bytes,
+      slug,
+      diagnosis: diagnosis || undefined,
+      typeOfEmergency: typeOfEmergency || undefined,
+      urgency,
+      patient: {
+        name: patientName,
+        age: Number.isFinite(patientAge as number) ? patientAge : undefined,
+      },
+      hospital: { name: hospitalName || undefined },
+      goal: { currency: goalCurrency || "SLE", amountMinor: goalAmountMinor },
+      story,
     });
-    uploadedAssets.push({ type: f.type || "file", assetId: asset._id });
+
+    const files = form.getAll("documents").filter(Boolean) as unknown as File[];
+    const uploadedAssets: { type: string; assetId: mongoose.Types.ObjectId }[] =
+      [];
+    for (const f of files) {
+       
+      const buffer = Buffer.from(await f.arrayBuffer());
+       
+      const result = await CloudinaryService.uploadBuffer(buffer, {
+        folder: `campaigns/${session.user.id}`,
+        resource_type: "auto",
+      });
+       
+      const asset = await MediaAssetModel.create({
+        ownerId,
+        campaignId: created._id,
+        type: f.type || "file",
+        storage: { provider: "cloudinary", key: result.public_id },
+        url: result.secure_url,
+        size: (f as unknown as { size?: number }).size ?? result.bytes,
+      });
+      uploadedAssets.push({ type: f.type || "file", assetId: asset._id });
+    }
+
+    if (uploadedAssets.length > 0) {
+      await CampaignModel.findByIdAndUpdate(created._id, {
+        $push: { documents: { $each: uploadedAssets } },
+      });
+    }
+
+    return NextResponse.json(
+      { id: String(created._id), slug: created.slug },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error('Failed to create campaign:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to create campaign' },
+      { status: 500 }
+    );
   }
 
-  if (uploadedAssets.length > 0) {
-    await CampaignModel.findByIdAndUpdate(created._id, {
-      $push: { documents: { $each: uploadedAssets } },
-    });
-  }
-
-  return NextResponse.json(
-    { id: String(created._id), slug: created.slug },
-    { status: 201 }
-  );
 }
 

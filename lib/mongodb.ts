@@ -3,9 +3,9 @@ import { MongoClient } from "mongodb";
 let uri = process.env.MONGO_URI || process.env.MONGODB_URI || "";
 
 declare global {
-  // eslint-disable-next-line no-var
+   
   var _mongoClientPromise: Promise<MongoClient> | undefined;
-  // eslint-disable-next-line no-var
+   
   var __memoryMongo: { getUri: () => string; stop: () => Promise<void> } | undefined;
 }
 

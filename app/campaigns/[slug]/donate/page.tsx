@@ -10,7 +10,8 @@ type PageParams = {
 };
 
 export default async function CampaignDonatePage({ params }: PageParams) {
-  const campaign = await campaignService.getBySlug(params.slug);
+  const { slug } = await params;
+  const campaign = await campaignService.getBySlug(slug);
   if (!campaign) return notFound();
 
   const currency = campaign.goal?.currency || "SLE";
@@ -47,7 +48,7 @@ export default async function CampaignDonatePage({ params }: PageParams) {
   return (
     <main className="container mx-auto max-w-6xl px-4 py-8">
       <DonateClient
-        slug={campaign.slug}
+        slug={slug}
         currency={currency}
         title={title}
         organizerName={organizer?.name ?? null}

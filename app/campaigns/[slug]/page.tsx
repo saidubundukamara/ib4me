@@ -26,7 +26,8 @@ function formatDate(date: Date) {
 }
 
 export default async function CampaignDetailPage({ params }: PageParams) {
-  const campaign = await campaignService.getBySlug(params.slug);
+  const { slug } = await params;
+  const campaign = await campaignService.getBySlug(slug);
   if (!campaign) return notFound();
 
   const currency = campaign.goal?.currency || "SLE";

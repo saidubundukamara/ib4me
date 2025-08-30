@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+// import { useRouter } from "next/navigation"; // Future use
 
 export type DonateClientProps = {
   slug: string;
@@ -29,13 +30,7 @@ export default function DonateClient(props: DonateClientProps) {
   const [selectedPreset, setSelectedPreset] = useState<number | "custom">(50);
   const [customAmount, setCustomAmount] = useState<string>("");
 
-  const [payTab, setPayTab] = useState<"card" | "mobile" | "paypal">("card");
-
-  // Card inputs
-  const [cardName, setCardName] = useState("");
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCvc, setCardCvc] = useState("");
+  // Removed payment method selection since Monime handles this
 
   // Donor details
   const [firstName, setFirstName] = useState("");
@@ -43,6 +38,11 @@ export default function DonateClient(props: DonateClientProps) {
   const [email, setEmail] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState("");
+
+  // Form state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // const router = useRouter(); // Future use for programmatic navigation
 
   const amount = useMemo(() => {
     if (selectedPreset === "custom") {
@@ -53,6 +53,74 @@ export default function DonateClient(props: DonateClientProps) {
   }, [selectedPreset, customAmount]);
 
   const donateLabel = `Donate ${formatAmount(amount, currency)}`;
+
+  const handleDonateSubmit = async () => {
+    // Clear any previous errors
+    setError(null);
+    
+    // Basic validation
+    if (amount <= 0) {
+      setError("Please enter a valid donation amount");
+      return;
+    }
+
+    if (!anonymous && (!firstName.trim() || !email.trim())) {
+      setError("Please provide your name and email address");
+      return;
+    }
+
+    if (email && !email.includes('@')) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Prepare donation data
+      const donationData = {
+        campaignSlug: slug,
+        amount,
+        currency,
+        donor: anonymous ? undefined : {
+          name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+          email: email.trim(),
+        },
+        isAnonymous: anonymous,
+        message: message.trim() || undefined,
+        // Payment methods handled by Monime checkout page
+      };
+
+      // Create donation and get checkout URL
+      const response = await fetch("/api/donations/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(donationData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to create donation");
+      }
+
+      // Redirect to Monime checkout
+      if (result.data?.checkoutUrl) {
+        window.location.href = result.data.checkoutUrl;
+      } else {
+        throw new Error("No checkout URL received");
+      }
+    } catch (error) {
+      console.error("Donation creation error:", error);
+      setError(error instanceof Error ? error.message : "Failed to process donation");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const isFormValid = amount > 0 && (anonymous || (firstName.trim() && email.trim()));
 
   return (
     <div className="grid gap-8 lg:grid-cols-3">
@@ -101,105 +169,27 @@ export default function DonateClient(props: DonateClientProps) {
             )}
           </div>
 
-          {/* Payment Method Tabs */}
+          {/* Payment Info */}
           <div className="rounded-lg border p-4 md:p-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="text-sm font-medium">Payment Method</div>
-                <div className="text-xs text-gray-600">Select your preferred payment method</div>
-              </div>
-            </div>
-            <div className="mt-4">
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className={`rounded-full border px-4 py-2 text-sm ${payTab === "card" ? "bg-white" : "bg-neutral-50"}`}
-                  onClick={() => setPayTab("card")}
-                >
-                  Credit Card
-                </button>
-                <button
-                  type="button"
-                  className={`rounded-full border px-4 py-2 text-sm ${payTab === "mobile" ? "bg-white" : "bg-neutral-50"}`}
-                  onClick={() => setPayTab("mobile")}
-                >
+            <div className="text-sm font-medium">Payment</div>
+            <div className="mt-4 space-y-3">
+              <div className="flex items-center gap-4 text-sm text-gray-700">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-6 w-6 bg-blue-100 rounded text-blue-600 text-xs flex items-center justify-center font-medium">📱</span>
                   Mobile Money
-                </button>
-                <button
-                  type="button"
-                  className={`rounded-full border px-4 py-2 text-sm ${payTab === "paypal" ? "bg-white" : "bg-neutral-50"}`}
-                  onClick={() => setPayTab("paypal")}
-                >
-                  PayPal
-                </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-6 w-6 bg-green-100 rounded text-green-600 text-xs flex items-center justify-center font-medium">💳</span>
+                  Credit/Debit Cards
+                </div>
               </div>
-
-              {payTab === "card" && (
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <label className="text-xs text-gray-700">Name on Card</label>
-                    <input
-                      value={cardName}
-                      onChange={(e) => setCardName(e.target.value)}
-                      className="mt-1 w-full rounded-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-900"
-                      placeholder="Name on Card"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-700">Card Number</label>
-                    <input
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value)}
-                      className="mt-1 w-full rounded-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-900"
-                      placeholder="Card Number"
-                      inputMode="numeric"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-gray-700">Expiry Date</label>
-                      <input
-                        value={cardExpiry}
-                        onChange={(e) => setCardExpiry(e.target.value)}
-                        className="mt-1 w-full rounded-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-900"
-                        placeholder="MM/YY"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-700">CVC</label>
-                      <input
-                        value={cardCvc}
-                        onChange={(e) => setCardCvc(e.target.value)}
-                        className="mt-1 w-full rounded-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-900"
-                        placeholder="CVC"
-                        inputMode="numeric"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-600">
-                    <span className="inline-block h-4 w-4 rounded-full bg-neutral-200" />
-                    Your payment information is encrypted and secure.
-                  </div>
-                </div>
-              )}
-
-              {payTab === "mobile" && (
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <label className="text-xs text-gray-700">Mobile Number</label>
-                    <input
-                      className="mt-1 w-full rounded-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-900"
-                      placeholder="e.g. +232 7x xxx xxx"
-                      inputMode="tel"
-                    />
-                  </div>
-                  <div className="text-xs text-gray-600">We’ll redirect you to your provider to approve the payment.</div>
-                </div>
-              )}
-
-              {payTab === "paypal" && (
-                <div className="mt-4 text-sm text-gray-700">You will be redirected to PayPal to complete your donation.</div>
-              )}
+              <div className="text-xs text-gray-600">
+                You&apos;ll choose your preferred payment method on the secure checkout page.
+              </div>
+              <div className="flex items-center gap-2 text-xs text-gray-600">
+                <span className="inline-block h-4 w-4 rounded-full bg-green-200" />
+                Secured by Monime - Your payment information is encrypted and secure
+              </div>
             </div>
           </div>
 
@@ -238,14 +228,40 @@ export default function DonateClient(props: DonateClientProps) {
             </div>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="rounded-md bg-red-50 border border-red-200 p-3">
+              <div className="flex items-center gap-2 text-sm text-red-800">
+                <span className="inline-block h-4 w-4 rounded-full bg-red-300" />
+                {error}
+              </div>
+            </div>
+          )}
+
           {/* CTA */}
           <div className="flex items-center justify-between gap-4">
-            <button type="button" className="inline-flex items-center rounded-md bg-gray-900 px-4 py-2 text-white hover:bg-gray-800">
-              {donateLabel}
+            <button 
+              type="button" 
+              onClick={handleDonateSubmit}
+              disabled={isSubmitting || !isFormValid}
+              className={`inline-flex items-center rounded-md px-4 py-2 text-white transition-colors ${
+                isSubmitting || !isFormValid
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-gray-900 hover:bg-gray-800"
+              }`}
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                  Processing...
+                </>
+              ) : (
+                donateLabel
+              )}
             </button>
             <div className="flex items-center gap-2 text-xs text-gray-600">
-              <span className="inline-block h-4 w-4 rounded-full bg-neutral-200" />
-              Secure donation processed by Ib4me
+              <span className="inline-block h-4 w-4 rounded-full bg-green-200" />
+              Secure donation processed by Monime
             </div>
           </div>
         </div>

@@ -48,6 +48,11 @@ export interface ICampaignWithdrawals {
   count: number;
 }
 
+export interface ICampaignFinancialAccount {
+  id: string;
+  uvan: string;
+}
+
 export interface ICampaignFlags {
   featured?: boolean;
   adminVerified?: boolean;
@@ -73,6 +78,7 @@ export interface ICampaign extends mongoose.Document {
   share?: { whatsAppPostId?: string | null };
   totals?: ICampaignTotals;
   withdrawals?: ICampaignWithdrawals;
+  financial_account?: ICampaignFinancialAccount;
   flags?: ICampaignFlags;
   archivedAt?: Date | null;
   createdAt: Date;
@@ -90,7 +96,6 @@ const campaignSchema = new mongoose.Schema<ICampaign>(
     slug: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
       lowercase: true,
     },
@@ -124,7 +129,6 @@ const campaignSchema = new mongoose.Schema<ICampaign>(
         type: String,
         enum: ["pending", "under_review", "approved", "rejected"],
         default: "pending",
-        index: true,
       },
       verifiedBy: {
         type: mongoose.Schema.Types.ObjectId,
@@ -172,6 +176,10 @@ const campaignSchema = new mongoose.Schema<ICampaign>(
     withdrawals: {
       totalPaidMinor: { type: Number, default: 0, min: 0 },
       count: { type: Number, default: 0, min: 0 },
+    },
+    financial_account: {
+      id: { type: String },
+      uvan: { type: String },
     },
     flags: {
       featured: { type: Boolean, default: false },
