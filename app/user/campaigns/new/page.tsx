@@ -3,6 +3,7 @@
 import React from "react";
 import Card from "../../_components/Card";
 import DocumentUpload, { SelectedFile } from "../../_components/DocumentUpload";
+import { toast } from "sonner";
 
 type Urgency = "low" | "medium" | "high";
 
@@ -54,6 +55,7 @@ export default function NewCampaignPage() {
   const [form, setForm] = React.useState<CampaignFormData>(defaultForm);
   const [stepIndex, setStepIndex] = React.useState<number>(0);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const step: StepKey = steps[stepIndex].key;
 
@@ -96,34 +98,46 @@ export default function NewCampaignPage() {
     update("title", value);
   }
 
-  function submit() {
+  async function submit() {
     if (!validate("review")) return;
-    const fd = new FormData();
-    fd.set("slug", generateSlug(form.title));
-    if (form.diagnosis) fd.set("diagnosis", form.diagnosis);
-    if (form.typeOfEmergency) fd.set("typeOfEmergency", form.typeOfEmergency);
-    fd.set("urgency", form.urgency);
-    fd.set("patient.name", form.patient.name);
-    if (form.patient.age !== "" && form.patient.age !== undefined) fd.set("patient.age", String(form.patient.age));
-    if (form.hospital.name) fd.set("hospital.name", form.hospital.name);
-    fd.set("goal.currency", form.goal.currency);
-    fd.set("goal.amountMinor", String(form.goal.amountMajor === "" ? 0 : Math.round(Number(form.goal.amountMajor) * 100)));
-    fd.set("story", form.story);
-    for (const f of form.documents) {
-      fd.append("documents", f.file);
-    }
-    fetch("/api/campaigns", {
-      method: "POST",
-      body: fd,
-    }).then(async (res) => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      const fd = new FormData();
+      fd.set("slug", generateSlug(form.title));
+      if (form.diagnosis) fd.set("diagnosis", form.diagnosis);
+      if (form.typeOfEmergency) fd.set("typeOfEmergency", form.typeOfEmergency);
+      fd.set("urgency", form.urgency);
+      fd.set("patient.name", form.patient.name);
+      if (form.patient.age !== "" && form.patient.age !== undefined) fd.set("patient.age", String(form.patient.age));
+      if (form.hospital.name) fd.set("hospital.name", form.hospital.name);
+      fd.set("goal.currency", form.goal.currency);
+      fd.set("goal.amountMinor", String(form.goal.amountMajor === "" ? 0 : Math.round(Number(form.goal.amountMajor) * 100)));
+      fd.set("story", form.story);
+      for (const f of form.documents) {
+        fd.append("documents", f.file);
+      }
+      
+      const res = await fetch("/api/campaigns", {
+        method: "POST",
+        body: fd,
+      });
+      
       if (res.ok) {
         const data = await res.json();
+        toast.success("Campaign created successfully!");
         window.location.href = `/user/campaigns/${data.id}`;
       } else {
         const err = await res.json().catch(() => ({}));
-        alert(err.error || "Failed to create campaign");
+        toast.error(err.error || "Failed to create campaign");
       }
-    }).catch(() => alert("Network error creating campaign"));
+    } catch (error) {
+      toast.error("Network error creating campaign");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -295,11 +309,13 @@ export default function NewCampaignPage() {
       
 
       <div className="flex items-center justify-between">
-        <button onClick={back} className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-50" disabled={stepIndex === 0}>Back</button>
+        <button onClick={back} className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-50" disabled={stepIndex === 0 || isSubmitting}>Back</button>
         {stepIndex < steps.length - 1 ? (
-          <button onClick={next} className="rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm shadow hover:bg-indigo-700">Continue</button>
+          <button onClick={next} className="rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm shadow hover:bg-indigo-700" disabled={isSubmitting}>Continue</button>
         ) : (
-          <button onClick={submit} className="rounded-xl bg-indigo-700 text-white px-4 py-2 text-sm shadow hover:bg-indigo-800">Create Campaign</button>
+          <button onClick={submit} className="rounded-xl bg-indigo-700 text-white px-4 py-2 text-sm shadow hover:bg-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Campaign"}
+          </button>
         )}
       </div>
     </div>

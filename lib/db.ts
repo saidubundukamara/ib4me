@@ -9,7 +9,7 @@ const g = global as any;
 const cached = g.mongoose || { conn: null, promise: null };
 
 // In-memory server holder for tests
-let memoryServer: { getUri: () => string; stop: () => Promise<void> } | null =
+let memoryServer: { getUri: () => string; stop: () => Promise<boolean> } | null =
   g.__memoryMongo || null;
 
 async function ensureMemoryServer(): Promise<string> {

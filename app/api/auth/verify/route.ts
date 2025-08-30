@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/db";
 import UserModel from "@/models/User";
 import bcrypt from "bcrypt";
 import { authCodeRepository } from "@/repositories/AuthCodeRepository";
+import type { IAuthCode } from "@/models/AuthCode";
 
 export async function POST(req: NextRequest) {
   const token = await getToken({ req });
@@ -20,7 +21,12 @@ export async function POST(req: NextRequest) {
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const purpose = type === "email" ? "verify_email" : "verify_phone";
-  const authCode = await authCodeRepository.findValid(user._id, purpose, type);
+  const channel: IAuthCode["channel"] = type === "phone" ? "sms" : "email";
+  const authCode = await authCodeRepository.findValid(
+    user._id,
+    purpose,
+    channel
+  );
   if (!authCode)
     return NextResponse.json(
       { error: "Invalid or expired code" },

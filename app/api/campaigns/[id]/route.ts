@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import { authConfig } from "@/app/api/auth/[...nextauth]/route";
 import { connectDB } from "@/lib/db";
-import CampaignModel from "@/models/Campaign";
+import CampaignModel, { type ICampaignDocument } from "@/models/Campaign";
 
 function ensureObjectId(id: string): mongoose.Types.ObjectId | null {
   return mongoose.Types.ObjectId.isValid(id)
@@ -26,7 +26,7 @@ export async function GET(
   }
   await connectDB();
   const ownerId = new mongoose.Types.ObjectId(session.user.id);
-  const doc = await CampaignModel.findOne({ _id: oid, ownerId }).lean();
+  const doc = await CampaignModel.findOne({ _id: oid, ownerId });
   if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({
     id: String(doc._id),
@@ -43,7 +43,7 @@ export async function GET(
     verification: doc.verification,
     financial_account: doc.financial_account,
     documents:
-      doc.documents?.map((d) => ({
+      doc.documents?.map((d: ICampaignDocument) => ({
         type: d.type,
         assetId: String(d.assetId),
       })) ?? [],
@@ -98,7 +98,7 @@ export async function PATCH(
     { _id: oid, ownerId },
     { $set: updatable },
     { new: true }
-  ).lean();
+  );
   if (!updated)
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ id: String(updated._id) }, { status: 200 });

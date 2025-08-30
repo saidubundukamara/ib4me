@@ -49,7 +49,11 @@ export class CampaignService {
           },
           session
         );
-        
+
+        if (!updatedCampaign) {
+          throw new Error("Failed to update campaign with financial account");
+        }
+
         return updatedCampaign;
       } catch (error) {
         // Financial account creation failed - transaction will be rolled back
