@@ -7,7 +7,7 @@ export interface MonimeConfig {
 }
 
 export interface MonimeLineItem {
-  type: 'custom';
+  type: "custom";
   name: string;
   price: {
     currency: string;
@@ -97,13 +97,61 @@ export interface MonimeFinancialAccountResponse {
   metadata?: Record<string, unknown>;
 }
 
+export interface MonimePayoutRequest {
+  destination: {
+    type: "momo" | "bank";
+    providerId?: string; // e.g., "m17"/"m18" for mobile money, "slb001" for banks
+    accountNumber?: string; // For bank transfers
+    phoneNumber?: string; // For mobile money
+    accountName?: string;
+  };
+  amount: {
+    value: number; // Amount in minor units
+    currency: string;
+  };
+  source: {
+    financialAccountId: string;
+  };
+  metadata?: Record<string, unknown>;
+}
+
+export interface MonimePayoutResponse {
+  id: string;
+  status: "pending" | "processing" | "completed" | "failed" | "cancelled";
+  amount: {
+    currency: string;
+    value: number;
+  };
+  source: {
+    financialAccountId: string;
+  };
+  destination: {
+    type: "momo" | "bank";
+    providerId?: string;
+    accountNumber?: string;
+    phoneNumber?: string;
+    accountName?: string;
+  };
+  reference?: string;
+  fees?: {
+    total: number;
+    breakdown: Record<string, number>;
+  };
+  failureReason?: string;
+  createdAt: string;
+  completedAt?: string;
+  metadata?: Record<string, unknown>;
+}
+
 export interface MonimeWebhookEvent {
   id: string;
   name:
     | "checkout_session.completed"
     | "checkout_session.failed"
     | "payment.completed"
-    | "payment.failed";
+    | "payment.failed"
+    | "payout.completed"
+    | "payout.failed";
   timestamp: string;
 }
 
@@ -138,7 +186,11 @@ export interface MonimeWebhookPayload {
   apiVersion?: string;
   event: MonimeWebhookEvent;
   object?: MonimeWebhookObject;
-  data?: MonimeWebhookCheckoutSessionData | MonimePayment | Record<string, unknown>;
+  data?:
+    | MonimeWebhookCheckoutSessionData
+    | MonimePayment
+    | MonimePayoutResponse
+    | Record<string, unknown>;
   timestamp?: string;
   signature?: string;
 }
@@ -186,9 +238,8 @@ export class MonimeService {
         "Monime base URL is not configured"
       );
     }
-    
+
     const url = `${this.config.baseUrl}${endpoint}`;
-    
     // Validate the constructed URL
     try {
       new URL(url);
@@ -254,7 +305,9 @@ export class MonimeService {
     request: MonimeCheckoutSessionRequest,
     idempotencyKey?: string
   ): Promise<MonimeCheckoutSessionResponse> {
-    const response = await this.makeRequest<MonimeApiResponse<MonimeCheckoutSessionResponse>>(
+    const response = await this.makeRequest<
+      MonimeApiResponse<MonimeCheckoutSessionResponse>
+    >(
       "/checkout-sessions",
       {
         method: "POST",
@@ -281,7 +334,9 @@ export class MonimeService {
     request: MonimeFinancialAccountRequest,
     idempotencyKey?: string
   ): Promise<MonimeFinancialAccountResponse> {
-    const response = await this.makeRequest<MonimeApiResponse<MonimeFinancialAccountResponse>>(
+    const response = await this.makeRequest<
+      MonimeApiResponse<MonimeFinancialAccountResponse>
+    >(
       "/financial-accounts",
       {
         method: "POST",
@@ -290,6 +345,28 @@ export class MonimeService {
       idempotencyKey
     );
     return response.result;
+  }
+
+  async createPayout(
+    request: MonimePayoutRequest,
+    idempotencyKey?: string
+  ): Promise<MonimePayoutResponse> {
+    const response = await this.makeRequest<
+      MonimeApiResponse<MonimePayoutResponse>
+    >(
+      "/payouts",
+      {
+        method: "POST",
+        body: JSON.stringify(request),
+      },
+      idempotencyKey
+    );
+    
+    return response.result;
+  }
+
+  async getPayout(payoutId: string): Promise<MonimePayoutResponse> {
+    return this.makeRequest<MonimePayoutResponse>(`/payouts/${payoutId}`);
   }
 
   // Note: Webhook signature verification removed - check Monime docs for actual webhook authentication

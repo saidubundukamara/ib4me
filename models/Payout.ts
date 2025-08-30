@@ -7,6 +7,13 @@ export interface IPayoutMethodMobileMoney {
   accountName?: string;
 }
 
+export interface IPayoutMethodBank {
+  type: "bank";
+  providerId?: string;
+  accountNumber?: string;
+  accountName?: string;
+}
+
 export interface IPayoutApproval {
   adminId: mongoose.Types.ObjectId;
   action: "approved" | "rejected" | "requested";
@@ -23,11 +30,13 @@ export interface IPayout extends mongoose.Document {
   campaignId: mongoose.Types.ObjectId;
   requestedBy: mongoose.Types.ObjectId;
   amountMinor: number;
-  method: IPayoutMethodMobileMoney;
-  status: "in_review" | "approved" | "rejected" | "paid";
+  method: IPayoutMethodMobileMoney | IPayoutMethodBank;
+  status: "processing" | "completed" | "failed" | "cancelled" | "in_review" | "approved" | "rejected" | "paid";
+  monimePayoutId?: string;
   approvals?: IPayoutApproval[];
   policyCheck?: IPayoutPolicyCheck;
   paymentProofUrl?: string | null;
+  failureReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -49,19 +58,22 @@ const payoutSchema = new mongoose.Schema<IPayout>(
     method: {
       type: {
         type: String,
-        enum: ["mobile_money"],
+        enum: ["mobile_money", "bank"],
         required: true,
       },
       provider: { type: String },
+      providerId: { type: String },
       msisdn: { type: String },
+      accountNumber: { type: String },
       accountName: { type: String },
     },
     status: {
       type: String,
-      enum: ["in_review", "approved", "rejected", "paid"],
-      default: "in_review",
+      enum: ["processing", "completed", "failed", "cancelled", "in_review", "approved", "rejected", "paid"],
+      default: "processing",
       index: true,
     },
+    monimePayoutId: { type: String, sparse: true },
     approvals: [
       {
         adminId: {
@@ -87,6 +99,7 @@ const payoutSchema = new mongoose.Schema<IPayout>(
       },
     },
     paymentProofUrl: { type: String, default: null },
+    failureReason: { type: String },
   },
   { timestamps: true }
 );
