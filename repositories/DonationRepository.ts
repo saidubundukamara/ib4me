@@ -19,6 +19,18 @@ export class DonationRepository extends BaseRepository<IDonation> {
     return this.findOne({ idempotencyKey: key } as never);
   }
 
+  async listByCampaignIds(
+    campaignIds: mongoose.Types.ObjectId[]
+  ): Promise<IDonation[]> {
+    if (campaignIds.length === 0) return [];
+    return this.findMany(
+      {
+        campaignId: { $in: campaignIds },
+      } as never,
+      { query: { sort: { createdAt: -1 } } }
+    );
+  }
+
   async listSucceededByCampaignIds(
     campaignIds: mongoose.Types.ObjectId[]
   ): Promise<IDonation[]> {

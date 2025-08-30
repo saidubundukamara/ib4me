@@ -8,6 +8,8 @@ import { campaignRepository } from "@/repositories/CampaignRepository";
 import Card from "../_components/Card";
 import ProgressBar from "../_components/ProgressBar";
 
+export const dynamic = "force-dynamic";
+
 function formatCurrency(minor: number, currency: string): string {
   const value = minor / 100;
   try {
@@ -29,37 +31,36 @@ export default async function UserDonationsPage() {
     ? new mongoose.Types.ObjectId(session.user.id)
     : null;
 
-  const donations = userId
-    ? await donationRepository.listSucceededByDonor(userId)
+
+  // Get campaigns owned by the user
+  const userCampaigns = userId
+    ? await campaignRepository.findMany({ ownerId: userId } as never)
+    : [];
+  
+  const campaignIds = userCampaigns.map(c => c._id as mongoose.Types.ObjectId);
+  
+  // Get succeeded donations for campaigns owned by the user
+  const succeededDonations = campaignIds.length > 0
+    ? await donationRepository.listSucceededByCampaignIds(campaignIds)
     : [];
 
-  // Collect campaign titles for display
-  const campaignIds = Array.from(
-    new Set(
-      donations
-        .map((d) => d.campaignId)
-        .filter((id): id is mongoose.Types.ObjectId => Boolean(id))
-    )
-  );
-
-  const campaigns = campaignIds.length
-    ? await campaignRepository.findMany({ _id: { $in: campaignIds } } as never)
-    : [];
-  const campaignIdToTitle = new Map<string, string>();
-  for (const c of campaigns) {
+  // Create campaign metadata map
+  const campaignIdToMeta = new Map<string, { title: string; slug?: string }>();
+  for (const c of userCampaigns) {
     const title = c.patient?.name || c.diagnosis || c.slug;
-    campaignIdToTitle.set(String(c._id), title);
+    campaignIdToMeta.set(String(c._id), { title, slug: c.slug });
   }
 
-  const primaryCurrency = donations[0]?.amount.currency ?? "USD";
-  const totalDonatedMinor = donations.reduce(
+  const primaryCurrency = succeededDonations[0]?.amount.currency ?? "USD";
+  const totalDonatedMinor = succeededDonations.reduce(
     (sum, d) => sum + (d.amount?.minor ?? 0),
     0
   );
-  const donationCount = donations.length;
+  const donationCount = succeededDonations.length;
   const averageDonationMinor = donationCount
     ? Math.round(totalDonatedMinor / donationCount)
     : 0;
+
 
   // Last 6 months trend
   const now = new Date();
@@ -73,7 +74,7 @@ export default async function UserDonationsPage() {
     const label = dt.toLocaleDateString(undefined, { month: "short" });
     months.push({ key, label, totalMinor: 0 });
   }
-  for (const d of donations) {
+  for (const d of succeededDonations) {
     const dt = new Date(d.createdAt);
     const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(
       2,
@@ -83,6 +84,7 @@ export default async function UserDonationsPage() {
     if (bucket) bucket.totalMinor += d.amount.minor;
   }
   const maxMinor = Math.max(1, ...months.map((m) => m.totalMinor));
+
 
   // Export CSV data URL
   const csvRows = [
@@ -95,11 +97,11 @@ export default async function UserDonationsPage() {
       "Donor Name",
       "Donor Email",
     ],
-    ...donations.map((d) => [
+    ...succeededDonations.map((d) => [
       new Date(d.createdAt).toISOString(),
       String(d.amount.minor / 100),
       d.amount.currency,
-      campaignIdToTitle.get(String(d.campaignId)) ?? String(d.campaignId),
+      campaignIdToMeta.get(String(d.campaignId))?.title ?? String(d.campaignId),
       d.status,
       d.donorSnapshot?.name ?? "",
       d.donorSnapshot?.email ?? "",
@@ -115,7 +117,7 @@ export default async function UserDonationsPage() {
       <div>
         <h2 className="text-2xl font-semibold">Donations</h2>
         <p className="text-sm text-gray-600 mt-1">
-          Track your donations, analytics, and download your records.
+          Track donations to your campaigns, analytics, and download your records.
         </p>
       </div>
 
@@ -123,7 +125,7 @@ export default async function UserDonationsPage() {
         <Card gradient className="p-5">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm/5 opacity-90">Total Donated</p>
+              <p className="text-sm/5 opacity-90">Total Raised</p>
               <p className="text-3xl font-semibold mt-1">
                 {formatCurrency(totalDonatedMinor, primaryCurrency)}
               </p>
@@ -165,15 +167,43 @@ export default async function UserDonationsPage() {
         </Card>
 
         <Card className="p-5">
-          <p className="text-sm text-gray-500">Campaigns Supported</p>
-          <p className="text-3xl font-semibold mt-2">{campaignIds.length}</p>
-          <div className="mt-4 grid grid-cols-6 gap-2">
-            {months.map((m) => (
-              <div
-                key={m.key}
-                className="h-8 rounded-lg bg-gray-100/70 dark:bg-white/10"
-              />
-            ))}
+          <p className="text-sm text-gray-500">Active Campaigns</p>
+          <p className="text-3xl font-semibold mt-2">{userCampaigns.length}</p>
+          <div className="mt-4 space-y-2">
+            {(() => {
+              const counts = new Map<string, number>();
+              for (const d of succeededDonations) {
+                const key = String(d.campaignId);
+                counts.set(key, (counts.get(key) ?? 0) + 1);
+              }
+              const top = Array.from(counts.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 6);
+              if (top.length === 0) {
+                return <div className="text-xs text-gray-500">No donations yet.</div>;
+              }
+              return top.map(([id, count]) => {
+                const meta = campaignIdToMeta.get(id);
+                const title = meta?.title ?? id;
+                const slug = meta?.slug;
+                return (
+                  <div key={id} className="flex items-center justify-between text-sm">
+                    <div className="truncate">
+                      {slug ? (
+                        <a href={`/campaigns/${slug}`} className="text-indigo-600 hover:underline">
+                          {title}
+                        </a>
+                      ) : (
+                        <span>{title}</span>
+                      )}
+                    </div>
+                    <span className="ml-3 inline-flex items-center rounded-full bg-gray-100 dark:bg-white/10 px-2 py-0.5 text-xs">
+                      {count} donation{count === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                );
+              });
+            })()}
           </div>
         </Card>
       </div>
@@ -186,13 +216,15 @@ export default async function UserDonationsPage() {
           </a>
         </div>
         <div className="mt-3 divide-y">
-          {donations.length === 0 && (
+          {succeededDonations.length === 0 && (
             <div className="py-3 text-sm text-gray-500">
-              You have not made any donations yet.
+              No successful donations to your campaigns yet.
             </div>
           )}
-          {donations.slice(0, 20).map((d) => {
-            const title = campaignIdToTitle.get(String(d.campaignId)) ?? "Unknown campaign";
+          {succeededDonations.slice(0, 20).map((d) => {
+            const meta = campaignIdToMeta.get(String(d.campaignId));
+            const title = meta?.title ?? "Unknown campaign";
+            const slug = meta?.slug;
             const statusColor =
               d.status === "succeeded"
                 ? "bg-emerald-500"
@@ -205,7 +237,13 @@ export default async function UserDonationsPage() {
                   <span className={`h-2.5 w-2.5 rounded-full ${statusColor}`} />
                   <div className="flex flex-col">
                     <span className="text-gray-800 dark:text-gray-100 font-medium">
-                      {title}
+                      {slug ? (
+                        <a href={`/campaigns/${slug}`} className="hover:underline text-indigo-600">
+                          {title}
+                        </a>
+                      ) : (
+                        title
+                      )}
                     </span>
                     <span className="text-gray-500">
                       {new Date(d.createdAt).toLocaleDateString(undefined, {
@@ -214,6 +252,19 @@ export default async function UserDonationsPage() {
                         year: "numeric",
                       })}
                     </span>
+                    <div className="mt-1 text-[11px] text-gray-500">
+                      <span className="uppercase">{d.status}</span>
+                      <span className="mx-1">·</span>
+                      <span>{d.provider?.name}</span>
+                      {d.receiptUrl ? (
+                        <>
+                          <span className="mx-1">·</span>
+                          <a href={d.receiptUrl} className="text-indigo-600 hover:underline" target="_blank" rel="noreferrer">
+                            Receipt
+                          </a>
+                        </>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
                 <div className="text-gray-700 dark:text-gray-200">
