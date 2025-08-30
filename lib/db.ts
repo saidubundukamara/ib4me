@@ -5,7 +5,7 @@ let MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI || "";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const g = global as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const cached = g.mongoose || { conn: null, promise: null };
 
 // In-memory server holder for tests

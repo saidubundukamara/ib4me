@@ -37,6 +37,8 @@ export interface IDonation extends mongoose.Document {
   receiptUrl?: string | null;
   notifiedAt?: Date | null;
   idempotencyKey?: string | null;
+  failureReason?: string | null;
+  completedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -88,6 +90,8 @@ const donationSchema = new mongoose.Schema<IDonation>(
     receiptUrl: { type: String, default: null },
     notifiedAt: { type: Date, default: null },
     idempotencyKey: { type: String, default: null, index: true },
+    failureReason: { type: String, default: null },
+    completedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

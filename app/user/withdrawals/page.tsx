@@ -22,7 +22,6 @@ function formatCurrency(minor: number, currency: string): string {
 }
 
 export default async function UserWithdrawalsPage() {
-  "use server";
   await connectDB();
   const session: Session | null = await getServerSession(authConfig);
   const userId = session?.user?.id
