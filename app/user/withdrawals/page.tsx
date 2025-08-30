@@ -59,12 +59,13 @@ export default async function UserWithdrawalsPage() {
 
     const campaignIdStr = String(formData.get("campaignId") || "");
     const amountStr = String(formData.get("amount") || "0");
-    const provider = String(formData.get("provider") || "");
     const msisdn = String(formData.get("msisdn") || "");
-    const accountName = String(formData.get("accountName") || "");
 
     if (!campaignIdStr) throw new Error("Campaign is required");
-    const campaign = campaigns.find((c) => String(c._id) === campaignIdStr);
+    
+    // Fetch the campaign data within the server action to avoid closure issues
+    const userCampaigns = await campaignService.listByOwner(userIdInner);
+    const campaign = userCampaigns.find((c) => String(c._id) === campaignIdStr);
     if (!campaign) throw new Error("Invalid campaign selected");
     const raised = campaign.totals?.raisedMinor ?? 0;
     const paid = campaign.withdrawals?.totalPaidMinor ?? 0;
@@ -75,6 +76,8 @@ export default async function UserWithdrawalsPage() {
       throw new Error("Invalid amount");
     if (amountMinor > availableMinor)
       throw new Error("Amount exceeds available balance");
+    if (!msisdn || !/^\d{7,15}$/.test(msisdn))
+      throw new Error("Enter a valid mobile number");
 
     await payoutService.requestPayout({
       campaignId: new mongoose.Types.ObjectId(campaignIdStr),
@@ -82,9 +85,7 @@ export default async function UserWithdrawalsPage() {
       amountMinor,
       method: {
         type: "mobile_money",
-        provider,
         msisdn,
-        accountName,
       },
     });
 
@@ -101,7 +102,7 @@ export default async function UserWithdrawalsPage() {
       <form action={requestPayout} className="space-y-4 rounded-2xl border p-4 bg-white/80 dark:bg-white/5">
         <div>
           <label className="text-sm">Select Campaign</label>
-          <select name="campaignId" className="mt-1 w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5">
+          <select name="campaignId" required className="mt-1 w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5">
             {campaignOptions.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.title} • Available {formatCurrency(c.availableMinor, c.currency)}
@@ -112,21 +113,11 @@ export default async function UserWithdrawalsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="text-sm">Amount</label>
-            <input name="amount" type="number" step="0.01" min="0" className="mt-1 w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5" placeholder="200"/>
+            <input name="amount" required type="number" step="0.01" min="0.01" className="mt-1 w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5" placeholder="200"/>
           </div>
-          <div>
-            <label className="text-sm">Provider</label>
-            <input name="provider" type="text" className="mt-1 w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5" placeholder="MTN / Orange"/>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="text-sm">Mobile Number</label>
-            <input name="msisdn" type="tel" className="mt-1 w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5" placeholder="2567..."/>
-          </div>
-          <div>
-            <label className="text-sm">Account Name</label>
-            <input name="accountName" type="text" className="mt-1 w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5" placeholder="Full name"/>
+            <input name="msisdn" required type="tel" inputMode="tel" pattern="^\d{7,15}$" className="mt-1 w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5" placeholder="Enter digits only"/>
           </div>
         </div>
         <button className="rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm shadow hover:bg-indigo-700 transition">Request Payout</button>

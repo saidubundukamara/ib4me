@@ -10,6 +10,7 @@ import Card from "../../_components/../_components/Card";
 import ProgressBar from "../../_components/../_components/ProgressBar";
 import DocumentUpload, { SelectedFile } from "../../_components/../_components/DocumentUpload";
 import { toast } from "sonner";
+import { generateCampaignImage, downloadImage, CampaignImageData } from "../../../../utils/imageGenerator";
 
 export default function UserCampaignDetailPage({ params }: PageParams) {
   const [documents, setDocuments] = React.useState<SelectedFile[]>([]);
@@ -29,6 +30,7 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
     status: string;
     totals?: { raisedMinor?: number; donationCount?: number };
     verification?: { status: "pending" | "under_review" | "approved" | "rejected"; hospitalVerified?: boolean };
+    financial_account?: { uvan?: string };
   }>(null);
   const [loading, setLoading] = React.useState<boolean>(true);
 
@@ -46,6 +48,8 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
       }
     }).catch(() => undefined);
   }, [id]);
+
+  
 
   async function postUpdate() {
     const content = newUpdate.trim();
@@ -91,13 +95,64 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
     }
   }
 
-  function handlePreview() {
+  async function handlePreview() {
+    console.log("Generating shareable image for campaign page ege:", campaign);
     if (!campaign?.slug) {
       toast.error("Campaign not loaded yet");
       return;
     }
-    const url = `/campaigns/${campaign.slug}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+
+    // Check if we're in the browser environment
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      toast.error("Image generation not supported in this environment");
+      return;
+    }
+
+    // Check for Canvas support
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      toast.error("Canvas not supported in this browser");
+      // Fallback to original behavior
+      const url = `/campaigns/${campaign.slug}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    console.log("Generating shareable image for campaign page ege:", campaign);
+    
+    try {
+      const loadingToast = toast.loading("Generating shareable image...");
+      
+      const campaignData: CampaignImageData = {
+        slug: campaign.slug,
+        patient: campaign.patient,
+        hospital: campaign.hospital,
+        diagnosis: campaign.diagnosis,
+        goal: campaign.goal,
+        totals: campaign.totals,
+        story: campaign.story,
+        urgency: campaign.urgency,
+        financial_account: campaign.financial_account
+      };
+      
+      const baseUrl = window.location.origin;
+      const imageBlob = await generateCampaignImage(campaignData, baseUrl);
+      const filename = `${campaign.slug}-share.png`;
+      
+      downloadImage(imageBlob, filename);
+      toast.dismiss(loadingToast);
+      toast.success("Shareable image downloaded!");
+    } catch (error) {
+      toast.dismiss();
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      toast.error(`Failed to generate image: ${errorMessage}`);
+      console.error("Image generation error:", error);
+      
+      // Fallback to original behavior
+      const url = `/campaigns/${campaign.slug}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
   }
 
   async function handleEditStory() {
@@ -301,7 +356,7 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
             <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
               <button onClick={handleShare} className="rounded-lg border px-3 py-2 hover:bg-indigo-50 dark:hover:bg-white/10">Share</button>
               <button onClick={handleEditStory} className="rounded-lg border px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/10">Edit</button>
-              <button onClick={handlePreview} className="rounded-lg border px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/10">Preview</button>
+              <button onClick={handlePreview} className="rounded-lg border px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/10">Download Share Image</button>
               <button onClick={handleSettings} className="rounded-lg border px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/10">Settings</button>
             </div>
           </Card>
