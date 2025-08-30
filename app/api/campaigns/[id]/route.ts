@@ -41,6 +41,7 @@ export async function GET(
     status: doc.status,
     totals: doc.totals,
     verification: doc.verification,
+    financial_account: doc.financial_account,
     documents:
       doc.documents?.map((d) => ({
         type: d.type,
