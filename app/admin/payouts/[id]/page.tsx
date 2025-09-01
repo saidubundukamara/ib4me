@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -105,6 +106,7 @@ const formatCurrency = (amountMinor: number, currency: string = "SLE") => {
 export default function PayoutDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { data: session, status } = useSession();
   const payoutId = params.id as string;
 
   const [payout, setPayout] = useState<Payout | null>(null);
@@ -158,15 +160,13 @@ export default function PayoutDetailPage() {
   }, [payoutId]);
 
   const handleAction = async (action: "approve" | "reject" | "override") => {
-    if (!payout) return;
+    if (!payout || !session?.user?.id) return;
 
     try {
       setActionLoading(action);
 
       let endpoint = "";
-      const body: Record<string, unknown> = {
-        adminId: "admin-user-id", // TODO: Get from session
-      };
+      const body: Record<string, unknown> = {};
 
       switch (action) {
         case "approve":
@@ -229,10 +229,25 @@ export default function PayoutDetailPage() {
     );
   };
 
-  if (loading) {
+  // Show loading state while checking authentication
+  if (status === "loading" || loading) {
     return (
       <div className="container mx-auto p-6">
         <div className="text-center py-8">Loading payout details...</div>
+      </div>
+    );
+  }
+
+  // Redirect if not authenticated or not admin
+  if (!session || !session.user || !["Admin", "SuperAdmin"].some(role => session.user.roles?.includes(role))) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="text-center py-8 text-red-600">
+          <p>Access denied. Admin authentication required.</p>
+          <Button onClick={() => router.push("/admin/login")} className="mt-4">
+            Go to Login
+          </Button>
+        </div>
       </div>
     );
   }

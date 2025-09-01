@@ -3,6 +3,8 @@ import { campaignRepository } from "../repositories";
 import { ICampaign } from "../models/Campaign";
 import { monimeService, MonimeFinancialAccountRequest } from "../lib/monime";
 import { runInTransaction } from "./ServiceTransaction";
+import { auditLogService } from "./AuditLogService";
+import type { AuditContext } from "../lib/admin-auth";
 
 interface CampaignFilters {
   status?: ICampaign["status"] | "all";
@@ -114,23 +116,49 @@ export class CampaignService {
     campaignId: string, 
     status: ICampaign["status"],
     adminId: mongoose.Types.ObjectId,
-    _reason?: string
+    reason?: string,
+    auditContext?: AuditContext
   ): Promise<ICampaign | null> {
     return runInTransaction(async (session) => {
+      // Get original campaign for audit diff
+      const originalCampaign = await campaignRepository.findById(campaignId);
+      if (!originalCampaign) {
+        throw new Error("Campaign not found");
+      }
+
+      const previousStatus = originalCampaign.status;
+      
       const updatedCampaign = await campaignRepository.updateById(
         campaignId,
         { $set: { status, updatedAt: new Date() } } as never,
         session
       );
 
-      // TODO: Log audit trail
-      // await auditLogService.logAdminAction({
-      //   adminId,
-      //   action: "campaign_status_update",
-      //   resourceType: "campaign",
-      //   resourceId: campaignId,
-      //   details: { newStatus: status, reason }
-      // });
+      if (!updatedCampaign) {
+        throw new Error("Failed to update campaign status");
+      }
+
+      // Log audit trail
+      await auditLogService.record({
+        actor: {
+          userId: adminId,
+          role: "admin"
+        },
+        action: "campaign.status_updated",
+        target: {
+          type: "campaign",
+          id: new mongoose.Types.ObjectId(campaignId)
+        },
+        diff: {
+          previousStatus,
+          newStatus: status,
+          reason,
+          campaignId,
+          campaignSlug: originalCampaign.slug
+        },
+        ip: auditContext?.ip,
+        userAgent: auditContext?.userAgent
+      });
 
       return updatedCampaign;
     });
@@ -140,9 +168,18 @@ export class CampaignService {
     campaignId: string,
     verificationStatus: ICampaign["verification"]["status"],
     adminId: mongoose.Types.ObjectId,
-    _reason?: string
+    reason?: string,
+    auditContext?: AuditContext
   ): Promise<ICampaign | null> {
     return runInTransaction(async (session) => {
+      // Get original campaign for audit diff
+      const originalCampaign = await campaignRepository.findById(campaignId);
+      if (!originalCampaign) {
+        throw new Error("Campaign not found");
+      }
+
+      const previousVerificationStatus = originalCampaign.verification?.status;
+
       const updateData: Record<string, unknown> = {
         "verification.status": verificationStatus,
         "verification.verifiedAt": new Date(),
@@ -156,14 +193,33 @@ export class CampaignService {
         session
       );
 
-      // TODO: Log audit trail
-      // await auditLogService.logAdminAction({
-      //   adminId,
-      //   action: "campaign_verification_update", 
-      //   resourceType: "campaign",
-      //   resourceId: campaignId,
-      //   details: { newVerificationStatus: verificationStatus, reason }
-      // });
+      if (!updatedCampaign) {
+        throw new Error("Failed to update campaign verification status");
+      }
+
+      // Log audit trail
+      await auditLogService.record({
+        actor: {
+          userId: adminId,
+          role: "admin"
+        },
+        action: "campaign.verification_updated",
+        target: {
+          type: "campaign",
+          id: new mongoose.Types.ObjectId(campaignId)
+        },
+        diff: {
+          previousVerificationStatus,
+          newVerificationStatus: verificationStatus,
+          reason,
+          campaignId,
+          campaignSlug: originalCampaign.slug,
+          verifiedBy: adminId.toString(),
+          verifiedAt: new Date().toISOString()
+        },
+        ip: auditContext?.ip,
+        userAgent: auditContext?.userAgent
+      });
 
       return updatedCampaign;
     });

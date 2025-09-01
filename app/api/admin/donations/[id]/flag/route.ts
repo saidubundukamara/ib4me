@@ -2,14 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { donationService } from "@/services";
 import mongoose from "mongoose";
 import { z } from "zod";
+import { getServerSession } from "next-auth";
+import { authConfig } from "@/app/api/auth/[...nextauth]/route";
+import { createSimpleAuditLog } from "@/lib/simple-admin-audit";
 
 const flagDonationSchema = z.object({
   reason: z.string().min(1, "Flag reason is required"),
-  flaggedBy: z.string().min(1, "Admin ID is required"),
 });
 
 const unflagDonationSchema = z.object({
-  unflaggedBy: z.string().min(1, "Admin ID is required"),
+  // No additional fields needed - admin context comes from session
 });
 
 export async function POST(
@@ -26,25 +28,60 @@ export async function POST(
       );
     }
 
-    const body = await request.json();
-    const { reason, flaggedBy } = flagDonationSchema.parse(body);
-
-    if (!mongoose.Types.ObjectId.isValid(flaggedBy)) {
+    // Check authentication using existing pattern
+    const session = await getServerSession(authConfig);
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { error: "Invalid admin ID" },
-        { status: 400 }
+        { error: "Not authenticated" },
+        { status: 401 }
       );
     }
+
+    const userRoles = session.user.roles || [];
+    const hasAdminRole = userRoles.some(role => ["Admin", "SuperAdmin"].includes(role));
+    if (!hasAdminRole) {
+      return NextResponse.json(
+        { error: "Forbidden - Admin access required" },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const { reason } = flagDonationSchema.parse(body);
+
+    const adminId = new mongoose.Types.ObjectId(session.user.id);
+    const auditContext = {
+      ip: request.ip || request.headers.get("x-forwarded-for") || "unknown",
+      userAgent: request.headers.get("user-agent") || "unknown"
+    };
 
     const donation = await donationService.flagForReview(
       id, 
       reason, 
-      new mongoose.Types.ObjectId(flaggedBy)
+      adminId,
+      auditContext
+    );
+
+    // Create audit log
+    await createSimpleAuditLog(
+      "donation.flagged_for_review",
+      "donation",
+      id,
+      {
+        adminId: adminId.toString(),
+        adminEmail: session.user.email,
+        donationId: id,
+        flagReason: reason,
+        amount: donation.amount?.minor,
+        currency: donation.amount?.currency
+      },
+      request
     );
 
     return NextResponse.json({
       success: true,
       data: donation,
+      message: "Donation flagged for review successfully"
     });
   } catch (error) {
     console.error("Error flagging donation:", error);
@@ -57,10 +94,7 @@ export async function POST(
     }
 
     return NextResponse.json(
-      { 
-        error: "Failed to flag donation",
-        message: error instanceof Error ? error.message : "Unknown error"
-      },
+      { error: "Failed to flag donation" },
       { status: 500 }
     );
   }
@@ -80,24 +114,59 @@ export async function DELETE(
       );
     }
 
-    const body = await request.json();
-    const { unflaggedBy } = unflagDonationSchema.parse(body);
-
-    if (!mongoose.Types.ObjectId.isValid(unflaggedBy)) {
+    // Check authentication using existing pattern
+    const session = await getServerSession(authConfig);
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { error: "Invalid admin ID" },
-        { status: 400 }
+        { error: "Not authenticated" },
+        { status: 401 }
       );
     }
 
+    const userRoles = session.user.roles || [];
+    const hasAdminRole = userRoles.some(role => ["Admin", "SuperAdmin"].includes(role));
+    if (!hasAdminRole) {
+      return NextResponse.json(
+        { error: "Forbidden - Admin access required" },
+        { status: 403 }
+      );
+    }
+
+    // Parse body but don't require any fields
+    await request.json();
+    unflagDonationSchema.parse({});
+
+    const adminId = new mongoose.Types.ObjectId(session.user.id);
+    const auditContext = {
+      ip: request.ip || request.headers.get("x-forwarded-for") || "unknown",
+      userAgent: request.headers.get("user-agent") || "unknown"
+    };
+
     const donation = await donationService.unflagDonation(
       id, 
-      new mongoose.Types.ObjectId(unflaggedBy)
+      adminId,
+      auditContext
+    );
+
+    // Create audit log
+    await createSimpleAuditLog(
+      "donation.unflagged",
+      "donation",
+      id,
+      {
+        adminId: adminId.toString(),
+        adminEmail: session.user.email,
+        donationId: id,
+        amount: donation.amount?.minor,
+        currency: donation.amount?.currency
+      },
+      request
     );
 
     return NextResponse.json({
       success: true,
       data: donation,
+      message: "Donation unflagged successfully"
     });
   } catch (error) {
     console.error("Error unflagging donation:", error);
@@ -110,10 +179,7 @@ export async function DELETE(
     }
 
     return NextResponse.json(
-      { 
-        error: "Failed to unflag donation",
-        message: error instanceof Error ? error.message : "Unknown error"
-      },
+      { error: "Failed to unflag donation" },
       { status: 500 }
     );
   }

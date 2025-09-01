@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { campaignService } from "@/services/CampaignService";
 import { connectDB } from "@/lib/db";
 import mongoose from "mongoose";
+import { getServerSession } from "next-auth";
+import { authConfig } from "@/app/api/auth/[...nextauth]/route";
+import { createSimpleAuditLog } from "@/lib/simple-admin-audit";
 
-type RouteParams = {
-  params: { id: string };
-};
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     await connectDB();
 
@@ -36,7 +38,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     await connectDB();
 
@@ -46,6 +51,24 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Invalid campaign ID" }, { status: 400 });
     }
 
+    // Check authentication using existing pattern
+    const session = await getServerSession(authConfig);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    const userRoles = session.user.roles || [];
+    const hasAdminRole = userRoles.some(role => ["Admin", "SuperAdmin"].includes(role));
+    if (!hasAdminRole) {
+      return NextResponse.json(
+        { error: "Forbidden - Admin access required" },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { action, status, verificationStatus, reason } = body;
 
@@ -53,20 +76,68 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
 
+    const adminId = new mongoose.Types.ObjectId(session.user.id);
+    const auditContext = {
+      ip: request.ip || request.headers.get("x-forwarded-for") || "unknown",
+      userAgent: request.headers.get("user-agent") || "unknown"
+    };
+
     let updatedCampaign;
-    // TODO: Get actual admin ID from authentication system
-    const adminId = new mongoose.Types.ObjectId("60a5f4e5d4f7e8c3a4b3c2d1");
 
     if (action === "update_status" && status) {
       if (!["draft", "active", "paused", "completed", "archived"].includes(status)) {
         return NextResponse.json({ error: "Invalid status" }, { status: 400 });
       }
-      updatedCampaign = await campaignService.updateCampaignStatus(id, status, adminId, reason);
+      updatedCampaign = await campaignService.updateCampaignStatus(
+        id, 
+        status, 
+        adminId, 
+        reason,
+        auditContext
+      );
+      
+      // Create audit log
+      await createSimpleAuditLog(
+        "campaign.status_updated",
+        "campaign",
+        id,
+        {
+          adminId: adminId.toString(),
+          adminEmail: session.user.email,
+          campaignId: id,
+          previousStatus: updatedCampaign.previousStatus || "unknown",
+          newStatus: status,
+          reason
+        },
+        request
+      );
     } else if (action === "update_verification" && verificationStatus) {
       if (!["pending", "under_review", "approved", "rejected"].includes(verificationStatus)) {
         return NextResponse.json({ error: "Invalid verification status" }, { status: 400 });
       }
-      updatedCampaign = await campaignService.updateVerificationStatus(id, verificationStatus, adminId, reason);
+      updatedCampaign = await campaignService.updateVerificationStatus(
+        id, 
+        verificationStatus, 
+        adminId, 
+        reason,
+        auditContext
+      );
+      
+      // Create audit log
+      await createSimpleAuditLog(
+        "campaign.verification_updated",
+        "campaign",
+        id,
+        {
+          adminId: adminId.toString(),
+          adminEmail: session.user.email,
+          campaignId: id,
+          previousVerificationStatus: updatedCampaign.previousVerificationStatus || "unknown",
+          newVerificationStatus: verificationStatus,
+          reason
+        },
+        request
+      );
     } else {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
@@ -81,8 +152,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     console.error("Error updating campaign:", error);
+    
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to update campaign" },
       { status: 500 }
     );
   }

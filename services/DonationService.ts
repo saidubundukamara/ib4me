@@ -7,6 +7,8 @@ import {
 import { IDonation } from "../models/Donation";
 import { runInTransaction, ServiceSession } from "./ServiceTransaction";
 import type { DonationFilters, DonationListOptions } from "../repositories/DonationRepository";
+import { auditLogService } from "./AuditLogService";
+import type { AuditContext } from "../lib/admin-auth";
 
 export interface CreateDonationInput {
   campaignId: mongoose.Types.ObjectId;
@@ -296,7 +298,8 @@ export class DonationService {
   async flagForReview(
     donationId: string, 
     reason: string,
-    flaggedBy: mongoose.Types.ObjectId
+    flaggedBy: mongoose.Types.ObjectId,
+    auditContext?: AuditContext
   ): Promise<IDonation> {
     const donation = await donationRepository.findById(donationId);
     if (!donation) {
@@ -320,12 +323,37 @@ export class DonationService {
       throw new Error("Failed to flag donation for review");
     }
 
+    // Log audit trail
+    await auditLogService.record({
+      actor: {
+        userId: flaggedBy,
+        role: "admin"
+      },
+      action: "donation.flagged_for_review",
+      target: {
+        type: "donation",
+        id: new mongoose.Types.ObjectId(donationId)
+      },
+      diff: {
+        previouslyFlagged: donation.isFlagged || false,
+        flagReason: reason,
+        donationId,
+        campaignId: donation.campaignId?.toString(),
+        donorId: donation.donorId?.toString(),
+        amount: donation.amount?.minor,
+        currency: donation.amount?.currency
+      },
+      ip: auditContext?.ip,
+      userAgent: auditContext?.userAgent
+    });
+
     return updated;
   }
 
   async unflagDonation(
     donationId: string,
-    unflaggedBy: mongoose.Types.ObjectId
+    unflaggedBy: mongoose.Types.ObjectId,
+    auditContext?: AuditContext
   ): Promise<IDonation> {
     const donation = await donationRepository.findById(donationId);
     if (!donation) {
@@ -353,6 +381,31 @@ export class DonationService {
       throw new Error("Failed to unflag donation");
     }
 
+    // Log audit trail
+    await auditLogService.record({
+      actor: {
+        userId: unflaggedBy,
+        role: "admin"
+      },
+      action: "donation.unflagged",
+      target: {
+        type: "donation",
+        id: new mongoose.Types.ObjectId(donationId)
+      },
+      diff: {
+        previouslyFlagged: donation.isFlagged || false,
+        previousFlagReason: donation.flagReason,
+        previousFlaggedBy: donation.flaggedBy?.toString(),
+        donationId,
+        campaignId: donation.campaignId?.toString(),
+        donorId: donation.donorId?.toString(),
+        amount: donation.amount?.minor,
+        currency: donation.amount?.currency
+      },
+      ip: auditContext?.ip,
+      userAgent: auditContext?.userAgent
+    });
+
     return updated;
   }
 
@@ -360,6 +413,7 @@ export class DonationService {
     donationId: string,
     refundReason: string,
     refundedBy: mongoose.Types.ObjectId,
+    auditContext?: AuditContext,
     session?: ServiceSession
   ): Promise<IDonation> {
     return runInTransaction<IDonation>(async (txn) => {
@@ -371,6 +425,8 @@ export class DonationService {
       if (donation.status !== "succeeded") {
         throw new Error("Can only refund successful donations");
       }
+
+      const previousStatus = donation.status;
 
       // TODO: Implement actual refund via payment provider
       // For now, just mark as refunded in database
@@ -404,6 +460,33 @@ export class DonationService {
         { $inc: decUpdate as never } as never,
         txn
       );
+
+      // Log audit trail
+      await auditLogService.record({
+        actor: {
+          userId: refundedBy,
+          role: "admin"
+        },
+        action: "donation.refunded",
+        target: {
+          type: "donation",
+          id: new mongoose.Types.ObjectId(donationId)
+        },
+        diff: {
+          previousStatus,
+          newStatus: "refunded",
+          refundReason,
+          donationId,
+          campaignId: donation.campaignId?.toString(),
+          donorId: donation.donorId?.toString(),
+          refundAmount: donation.amount?.minor,
+          currency: donation.amount?.currency,
+          originalDonationDate: donation.createdAt?.toISOString(),
+          refundedAt: new Date().toISOString()
+        },
+        ip: auditContext?.ip,
+        userAgent: auditContext?.userAgent
+      });
 
       // Create reverse ledger entry
       await ledgerEntryRepository.create(
