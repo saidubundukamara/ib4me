@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { donationService } from "@/services";
 import mongoose from "mongoose";
 import { z } from "zod";
-import { getServerSession } from "next-auth";
-import { authConfig } from "@/app/api/auth/[...nextauth]/route";
-import { createSimpleAuditLog } from "@/lib/simple-admin-audit";
+import { getAdminFromToken, createAdminAuditContext, createAdminAuditLog } from "@/lib/admin-auth-token";
 
 const flagDonationSchema = z.object({
   reason: z.string().min(1, "Flag reason is required"),
@@ -28,54 +26,43 @@ export async function POST(
       );
     }
 
-    // Check authentication using existing pattern
-    const session = await getServerSession(authConfig);
-    if (!session?.user?.id) {
+    // Get admin user from token
+    const adminUser = await getAdminFromToken();
+    if (!adminUser) {
       return NextResponse.json(
-        { error: "Not authenticated" },
+        { error: "Unauthorized - Admin authentication required" },
         { status: 401 }
-      );
-    }
-
-    const userRoles = session.user.roles || [];
-    const hasAdminRole = userRoles.some(role => ["Admin", "SuperAdmin"].includes(role));
-    if (!hasAdminRole) {
-      return NextResponse.json(
-        { error: "Forbidden - Admin access required" },
-        { status: 403 }
       );
     }
 
     const body = await request.json();
     const { reason } = flagDonationSchema.parse(body);
 
-    const adminId = new mongoose.Types.ObjectId(session.user.id);
-    const auditContext = {
-      ip: request.ip || request.headers.get("x-forwarded-for") || "unknown",
-      userAgent: request.headers.get("user-agent") || "unknown"
+    const auditContext = createAdminAuditContext(adminUser, request);
+    const serviceAuditContext = {
+      ip: auditContext.ip,
+      userAgent: auditContext.userAgent
     };
 
     const donation = await donationService.flagForReview(
       id, 
       reason, 
-      adminId,
-      auditContext
+      adminUser._id,
+      serviceAuditContext
     );
 
     // Create audit log
-    await createSimpleAuditLog(
+    await createAdminAuditLog(
       "donation.flagged_for_review",
       "donation",
       id,
       {
-        adminId: adminId.toString(),
-        adminEmail: session.user.email,
         donationId: id,
         flagReason: reason,
         amount: donation.amount?.minor,
         currency: donation.amount?.currency
       },
-      request
+      auditContext
     );
 
     return NextResponse.json({
@@ -114,21 +101,12 @@ export async function DELETE(
       );
     }
 
-    // Check authentication using existing pattern
-    const session = await getServerSession(authConfig);
-    if (!session?.user?.id) {
+    // Get admin user from token
+    const adminUser = await getAdminFromToken();
+    if (!adminUser) {
       return NextResponse.json(
-        { error: "Not authenticated" },
+        { error: "Unauthorized - Admin authentication required" },
         { status: 401 }
-      );
-    }
-
-    const userRoles = session.user.roles || [];
-    const hasAdminRole = userRoles.some(role => ["Admin", "SuperAdmin"].includes(role));
-    if (!hasAdminRole) {
-      return NextResponse.json(
-        { error: "Forbidden - Admin access required" },
-        { status: 403 }
       );
     }
 
@@ -136,31 +114,29 @@ export async function DELETE(
     await request.json();
     unflagDonationSchema.parse({});
 
-    const adminId = new mongoose.Types.ObjectId(session.user.id);
-    const auditContext = {
-      ip: request.ip || request.headers.get("x-forwarded-for") || "unknown",
-      userAgent: request.headers.get("user-agent") || "unknown"
+    const auditContext = createAdminAuditContext(adminUser, request);
+    const serviceAuditContext = {
+      ip: auditContext.ip,
+      userAgent: auditContext.userAgent
     };
 
     const donation = await donationService.unflagDonation(
       id, 
-      adminId,
-      auditContext
+      adminUser._id,
+      serviceAuditContext
     );
 
     // Create audit log
-    await createSimpleAuditLog(
+    await createAdminAuditLog(
       "donation.unflagged",
       "donation",
       id,
       {
-        adminId: adminId.toString(),
-        adminEmail: session.user.email,
         donationId: id,
         amount: donation.amount?.minor,
         currency: donation.amount?.currency
       },
-      request
+      auditContext
     );
 
     return NextResponse.json({

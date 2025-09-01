@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { payoutService } from "@/services";
 import mongoose from "mongoose";
 import { z } from "zod";
-import { getServerSession } from "next-auth";
-import { authConfig } from "@/app/api/auth/[...nextauth]/route";
-import { createSimpleAuditLog } from "@/lib/simple-admin-audit";
+import { getAdminFromToken, createAdminAuditContext, createAdminAuditLog } from "@/lib/admin-auth-token";
 
 const rejectPayoutSchema = z.object({
   reason: z.string().min(1, "Rejection reason is required"),
@@ -24,50 +22,39 @@ export async function POST(
       );
     }
 
-    // Check authentication using existing pattern
-    const session = await getServerSession(authConfig);
-    if (!session?.user?.id) {
+    // Get admin user from token
+    const adminUser = await getAdminFromToken();
+    if (!adminUser) {
       return NextResponse.json(
-        { error: "Not authenticated" },
+        { error: "Unauthorized - Admin authentication required" },
         { status: 401 }
-      );
-    }
-
-    const userRoles = session.user.roles || [];
-    const hasAdminRole = userRoles.some(role => ["Admin", "SuperAdmin"].includes(role));
-    if (!hasAdminRole) {
-      return NextResponse.json(
-        { error: "Forbidden - Admin access required" },
-        { status: 403 }
       );
     }
 
     const body = await request.json();
     const { reason } = rejectPayoutSchema.parse(body);
 
-    const adminId = new mongoose.Types.ObjectId(session.user.id);
+    const auditContext = createAdminAuditContext(adminUser, request);
     
     const payout = await payoutService.rejectPayout(
       id,
-      adminId,
+      adminUser._id,
       reason
     );
 
     // Create audit log
-    await createSimpleAuditLog(
+    await createAdminAuditLog(
       "payout.rejected",
       "payout",
       id,
       {
-        adminId: adminId.toString(),
-        adminEmail: session.user.email,
         reason,
         payoutId: id,
         amount: payout.amountMinor,
         previousStatus: "in_review",
         newStatus: "rejected"
       },
-      request
+      auditContext
     );
 
     return NextResponse.json({

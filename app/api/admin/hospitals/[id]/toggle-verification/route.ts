@@ -3,11 +3,10 @@ import { hospitalService } from "@/services/HospitalService";
 import { connectDB } from "@/lib/db";
 import mongoose from "mongoose";
 
-type RouteParams = {
-  params: { id: string };
-};
-
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     await connectDB();
 

@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { campaignService } from "@/services/CampaignService";
 import { connectDB } from "@/lib/db";
 import mongoose from "mongoose";
-import { getServerSession } from "next-auth";
-import { authConfig } from "@/app/api/auth/[...nextauth]/route";
-import { createSimpleAuditLog } from "@/lib/simple-admin-audit";
+import { getAdminFromToken, createAdminAuditContext, createAdminAuditLog } from "@/lib/admin-auth-token";
 
 export async function GET(
   request: NextRequest, 
@@ -51,21 +49,12 @@ export async function PUT(
       return NextResponse.json({ error: "Invalid campaign ID" }, { status: 400 });
     }
 
-    // Check authentication using existing pattern
-    const session = await getServerSession(authConfig);
-    if (!session?.user?.id) {
+    // Get admin user from token
+    const adminUser = await getAdminFromToken();
+    if (!adminUser) {
       return NextResponse.json(
-        { error: "Not authenticated" },
+        { error: "Unauthorized - Admin authentication required" },
         { status: 401 }
-      );
-    }
-
-    const userRoles = session.user.roles || [];
-    const hasAdminRole = userRoles.some(role => ["Admin", "SuperAdmin"].includes(role));
-    if (!hasAdminRole) {
-      return NextResponse.json(
-        { error: "Forbidden - Admin access required" },
-        { status: 403 }
       );
     }
 
@@ -76,10 +65,10 @@ export async function PUT(
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
 
-    const adminId = new mongoose.Types.ObjectId(session.user.id);
-    const auditContext = {
-      ip: request.ip || request.headers.get("x-forwarded-for") || "unknown",
-      userAgent: request.headers.get("user-agent") || "unknown"
+    const auditContext = createAdminAuditContext(adminUser, request);
+    const serviceAuditContext = {
+      ip: auditContext.ip,
+      userAgent: auditContext.userAgent
     };
 
     let updatedCampaign;
@@ -91,25 +80,23 @@ export async function PUT(
       updatedCampaign = await campaignService.updateCampaignStatus(
         id, 
         status, 
-        adminId, 
+        adminUser._id, 
         reason,
-        auditContext
+        serviceAuditContext
       );
       
       // Create audit log
-      await createSimpleAuditLog(
+      await createAdminAuditLog(
         "campaign.status_updated",
         "campaign",
         id,
         {
-          adminId: adminId.toString(),
-          adminEmail: session.user.email,
           campaignId: id,
           previousStatus: updatedCampaign.previousStatus || "unknown",
           newStatus: status,
           reason
         },
-        request
+        auditContext
       );
     } else if (action === "update_verification" && verificationStatus) {
       if (!["pending", "under_review", "approved", "rejected"].includes(verificationStatus)) {
@@ -118,25 +105,23 @@ export async function PUT(
       updatedCampaign = await campaignService.updateVerificationStatus(
         id, 
         verificationStatus, 
-        adminId, 
+        adminUser._id, 
         reason,
-        auditContext
+        serviceAuditContext
       );
       
       // Create audit log
-      await createSimpleAuditLog(
+      await createAdminAuditLog(
         "campaign.verification_updated",
         "campaign",
         id,
         {
-          adminId: adminId.toString(),
-          adminEmail: session.user.email,
           campaignId: id,
           previousVerificationStatus: updatedCampaign.previousVerificationStatus || "unknown",
           newVerificationStatus: verificationStatus,
           reason
         },
-        request
+        auditContext
       );
     } else {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
