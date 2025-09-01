@@ -122,13 +122,6 @@ export async function createAdminAuditLog(
       } as unknown as NextRequest
     );
 
-    console.log("Admin audit log created:", {
-      action,
-      targetType,
-      targetId,
-      adminId: auditContext.adminUser._id.toString(),
-      adminEmail: auditContext.adminUser.email
-    });
 
   } catch (error) {
     console.error("Failed to create admin audit log:", error);

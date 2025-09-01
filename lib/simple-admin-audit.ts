@@ -66,13 +66,6 @@ export async function createSimpleAuditLog(
       userAgent: auditContext.userAgent
     });
 
-    console.log("Audit log created:", {
-      action,
-      targetType,
-      targetId,
-      hasSession: !!session,
-      adminId: auditContext.adminId?.toString()
-    });
 
   } catch (error) {
     console.error("Failed to create audit log:", error);
