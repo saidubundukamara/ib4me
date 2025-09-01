@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authConfig } from "../app/api/auth/[...nextauth]/route";
+import { cookies } from "next/headers";
 import mongoose from "mongoose";
+import { userRepository } from "../repositories";
+import { IUser } from "../models/User";
 
 export interface AdminContext {
   adminId: mongoose.Types.ObjectId;
@@ -23,43 +24,53 @@ export class AdminAuthError extends Error {
 }
 
 /**
- * Validates admin authentication and returns admin context
+ * Validates admin authentication using cookie-based auth and returns admin context
  * Throws AdminAuthError if authentication fails
  */
 export async function validateAdminAuth(request?: NextRequest): Promise<AdminContext> {
   try {
-    const session = await getServerSession(authConfig);
+    // Get admin token from cookies
+    const cookieStore = await cookies();
+    const adminToken = cookieStore.get('admin_token')?.value;
 
-    // Add debug logging
-    console.log("Session debug:", {
-      hasSession: !!session,
-      hasUser: !!session?.user,
-      userId: session?.user?.id,
-      userRoles: session?.user?.roles,
-      userEmail: session?.user?.email
-    });
-
-    if (!session?.user?.id) {
-      throw new AdminAuthError("Unauthorized - No session found", 401);
+    if (!adminToken) {
+      throw new AdminAuthError("Unauthorized - No admin token found", 401);
     }
 
-    if (!session.user.email) {
-      throw new AdminAuthError("Unauthorized - No email in session", 401);
+    // Parse token to get user ID (format: randomString:userId)
+    const tokenParts = adminToken.split(':');
+    if (tokenParts.length !== 2) {
+      throw new AdminAuthError("Unauthorized - Invalid token format", 401);
+    }
+
+    const userId = tokenParts[1];
+
+    // Find user by ID
+    const user: IUser | null = await userRepository.findById(userId);
+
+    if (!user) {
+      throw new AdminAuthError("Unauthorized - User not found", 401);
+    }
+
+    if (!user.email) {
+      throw new AdminAuthError("Unauthorized - No email found for user", 401);
     }
 
     // Check if user has admin role 
-    const userRoles = session.user.roles || [];
-    
-    const hasAdminRole = userRoles.some(role => 
-      ["Admin", "SuperAdmin"].includes(role)
-    );
+    const userRoles = user.roles ? (Array.isArray(user.roles) ? user.roles : [user.roles]) : [];
+    const hasAdminRole = userRoles.some(role => role && ["Admin", "SuperAdmin"].includes(role));
 
     if (!hasAdminRole) {
       throw new AdminAuthError(`Forbidden - Admin access required. User roles: ${userRoles.join(", ")}`, 403);
     }
 
+    // Check if user is active
+    if (user.status !== "active") {
+      throw new AdminAuthError("Unauthorized - Account is not active", 401);
+    }
+
     // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(session.user.id)) {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
       throw new AdminAuthError("Invalid user ID format", 400);
     }
 
@@ -67,10 +78,10 @@ export async function validateAdminAuth(request?: NextRequest): Promise<AdminCon
     const role = userRoles.includes("SuperAdmin") ? "SuperAdmin" : "Admin";
 
     return {
-      adminId: new mongoose.Types.ObjectId(session.user.id),
-      email: session.user.email,
+      adminId: new mongoose.Types.ObjectId(userId),
+      email: user.email,
       role: role as "Admin" | "SuperAdmin",
-      name: session.user.name || undefined,
+      name: user.name || undefined,
     };
   } catch (error) {
     if (error instanceof AdminAuthError) {
