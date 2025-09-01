@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is admin or superadmin
-    if (!user.roles || (user.roles !== "Admin" && user.roles !== "SuperAdmin")) {
+    const userRoles = user.roles ? (Array.isArray(user.roles) ? user.roles : [user.roles]) : [];
+    if (!user.roles || !userRoles.some(role => role && ["Admin", "SuperAdmin"].includes(role))) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate a simple token (for now, using a random string + user ID)
-    const token = crypto.randomBytes(32).toString('hex') + ':' + user._id.toString();
+    const token = crypto.randomBytes(32).toString('hex') + ':' + String(user._id);
     
     // Set cookie with token
     const cookieStore = await cookies();
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Update last login information
-    await userRepository.updateById(user._id.toString(), {
+    await userRepository.updateById(String(user._id), {
       lastLoginAt: new Date(),
       lastLoginIp: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
       lastLoginUserAgent: request.headers.get('user-agent') || 'unknown',
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
       _id: user._id,
       name: user.name,
       email: user.email,
-      role: user.roles,
+      role: Array.isArray(user.roles) ? user.roles.find(role => ["Admin", "SuperAdmin"].includes(role)) : user.roles,
       isActive: user.status === 'active'
     };
 

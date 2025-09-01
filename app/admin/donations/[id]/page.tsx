@@ -600,7 +600,7 @@ export default function AdminDonationDetailPage() {
                   Remove Flag
                 </Button>
               )}
-              {donation.status === "succeeded" && donation.status !== "refunded" && (
+              {donation.status === "succeeded" && (
                 <Button variant="outline" onClick={() => setRefundDialogOpen(true)} className="text-red-600 hover:text-red-700">
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Process Refund
