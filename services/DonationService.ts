@@ -6,6 +6,7 @@ import {
 } from "../repositories";
 import { IDonation } from "../models/Donation";
 import { runInTransaction, ServiceSession } from "./ServiceTransaction";
+import type { DonationFilters, DonationListOptions } from "../repositories/DonationRepository";
 
 export interface CreateDonationInput {
   campaignId: mongoose.Types.ObjectId;
@@ -213,6 +214,213 @@ export class DonationService {
     campaignId: mongoose.Types.ObjectId
   ): Promise<IDonation[]> {
     return donationRepository.listByCampaign(campaignId);
+  }
+
+  // Admin-specific methods
+  async listForAdmin(
+    filters: DonationFilters = {},
+    options: DonationListOptions = {}
+  ): Promise<{
+    donations: IDonation[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    return donationRepository.listForAdmin(filters, options);
+  }
+
+  async getAnalytics(dateFrom?: Date, dateTo?: Date): Promise<{
+    totalDonations: number;
+    totalAmount: number;
+    successfulDonations: number;
+    successfulAmount: number;
+    pendingDonations: number;
+    pendingAmount: number;
+    failedDonations: number;
+    averageDonation: number;
+    successRate: number;
+  }> {
+    return donationRepository.getAnalyticsByDateRange(dateFrom, dateTo);
+  }
+
+  async getProviderBreakdown(dateFrom?: Date, dateTo?: Date): Promise<Array<{
+    provider: string;
+    count: number;
+    amount: number;
+    successRate: number;
+  }>> {
+    return donationRepository.getProviderBreakdown(dateFrom, dateTo);
+  }
+
+  async getTopDonors(limit: number = 10): Promise<Array<{
+    donorName: string;
+    donorEmail?: string;
+    totalAmount: number;
+    donationCount: number;
+    lastDonation: Date;
+    isAnonymous: boolean;
+  }>> {
+    return donationRepository.getTopDonors(limit);
+  }
+
+  async getRevenueReport(dateFrom?: Date, dateTo?: Date): Promise<{
+    totalRevenue: number;
+    totalFees: number;
+    netRevenue: number;
+    platformFees: number;
+    paymentFees: number;
+  }> {
+    return donationRepository.getRevenueAnalytics(dateFrom, dateTo);
+  }
+
+  async resendReceipt(donationId: string): Promise<boolean> {
+    const donation = await donationRepository.findById(donationId);
+    if (!donation) {
+      throw new Error("Donation not found");
+    }
+
+    if (donation.status !== "succeeded") {
+      throw new Error("Cannot resend receipt for non-successful donation");
+    }
+
+    // TODO: Implement receipt resending logic
+    // This would typically involve:
+    // 1. Getting donation details
+    // 2. Formatting receipt email/SMS
+    // 3. Sending via notification service
+    console.log(`Resending receipt for donation ${donationId}`);
+    
+    return true;
+  }
+
+  async flagForReview(
+    donationId: string, 
+    reason: string,
+    flaggedBy: mongoose.Types.ObjectId
+  ): Promise<IDonation> {
+    const donation = await donationRepository.findById(donationId);
+    if (!donation) {
+      throw new Error("Donation not found");
+    }
+
+    const updated = await donationRepository.updateById(
+      donationId,
+      { 
+        $set: { 
+          isFlagged: true,
+          flagReason: reason,
+          flaggedBy,
+          flaggedAt: new Date(),
+          updatedAt: new Date()
+        } 
+      } as never
+    );
+
+    if (!updated) {
+      throw new Error("Failed to flag donation for review");
+    }
+
+    return updated;
+  }
+
+  async unflagDonation(
+    donationId: string,
+    unflaggedBy: mongoose.Types.ObjectId
+  ): Promise<IDonation> {
+    const donation = await donationRepository.findById(donationId);
+    if (!donation) {
+      throw new Error("Donation not found");
+    }
+
+    const updated = await donationRepository.updateById(
+      donationId,
+      { 
+        $unset: { 
+          isFlagged: "",
+          flagReason: "",
+          flaggedBy: "",
+          flaggedAt: ""
+        },
+        $set: {
+          unflaggedBy,
+          unflaggedAt: new Date(),
+          updatedAt: new Date()
+        }
+      } as never
+    );
+
+    if (!updated) {
+      throw new Error("Failed to unflag donation");
+    }
+
+    return updated;
+  }
+
+  async refundDonation(
+    donationId: string,
+    refundReason: string,
+    refundedBy: mongoose.Types.ObjectId,
+    session?: ServiceSession
+  ): Promise<IDonation> {
+    return runInTransaction<IDonation>(async (txn) => {
+      const donation = await donationRepository.findById(donationId);
+      if (!donation) {
+        throw new Error("Donation not found");
+      }
+
+      if (donation.status !== "succeeded") {
+        throw new Error("Can only refund successful donations");
+      }
+
+      // TODO: Implement actual refund via payment provider
+      // For now, just mark as refunded in database
+      
+      const updated = await donationRepository.updateById(
+        donationId,
+        { 
+          $set: { 
+            status: "refunded",
+            refundReason,
+            refundedBy,
+            refundedAt: new Date(),
+            updatedAt: new Date()
+          } 
+        } as never,
+        txn
+      );
+
+      if (!updated) {
+        throw new Error("Failed to mark donation as refunded");
+      }
+
+      // Reverse campaign totals
+      const decUpdate: Record<string, number> = {
+        "totals.raisedMinor": -donation.amount.minor,
+        "totals.donationCount": -1,
+      };
+
+      await campaignRepository.updateById(
+        donation.campaignId.toString(),
+        { $inc: decUpdate as never } as never,
+        txn
+      );
+
+      // Create reverse ledger entry
+      await ledgerEntryRepository.create(
+        {
+          campaignId: donation.campaignId,
+          refType: "donation_refund",
+          refId: donation._id,
+          direction: "out",
+          amountMinor: donation.amount.minor,
+          currency: donation.amount.currency,
+          description: `Refund for donation ${donationId}: ${refundReason}`,
+        } as unknown as Partial<import("../models/LedgerEntry").ILedgerEntry>,
+        txn
+      );
+
+      return updated;
+    }, session);
   }
 }
 

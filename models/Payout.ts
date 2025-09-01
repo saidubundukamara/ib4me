@@ -31,7 +31,7 @@ export interface IPayout extends mongoose.Document {
   requestedBy: mongoose.Types.ObjectId;
   amountMinor: number;
   method: IPayoutMethodMobileMoney | IPayoutMethodBank;
-  status: "processing" | "completed" | "failed" | "cancelled" | "in_review" | "approved" | "rejected" | "paid";
+  status: "processing" | "completed" | "failed" | "cancelled" | "in_review" | "approved" | "rejected" | "paid" | "threshold_review";
   monimePayoutId?: string;
   approvals?: IPayoutApproval[];
   policyCheck?: IPayoutPolicyCheck;
@@ -69,7 +69,7 @@ const payoutSchema = new mongoose.Schema<IPayout>(
     },
     status: {
       type: String,
-      enum: ["processing", "completed", "failed", "cancelled", "in_review", "approved", "rejected", "paid"],
+      enum: ["processing", "completed", "failed", "cancelled", "in_review", "approved", "rejected", "paid", "threshold_review"],
       default: "processing",
       index: true,
     },
