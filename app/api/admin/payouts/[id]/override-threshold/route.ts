@@ -34,7 +34,7 @@ export async function POST(
 
     // Extract audit context from request
     const auditContext = {
-      ip: request.ip || request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown",
+      ip: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown",
       userAgent: request.headers.get("user-agent") || "unknown"
     };
 

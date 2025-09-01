@@ -32,6 +32,9 @@ interface FeatureSettings {
   enableSMSNotifications?: boolean;
   enableEmailNotifications?: boolean;
   minimumWithdrawalAmount?: number;
+  whatsAppAutoPost?: boolean;
+  paypalEnabled?: boolean;
+  emergencyPoolFund?: boolean;
 }
 
 interface ContactSettings {

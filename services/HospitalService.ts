@@ -102,7 +102,7 @@ export class HospitalService {
 
       // Check for duplicate name (excluding current hospital)
       const existing = await hospitalRepository.findByName(input.name.trim());
-      if (existing && existing._id.toString() !== id) {
+      if (existing && (existing._id as any).toString() !== id) {
         throw new Error("A hospital with this name already exists");
       }
     }
@@ -115,7 +115,7 @@ export class HospitalService {
     // Check for duplicate email if being updated
     if (input.contactEmail) {
       const existingEmail = await hospitalRepository.findByEmail(input.contactEmail);
-      if (existingEmail && existingEmail._id.toString() !== id) {
+      if (existingEmail && (existingEmail._id as any).toString() !== id) {
         throw new Error("A hospital with this email already exists");
       }
     }

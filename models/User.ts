@@ -9,7 +9,7 @@ export interface IUser extends mongoose.Document {
   emailVerified?: Date | null;
   phoneVerified?: Date | null;
   passwordChangedAt?: Date | null;
-  roles?: string[];
+  roles?: "SuperAdmin" | "Admin" | "User";
   status?: "active" | "inactive" | "blocked";
   whatsappOptIn?: boolean;
   twoFactorEnabled?: boolean;

@@ -35,7 +35,10 @@ export async function GET(
   }
 }
 
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     await connectDB();
 
@@ -83,7 +86,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     await connectDB();
 

@@ -8,7 +8,7 @@ import type { AuditContext } from "../lib/admin-auth";
 
 interface CampaignFilters {
   status?: ICampaign["status"] | "all";
-  verificationStatus?: ICampaign["verification"]["status"];
+  verificationStatus?: string;
   urgency?: ICampaign["urgency"];
   search?: string;
   dateFrom?: Date;
@@ -95,12 +95,8 @@ export class CampaignService {
 
     const [campaigns, total] = await Promise.all([
       campaignRepository.findMany(query as never, {
-        query: { sort, skip, limit },
-        populate: [
-          { path: "ownerId", select: "firstName lastName email" },
-          { path: "hospital.hospitalId", select: "name" }
-        ]
-      }),
+        query: { sort, skip, limit }
+      } as any),
       campaignRepository.count(query as never)
     ]);
 
@@ -166,7 +162,7 @@ export class CampaignService {
 
   async updateVerificationStatus(
     campaignId: string,
-    verificationStatus: ICampaign["verification"]["status"],
+    verificationStatus: string,
     adminId: mongoose.Types.ObjectId,
     reason?: string,
     auditContext?: AuditContext

@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { BaseRepository } from "./BaseRepository";
 import Donation, { IDonation } from "../models/Donation";
 
-interface DonationFilters {
+export interface DonationFilters {
   status?: IDonation["status"] | "all";
   provider?: string;
   campaignId?: mongoose.Types.ObjectId;
@@ -15,7 +15,7 @@ interface DonationFilters {
   search?: string;
 }
 
-interface DonationListOptions {
+export interface DonationListOptions {
   page?: number;
   limit?: number;
   sortBy?: string;
@@ -170,12 +170,8 @@ export class DonationRepository extends BaseRepository<IDonation> {
 
     const [donations, total] = await Promise.all([
       this.findMany(query as never, {
-        query: { sort, skip, limit },
-        populate: [
-          { path: "campaignId", select: "slug patient.name diagnosis" },
-          { path: "donorId", select: "firstName lastName email" }
-        ]
-      }),
+        query: { sort, skip, limit }
+      } as any),
       this.count(query as never)
     ]);
 
@@ -293,7 +289,7 @@ export class DonationRepository extends BaseRepository<IDonation> {
           }
         }
       },
-      { $sort: { amount: -1 } }
+      { $sort: { amount: -1 as -1 } }
     ];
 
     return this.model.aggregate(pipeline);
@@ -332,7 +328,7 @@ export class DonationRepository extends BaseRepository<IDonation> {
           isAnonymous: "$_id.isAnonymous"
         }
       },
-      { $sort: { totalAmount: -1 } },
+      { $sort: { totalAmount: -1 as -1 } },
       { $limit: limit }
     ];
 

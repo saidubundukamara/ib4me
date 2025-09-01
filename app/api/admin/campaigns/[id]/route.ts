@@ -92,7 +92,7 @@ export async function PUT(
         id,
         {
           campaignId: id,
-          previousStatus: (updatedCampaign as Record<string, unknown>)?.previousStatus as string || "unknown",
+          previousStatus: (updatedCampaign as unknown as Record<string, unknown>)?.previousStatus as string || "unknown",
           newStatus: status,
           reason
         },
@@ -117,7 +117,7 @@ export async function PUT(
         id,
         {
           campaignId: id,
-          previousVerificationStatus: (updatedCampaign as Record<string, unknown>)?.previousVerificationStatus as string || "unknown",
+          previousVerificationStatus: (updatedCampaign as unknown as Record<string, unknown>)?.previousVerificationStatus as string || "unknown",
           newVerificationStatus: verificationStatus,
           reason
         },

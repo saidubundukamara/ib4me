@@ -9,10 +9,13 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     
     // Parse filters
+    const verifiedParam = searchParams.get("verified");
     const filters = {
       search: searchParams.get("search") || undefined,
-      verified: searchParams.get("verified") === "true" ? true : 
-                searchParams.get("verified") === "false" ? false : "all",
+      verified: verifiedParam === "true" ? true : 
+                verifiedParam === "false" ? false : 
+                verifiedParam === "all" ? "all" as const : 
+                undefined,
       dateFrom: searchParams.get("dateFrom") ? new Date(searchParams.get("dateFrom")!) : undefined,
       dateTo: searchParams.get("dateTo") ? new Date(searchParams.get("dateTo")!) : undefined,
     };

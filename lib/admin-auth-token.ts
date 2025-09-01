@@ -48,7 +48,7 @@ export async function getAdminFromToken(): Promise<AdminUser | null> {
     }
 
     // Check if user is admin or superadmin
-    if (!user.roles || (user.roles !== "Admin" && user.roles !== "SuperAdmin")) {
+    if (!user.roles || (!user.roles.includes("Admin") && !user.roles.includes("SuperAdmin"))) {
       return null;
     }
 
@@ -58,10 +58,10 @@ export async function getAdminFromToken(): Promise<AdminUser | null> {
     }
 
     return {
-      _id: new mongoose.Types.ObjectId(user._id),
-      name: user.name,
-      email: user.email,
-      role: user.roles,
+      _id: new mongoose.Types.ObjectId(user._id as string),
+      name: user.name || "",
+      email: user.email || "",
+      role: user.roles?.[0] || "user", // Take first role or default to user
       isActive: user.status === 'active'
     };
 
@@ -77,8 +77,7 @@ export async function getAdminFromToken(): Promise<AdminUser | null> {
 export function createAdminAuditContext(adminUser: AdminUser, request: NextRequest): AdminAuditContext {
   return {
     adminUser,
-    ip: request.ip || 
-        request.headers.get("x-forwarded-for") || 
+    ip: request.headers.get("x-forwarded-for") || 
         request.headers.get("x-real-ip") || 
         "unknown",
     userAgent: request.headers.get("user-agent") || "unknown"

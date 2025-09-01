@@ -9,10 +9,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     
     // Parse filters
+    const status = searchParams.get("status") || "all";
+    const urgency = searchParams.get("urgency");
     const filters = {
-      status: searchParams.get("status") || "all",
+      status: ["active", "draft", "paused", "completed", "archived", "all"].includes(status) 
+        ? status as "active" | "draft" | "paused" | "completed" | "archived" | "all"
+        : "all",
       verificationStatus: searchParams.get("verificationStatus") || undefined,
-      urgency: searchParams.get("urgency") || undefined,
+      urgency: urgency && ["low", "medium", "high"].includes(urgency) 
+        ? urgency as "low" | "medium" | "high"
+        : undefined,
       search: searchParams.get("search") || undefined,
       dateFrom: searchParams.get("dateFrom") ? new Date(searchParams.get("dateFrom")!) : undefined,
       dateTo: searchParams.get("dateTo") ? new Date(searchParams.get("dateTo")!) : undefined,

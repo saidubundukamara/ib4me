@@ -123,12 +123,8 @@ export class PayoutRepository extends BaseRepository<IPayout> {
 
     const [payouts, total] = await Promise.all([
       this.findMany(query as never, {
-        query: { sort, skip, limit },
-        populate: [
-          { path: "campaignId", select: "slug patient.name diagnosis goal.targetMinor" },
-          { path: "requestedBy", select: "firstName lastName email" }
-        ]
-      }),
+        query: { sort, skip, limit }
+      } as any),
       this.count(query as never)
     ]);
 
@@ -251,7 +247,7 @@ export class PayoutRepository extends BaseRepository<IPayout> {
           }
         }
       },
-      { $sort: { amount: -1 } }
+      { $sort: { amount: -1 as -1 } }
     ];
 
     return this.model.aggregate(pipeline);
@@ -294,7 +290,7 @@ export class PayoutRepository extends BaseRepository<IPayout> {
           lastPayout: 1
         }
       },
-      { $sort: { totalAmount: -1 } },
+      { $sort: { totalAmount: -1 as -1 } },
       { $limit: limit }
     ];
 
@@ -305,12 +301,8 @@ export class PayoutRepository extends BaseRepository<IPayout> {
     return this.findMany({ 
       status: { $in: ["processing", "in_review"] } 
     } as never, {
-      query: { sort: { createdAt: 1 } },
-      populate: [
-        { path: "campaignId", select: "slug patient.name diagnosis" },
-        { path: "requestedBy", select: "firstName lastName email" }
-      ]
-    });
+      query: { sort: { createdAt: 1 } }
+    } as any);
   }
 
   async getPayoutsByStatus(): Promise<Array<{
@@ -333,7 +325,7 @@ export class PayoutRepository extends BaseRepository<IPayout> {
           amount: 1
         }
       },
-      { $sort: { count: -1 } }
+      { $sort: { count: -1 as -1 } }
     ];
 
     return this.model.aggregate(pipeline);

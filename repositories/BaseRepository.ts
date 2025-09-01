@@ -16,6 +16,10 @@ export class BaseRepository<T extends mongoose.Document> {
     this.model = model;
   }
 
+  get mongoModel() {
+    return this.model;
+  }
+
   protected async ensureConnection(): Promise<void> {
     await connectDB();
   }

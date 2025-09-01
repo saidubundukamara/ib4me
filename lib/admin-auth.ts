@@ -70,7 +70,7 @@ export async function validateAdminAuth(request?: NextRequest): Promise<AdminCon
       adminId: new mongoose.Types.ObjectId(session.user.id),
       email: session.user.email,
       role: role as "Admin" | "SuperAdmin",
-      name: session.user.name,
+      name: session.user.name || undefined,
     };
   } catch (error) {
     if (error instanceof AdminAuthError) {
@@ -100,8 +100,7 @@ export async function validateSuperAdminAuth(request?: NextRequest): Promise<Adm
  */
 export function extractAuditContext(request: NextRequest): AuditContext {
   return {
-    ip: request.ip || 
-        request.headers.get("x-forwarded-for") || 
+    ip: request.headers.get("x-forwarded-for") || 
         request.headers.get("x-real-ip") || 
         "unknown",
     userAgent: request.headers.get("user-agent") || "unknown"

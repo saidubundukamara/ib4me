@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
       {
         page,
         limit,
-        sort,
-        order
+        sortBy: sort,
+        sortOrder: order
       }
     );
 

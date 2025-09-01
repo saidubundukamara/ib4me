@@ -335,7 +335,7 @@ export class DonationService {
         id: new mongoose.Types.ObjectId(donationId)
       },
       diff: {
-        previouslyFlagged: donation.isFlagged || false,
+        previouslyFlagged: (donation as any).isFlagged || false,
         flagReason: reason,
         donationId,
         campaignId: donation.campaignId?.toString(),
@@ -393,9 +393,9 @@ export class DonationService {
         id: new mongoose.Types.ObjectId(donationId)
       },
       diff: {
-        previouslyFlagged: donation.isFlagged || false,
-        previousFlagReason: donation.flagReason,
-        previousFlaggedBy: donation.flaggedBy?.toString(),
+        previouslyFlagged: (donation as any).isFlagged || false,
+        previousFlagReason: (donation as any).flagReason,
+        previousFlaggedBy: (donation as any).flaggedBy?.toString(),
         donationId,
         campaignId: donation.campaignId?.toString(),
         donorId: donation.donorId?.toString(),

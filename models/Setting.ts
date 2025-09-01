@@ -17,11 +17,53 @@ export interface IFeatureFlags {
   emergencyPoolFund?: boolean;
 }
 
+export interface IWebsiteSettings {
+  siteName?: string;
+  siteDescription?: string;
+  logo?: string;
+  favicon?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+}
+
+export interface IContactSettings {
+  email: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+}
+
+export interface ISocialSettings {
+  facebook?: string;
+  twitter?: string;
+  instagram?: string;
+  linkedin?: string;
+  whatsapp?: string;
+}
+
+export interface ISeoSettings {
+  metaTitle?: string;
+  metaDescription?: string;
+  metaKeywords?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+  twitterCard?: string;
+  twitterSite?: string;
+}
+
 export interface ISetting extends mongoose.Document {
   _id: string; // "platform"
   withdrawal?: IWithdrawalSetting;
   fees?: IFeeSetting;
   features?: IFeatureFlags;
+  website?: IWebsiteSettings;
+  contact?: IContactSettings;
+  social?: ISocialSettings;
+  seo?: ISeoSettings;
   updatedAt: Date;
 }
 
@@ -41,6 +83,40 @@ const settingSchema = new mongoose.Schema<ISetting>(
       whatsAppAutoPost: { type: Boolean },
       paypalEnabled: { type: Boolean },
       emergencyPoolFund: { type: Boolean },
+    },
+    website: {
+      siteName: { type: String },
+      siteDescription: { type: String },
+      logo: { type: String },
+      favicon: { type: String },
+      primaryColor: { type: String },
+      secondaryColor: { type: String },
+    },
+    contact: {
+      email: { type: String },
+      phone: { type: String },
+      address: { type: String },
+      city: { type: String },
+      state: { type: String },
+      zipCode: { type: String },
+      country: { type: String },
+    },
+    social: {
+      facebook: { type: String },
+      twitter: { type: String },
+      instagram: { type: String },
+      linkedin: { type: String },
+      whatsapp: { type: String },
+    },
+    seo: {
+      metaTitle: { type: String },
+      metaDescription: { type: String },
+      metaKeywords: { type: String },
+      ogTitle: { type: String },
+      ogDescription: { type: String },
+      ogImage: { type: String },
+      twitterCard: { type: String },
+      twitterSite: { type: String },
     },
   },
   { timestamps: { createdAt: false, updatedAt: true }, _id: false }

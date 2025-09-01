@@ -124,6 +124,7 @@ export default function AdminLayout({
     {
       name: "MANAGEMENT",
       items: [
+        { name: "Admin Users", href: "/admin/admins", icon: "admins", current: pathname.startsWith("/admin/admins") },
         { name: "Notifications", href: "/admin/notifications", icon: "notifications", current: pathname.startsWith("/admin/notifications") },
         { name: "Settings", href: "/admin/settings", icon: "settings", current: pathname.startsWith("/admin/settings") },
       ]
@@ -176,6 +177,11 @@ export default function AdminLayout({
       notifications: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-3.5-3.5a8.97 8.97 0 01-1.5-5 8.5 8.5 0 00-17 0 8.97 8.97 0 01-1.5 5L0 17h5m10 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+      ),
+      admins: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
         </svg>
       ),
       settings: (

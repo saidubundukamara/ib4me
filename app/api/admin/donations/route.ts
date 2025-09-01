@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
       page,
       limit,
       sortBy,
-      sortOrder,
+      sortOrder: sortOrder as "asc" | "desc",
     };
 
     const result = await donationService.listForAdmin(filters, options);

@@ -1,34 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
-import { campaignRepository, donationRepository, userRepository } from "../../../../../repositories";
+import { dashboardService } from "../../../../../services/DashboardService";
+import { validateAdminAuth, createAuthErrorResponse, AdminAuthError } from "../../../../../lib/admin-auth";
+import { connectDB } from "../../../../../lib/db";
 
 export async function GET(request: NextRequest) {
   try {
-    // Get dashboard statistics
-    const [totalCampaigns, totalDonations, totalUsers, activeCampaigns] = await Promise.all([
-      campaignRepository.count({}),
-      donationRepository.count({}),
-      userRepository.count({}),
-      campaignRepository.count({ status: "active" })
-    ]);
+    await connectDB();
+    
+    // Validate admin authentication
+    await validateAdminAuth(request);
 
-    const stats = {
-      totalCampaigns,
-      totalDonations,
-      totalUsers,
-      activeCampaigns,
-      pendingCampaigns: await campaignRepository.count({ status: "pending" }),
-      totalAmount: 0 // TODO: Calculate total donation amount
-    };
+    // Get comprehensive dashboard statistics
+    const data = await dashboardService.getDashboardStats();
 
     return NextResponse.json({
       success: true,
-      stats
+      data
     });
 
   } catch (error) {
+    if (error instanceof AdminAuthError) {
+      const authError = createAuthErrorResponse(error);
+      return NextResponse.json({ error: authError.error }, { status: authError.statusCode });
+    }
+    
     console.error("Dashboard stats API error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to fetch dashboard statistics" },
       { status: 500 }
     );
   }

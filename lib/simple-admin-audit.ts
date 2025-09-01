@@ -28,8 +28,7 @@ export async function createSimpleAuditLog(
     const session = await getServerSession(authConfig);
     
     const auditContext: SimpleAuditContext = {
-      ip: request?.ip || 
-          request?.headers.get("x-forwarded-for") || 
+      ip: request?.headers.get("x-forwarded-for") || 
           request?.headers.get("x-real-ip") || 
           "unknown",
       userAgent: request?.headers.get("user-agent") || "unknown"

@@ -38,8 +38,8 @@ export class PayoutService {
     const campaign = await campaignRepository.findById(campaignId.toString());
     let percentageThresholdMet = true; // Default to true if no percentage rule
 
-    if (campaign?.goal?.targetMinor) {
-      const percentageThreshold = campaign.goal.targetMinor * 0.1; // 10% of goal
+    if ((campaign?.goal as any)?.targetMinor) {
+      const percentageThreshold = (campaign?.goal as any).targetMinor * 0.1; // 10% of goal
       percentageThresholdMet = amountMinor >= percentageThreshold;
     }
 
@@ -114,7 +114,7 @@ export class PayoutService {
         action: "payout.requested",
         target: {
           type: "payout",
-          id: payout._id
+          id: new mongoose.Types.ObjectId(payout.id)
         },
         diff: {
           amountMinor: input.amountMinor,
@@ -137,7 +137,7 @@ export class PayoutService {
           action: "payout.threshold_review_required",
           target: {
             type: "payout",
-            id: payout._id
+            id: new mongoose.Types.ObjectId(payout.id)
           },
           diff: {
             amountMinor: input.amountMinor,
@@ -418,13 +418,7 @@ export class PayoutService {
   }
 
   async getById(payoutId: string): Promise<IPayout | null> {
-    return payoutRepository.findById(payoutId, {
-      populate: [
-        { path: "campaignId", select: "slug patient.name diagnosis goal.targetMinor goal.currency ownerId" },
-        { path: "requestedBy", select: "firstName lastName email" },
-        { path: "approvals.adminId", select: "firstName lastName email" }
-      ]
-    });
+    return payoutRepository.findById(payoutId);
   }
 
   async approvePayout(
