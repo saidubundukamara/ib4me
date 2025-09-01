@@ -420,8 +420,50 @@ export class MonimeService {
   }
 }
 
-// Export singleton instance for convenience
-export const monimeService = MonimeService.createService();
+// Lazy singleton instance for convenience
+let _monimeService: MonimeService | null = null;
+
+export const monimeService = {
+  getInstance(): MonimeService {
+    if (!_monimeService) {
+      _monimeService = MonimeService.createService();
+    }
+    return _monimeService;
+  },
+  
+  // Delegate methods to the singleton instance
+  async createCheckoutSession(...args: Parameters<MonimeService['createCheckoutSession']>) {
+    return this.getInstance().createCheckoutSession(...args);
+  },
+  
+  async getCheckoutSession(...args: Parameters<MonimeService['getCheckoutSession']>) {
+    return this.getInstance().getCheckoutSession(...args);
+  },
+  
+  async getPayment(...args: Parameters<MonimeService['getPayment']>) {
+    return this.getInstance().getPayment(...args);
+  },
+  
+  async createFinancialAccount(...args: Parameters<MonimeService['createFinancialAccount']>) {
+    return this.getInstance().createFinancialAccount(...args);
+  },
+  
+  async createPayout(...args: Parameters<MonimeService['createPayout']>) {
+    return this.getInstance().createPayout(...args);
+  },
+  
+  async getPayout(...args: Parameters<MonimeService['getPayout']>) {
+    return this.getInstance().getPayout(...args);
+  },
+  
+  verifyWebhookSignature(...args: Parameters<MonimeService['verifyWebhookSignature']>) {
+    return this.getInstance().verifyWebhookSignature(...args);
+  },
+  
+  parseWebhookPayload(...args: Parameters<MonimeService['parseWebhookPayload']>) {
+    return this.getInstance().parseWebhookPayload(...args);
+  }
+};
 
 // Helper function to convert major currency units to minor units
 export function toMinorUnits(amount: number, currency: string = "SLE"): number {

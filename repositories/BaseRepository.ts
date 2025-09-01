@@ -16,6 +16,10 @@ export class BaseRepository<T extends mongoose.Document> {
     this.model = model;
   }
 
+  get mongoModel() {
+    return this.model;
+  }
+
   protected async ensureConnection(): Promise<void> {
     await connectDB();
   }
@@ -106,5 +110,10 @@ export class BaseRepository<T extends mongoose.Document> {
       })
       .exec();
     return res.deletedCount === 1;
+  }
+
+  async count(filter: FilterQuery<T>): Promise<number> {
+    await this.ensureConnection();
+    return this.model.countDocuments(filter).exec();
   }
 }

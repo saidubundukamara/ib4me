@@ -9,7 +9,7 @@ export interface IUser extends mongoose.Document {
   emailVerified?: Date | null;
   phoneVerified?: Date | null;
   passwordChangedAt?: Date | null;
-  roles?: string[];
+  roles?: "SuperAdmin" | "Admin" | "User";
   status?: "active" | "inactive" | "blocked";
   whatsappOptIn?: boolean;
   twoFactorEnabled?: boolean;
@@ -56,7 +56,11 @@ const userSchema = new mongoose.Schema<IUser>(
     emailVerified: { type: Date, default: null },
     phoneVerified: { type: Date, default: null },
     passwordChangedAt: { type: Date, default: null },
-    roles: { type: [String], default: ["user"] },
+    roles: {
+      type: String,
+      enum: ["SuperAdmin", "Admin", "User"],
+      default: "User",
+    },
     status: {
       type: String,
       enum: ["active", "inactive", "blocked"],

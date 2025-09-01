@@ -1,0 +1,86 @@
+
+> ib4me@0.1.0 dev
+> next dev --turbopack
+
+
+✘ next.js v15.5.0 is not yet supported in the Community edition of Console Ninja.
+We are working hard on it for you https://tinyurl.com/3h9mtwra.
+
+Estimated release dates:
+  - Community users: around 17th November, 2025 (subject to team availability)
+  - PRO users:       priority access is available now
+
+ ⚠ Port 3000 is in use by process 30562, using available port 3001 instead.
+
+✘ next.js v15.5.0 is not yet supported in the Community edition of Console Ninja.
+We are working hard on it for you https://tinyurl.com/3h9mtwra.
+
+Estimated release dates:
+  - Community users: around 17th November, 2025 (subject to team availability)
+  - PRO users:       priority access is available now
+
+   ▲ Next.js 15.5.0 (Turbopack)
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.1.135:3001
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Compiled middleware in 198ms
+ ✓ Ready in 2.5s
+ ✓ Compiled middleware in 24ms
+ ○ Compiling /api/admin/auth/login ...
+ ✓ Compiled /api/admin/auth/login in 1075ms
+Login attempt for email: superadmin@example.com
+Looking up user by email: superadmin@example.com
+User found: ID: 68b3855acb5eef8871dba9eb, Role: SuperAdmin
+Error: Route "/api/admin/auth/login" used `cookies().set('admin_token', ...)`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at POST (app/api/admin/auth/login/route.ts:64:17)
+  62 |     // Set cookie with token
+  63 |     const cookieStore = cookies();
+> 64 |     cookieStore.set('admin_token', token, {
+     |                 ^
+  65 |       httpOnly: true,
+  66 |       secure: process.env.NODE_ENV === 'production',
+  67 |       sameSite: 'lax',
+ POST /api/admin/auth/login 200 in 6952ms
+ ✓ Compiled middleware in 6ms
+ ○ Compiling /api/admin/dashboard/stats ...
+ ✓ Compiled /api/admin/dashboard/stats in 610ms
+ GET /api/admin/dashboard/stats 200 in 1573ms
+ ✓ Compiled middleware in 68ms
+ ✓ Compiled middleware in 6ms
+ ✓ Compiled middleware in 7ms
+ ✓ Compiled middleware in 19ms
+ ✓ Compiled middleware in 11ms
+ ✓ Compiled middleware in 2ms
+ ✓ Compiled middleware in 8ms
+ ✓ Compiled middleware in 18ms
+ ✓ Compiled middleware in 13ms
+ ✓ Compiled middleware in 8ms
+ ✓ Compiled middleware in 6ms
+ ✓ Compiled middleware in 8ms
+ ✓ Compiled middleware in 8ms
+ ✓ Compiled middleware in 5ms
+ ✓ Compiled middleware in 2ms
+ ✓ Compiled middleware in 2ms
+ ✓ Compiled middleware in 5ms
+ ✓ Compiled middleware in 2ms
+ ✓ Compiled middleware in 50ms
+ ✓ Compiled middleware in 5ms
+ ✓ Compiled middleware in 7ms
+ ✓ Compiled middleware in 15ms
+ ✓ Compiled middleware in 5ms
+ ✓ Compiled middleware in 8ms
+ ✓ Compiled middleware in 2ms
+ ✓ Compiled middleware in 20ms
+ ✓ Compiled middleware in 8ms
+ ✓ Compiled middleware in 9ms
+ ✓ Compiled middleware in 7ms
+ ✓ Compiled middleware in 3ms
+ ✓ Compiled middleware in 4ms
+ ✓ Compiled middleware in 10ms
+ ✓ Compiled middleware in 9ms
+ ✓ Compiled middleware in 3ms
+ ✓ Compiled middleware in 3ms
+ ✓ Compiled middleware in 57ms
+[?25h

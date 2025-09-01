@@ -4,10 +4,12 @@ import {
   campaignRepository,
   ledgerEntryRepository,
 } from "../repositories";
-import { IPayout } from "../models/Payout";
+import { IPayout, IPayoutApproval, IPayoutPolicyCheck } from "../models/Payout";
 import { runInTransaction, ServiceSession } from "./ServiceTransaction";
 import { monimeService, MonimePayoutRequest } from "../lib/monime";
 import { randomUUID } from "crypto";
+import type { PayoutFilters, PayoutListOptions } from "../repositories/PayoutRepository";
+import { auditLogService } from "./AuditLogService";
 
 export interface RequestPayoutInput {
   campaignId: mongoose.Types.ObjectId;
@@ -17,7 +19,43 @@ export interface RequestPayoutInput {
 }
 
 export class PayoutService {
-  async requestPayout(input: RequestPayoutInput): Promise<IPayout> {
+  /**
+   * Check if payout amount meets minimum withdrawal threshold
+   */
+  private async checkMinimumThreshold(
+    amountMinor: number,
+    campaignId: mongoose.Types.ObjectId,
+    settings?: { minimumWithdrawalAmount?: number }
+  ): Promise<IPayoutPolicyCheck> {
+    // Default minimum withdrawal amount (50,000 SLE minor units)
+    const defaultMinThreshold = 50000;
+    const minThreshold = settings?.minimumWithdrawalAmount ?? defaultMinThreshold;
+
+    // Check fixed amount threshold
+    const fixedThresholdMet = amountMinor >= minThreshold;
+
+    // Optional: Check percentage-based threshold (e.g., 10% of goal)
+    const campaign = await campaignRepository.findById(campaignId.toString());
+    let percentageThresholdMet = true; // Default to true if no percentage rule
+
+    if ((campaign?.goal as any)?.targetMinor) {
+      const percentageThreshold = (campaign?.goal as any).targetMinor * 0.1; // 10% of goal
+      percentageThresholdMet = amountMinor >= percentageThreshold;
+    }
+
+    const minThresholdMet = fixedThresholdMet && percentageThresholdMet;
+
+    return {
+      minThresholdMet,
+      overrideBy: null
+    };
+  }
+
+  async requestPayout(
+    input: RequestPayoutInput,
+    settings?: { minimumWithdrawalAmount?: number },
+    auditContext?: { ip?: string; userAgent?: string }
+  ): Promise<IPayout> {
     if (input.amountMinor <= 0)
       throw new Error("Payout amount must be positive");
 
@@ -44,6 +82,16 @@ export class PayoutService {
         throw new Error("Insufficient funds available for withdrawal");
       }
 
+      // Check minimum withdrawal threshold
+      const policyCheck = await this.checkMinimumThreshold(
+        input.amountMinor,
+        input.campaignId,
+        settings
+      );
+
+      // Determine initial status based on threshold check
+      const initialStatus = policyCheck.minThresholdMet ? "processing" : "threshold_review";
+
       // Create payout record first
       const payout = await payoutRepository.create(
         {
@@ -51,11 +99,59 @@ export class PayoutService {
           requestedBy: input.requestedBy,
           amountMinor: input.amountMinor,
           method: input.method,
-          status: "processing",
+          status: initialStatus,
+          policyCheck,
         } as unknown as Partial<IPayout>,
         txn
       );
 
+      // Create audit log for payout request
+      await auditLogService.record({
+        actor: {
+          userId: input.requestedBy,
+          role: "user"
+        },
+        action: "payout.requested",
+        target: {
+          type: "payout",
+          id: new mongoose.Types.ObjectId(payout.id)
+        },
+        diff: {
+          amountMinor: input.amountMinor,
+          method: input.method,
+          campaignId: input.campaignId.toString(),
+          thresholdMet: policyCheck.minThresholdMet,
+          status: initialStatus
+        },
+        ip: auditContext?.ip,
+        userAgent: auditContext?.userAgent
+      });
+
+      // If below threshold, skip Monime processing and return for admin review
+      if (!policyCheck.minThresholdMet) {
+        await auditLogService.record({
+          actor: {
+            userId: input.requestedBy,
+            role: "user"
+          },
+          action: "payout.threshold_review_required",
+          target: {
+            type: "payout",
+            id: new mongoose.Types.ObjectId(payout.id)
+          },
+          diff: {
+            amountMinor: input.amountMinor,
+            minThreshold: settings?.minimumWithdrawalAmount ?? 50000,
+            reason: "Amount below minimum withdrawal threshold"
+          },
+          ip: auditContext?.ip,
+          userAgent: auditContext?.userAgent
+        });
+
+        return payout;
+      }
+
+      // Continue with existing Monime processing for threshold-compliant payouts
       try {
         // Helper function to determine mobile money provider based on phone number
         const getMobileMoneyProvider = (phoneNumber: string): string => {
@@ -260,6 +356,465 @@ export class PayoutService {
 
       return updated;
     });
+  }
+
+  // Admin-specific methods
+  async listForAdmin(
+    filters: PayoutFilters = {},
+    options: PayoutListOptions = {}
+  ): Promise<{
+    payouts: IPayout[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    return payoutRepository.listForAdmin(filters, options);
+  }
+
+  async getAnalytics(dateFrom?: Date, dateTo?: Date): Promise<{
+    totalPayouts: number;
+    totalAmount: number;
+    completedPayouts: number;
+    completedAmount: number;
+    pendingPayouts: number;
+    pendingAmount: number;
+    failedPayouts: number;
+    failedAmount: number;
+    averagePayout: number;
+    successRate: number;
+  }> {
+    return payoutRepository.getAnalyticsByDateRange(dateFrom, dateTo);
+  }
+
+  async getMethodBreakdown(dateFrom?: Date, dateTo?: Date): Promise<Array<{
+    method: string;
+    count: number;
+    amount: number;
+    successRate: number;
+  }>> {
+    return payoutRepository.getMethodBreakdown(dateFrom, dateTo);
+  }
+
+  async getTopCampaignsByPayouts(limit: number = 10): Promise<Array<{
+    campaignId: string;
+    campaignName: string;
+    totalAmount: number;
+    payoutCount: number;
+    lastPayout: Date;
+  }>> {
+    return payoutRepository.getTopCampaignsByPayouts(limit);
+  }
+
+  async getPendingApprovals(): Promise<IPayout[]> {
+    return payoutRepository.getPendingApprovals();
+  }
+
+  async getPayoutsByStatus(): Promise<Array<{
+    status: string;
+    count: number;
+    amount: number;
+  }>> {
+    return payoutRepository.getPayoutsByStatus();
+  }
+
+  async getById(payoutId: string): Promise<IPayout | null> {
+    return payoutRepository.findById(payoutId);
+  }
+
+  async approvePayout(
+    payoutId: string,
+    adminId: mongoose.Types.ObjectId,
+    note?: string,
+    auditContext?: { ip?: string; userAgent?: string },
+    session?: ServiceSession
+  ): Promise<IPayout> {
+    return runInTransaction<IPayout>(async (txn) => {
+      const payout = await payoutRepository.findById(payoutId);
+      if (!payout) {
+        throw new Error("Payout not found");
+      }
+
+      if (!["processing", "in_review", "threshold_review"].includes(payout.status)) {
+        throw new Error("Payout cannot be approved in current status");
+      }
+
+      const previousStatus = payout.status;
+      const approval: IPayoutApproval = {
+        adminId,
+        action: "approved",
+        note,
+        at: new Date()
+      };
+
+      const updated = await payoutRepository.updateById(
+        payoutId,
+        {
+          $set: { status: "approved" },
+          $push: { approvals: approval }
+        } as never,
+        txn
+      );
+
+      if (!updated) {
+        throw new Error("Failed to approve payout");
+      }
+
+      // Create audit log for payout approval
+      await auditLogService.record({
+        actor: {
+          userId: adminId,
+          role: "admin"
+        },
+        action: "payout.approved",
+        target: {
+          type: "payout",
+          id: new mongoose.Types.ObjectId(payoutId)
+        },
+        diff: {
+          previousStatus,
+          newStatus: "approved",
+          note,
+          amountMinor: payout.amountMinor,
+          campaignId: payout.campaignId.toString()
+        },
+        ip: auditContext?.ip,
+        userAgent: auditContext?.userAgent
+      });
+
+      return updated;
+    }, session);
+  }
+
+  async rejectPayout(
+    payoutId: string,
+    adminId: mongoose.Types.ObjectId,
+    reason: string,
+    session?: ServiceSession
+  ): Promise<IPayout> {
+    return runInTransaction<IPayout>(async (txn) => {
+      const payout = await payoutRepository.findById(payoutId);
+      if (!payout) {
+        throw new Error("Payout not found");
+      }
+
+      if (!["processing", "in_review", "approved"].includes(payout.status)) {
+        throw new Error("Payout cannot be rejected in current status");
+      }
+
+      const approval: IPayoutApproval = {
+        adminId,
+        action: "rejected",
+        note: reason,
+        at: new Date()
+      };
+
+      const updated = await payoutRepository.updateById(
+        payoutId,
+        {
+          $set: { 
+            status: "rejected",
+            failureReason: reason
+          },
+          $push: { approvals: approval }
+        } as never,
+        txn
+      );
+
+      if (!updated) {
+        throw new Error("Failed to reject payout");
+      }
+
+      return updated;
+    }, session);
+  }
+
+  async processPayout(
+    payoutId: string,
+    adminId: mongoose.Types.ObjectId,
+    session?: ServiceSession
+  ): Promise<IPayout> {
+    return runInTransaction<IPayout>(async (txn) => {
+      const payout = await payoutRepository.findById(payoutId);
+      if (!payout) {
+        throw new Error("Payout not found");
+      }
+
+      if (payout.status !== "approved") {
+        throw new Error("Only approved payouts can be processed");
+      }
+
+      // Get campaign to verify financial account
+      const campaign = await campaignRepository.findById(payout.campaignId.toString());
+      if (!campaign?.financial_account?.id) {
+        throw new Error("Campaign financial account not found");
+      }
+
+      try {
+        // Helper function to determine mobile money provider
+        const getMobileMoneyProvider = (phoneNumber: string): string => {
+          const cleanNumber = phoneNumber.replace(/^(\+232|232|0)/, "");
+          if (/^7[678]/.test(cleanNumber)) return "m17"; // Orange Money
+          if (/^(79|3[0-4])/.test(cleanNumber)) return "m18"; // AfriMoney
+          return "m17"; // Default
+        };
+
+        // Prepare Monime payout request
+        let destination: MonimePayoutRequest["destination"];
+
+        if (payout.method.type === "mobile_money") {
+          const method = payout.method as { type: "mobile_money"; msisdn?: string; provider?: string };
+          destination = {
+            type: "momo",
+            providerId: method.provider || getMobileMoneyProvider(method.msisdn || ""),
+            phoneNumber: method.msisdn,
+          };
+        } else {
+          const method = payout.method as { type: "bank"; providerId?: string; accountNumber?: string; accountName?: string };
+          destination = {
+            type: "bank",
+            providerId: method.providerId,
+            accountNumber: method.accountNumber,
+            accountName: method.accountName,
+          };
+        }
+
+        const monimeRequest: MonimePayoutRequest = {
+          destination,
+          amount: {
+            value: payout.amountMinor,
+            currency: campaign.goal?.currency ?? "SLE",
+          },
+          source: {
+            financialAccountId: campaign.financial_account.id,
+          },
+          metadata: {
+            campaignId: payout.campaignId.toString(),
+            payoutId: payout.id,
+          },
+        };
+
+        // Create payout with Monime
+        const idempotencyKey = randomUUID();
+        const monimePayout = await monimeService.createPayout(
+          monimeRequest,
+          idempotencyKey
+        );
+
+        // Update payout with processing status and Monime ID
+        const updated = await payoutRepository.updateById(
+          payoutId,
+          {
+            $set: {
+              status: "processing",
+              monimePayoutId: monimePayout.id
+            }
+          } as never,
+          txn
+        );
+
+        if (!updated) {
+          throw new Error("Failed to update payout with Monime ID");
+        }
+
+        return updated;
+      } catch (monimeError) {
+        // Update payout status to failed if Monime call fails
+        const updated = await payoutRepository.updateById(
+          payoutId,
+          {
+            $set: {
+              status: "failed",
+              failureReason: monimeError instanceof Error ? monimeError.message : "Processing failed"
+            }
+          } as never,
+          txn
+        );
+
+        throw new Error(
+          `Payout processing failed: ${
+            monimeError instanceof Error ? monimeError.message : "Unknown error"
+          }`
+        );
+      }
+    }, session);
+  }
+
+  async cancelPayout(
+    payoutId: string,
+    adminId: mongoose.Types.ObjectId,
+    reason: string,
+    session?: ServiceSession
+  ): Promise<IPayout> {
+    return runInTransaction<IPayout>(async (txn) => {
+      const payout = await payoutRepository.findById(payoutId);
+      if (!payout) {
+        throw new Error("Payout not found");
+      }
+
+      if (["completed", "paid"].includes(payout.status)) {
+        throw new Error("Cannot cancel completed payout");
+      }
+
+      const approval: IPayoutApproval = {
+        adminId,
+        action: "rejected",
+        note: `Cancelled: ${reason}`,
+        at: new Date()
+      };
+
+      const updated = await payoutRepository.updateById(
+        payoutId,
+        {
+          $set: {
+            status: "cancelled",
+            failureReason: `Cancelled by admin: ${reason}`
+          },
+          $push: { approvals: approval }
+        } as never,
+        txn
+      );
+
+      if (!updated) {
+        throw new Error("Failed to cancel payout");
+      }
+
+      return updated;
+    }, session);
+  }
+
+  async addPaymentProof(
+    payoutId: string,
+    proofUrl: string,
+    adminId: mongoose.Types.ObjectId,
+    session?: ServiceSession
+  ): Promise<IPayout> {
+    return runInTransaction<IPayout>(async (txn) => {
+      const payout = await payoutRepository.findById(payoutId);
+      if (!payout) {
+        throw new Error("Payout not found");
+      }
+
+      const updated = await payoutRepository.updateById(
+        payoutId,
+        {
+          $set: {
+            paymentProofUrl: proofUrl,
+            status: "completed" // Mark as completed when proof is added
+          }
+        } as never,
+        txn
+      );
+
+      if (!updated) {
+        throw new Error("Failed to add payment proof");
+      }
+
+      // Update campaign withdrawals and create ledger entry
+      const incUpdate: Record<string, number> = {
+        "withdrawals.totalPaidMinor": payout.amountMinor,
+        "withdrawals.count": 1,
+      };
+      await campaignRepository.updateById(
+        payout.campaignId.toString(),
+        { $inc: incUpdate as never } as never,
+        txn
+      );
+
+      // Create ledger entry
+      await ledgerEntryRepository.create(
+        {
+          campaignId: payout.campaignId,
+          refType: "payout",
+          refId: payout._id,
+          direction: "out",
+          amountMinor: payout.amountMinor,
+          currency: "SLE", // TODO: Use campaign currency
+          description: `Payout completed with proof: ${proofUrl.split('/').pop()}`,
+        } as unknown as Partial<import("../models/LedgerEntry").ILedgerEntry>,
+        txn
+      );
+
+      return updated;
+    }, session);
+  }
+
+  async overrideThreshold(
+    payoutId: string,
+    adminId: mongoose.Types.ObjectId,
+    reason: string,
+    auditContext?: { ip?: string; userAgent?: string },
+    session?: ServiceSession
+  ): Promise<IPayout> {
+    return runInTransaction<IPayout>(async (txn) => {
+      const payout = await payoutRepository.findById(payoutId);
+      if (!payout) {
+        throw new Error("Payout not found");
+      }
+
+      if (payout.status !== "threshold_review") {
+        throw new Error("Can only override threshold for payouts in threshold review");
+      }
+
+      const previousStatus = payout.status;
+      const previousThresholdMet = payout.policyCheck?.minThresholdMet ?? false;
+
+      const updated = await payoutRepository.updateById(
+        payoutId,
+        {
+          $set: {
+            "policyCheck.overrideBy": adminId,
+            "policyCheck.minThresholdMet": true,
+            status: "approved" // Auto-approve when threshold is overridden
+          }
+        } as never,
+        txn
+      );
+
+      if (!updated) {
+        throw new Error("Failed to override threshold");
+      }
+
+      // Add approval record
+      const approval: IPayoutApproval = {
+        adminId,
+        action: "approved",
+        note: `Threshold override: ${reason}`,
+        at: new Date()
+      };
+
+      await payoutRepository.updateById(
+        payoutId,
+        { $push: { approvals: approval } } as never,
+        txn
+      );
+
+      // Create comprehensive audit log for threshold override
+      await auditLogService.record({
+        actor: {
+          userId: adminId,
+          role: "admin"
+        },
+        action: "payout.threshold_overridden",
+        target: {
+          type: "payout",
+          id: new mongoose.Types.ObjectId(payoutId)
+        },
+        diff: {
+          previousStatus,
+          newStatus: "approved",
+          previousThresholdMet,
+          newThresholdMet: true,
+          overrideReason: reason,
+          amountMinor: payout.amountMinor,
+          campaignId: payout.campaignId.toString(),
+          overrideBy: adminId.toString()
+        },
+        ip: auditContext?.ip,
+        userAgent: auditContext?.userAgent
+      });
+
+      return updated;
+    }, session);
   }
 }
 
