@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { userRepository } from "@/repositories/UserRepository";
+import bcrypt from "bcrypt";
 
 export async function GET(request: NextRequest) {
   try {
@@ -87,12 +88,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Hash the default password
+    const passwordHash = await bcrypt.hash("password", 10);
+
     const user = await userRepository.create({
       name,
       email: email || null,
       phone: phone || null,
       roles: role as "SuperAdmin" | "Admin",
       status: status as "active" | "inactive",
+      passwordHash,
     } as never);
 
     // Transform response to match frontend expectations
