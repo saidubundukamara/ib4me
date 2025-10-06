@@ -3,7 +3,14 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 // Public admin routes that don't require authentication
-const publicAdminRoutes = ["/admin/login", "/admin/forgot-password", "/api/admin/auth/login", "/api/admin/auth/verify"];
+const publicAdminRoutes = [
+  // Old admin routes (for fallback)
+  "/admin/login", "/admin/forgot-password", 
+  // New subdomain routes
+  "/login", "/forgot-password", "/s/admin/login", "/s/admin/forgot-password",
+  // API routes
+  "/api/admin/auth/login", "/api/admin/auth/verify"
+];
 
 // Helper function to check if user has admin token
 function hasAdminToken(req: NextRequest): boolean {
@@ -11,14 +18,72 @@ function hasAdminToken(req: NextRequest): boolean {
   return Boolean(adminToken);
 }
 
+// Helper function to extract subdomain from request
+function extractSubdomain(req: NextRequest): string | null {
+  const url = req.nextUrl.clone();
+  const hostname = req.headers.get("host") || url.hostname;
+  
+  // Handle localhost development
+  if (hostname.includes("localhost")) {
+    const parts = hostname.split(".");
+    return parts.length > 1 && parts[0] !== "localhost" ? parts[0] : null;
+  }
+  
+  // Get root domain from environment or default
+  const rootDomain = process.env.ROOT_DOMAIN || process.env.VERCEL_URL || "ib4me.com";
+  
+  // Extract subdomain from hostname
+  if (hostname.includes(rootDomain)) {
+    const subdomain = hostname.replace(`.${rootDomain}`, "");
+    return subdomain !== rootDomain ? subdomain : null;
+  }
+  
+  // Handle Vercel preview deployments
+  if (hostname.includes(".vercel.app")) {
+    const parts = hostname.split(".");
+    if (parts.length > 3) {
+      return parts[0];
+    }
+  }
+  
+  return null;
+}
+
 // Main middleware function
 export default async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
+  const subdomain = extractSubdomain(req);
   
-  // Handle admin routes separately
-  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+  // Handle admin subdomain routing
+  if (subdomain === "admin") {
+    // Block access to /admin routes on admin subdomain (they should be rewritten)
+    if (pathname.startsWith("/admin")) {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+    
+    // Rewrite root path and other paths to admin routes
+    if (pathname === "/") {
+      return NextResponse.rewrite(new URL("/s/admin", req.url));
+    } else if (!pathname.startsWith("/api/admin") && !pathname.startsWith("/s/admin")) {
+      return NextResponse.rewrite(new URL(`/s/admin${pathname}`, req.url));
+    }
+  }
+  
+  // Block access to admin routes from main domain (redirect to admin subdomain)
+  if (!subdomain && pathname.startsWith("/admin")) {
+    const adminUrl = new URL(req.url);
+    adminUrl.hostname = `admin.${adminUrl.hostname}`;
+    adminUrl.pathname = pathname.replace("/admin", "");
+    if (adminUrl.pathname === "") adminUrl.pathname = "/";
+    return NextResponse.redirect(adminUrl);
+  }
+  
+  // Handle admin routes (now only accessible via /s/admin from admin subdomain)
+  if (pathname.startsWith("/s/admin") || pathname.startsWith("/api/admin")) {
+    const routePath = pathname.startsWith("/s/admin") ? pathname.replace("/s/admin", "/admin") : pathname;
+    
     // Allow public admin routes
-    if (publicAdminRoutes.includes(pathname)) {
+    if (publicAdminRoutes.includes(routePath)) {
       return NextResponse.next();
     }
     
@@ -26,6 +91,10 @@ export default async function middleware(req: NextRequest) {
     if (!hasAdminToken(req)) {
       if (pathname.startsWith("/api/admin")) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      // Redirect to login on admin subdomain
+      if (subdomain === "admin") {
+        return NextResponse.redirect(new URL("/login", req.url));
       }
       return NextResponse.redirect(new URL("/admin/login", req.url));
     }
@@ -59,9 +128,14 @@ export default async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    // Admin routes (both old and new)
     "/admin/:path*",
+    "/s/admin/:path*",
     "/api/admin/:path*",
+    // User routes
     "/user/:path*",
     "/dashboard/:path*",
+    // Root paths for subdomain handling
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
   ],
 };
