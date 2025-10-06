@@ -24,6 +24,8 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env.local') });
 async function connectDB() {
   const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI || "";
   
+  console.log('🔍 Using MongoDB URI:', MONGODB_URI ? MONGODB_URI.substring(0, 20) + '...' : 'Not found');
+  
   if (!MONGODB_URI) {
     throw new Error("Please define the MONGODB_URI environment variable in .env.local");
   }
@@ -112,12 +114,18 @@ async function createSuperAdmin() {
     console.log('📊 Connecting to MongoDB...');
     connection = await connectDB();
     console.log('✅ Connected to MongoDB successfully');
+    console.log('🏪 Database name:', mongoose.connection.db?.databaseName || 'Unknown');
+    console.log('📋 Collection name: users');
+    
+    // Check existing users count
+    const userCount = await User.countDocuments();
+    console.log('👥 Total users in database:', userCount);
     
     // SuperAdmin details
     const superAdminData = {
       name: 'Super Admin',
-      email: 'superadmin@example.com',
-      password: 'password',
+      email: 'admin@ib4me.com',
+      password: 'admin123',
       role: 'SuperAdmin',
       status: 'active'
     };
@@ -156,6 +164,7 @@ async function createSuperAdmin() {
     const superAdmin = await User.create({
       name: superAdminData.name,
       email: superAdminData.email,
+      phone: `+232${Date.now().toString().slice(-8)}`, // Generate unique phone number
       passwordHash: passwordHash,
       roles: superAdminData.role,
       status: superAdminData.status,
@@ -179,7 +188,7 @@ async function createSuperAdmin() {
     console.log(`   Email: ${superAdminData.email}`);
     console.log(`   Password: ${superAdminData.password}`);
     console.log('');
-    console.log('🌐 You can now login at: http://localhost:3000/admin/login');
+    console.log('🌐 You can now login at: http://admin.localhost:3001/login');
     
   } catch (error) {
     console.error('❌ Error creating SuperAdmin user:');
