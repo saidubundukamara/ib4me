@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hospitalService } from "@/services/HospitalService";
-import { connectDB } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
-
     const { searchParams } = new URL(request.url);
     
     // Parse filters
@@ -45,8 +42,6 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
-
     const body = await request.json();
     const { name, address, contactPhone, contactEmail, notes, verified } = body;
 

@@ -3,12 +3,10 @@ import { getServerSession } from "next-auth";
 import type { Session } from "next-auth";
 import { NextResponse } from "next/server";
 import { authConfig } from "@/app/api/auth/[...nextauth]/route";
-import { connectDB } from "@/lib/db";
 import { campaignService } from "@/services/CampaignService";
 
 export async function GET() {
   try {
-    await connectDB();
     const session: Session | null = await getServerSession(authConfig);
     const userId = session?.user?.id
       ? new mongoose.Types.ObjectId(session.user.id)
