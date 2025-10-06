@@ -87,7 +87,7 @@ export const authConfig: NextAuthOptions = {
           name: user.name ?? "User",
           email,
           photoUrl: user.image ?? null,
-          roles: ["user"],
+          roles: "User",
           status: "active",
           emailVerified:
             account?.provider !== "credentials" ? new Date() : null,
@@ -109,7 +109,7 @@ export const authConfig: NextAuthOptions = {
       if (token.userId) {
         const dbUser = await UserModel.findById(token.userId);
         if (dbUser) {
-          token.roles = dbUser.roles ?? ["user"];
+          token.roles = dbUser.roles ?? "User";
           token.status = dbUser.status ?? "active";
         }
       }
@@ -118,7 +118,7 @@ export const authConfig: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = String(token.userId ?? "");
-        session.user.roles = (token.roles as string[]) ?? ["user"];
+        session.user.roles = token.roles ?? "User";
         session.user.status = token.status ?? "active";
       }
       return session;

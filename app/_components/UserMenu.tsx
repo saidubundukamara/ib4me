@@ -60,7 +60,7 @@ export default function UserMenu() {
           className="absolute right-0 mt-2 w-44 rounded-md border bg-white p-1 shadow-lg"
         >
           <Link
-            href="/user"
+            href="/dashboard"
             role="menuitem"
             className="block rounded-sm px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
             onClick={() => setOpen(false)}
@@ -68,7 +68,7 @@ export default function UserMenu() {
             Dashboard
           </Link>
           <Link
-            href="/user/settings"
+            href="/dashboard/settings"
             role="menuitem"
             className="block rounded-sm px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
             onClick={() => setOpen(false)}

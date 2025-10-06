@@ -99,7 +99,7 @@ export default async function CampaignsListPage() {
         <div className="space-y-3 my-7 md:space-y-6">
           <h2 className="text-balance text-4xl font-medium lg:text-5xl">Browse fundraisers by category.</h2>
           <p>People around Sierra Leone and the world are raising money for what they are passionate about..</p>
-          <Link href="/user/campaigns/new" className="inline-flex items-center rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 w-full sm:w-auto">Start a Campaign</Link>
+          <Link href="/dashboard/campaigns/new" className="inline-flex items-center rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 w-full sm:w-auto">Start a Campaign</Link>
         </div>
 
         <CampaignsGrid items={items} />
