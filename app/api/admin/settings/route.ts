@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { settingService } from "../../../../services/SettingService";
 import { validateAdminAuth, createAuthErrorResponse, AdminAuthError } from "../../../../lib/admin-auth";
-import { connectDB } from "../../../../lib/db";
 
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
-    
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
 
@@ -64,8 +61,6 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    await connectDB();
-    
     // Validate admin authentication
     const adminContext = await validateAdminAuth(request);
 
