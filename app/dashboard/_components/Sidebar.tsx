@@ -63,12 +63,12 @@ export function Sidebar() {
   const pathname = usePathname();
 
   const items: NavItem[] = [
-    { href: "/user", label: "Dashboard", icon: <Icon name="home" /> },
-    { href: "/user/campaigns", label: "My Campaigns", icon: <Icon name="campaigns" /> },
-    { href: "/user/donations", label: "Donations", icon: <Icon name="donations" /> },
-    { href: "/user/withdrawals", label: "Withdrawals", icon: <Icon name="withdrawals" /> },
-    { href: "/user/notifications", label: "Notifications", icon: <Icon name="notifications" /> },
-    { href: "/user/settings", label: "Settings", icon: <Icon name="settings" /> }
+    { href: "/dashboard", label: "Dashboard", icon: <Icon name="home" /> },
+    { href: "/dashboard/campaigns", label: "My Campaigns", icon: <Icon name="campaigns" /> },
+    { href: "/dashboard/donations", label: "Donations", icon: <Icon name="donations" /> },
+    { href: "/dashboard/withdrawals", label: "Withdrawals", icon: <Icon name="withdrawals" /> },
+    { href: "/dashboard/notifications", label: "Notifications", icon: <Icon name="notifications" /> },
+    { href: "/dashboard/settings", label: "Settings", icon: <Icon name="settings" /> }
   ];
 
   return (
@@ -79,7 +79,7 @@ export function Sidebar() {
       </div>
       <nav className="mt-6 space-y-1">
         {items.map((item) => {
-          const active = pathname === item.href || (item.href !== "/user" && pathname.startsWith(item.href));
+          const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
           return (
             <Link key={item.href} href={item.href} className={`group flex items-center gap-3 px-3 py-2 rounded-xl transition-colors hover:bg-indigo-50 ${active ? "bg-indigo-100 text-indigo-700" : "text-slate-700"}`}>
               <span className={`transition-transform group-hover:scale-110 ${active ? "text-indigo-700" : "text-slate-600"}`}>{item.icon}</span>

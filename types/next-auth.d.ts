@@ -7,7 +7,7 @@ declare module "next-auth" {
       name?: string | null;
       email?: string | null;
       image?: string | null;
-      roles: string[];
+      roles: string;
       status: "active" | "inactive" | "blocked";
     };
   }
@@ -16,7 +16,7 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     userId?: string;
-    roles?: string[];
+    roles?: string;
     status?: "active" | "inactive" | "blocked";
   }
 }

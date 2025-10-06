@@ -27,8 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is admin or superadmin
-    const userRoles = user.roles ? (Array.isArray(user.roles) ? user.roles : [user.roles]) : [];
-    if (!user.roles || !userRoles.some(role => role && ["Admin", "SuperAdmin"].includes(role))) {
+    if (!user.roles || !["Admin", "SuperAdmin"].includes(user.roles)) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -79,7 +78,7 @@ export async function POST(request: NextRequest) {
       _id: user._id,
       name: user.name,
       email: user.email,
-      role: Array.isArray(user.roles) ? user.roles.find(role => ["Admin", "SuperAdmin"].includes(role)) : user.roles,
+      role: user.roles,
       isActive: user.status === 'active'
     };
 

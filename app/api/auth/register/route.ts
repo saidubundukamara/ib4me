@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     email: email?.toLowerCase() ?? null,
     phone: phone ?? null,
     passwordHash,
-    roles: ["user"],
+    roles: "User",
     status: "active",
   });
   return NextResponse.json({ id: String(user._id) }, { status: 201 });

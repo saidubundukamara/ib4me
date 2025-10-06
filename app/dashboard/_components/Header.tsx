@@ -56,7 +56,7 @@ export function Header() {
               className="absolute right-0 top-12 w-44 rounded-xl border bg-white shadow-lg text-sm overflow-hidden"
             >
               <a
-                href="/user"
+                href="/dashboard"
                 role="menuitem"
                 className="block px-3 py-2 hover:bg-gray-50"
                 onClick={() => setOpen(false)}
@@ -64,7 +64,7 @@ export function Header() {
                 Profile
               </a>
               <a
-                href="/user/settings"
+                href="/dashboard/settings"
                 role="menuitem"
                 className="block px-3 py-2 hover:bg-gray-50"
                 onClick={() => setOpen(false)}
