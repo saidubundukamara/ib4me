@@ -2,15 +2,21 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import CampaignCard from "../_components/CampaignCard"; // Adjust the import path as needed
+import FilterCampaign from "../_components/FilterCampaign";
 
 export type CampaignGridItem = {
   id: string;
   slug: string;
   title: string;
+  description?: string; // Add this if available in your data source
   currency: string;
-  amountRaised: number; // major units
-  goalAmount: number; // major units
+  amountRaised: number;
+  goalAmount: number;
   donationsCount: number;
+  daysLeft?: number; // Add this if available in your data source (e.g., calculate from end date)
+  verified?: boolean; // Add this if available
+  urgent?: boolean; // Add this if available
   imageUrl: string;
   imageSrcSet?: string;
   imageSizes?: string;
@@ -25,15 +31,12 @@ function formatAmount(amount: number, currency: string) {
   }).format(amount);
 }
 
-function formatDonationsCount(count: number) {
-  if (count >= 1000) return `${(count / 1000).toFixed(1).replace(/\.0$/, "")}K donations`;
-  return `${count} donations`;
-}
-
 type Props = { items: CampaignGridItem[] };
 
 export default function CampaignsGrid({ items }: Props) {
   const [query, setQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedUrgency, setSelectedUrgency] = useState("All");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -42,54 +45,43 @@ export default function CampaignsGrid({ items }: Props) {
   }, [items, query]);
 
   return (
-    <div>
+    <div className="container max-w-screen-xl mx-auto py-16 px-4 font-Sora">
       <div className="flex flex-col items-center space-y-6">
-        <div className="w-full max-w-2xl">
+        <div className="flex items-center p-1 rounded-full  max-w-[30rem] w-full border border-primary/10 border-opacity-10 gap-1">
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search"
-            className="w-full rounded-md border px-3 py-2"
+            className="rounded-full py-3 px-2 w-full border-2 border-blaze-orange shadow-none focus-visible:ring-0 focus:ring-0 bg-transparent placeholder:text-muted-foreground"
             aria-label="Search"
           />
         </div>
+        <FilterCampaign
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          selectedUrgency={selectedUrgency}
+          setSelectedUrgency={setSelectedUrgency}
+        />
       </div>
-
       <div className="mt-8 flex items-center justify-between">
         <p className="text-sm text-gray-600">Showing {filtered.length} campaigns</p>
       </div>
-
       <section className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((c) => {
-          const progress = c.goalAmount > 0 ? Math.min(100, Math.round((c.amountRaised / c.goalAmount) * 100)) : 0;
           return (
             <Link key={c.id} href={`/campaigns/${c.slug}`} className="block" aria-label={`View details for ${c.title}`}>
-              <article className="overflow-hidden rounded-lg border bg-white group">
-                <div className="relative">
-                  <div className="aspect-[16/9] overflow-hidden relative">
-                    <img
-                      src={c.imageUrl}
-                      srcSet={c.imageSrcSet}
-                      sizes={c.imageSizes}
-                      alt={c.title}
-                      className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs sm:text-sm font-medium px-3 py-1 rounded-full">
-                    {formatDonationsCount(c.donationsCount)}
-                  </div>
-                </div>
-                <div className="p-4">
-                  <h4 className="font-semibold text-sm sm:text-lg line-clamp-2 mb-2">{c.title}</h4>
-                  <div className="flex flex-col gap-2">
-                    <div className="h-2 w-full overflow-hidden rounded bg-neutral-200">
-                      <div className="h-2 bg-green-500" style={{ width: `${progress}%` }} />
-                    </div>
-                    <p className="font-bold text-sm sm:text-lg">{formatAmount(c.amountRaised, c.currency)} raised</p>
-                  </div>
-                </div>
-              </article>
+              <CampaignCard
+                title={c.title}
+                description={c.description || `${formatAmount(c.amountRaised, c.currency)} raised of ${formatAmount(c.goalAmount, c.currency)} goal`}
+                imageUrl={c.imageUrl}
+                raised={c.amountRaised}
+                goal={c.goalAmount}
+                donors={c.donationsCount}
+                daysLeft={c.daysLeft || 30}
+                verified={c.verified || false}
+                urgent={c.urgent || false}
+              />
             </Link>
           );
         })}
@@ -97,5 +89,3 @@ export default function CampaignsGrid({ items }: Props) {
     </div>
   );
 }
-
-

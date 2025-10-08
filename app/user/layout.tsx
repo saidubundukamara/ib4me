@@ -1,11 +1,8 @@
 import React from "react";
-import Sidebar from "./_components/Sidebar";
-import Header from "./_components/Header";
-import PageTransition from "./_components/PageTransition";
-
+import UserLayoutShell from "./_components/UserLayoutShell";
 
 export const metadata = {
-  title: "User | IB4ME",
+  title: "User | ib4me",
 };
 
 export default function UserLayout({
@@ -13,17 +10,5 @@ export default function UserLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <div className="min-h-screen grid grid-cols-[260px_1fr]">
-      <Sidebar />
-      <div className="flex flex-col">
-        <Header />
-        <main className="p-6">
-          <PageTransition>{children}</PageTransition>
-        </main>
-      </div>
-    </div>
-  );
+  return <UserLayoutShell>{children}</UserLayoutShell>;
 }
-
-
