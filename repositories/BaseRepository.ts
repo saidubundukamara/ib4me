@@ -5,7 +5,7 @@ import mongoose, {
   QueryOptions,
   UpdateQuery,
 } from "mongoose";
-import { connectDB } from "../lib/db";
+import { ensureConnection } from "../lib/db";
 
 export type RepositorySession = mongoose.ClientSession | null | undefined;
 
@@ -21,7 +21,7 @@ export class BaseRepository<T extends mongoose.Document> {
   }
 
   protected async ensureConnection(): Promise<void> {
-    await connectDB();
+    await ensureConnection();
   }
 
   private castSession(

@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { campaignService } from "@/services/CampaignService";
-import { connectDB } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
-
     const { searchParams } = new URL(request.url);
     
     // Parse filters

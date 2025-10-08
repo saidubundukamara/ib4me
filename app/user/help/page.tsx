@@ -2,7 +2,7 @@
 
 
 import React from 'react'
-import Card from '../_components/Card'
+import {Card} from '@/components/ui/card'
 import { Bell, Heart, HelpCircle, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 

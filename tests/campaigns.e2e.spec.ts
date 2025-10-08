@@ -15,7 +15,7 @@ test("register, sign in, create new campaign", async ({ page }) => {
   await page.waitForURL(/\/?$/);
 
   // Navigate to user campaigns and start a new one
-  await page.goto("/user/campaigns");
+  await page.goto("/dashboard/campaigns");
   await page.getByRole("link", { name: "New Campaign" }).click();
 
   // Step: details
@@ -48,7 +48,7 @@ test("register, sign in, create new campaign", async ({ page }) => {
   await page.getByRole("button", { name: "Create Campaign" }).click();
 
   // Should land on detail page
-  await expect(page).toHaveURL(/\/user\/campaigns\/[a-f0-9]{24}$/);
+  await expect(page).toHaveURL(/\/dashboard\/campaigns\/[a-f0-9]{24}$/);
   await expect(page.getByRole("heading", { level: 2 })).toContainText(
     "test-campaign"
   );

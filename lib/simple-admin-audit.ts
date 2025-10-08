@@ -93,14 +93,10 @@ export async function getAdminFromSession(): Promise<{
       };
     }
 
-    const userRoles = session.user.roles || [];
-    const hasAdminRole = userRoles.some(role => 
-      ["Admin", "SuperAdmin"].includes(role)
-    );
+    const userRoles = session.user.roles || "";
+    const hasAdminRole = ["Admin", "SuperAdmin"].includes(userRoles);
 
-    const adminRole = userRoles.find(role => 
-      ["Admin", "SuperAdmin"].includes(role)
-    ) || null;
+    const adminRole = ["Admin", "SuperAdmin"].includes(userRoles) ? userRoles : null;
 
     return {
       adminId: new mongoose.Types.ObjectId(session.user.id),
