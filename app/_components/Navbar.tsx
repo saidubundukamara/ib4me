@@ -113,7 +113,7 @@ const Navbar = ({
     ],
     auth = {
         login: { text: "Log in", url: "/auth/signin" },
-        startcampaign: { text: "Start a Campaign", url: "/user/campaigns/new" },
+        startcampaign: { text: "Start a Campaign", url: "/dashboard/campaigns/new" },
     },
 }: NavbarProps) => {
     const [hasScrolled, setHasScrolled] = useState(false);
@@ -199,12 +199,12 @@ const Navbar = ({
                                             )}
                                             <h2 className="mt-2 text-sm sm:text-lg font-Lora font-semibold">{name}</h2>
                                             <div className="w-full mt-4 space-y-2">
-                                                <a href="/users">
+                                                <a href="/dashboard">
                                                     <button className="flex w-full cursor-pointer justify-between items-center px-4 py-2 rounded-lg hover:bg-gray-100">
                                                         My Campaigns <ChevronRight size={16} />
                                                     </button>
                                                 </a>
-                                                <a href="/user/settings">
+                                                <a href="/dashboard/settings">
                                                     <button className="flex w-full cursor-pointer justify-between items-center px-4 py-2 rounded-lg hover:bg-gray-100">
                                                         Settings <ChevronRight size={16} />
                                                     </button>

@@ -16,11 +16,11 @@ export default function DashboardLayout({
 }>) {
   return (
     <AuthGuard>
-      <div className="min-h-screen grid grid-cols-[260px_1fr]">
-        <Sidebar />
-        <div className="flex flex-col">
-          <Header />
-          <main className="p-6">
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <div className="flex flex-1">
+          <Sidebar />
+          <main className="flex-1 p-6">
             <PageTransition>{children}</PageTransition>
           </main>
         </div>

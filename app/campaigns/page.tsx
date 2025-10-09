@@ -108,7 +108,7 @@ export default async function CampaignsListPage() {
             People around Sierra Leone and the world are raising money for what they are passionate about..
           </p>
         </div>
-        <Link href="/user/campaigns/new" target="_blank" rel="noopener noreferrer">
+        <Link href="/dashboard/campaigns/new">
           <Button className="w-full cursor-pointer sm:w-auto rounded-xl">
             Start a Campaign
           </Button>
@@ -126,7 +126,7 @@ export default async function CampaignsListPage() {
           <h2 className="text-balance my-5 text-3xl font-medium lg:text-4xl">
             Start a fundraiser for yourself or someone else.
           </h2>
-          <Link href="/more-campaigns" className="flex items-center justify-center gap-2">
+          <Link href="/dashboard/campaigns/new" className="flex items-center justify-center gap-2">
           <Button className="w-full cursor-pointer sm:w-auto bg-blaze-orange hover:bg-blaze-orange/90 ">
               Start a Campaign
           </Button>

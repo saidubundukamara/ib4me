@@ -235,7 +235,7 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
           <p className="text-sm text-gray-600 mt-1">Manage details, documents, updates and withdrawals.</p>
         </div>
         <div className="flex items-center gap-2">
-          <a href="/user/withdrawals" className="rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm shadow hover:bg-indigo-700 transition">Withdraw</a>
+          <a href="/dashboard/withdrawals" className="rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm shadow hover:bg-indigo-700 transition">Withdraw</a>
           <button
             onClick={async () => {
               if (!confirm("Delete this campaign?") || deleteLoading) return;
@@ -243,7 +243,7 @@ export default function UserCampaignDetailPage({ params }: PageParams) {
               try {
                 const res = await fetch(`/api/campaigns/${id}`, { method: "DELETE" });
                 if (res.ok) {
-                  window.location.href = "/user/campaigns";
+                  window.location.href = "/dashboard/campaigns";
                 } else {
                   toast.error("Failed to delete campaign");
                 }

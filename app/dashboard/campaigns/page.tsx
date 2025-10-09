@@ -371,7 +371,7 @@ export default function UserCampaignsPage() {
                         <Edit className="w-4 h-4 mr-2" />
                         Edit
                       </Button>
-                      <Link href={`/user/campaigns/${campaign.id}`}>
+                      <Link href={`/dashboard/campaigns/${campaign.id}`}>
                         <Button variant="outline" size="sm" className="rounded-xl">
                           View Campaign
                         </Button>

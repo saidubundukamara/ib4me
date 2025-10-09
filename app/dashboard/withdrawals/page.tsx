@@ -60,7 +60,7 @@ export default function UserWithdrawalsPage() {
   async function fetchData() {
     try {
       const [campaignsRes, payoutsRes] = await Promise.all([
-        fetch("/api/user/campaigns"),
+        fetch("/api/campaigns"),
         fetch("/api/user/payouts"),
       ]);
 

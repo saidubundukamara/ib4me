@@ -216,7 +216,7 @@ export default async function UserDashboardPage() {
       <Card className="p-8 rounded-3xl border-0 shadow-[var(--shadow-lift)]">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg sm:text-2xl font-bold text-foreground">Your Campaigns</h2>
-          <Link href="/user/campaigns" className="text-sm text-primary">View all</Link>
+          <Link href="/dashboard/campaigns" className="text-sm text-primary">View all</Link>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {campaigns.slice(0, 6).map((c) => {
@@ -249,7 +249,7 @@ export default async function UserDashboardPage() {
       <Card className="p-8 rounded-3xl border-0 shadow-[var(--shadow-lift)]">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg sm:text-2xl font-bold text-foreground">Recent Donations</h2>
-          <a href="/user/donations" className="text-sm text-primary">View all</a>
+          <a href="/dashboard/donations" className="text-sm text-primary">View all</a>
         </div>
         <div className="space-y-4">
           {recentDonations.length === 0 ? (
