@@ -9,20 +9,21 @@ export function Sidebar() {
   const pathname = usePathname();
 
   const menuItems = [
-    { icon: Home, label: "Dashboard", path: "/user" },
-    { icon: FolderOpen, label: "My Campaigns", path: "/user/campaigns" },
-    { icon: Heart, label: "My Donations", path: "/user/donations" },
-    { icon: CreditCard, label: "Withdrawals", path: "/user/withdrawals" },
-    { icon: Bell, label: "Notifications", path: "/user/notifications" },
-    { icon: Settings, label: "Settings", path: "/user/settings" },
+    { icon: Home, label: "Dashboard", path: "/dashboard" },
+    { icon: FolderOpen, label: "My Campaigns", path: "/dashboard/campaigns" },
+    { icon: Heart, label: "My Donations", path: "/dashboard/donations" },
+    { icon: CreditCard, label: "Withdrawals", path: "/dashboard/withdrawals" },
+    { icon: Bell, label: "Notifications", path: "/dashboard/notifications" },
+    { icon: Settings, label: "Settings", path: "/dashboard/settings" },
     { icon: HelpCircle, label: "Help", path: "/user/help" }
   ];
 
   const isActive = (path: string) => pathname === path;
 
   return (
-    <nav className="space-y-1" aria-label="Profile navigation">
-      {menuItems.map((item) => {
+    <div className="w-[260px] bg-background border-r border-border p-4 flex-shrink-0">
+      <nav className="space-y-1" aria-label="Profile navigation">
+        {menuItems.map((item) => {
         const Icon = item.icon;
         const active = isActive(item.path);
         
@@ -41,8 +42,9 @@ export function Sidebar() {
             <span className="font-medium">{item.label}</span>
           </Link>
         );
-      })}
-    </nav>
+        })}
+      </nav>
+    </div>
   );
 };
 

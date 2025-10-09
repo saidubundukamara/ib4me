@@ -29,7 +29,7 @@ const ProfileHeader = () => {
                     </div>
 
                     <div className="flex flex-wrap gap-3 w-full md:w-auto">
-                        <Link href="/user/profile" className="flex-1 md:flex-none">
+                        <Link href="/dashboard" className="flex-1 md:flex-none">
                             <Button
                                 variant="default"
                                 className="w-full rounded-2xl"
@@ -38,7 +38,7 @@ const ProfileHeader = () => {
                                 Dashboard
                             </Button>
                         </Link>
-                        <Link href="/user/settings" className="flex-1 md:flex-none">
+                        <Link href="/dashboard/settings" className="flex-1 md:flex-none">
                             <Button variant="outline" className="w-full rounded-2xl">
                                 <Edit className="w-4 h-4 mr-2" />
                                 Edit Profile

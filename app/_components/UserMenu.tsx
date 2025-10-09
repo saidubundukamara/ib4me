@@ -69,24 +69,22 @@ const UserMenu = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent className="max-w-64">
                 <DropdownMenuLabel className="flex items-start gap-3">
-                    <Image
-                        src=""
-                        alt="Avatar"
-                        width={32}
-                        height={32}
-                        className="shrink-0 rounded-full"
-                    />
-                    <div className="flex min-w-0 flex-col">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full overflow-hidden">
                         {avatarUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={avatarUrl} alt={name} className="h-full w-full object-cover" />
                         ) : (
-                            <span className="flex h-full w-full items-center justify-center text-sm font-medium text-gray-700">
+                            <span className="flex h-full w-full items-center justify-center text-sm font-medium text-gray-700 bg-gray-100">
                                 {initial}
                             </span>
                         )}
-                        <span className="text-muted-foreground truncate text-xs font-normal">
+                    </div>
+                    <div className="flex min-w-0 flex-col">
+                        <span className="text-sm font-medium">
                             {name}
+                        </span>
+                        <span className="text-muted-foreground truncate text-xs font-normal">
+                            {session?.user?.email || "User Account"}
                         </span>
                     </div>
                 </DropdownMenuLabel>
@@ -94,13 +92,13 @@ const UserMenu = () => {
                 <DropdownMenuGroup>
                     <DropdownMenuItem>
                         <Heart size={16} className="opacity-60" aria-hidden="true" />
-                        <Link href='/user'>
+                        <Link href='/dashboard'>
                             My Fundraisers
                         </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                         <Settings size={16} className="opacity-60" aria-hidden="true" />
-                        <Link href='/user/settings'>
+                        <Link href='/dashboard/settings'>
                             Settings
                         </Link>
                     </DropdownMenuItem>
