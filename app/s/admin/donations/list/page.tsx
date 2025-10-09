@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -122,7 +122,7 @@ export default function AdminDonationsListPage() {
   const [anonymousFilter, setAnonymousFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const fetchDonations = async () => {
+  const fetchDonations = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -161,7 +161,7 @@ export default function AdminDonationsListPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, search, statusFilter, providerFilter, dateFromFilter, dateToFilter, amountMinFilter, amountMaxFilter, anonymousFilter]);
 
   const handleFlagClick = (donation: Donation) => {
     setFlaggingDonation(donation);
@@ -280,7 +280,7 @@ export default function AdminDonationsListPage() {
 
   useEffect(() => {
     fetchDonations();
-  }, [currentPage]);
+  }, [currentPage, fetchDonations]);
 
   return (
     <div className="p-6">

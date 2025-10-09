@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -97,7 +97,7 @@ export default function PayoutListPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const fetchPayouts = async () => {
+  const fetchPayouts = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -143,11 +143,11 @@ export default function PayoutListPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, sortBy, sortOrder, activeTab, statusFilter, searchTerm]);
 
   useEffect(() => {
     fetchPayouts();
-  }, [activeTab, statusFilter, sortBy, sortOrder, currentPage]);
+  }, [activeTab, statusFilter, sortBy, sortOrder, currentPage, fetchPayouts]);
 
   const handleSearch = () => {
     setCurrentPage(1);

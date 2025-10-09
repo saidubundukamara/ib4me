@@ -2,6 +2,7 @@
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import Image from "next/image";
 
 export default function SignInPage() {
   const [identifier, setIdentifier] = useState("");
@@ -87,7 +88,7 @@ export default function SignInPage() {
             </p>
           </div>
           <div className="relative hidden md:block">
-            <img src="/assets/donate_illustration.jpg" alt="Illustration" className="absolute inset-0 h-full w-full object-cover" />
+            <Image src="/assets/donate_illustration.jpg" alt="Illustration" fill className="object-cover" />
           </div>
         </div>
       </div>

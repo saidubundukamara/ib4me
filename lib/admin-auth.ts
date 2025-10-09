@@ -27,18 +27,18 @@ export class AdminAuthError extends Error {
  * Validates admin authentication using cookie-based auth and returns admin context
  * Throws AdminAuthError if authentication fails
  */
-export async function validateAdminAuth(request?: NextRequest): Promise<AdminContext> {
+export async function validateAdminAuth(): Promise<AdminContext> {
   try {
     // Get admin token from cookies
     const cookieStore = await cookies();
-    const adminToken = cookieStore.get('admin_token')?.value;
+    const adminToken = cookieStore.get("admin_token")?.value;
 
     if (!adminToken) {
       throw new AdminAuthError("Unauthorized - No admin token found", 401);
     }
 
     // Parse token to get user ID (format: randomString:userId)
-    const tokenParts = adminToken.split(':');
+    const tokenParts = adminToken.split(":");
     if (tokenParts.length !== 2) {
       throw new AdminAuthError("Unauthorized - Invalid token format", 401);
     }
@@ -56,12 +56,23 @@ export async function validateAdminAuth(request?: NextRequest): Promise<AdminCon
       throw new AdminAuthError("Unauthorized - No email found for user", 401);
     }
 
-    // Check if user has admin role 
-    const userRoles = user.roles ? (Array.isArray(user.roles) ? user.roles : [user.roles]) : [];
-    const hasAdminRole = userRoles.some(role => role && ["Admin", "SuperAdmin"].includes(role));
+    // Check if user has admin role
+    const userRoles = user.roles
+      ? Array.isArray(user.roles)
+        ? user.roles
+        : [user.roles]
+      : [];
+    const hasAdminRole = userRoles.some(
+      (role) => role && ["Admin", "SuperAdmin"].includes(role)
+    );
 
     if (!hasAdminRole) {
-      throw new AdminAuthError(`Forbidden - Admin access required. User roles: ${userRoles.join(", ")}`, 403);
+      throw new AdminAuthError(
+        `Forbidden - Admin access required. User roles: ${userRoles.join(
+          ", "
+        )}`,
+        403
+      );
     }
 
     // Check if user is active
@@ -96,13 +107,13 @@ export async function validateAdminAuth(request?: NextRequest): Promise<AdminCon
  * Validates super admin authentication specifically
  * Throws AdminAuthError if not super admin
  */
-export async function validateSuperAdminAuth(request?: NextRequest): Promise<AdminContext> {
-  const adminContext = await validateAdminAuth(request);
-  
+export async function validateSuperAdminAuth(): Promise<AdminContext> {
+  const adminContext = await validateAdminAuth();
+
   if (adminContext.role !== "SuperAdmin") {
     throw new AdminAuthError("Forbidden - Super admin access required", 403);
   }
-  
+
   return adminContext;
 }
 
@@ -111,10 +122,11 @@ export async function validateSuperAdminAuth(request?: NextRequest): Promise<Adm
  */
 export function extractAuditContext(request: NextRequest): AuditContext {
   return {
-    ip: request.headers.get("x-forwarded-for") || 
-        request.headers.get("x-real-ip") || 
-        "unknown",
-    userAgent: request.headers.get("user-agent") || "unknown"
+    ip:
+      request.headers.get("x-forwarded-for") ||
+      request.headers.get("x-real-ip") ||
+      "unknown",
+    userAgent: request.headers.get("user-agent") || "unknown",
   };
 }
 
@@ -123,12 +135,15 @@ export function extractAuditContext(request: NextRequest): AuditContext {
  * Automatically handles authentication and provides typed admin context
  */
 export async function withAdminAuth<T>(
-  handler: (adminContext: AdminContext, auditContext?: AuditContext) => Promise<T>,
+  handler: (
+    adminContext: AdminContext,
+    auditContext?: AuditContext
+  ) => Promise<T>,
   request?: NextRequest
 ): Promise<T> {
-  const adminContext = await validateAdminAuth(request);
+  const adminContext = await validateAdminAuth();
   const auditContext = request ? extractAuditContext(request) : undefined;
-  
+
   return handler(adminContext, auditContext);
 }
 
@@ -136,12 +151,15 @@ export async function withAdminAuth<T>(
  * Type-safe wrapper for super admin API routes
  */
 export async function withSuperAdminAuth<T>(
-  handler: (adminContext: AdminContext, auditContext?: AuditContext) => Promise<T>,
+  handler: (
+    adminContext: AdminContext,
+    auditContext?: AuditContext
+  ) => Promise<T>,
   request?: NextRequest
 ): Promise<T> {
-  const adminContext = await validateSuperAdminAuth(request);
+  const adminContext = await validateSuperAdminAuth();
   const auditContext = request ? extractAuditContext(request) : undefined;
-  
+
   return handler(adminContext, auditContext);
 }
 
@@ -152,13 +170,13 @@ export function createAuthErrorResponse(error: unknown) {
   if (error instanceof AdminAuthError) {
     return {
       error: error.message,
-      statusCode: error.statusCode
+      statusCode: error.statusCode,
     };
   }
-  
+
   console.error("Unexpected admin auth error:", error);
   return {
     error: "Internal server error",
-    statusCode: 500
+    statusCode: 500,
   };
 }

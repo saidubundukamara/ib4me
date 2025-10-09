@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -75,7 +75,7 @@ export default function AdminDonationsPage() {
   const [error, setError] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -135,7 +135,7 @@ export default function AdminDonationsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateFilter]);
 
   const handleDateFilterChange = (filter: string) => {
     setDateFilter(filter);
@@ -148,7 +148,7 @@ export default function AdminDonationsPage() {
 
   useEffect(() => {
     fetchAnalytics();
-  }, [dateFilter]);
+  }, [dateFilter, fetchAnalytics]);
 
   if (loading) {
     return (

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -121,7 +121,7 @@ export default function PayoutDetailPage() {
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
   const [actionNote, setActionNote] = useState("");
 
-  const fetchPayoutDetails = async () => {
+  const fetchPayoutDetails = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -151,13 +151,13 @@ export default function PayoutDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [payoutId]);
 
   useEffect(() => {
     if (payoutId) {
       fetchPayoutDetails();
     }
-  }, [payoutId]);
+  }, [payoutId, fetchPayoutDetails]);
 
   const handleAction = async (action: "approve" | "reject" | "override") => {
     if (!payout || !session?.user?.id) return;

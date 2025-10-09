@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,7 +47,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const isSuperAdmin = currentUser?.role === "SuperAdmin";
   const { id: userId } = React.use(params);
 
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -77,7 +77,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => {
@@ -212,7 +212,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     if (userId) {
       fetchUser();
     }
-  }, [userId]);
+  }, [userId, fetchUser]);
 
   // Redirect if not super admin
   if (!isSuperAdmin) {
