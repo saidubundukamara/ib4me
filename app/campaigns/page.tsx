@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import { campaignService, mediaAssetService } from "@/services";
 import { CloudinaryService } from "@/lib/cloudinary";
 import CampaignsGrid from "@/app/campaigns/CampaignsGrid";
+import { Button } from "@/components/ui/button";
+
 
 type CampaignListItem = {
   id: string;
@@ -93,23 +95,45 @@ async function getActiveCampaigns(): Promise<CampaignListItem[]> {
 
 export default async function CampaignsListPage() {
   const items = await getActiveCampaigns();
+
   return (
-    <main className="py-8 md:py-16">
-      <div className="container mx-auto max-w-screen-xl px-4">
+    <section className="py-8 md:py-16 font-Sora">
+      <div className="mx-auto max-w-screen-xl container px-6 sm:px-0">
+        {/* Text Content */}
         <div className="space-y-3 my-7 md:space-y-6">
-          <h2 className="text-balance text-4xl font-medium lg:text-5xl">Browse fundraisers by category.</h2>
-          <p>People around Sierra Leone and the world are raising money for what they are passionate about..</p>
-          <Link href="/dashboard/campaigns/new" className="inline-flex items-center rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 w-full sm:w-auto">Start a Campaign</Link>
+          <h2 className="text-balance text-4xl font-bold lg:text-5xl">
+            Browse <span className="text-blaze-orange">Campaigns</span> by category.
+          </h2>
+          <p>
+            People around Sierra Leone and the world are raising money for what they are passionate about..
+          </p>
         </div>
+        <Link href="/user/campaigns/new" target="_blank" rel="noopener noreferrer">
+          <Button className="w-full cursor-pointer sm:w-auto rounded-xl">
+            Start a Campaign
+          </Button>
+        </Link>
 
         <CampaignsGrid items={items} />
 
+        <div className="text-center mt-12">
+          <Button variant="outline" size="lg" className="rounded-full">
+            Load More Campaigns
+          </Button>
+        </div>
+
         <div className="flex flex-col items-center justify-center space-y-3 py-8 md:py-16">
-          <h2 className="text-balance my-5 text-3xl font-medium lg:text-4xl">Start a fundraiser for yourself or someone else.</h2>
-          <Link href="/more-campaigns" className="inline-flex items-center rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800">Explore more Campaigns</Link>
+          <h2 className="text-balance my-5 text-3xl font-medium lg:text-4xl">
+            Start a fundraiser for yourself or someone else.
+          </h2>
+          <Link href="/more-campaigns" className="flex items-center justify-center gap-2">
+          <Button className="w-full cursor-pointer sm:w-auto bg-blaze-orange hover:bg-blaze-orange/90 ">
+              Start a Campaign
+          </Button>
+           </Link>
         </div>
       </div>
-    </main>
+    </section>
   );
 }
 

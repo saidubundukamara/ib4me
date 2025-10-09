@@ -1,6 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import React from "react";
+import {Button} from "@/components/ui/button";
 
 export type SelectedFile = {
   id: string;
@@ -41,10 +43,9 @@ export default function DocumentUpload({ accept = ["image/*", "application/pdf"]
 
   // Sync internal state if controlled value prop changes
   React.useEffect(() => {
-    if (value && value !== files) {
-      setFiles(value);
-    }
-  }, [value, files]);
+    if (!value) return;
+    setFiles((prev) => (prev === value ? prev : value));
+  }, [value]);
 
   function pick() {
     inputRef.current?.click();
@@ -71,22 +72,22 @@ export default function DocumentUpload({ accept = ["image/*", "application/pdf"]
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={onDrop}
-        className="rounded-2xl border border-dashed bg-white/70 dark:bg-white/5 p-5 text-center"
+        className="rounded-2xl border border-dashed bg-white/70 p-5 text-center"
       >
         <p className="text-sm">{label}</p>
         <p className="text-xs text-gray-500 mt-1">Drag & drop images or PDFs, or</p>
-        <button type="button" onClick={pick} className="mt-3 rounded-xl bg-indigo-600 text-white px-3 py-1.5 text-sm shadow hover:bg-indigo-700">Browse</button>
+        <Button type="button" onClick={pick} className="mt-3">Browse</Button>
         <input ref={inputRef} type="file" multiple accept={accept.join(",")} className="hidden" onChange={(e) => handleFiles(e.target.files)} />
       </div>
 
       {files.length > 0 && (
         <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           {files.map((f) => (
-            <li key={f.id} className="flex items-center gap-3 rounded-xl border p-3 bg-white/70 dark:bg-white/5">
+            <li key={f.id} className="flex items-center gap-3 rounded-xl border p-3 bg-white/70 ">
               {f.previewUrl ? (
-                <img src={f.previewUrl} alt={f.file.name} className="h-12 w-12 rounded-md object-cover" />
+                <Image src={f.previewUrl} alt={f.file.name} className="h-12 w-12 rounded-md object-cover" />
               ) : (
-                <div className="h-12 w-12 grid place-items-center rounded-md bg-gray-100 dark:bg-white/10">
+                <div className="h-12 w-12 grid place-items-center rounded-md bg-gray-100 ">
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
                 </div>
               )}
@@ -94,7 +95,7 @@ export default function DocumentUpload({ accept = ["image/*", "application/pdf"]
                 <div className="truncate text-sm font-medium">{f.file.name}</div>
                 <div className="text-xs text-gray-500">{f.file.type || "file"} • {formatBytes(f.file.size)}</div>
               </div>
-              <button type="button" onClick={() => remove(f.id)} className="rounded-lg border px-2 py-1 text-xs hover:bg-gray-50 dark:hover:bg-white/10">Remove</button>
+              <Button type="button" onClick={() => remove(f.id)} variant="destructive">Remove</Button>
             </li>
           ))}
         </ul>

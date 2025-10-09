@@ -3,6 +3,10 @@
 import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import Card from "../_components/Card";
 
 type User = {
   _id: string;
@@ -168,13 +172,61 @@ export default function UserSettingsPage() {
     }
   }
 
-  if (loading) {
+if (loading) {
     return (
-      <div className="space-y-6 max-w-3xl">
+      <div className="space-y-6 max-w-2xl">
         <div>
-          <h2 className="text-2xl font-semibold">Settings</h2>
-          <p className="text-sm text-gray-600 mt-1">Loading...</p>
+          <Skeleton className="h-8 w-48 mb-2" />
+          <Skeleton className="h-4 w-64" />
         </div>
+
+        {/* Stats Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i} className="p-6 border-border bg-card">
+              <div className="flex items-center gap-4">
+                <Skeleton className="p-3 rounded-xl w-12 h-12" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-6 w-20" />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {/* Recent Withdrawals Card Skeleton */}
+        <Card className="p-6 border-border bg-card">
+          <Skeleton className="h-6 w-32 mb-4" />
+          <div className="space-y-6">
+            {/* WithdrawalForm Skeleton */}
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-3/4" />
+              <Skeleton className="h-10 w-1/2" />
+              <Skeleton className="h-12 w-full rounded-lg" />
+            </div>
+
+            {/* Recent Withdrawals List Skeleton */}
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-lg border border-border bg-background">
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <Skeleton className="h-4 w-48" />
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="w-3 h-3 rounded-full" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 mt-2 md:mt-0">
+                    <Skeleton className="h-6 w-20 rounded-md" />
+                    <Skeleton className="h-5 w-16" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
       </div>
     );
   }
@@ -188,29 +240,26 @@ export default function UserSettingsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <form onSubmit={updateProfile} className="rounded-2xl border p-4 bg-white/80 dark:bg-white/5 space-y-3">
           <h3 className="font-medium">Profile</h3>
-          <input 
+          <Input 
             name="name" 
             defaultValue={user?.name ?? ""} 
-            className="w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5" 
             placeholder="Full name"
             disabled={profileLoading}
           />
-          <input 
+          <Input 
             name="email" 
             defaultValue={user?.email ?? ""} 
-            className="w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5" 
             placeholder="Email"
             disabled={profileLoading}
           />
-          <input 
+          <Input 
             name="phone" 
             defaultValue={user?.phone ?? ""} 
-            className="w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5" 
             placeholder="Phone"
             disabled={profileLoading}
           />
           <div className="flex items-center gap-2 text-sm">
-            <input 
+            <Input 
               id="whatsappOptIn" 
               name="whatsappOptIn" 
               type="checkbox" 
@@ -231,84 +280,80 @@ export default function UserSettingsPage() {
 
         <form onSubmit={updateAddress} className="rounded-2xl border p-4 bg-white/80 dark:bg-white/5 space-y-3">
           <h3 className="font-medium">Address</h3>
-          <input 
+          <Input 
             name="country" 
             defaultValue={user?.address?.country ?? ""} 
-            className="w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5" 
             placeholder="Country"
             disabled={addressLoading}
           />
-          <input 
+          <Input 
             name="city" 
             defaultValue={user?.address?.city ?? ""} 
-            className="w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5" 
             placeholder="City"
             disabled={addressLoading}
           />
-          <button 
+          <Button 
             type="submit"
-            className="rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={addressLoading}
           >
             {addressLoading ? "Saving..." : "Save Address"}
-          </button>
+          </Button>
         </form>
 
         <form onSubmit={updatePayouts} className="rounded-2xl border p-4 bg-white/80 dark:bg-white/5 space-y-3 md:col-span-2">
           <h3 className="font-medium">Payout Details</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <input 
+            <Input 
               name="mm_provider" 
               defaultValue={user?.payoutPreferences?.mobileMoney?.provider ?? ""} 
-              className="w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5" 
+
               placeholder="MM Provider"
               disabled={payoutsLoading}
             />
-            <input 
+            <Input 
               name="mm_msisdn" 
               defaultValue={user?.payoutPreferences?.mobileMoney?.msisdn ?? ""} 
-              className="w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5" 
+
               placeholder="Mobile Number"
               disabled={payoutsLoading}
             />
-            <input 
+            <Input 
               name="mm_name" 
               defaultValue={user?.payoutPreferences?.mobileMoney?.accountName ?? ""} 
-              className="w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5" 
+
               placeholder="MM Account Name"
               disabled={payoutsLoading}
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <input 
+            <Input 
               name="bank_name" 
               defaultValue={user?.payoutPreferences?.bank?.bankName ?? ""} 
-              className="w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5" 
+
               placeholder="Bank name"
               disabled={payoutsLoading}
             />
-            <input 
+            <Input 
               name="bank_number" 
               defaultValue={user?.payoutPreferences?.bank?.accountNumber ?? ""} 
-              className="w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5" 
+
               placeholder="Account number"
               disabled={payoutsLoading}
             />
-            <input 
+            <Input 
               name="bank_acc_name" 
               defaultValue={user?.payoutPreferences?.bank?.accountName ?? ""} 
-              className="w-full rounded-xl border px-3 py-2 bg-white/70 dark:bg-white/5" 
+
               placeholder="Account name"
               disabled={payoutsLoading}
             />
           </div>
-          <button 
+          <Button 
             type="submit"
-            className="rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={payoutsLoading}
           >
             {payoutsLoading ? "Saving..." : "Save Payout Details"}
-          </button>
+          </Button>
         </form>
       </div>
     </div>

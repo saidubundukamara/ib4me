@@ -1,76 +1,112 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+
+import { Button } from "@/components/ui/button"
+import Image from "next/image"
+import Link from "next/link"
+import { useEffect, useState } from "react";
 import CountUp from "react-countup";
-import { ChevronRight, User, Users, HeartHandshake } from "lucide-react";
+import { Carousel, CarouselContent, CarouselItem, CarouselApi } from "@/components/ui/carousel"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, } from "@/components/ui/dropdown-menu";
+import { ArrowRight, Heart, DollarSign, Search, UserPlus, ArrowLeft, Megaphone, Target, Quote, CloudLightning, ChevronDown, } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MdOutlineHealthAndSafety, MdOutlineDeviceThermostat } from "react-icons/md";
 import { FaResearchgate } from "react-icons/fa";
 import { RiMentalHealthLine, RiUserCommunityFill } from "react-icons/ri";
 import { TfiSupport } from "react-icons/tfi";
-
-// Removed sampleCampaigns; DiscoverCampaigns now fetches from API
-
-function formatAmount(amount: number, currency: string) {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-function formatDonationsCount(count: number) {
-  if (count >= 1000) return `${(count / 1000).toFixed(1).replace(/\.0$/, "")}K donations`;
-  return `${count} donations`;
-}
+import Logo from "@/public/assets/ib4melogowhite.png";
+import CampaignCard from "./_components/CampaignCard";
+import { stats } from "./_components/stats";
 
 export default function Home() {
   return (
     <div>
       <HeroSection />
       <StatsSection />
-      <GetStartedSection />
       <DiscoverCampaigns />
-      <CategoriesSection />
-      <InfoSection />
-      <HowIb4meWorks />
-      <CoveredCard />
-      <StoriesSection />
+      <Testimonials />
+      <GetStartedSection />
       <FundraiseSection />
+      <CategoriesSection />
+
     </div>
   );
 }
 
 function HeroSection() {
   return (
-    <section>
-      <div className="container mx-auto max-w-screen-xl px-4 py-10 grid items-center gap-8 lg:grid-cols-2 lg:gap-20">
-        <div className="mx-auto flex flex-col items-center text-center lg:items-start lg:text-left">
-          <h1 className="my-6 text-pretty text-3xl font-bold lg:text-5xl xl:text-6xl">
-            {" Let's come together as a community and Ib4me"}
-          </h1>
-          <p className="text-gray-600 mb-8 max-w-xl sm:text-xl text-lg">
-            Connect with a community that cares. Raise funds for medical treatments, support
-            healthcare needs, and help others in their journey to wellness.
-          </p>
-          <div className="flex w-full flex-col justify-center gap-2 sm:flex-row lg:justify-start">
-            <Link href="/dashboard/campaigns/new" className="inline-flex items-center justify-center rounded-md bg-gray-900 px-4 py-2 text-white">
-              Start a Campaign
-              <ChevronRight className="ml-2 h-4 w-4" />
-            </Link>
-            <Link href="/campaigns" className="inline-flex items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-gray-900 hover:bg-gray-50">
-              Ib4me Now
-            </Link>
+    <section className="relative overflow-hidden bg-fun-green py-12 sm:py-16 md:py-24 lg:py-32">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div
+          className="mx-auto max-w-4xl text-center transition-all duration-50 "
+        >
+          {/* Badge */}
+          <div className="mb-4 sm:mb-6 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-primary">
+            <Heart className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
+            <span>Trusted by thousands of donors worldwide</span>
           </div>
-        </div>
-        <div className="flex">
-          <img
-            src="/assets/Hero.png"
-            alt="hero"
-            className="max-h-[600px] w-full rounded-md object-cover lg:max-h-[800px]"
-          />
+
+          {/* Logo */}
+          <div className="mb-5 sm:mb-6 flex justify-center animate-scale-in">
+            <Image
+              src={Logo}
+              alt="ib4me - Put Fo Wɛlbɔdi"
+              className="h-16 sm:h-20 md:h-24 lg:h-28 w-auto"
+              priority
+            />
+          </div>
+
+          {/* Main Heading */}
+          <h1 className="mb-4 sm:mb-6 text-balance font-Sora font-bold leading-tight tracking-tight text-white text-3xl sm:text-4xl md:text-5xl lg:text-6xl">
+            <span className="text-blaze-orange">Helping</span> Each Other Can Make The World A{" "}
+            <span className="text-blaze-orange">Better</span> Place
+          </h1>
+
+          {/* Subheading */}
+          <p className="mx-auto mb-8 sm:mb-10 max-w-2xl text-pretty font-Sora text-white/80 text-base sm:text-lg md:text-xl leading-relaxed">
+            Support life-changing medical campaigns, connect with healthcare providers, and make a real difference in
+            someone&#39;s journey to recovery.
+          </p>
+
+          {/* CTA Buttons */}
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+            <Button
+              size="lg"
+              className="group h-11 sm:h-12 rounded-2xl bg-blaze-orange px-6 sm:px-8 text-sm sm:text-base font-semibold text-white transition-all hover:bg-blaze-orange/90 hover:shadow-lg"
+              asChild
+            >
+              <Link href="/campaigns">
+                Explore Campaigns
+                <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+              </Link>
+            </Button>
+
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-11 sm:h-12 rounded-2xl border-2 border-white bg-transparent px-6 sm:px-8 text-sm sm:text-base font-semibold text-white transition-all hover:bg-primary hover:text-white"
+              asChild
+            >
+              <Link href="/start-campaign">Start a Campaign</Link>
+            </Button>
+          </div>
+
+          {/* Trust Indicators */}
+          <div className="mt-10 sm:mt-12 flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:gap-8 text-xs sm:text-sm text-white/90">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-chartereuse" />
+              <span>Secure & Verified</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-chartereuse" />
+              <span>100% Transparent</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-chartereuse" />
+              <span>Fast Withdrawals</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -78,127 +114,72 @@ function HeroSection() {
 }
 
 function StatsSection() {
-  const stats = useMemo(
-    () => [
-      { value: "1,200", label: "campaigns funded" },
-      { value: "56%", label: "Raised" },
-      { value: "500", label: "Fundraisers" },
-    ],
-    []
-  );
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    setIsVisible(true)
+  }, [])
 
   return (
-    <section className="py-8 md:py-14">
-      <div className="mx-auto max-w-5xl space-y-8 px-6 md:space-y-16">
-        <div className="relative z-10 mx-auto max-w-xl space-y-6 text-center">
-          <h2 className="text-4xl font-semibold lg:text-5xl">Ib4me in numbers</h2>
-          <p className="text-gray-600">
+    <section className="border-y border-border bg-muted/20 py-12 sm:py-16 lg:py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="relative z-10 mx-auto max-w-2xl text-center space-y-4 sm:space-y-6">
+          <h2 className="font-Sora font-semibold text-3xl sm:text-4xl lg:text-5xl">
+            ib4me in <span className="text-fun-green">numbers</span>
+          </h2>
+          <p className="text-gray-600 text-sm sm:text-base lg:text-lg">
             Join thousands of people who have successfully funded their medical treatments and helped others in need.
           </p>
         </div>
-        <div className="grid gap-0.5 *:text-center md:grid-cols-3">
-          {stats.map((stat, i) => (
-            <div key={i} className="rounded space-y-4 border py-12">
-              <div className="text-2xl sm:text-4xl font-bold">
-                <CountUp start={0} end={parseFloat(stat.value.replace(/[^\d.-]/g, ""))} duration={5} separator="," />
-                {stat.value.includes("%") ? "%" : "+"}
+
+        <div className="mt-10 sm:mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-fr gap-6 sm:gap-8 font-Sora">
+          {stats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <div
+                key={index}
+                className={`flex h-full flex-col items-center text-center transition-all duration-700 ${isVisible ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
+                  } motion-reduce:transform-none motion-reduce:opacity-100`}
+                style={{ transitionDelay: `${index * 100}ms` }}
+              >
+                <div
+                  className="mb-3 sm:mb-4 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full"
+                  style={{ backgroundColor: `${stat.color}20` }}
+                >
+                  <Icon className="h-7 w-7 sm:h-8 sm:w-8" style={{ color: stat.color }} aria-hidden="true" />
+                </div>
+
+                <div className="mb-1.5 sm:mb-2 text-3xl sm:text-4xl font-bold" style={{ color: stat.color }}>
+                  <CountUp
+                    start={0}
+                    end={parseFloat(stat.value.replace(/[^\d.-]/g, ""))}
+                    duration={5}
+                    separator=","
+                  />
+                  {stat.value.includes("%") ? "%" : "+"}
+                </div>
+
+                <div className="text-xs sm:text-sm font-medium text-muted-foreground">{stat.label}</div>
               </div>
-              <p>{stat.label}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
   );
 }
 
-function GetStartedSection() {
-  const features = [
-    { step: "Step 1", content: "Use our tool to create your fundraising Campaign.", image: "/assets/Create-fundraiser.jpg" },
-    { step: "Step 2", content: "Reach Donors by sharing.", image: "/assets/recieve-donations.png" },
-    { step: "Step 3", content: "Securely recieve funds.", image: "/assets/share-fundraiser.png" },
-  ];
-  const [currentFeature, setCurrentFeature] = useState(0);
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setProgress((prev) => {
-        const next = prev + 3.33;
-        if (next >= 100) {
-          setCurrentFeature((p) => (p + 1) % features.length);
-          return 0;
-        }
-        return next;
-      });
-    }, 100);
-    return () => clearInterval(timer);
-  }, [features.length]);
-
-  return (
-    <div className="py-10 p-8 md:p-12 flex items-center justify-center">
-      <div className="max-w-7xl mx-auto w-full">
-        <h2 className="text-2xl md:text-3xl lg:text-4xl font-extrabold mb-10 md:mb-12 text-center text-neutral-900">
-          Fundraising on Ib4me is easy, powerful, and trusted.
-        </h2>
-        <div className="flex flex-col md:grid md:grid-cols-2 gap-6 md:gap-10">
-          <div className="order-2 md:order-1 space-y-8">
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                className="flex items-center gap-6 md:gap-8"
-                initial={{ opacity: 0.3 }}
-                animate={{ opacity: index === currentFeature ? 1 : 0.3 }}
-                transition={{ duration: 0.5 }}
-              >
-                <motion.div
-                  className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center ${index === currentFeature ? "bg-green-400 scale-110" : "bg-gray-500"} border-2 ${index === currentFeature ? "border-green-400" : "border-gray-400"}`}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {index <= currentFeature ? (
-                    <span className="text-white text-lg font-bold">✓</span>
-                  ) : (
-                    <span className="text-white text-lg font-semibold">{index + 1}</span>
-                  )}
-                </motion.div>
-                <div className="flex-1">
-                  <h3 className="text-xl md:text-2xl font-semibold text-neutral-900">{feature.step}</h3>
-                  <p className="text-sm md:text-lg text-neutral-800">{feature.content}</p>
-                </div>
-              </motion.div>
-            ))}
-            <div className="h-2 w-full overflow-hidden rounded bg-neutral-200">
-              <div className="h-2 bg-green-400" style={{ width: `${progress}%` }} />
-            </div>
-          </div>
-          <div className="order-1 md:order-2 relative h-[200px] md:h-[300px] lg:h-[400px] overflow-hidden rounded-lg shadow-lg">
-            <AnimatePresence mode="wait">
-              {features.map((feature, index) =>
-                index === currentFeature ? (
-                  <motion.div
-                    key={index}
-                    className="absolute inset-0 rounded-lg overflow-hidden"
-                    initial={{ y: 100, opacity: 0, rotateX: -20 }}
-                    animate={{ y: 0, opacity: 1, rotateX: 0 }}
-                    exit={{ y: -100, opacity: 0, rotateX: 20 }}
-                    transition={{ duration: 0.5, ease: "easeInOut" }}
-                  >
-                    <img src={feature.image} alt={feature.step} className="w-full h-full object-cover" />
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/30 to-transparent p-4" />
-                  </motion.div>
-                ) : null
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function DiscoverCampaigns() {
+  function formatAmount(amount: number, currency: string) {
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  }
+
   type Item = {
     id: string;
     slug: string;
@@ -211,7 +192,7 @@ function DiscoverCampaigns() {
   };
 
   const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [api, setApi] = useState<CarouselApi | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -224,53 +205,225 @@ function DiscoverCampaigns() {
         if (!cancelled) setItems([]);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setItems((items) => items.slice(0, 6));
       });
     return () => {
       cancelled = true;
     };
   }, []);
 
+
   return (
-    <main className="container max-w-screen-xl mx-auto py-16 px-4">
+    <main className="container max-w-screen-xl mx-auto py-16 px-4 font-Sora">
+      <div className="text-center mb-16 space-y-4 animate-fade-in">
+        <h2 className="text-4xl sm:text-5xl font-bold text-foreground">
+          Featured <span className="text-blaze-orange">Campaigns</span>
+        </h2>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          Every campaign represents a real person in need. Your generosity can change lives.
+        </p>
+      </div>
       <div className="flex flex-col md:flex-row justify-start md:justify-between items-start md:items-center gap-4 py-5">
-        <h1 className="text-2xl font-bold m-0">Discover Campaigns inspired by what you care about</h1>
-        <Link href="/campaigns" className="inline-flex items-center rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800">View All Campaigns</Link>
+        <h1 className="text-2xl font-bold  m-0">
+          Discover Campaigns inspired by what you care about
+        </h1>
+        <Link href="/campaigns">
+          <Button>View All Campaigns</Button>
+        </Link>
       </div>
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {(loading ? [] : items).map((c) => {
-          const progress = c.goalAmount > 0 ? Math.min(100, Math.round((c.amountRaised / c.goalAmount) * 100)) : 0;
-          return (
-            <Link key={c.id} href={`/campaigns/${c.slug}`} className="block" aria-label={`View details for ${c.title}`}>
-              <article className="overflow-hidden rounded-lg border bg-white group">
-                <div className="relative">
-                  <div className="aspect-[16/9] overflow-hidden relative">
-                    <img src={c.imageUrl} alt={c.title} className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105" />
-                  </div>
-                  <div className="absolute bottom-3 left-3 bg-black/70 text-white text-sm font-medium px-3 py-1 rounded-full">
-                    {formatDonationsCount(c.donationsCount)}
-                  </div>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                Help save Lives
+                <ChevronDown className="-me-1 opacity-60" size={16} aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="min-w-[--radix-dropdown-menu-trigger-width]">
+              <DropdownMenuItem className="cursor-pointer">
+                <div
+                  className="bg-background flex size-8 items-center justify-center rounded-md border"
+                  aria-hidden="true"
+                >
+                  <Megaphone size={16} className="opacity-60 text-blaze-orange" />
                 </div>
-                <div className="p-4">
-                  <h4 className="font-semibold text-sm sm:text-lg line-clamp-2 mb-2">{c.title}</h4>
-                  <div className="flex flex-col gap-2">
-                    <div className="h-2 w-full overflow-hidden rounded bg-neutral-200">
-                      <div className="h-2 bg-green-500" style={{ width: `${progress}%` }} />
-                    </div>
-                    <p className="font-bold text-sm sm:text-lg">{formatAmount(c.amountRaised, c.currency)} raised</p>
-                  </div>
+                <div>
+                  <div className="text-sm font-medium">Just Started</div>
+                  <div className="text-muted-foreground text-xs">Fundraisers started in the last two days</div>
                 </div>
-              </article>
-            </Link>
-          );
-        })}
+              </DropdownMenuItem>
+
+              <DropdownMenuItem className="cursor-pointer">
+                <div
+                  className="bg-background flex size-8 items-center justify-center rounded-md border"
+                  aria-hidden="true"
+                >
+                  <Target size={16} className="opacity-60 text-blaze-orange" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium">Close to goal</div>
+                  <div className="text-muted-foreground text-xs">Fundraisers within 5% of their goal</div>
+                </div>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem className="cursor-pointer">
+                <div
+                  className="bg-background flex size-8 items-center justify-center rounded-md border"
+                  aria-hidden="true"
+                >
+                  <CloudLightning size={16} className="opacity-60 text-blaze-orange" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium">Needs Momentum</div>
+                  <div className="text-muted-foreground text-xs">Fundraisers that need a push</div>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => api?.scrollPrev()}
+            className="p-2 cursor-pointer rounded-full border text-blaze-orange"
+            aria-label="Previous"
+          >
+            <ArrowLeft />
+          </button>
+          <button
+            onClick={() => api?.scrollNext()}
+            className="p-2 cursor-pointer rounded-full border text-blaze-orange"
+            aria-label="Next"
+          >
+            <ArrowRight />
+          </button>
+        </div>
       </div>
+
+      <Carousel setApi={setApi} opts={{ align: "start" }}>
+        <CarouselContent>
+          {items.map((c) => (
+            <CarouselItem key={c.id} className="md:basis-1/2 lg:basis-1/3">
+              <div className="p-1">
+                <Link href={`/campaigns/${c.slug}`} aria-label={`View details for ${c.title}`}>
+                  <CampaignCard
+                    title={c.title}
+                    description={`${formatAmount(c.amountRaised, c.currency)} raised of ${formatAmount(
+                      c.goalAmount,
+                      c.currency
+                    )}`}
+                    imageUrl={c.imageUrl}
+                    raised={c.amountRaised}
+                    goal={c.goalAmount}
+                    donors={c.donationsCount}
+                    daysLeft={30}
+                    verified={false}
+                    urgent={false}
+                  />
+                </Link>
+              </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
     </main>
   );
 }
 
+
+
+function GetStartedSection() {
+  const steps = [
+    {
+      icon: Search,
+      title: "Find a Campaign",
+      description: "Browse verified medical campaigns and find one that resonates with you.",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+    },
+    {
+      icon: UserPlus,
+      title: "Create Your Profile",
+      description: "Sign up and create your donor profile to start making a difference.",
+      color: "text-blaze-orange",
+      bgColor: "bg-blaze-orange/10",
+    },
+    {
+      icon: DollarSign,
+      title: "Make a Donation",
+      description: "Choose your amount and securely contribute to life-changing medical care.",
+      color: "text-orange-blaze",
+      bgColor: "bg-orange-blaze/10",
+    },
+    {
+      icon: Heart,
+      title: "Track Your Impact",
+      description: "Follow the campaigns you support and see the real-world impact of your generosity.",
+      color: "text-chartereuse",
+      bgColor: "bg-chartereuse/10",
+    },
+  ];
+
+  return (
+    <section className="bg-background py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        {/* Section Header */}
+        <div className="text-center mb-10 sm:mb-14 space-y-3 sm:space-y-4 animate-fade-in">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground">
+            How <span className="text-blaze-orange">ib4me</span> Works
+          </h2>
+          <p className="mx-auto max-w-2xl text-base sm:text-lg text-muted-foreground">
+            Making a difference is simple. Follow these easy steps to start changing lives today.
+          </p>
+        </div>
+
+        {/* Steps Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+          {steps.map((step, index) => {
+            const Icon = step.icon;
+            return (
+              <div
+                key={index}
+                className={`relative group animate-slide-up motion-reduce:animate-none`}
+                style={{ animationDelay: `${index * 0.15}s` }}
+              >
+                {/* Connecting Line (lg+) */}
+                {index < steps.length - 1 && (
+                  <div className="hidden lg:block absolute top-16 left-[60%] w-full h-0.5 bg-gradient-to-r from-border to-transparent" />
+                )}
+
+                {/* Step Card */}
+                <div className="relative h-full rounded-3xl border border-border bg-card p-6 sm:p-8 text-center transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[var(--shadow-lift)]">
+                  {/* Step Number */}
+                  <div className="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-base sm:text-lg shadow-lg">
+                    {index + 1}
+                  </div>
+
+                  {/* Icon */}
+                  <div className={`${step.bgColor} ${step.color} mx-auto mb-5 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-105`}>
+                    <Icon className="h-8 w-8 sm:h-10 sm:w-10" aria-hidden="true" />
+                  </div>
+
+                  {/* Content */}
+                  <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2.5 sm:mb-3">
+                    {step.title}
+                  </h3>
+                  <p className="text-sm sm:text-base text-muted-foreground">
+                    {step.description}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function CategoriesSection() {
-  const categories = [
+  const category = [
     { id: 1, name: "Treatments & Procedures", icon: MdOutlineHealthAndSafety, href: "/discover/medical" },
     { id: 2, name: "Research & Innovation", icon: FaResearchgate, href: "/discover/education" },
     { id: 3, name: "Mental Health & Therapy", icon: RiMentalHealthLine, href: "/discover/emergency" },
@@ -280,16 +433,25 @@ function CategoriesSection() {
   ];
 
   return (
-    <section className="py-14 sm:py-20">
-      <div className="container max-w-5xl mx-auto px-4 md:px-6">
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">Find a fundraiser by category</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {categories.map((category) => (
-            <Link key={category.id} href={category.href} className="flex flex-col items-center p-4 bg-white rounded-lg border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="p-3 rounded-full mb-3">
-                <category.icon className="h-10 w-10 text-green-300" />
+    <section className="font-Sora py-12 sm:py-16 lg:py-20">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <h2 className="font-Lora text-center text-3xl sm:text-4xl lg:text-5xl font-bold mb-8 sm:mb-12">
+          Find a <span className="text-fun-green">fundraiser</span> by category
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 auto-rows-fr gap-4 sm:gap-6">
+          {category.map((cat) => (
+            <Link
+              key={cat.id}
+              href={cat.href}
+              className="group flex h-full w-full flex-col items-center rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 text-center transition-all hover:-translate-y-1 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
+              <div className="p-3 sm:p-4 rounded-full mb-3">
+                <cat.icon
+                  className="h-8 w-8 sm:h-10 sm:w-10 text-primary transition-colors group-hover:text-blaze-orange"
+                  aria-hidden="true"
+                />
               </div>
-              <span className="font-medium text-center">{category.name}</span>
+              <span className="text-sm sm:text-base font-medium">{cat.name}</span>
             </Link>
           ))}
         </div>
@@ -298,137 +460,112 @@ function CategoriesSection() {
   );
 }
 
-function InfoSection() {
-  return (
-    <section className="py-16 md:py-32 bg-white">
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="grid gap-6 md:grid-cols-2 md:gap-12">
-          <h2 className="text-3xl sm:text-4xl font-medium">Fundraising on Ib4me is easy, powerful, and trusted.</h2>
-          <div className="space-y-6">
-            <p>
-              Get what you need to help your fundraiser succeed on Ib4me, whether you&apos;re raising money for yourself, friends, family, or charity. With no fee to start, Ib4me is the Sierra Leones&apos;s leading crowdfunding platform for medical emergencies. Whenever you need help, you can ask here.
-            </p>
-            <p>Still have questions? Learn more about how Ib4me works.</p>
-            <Link href="#" className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50">
-              <span>Learn More</span>
-              <ChevronRight className="h-3 w-3" />
-            </Link>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function HowIb4meWorks() {
-  const [isVideoPoppedUp, setVideoPopUp] = useState(false);
-  return (
-    <section>
-      <div className="flex justify-center items-center text-neutral-800">
-        <div className="max-w-screen-2xl mx-auto px-4 py-12 md:py-20 md:px-8">
-          <div className="mx-auto py-10 space-y-6 md:space-y-12">
-            <h2 className="text-balance text-3xl font-semibold lg:text-4xl">How Ib4me Works</h2>
-          </div>
-          <div className="relative">
-            <img src="/assets/How_ib4me_works.png" width={800} height={600} className="mx-auto max-w-5xl rounded-lg" alt="How Ib4me works" />
-            <button className="absolute w-16 h-16 rounded-full inset-0 m-auto duration-150 bg-green-500 cursor-pointer hover:bg-green-600 text-white" onClick={() => setVideoPopUp(true)}>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-6 h-6 m-auto"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" /></svg>
-            </button>
-          </div>
-        </div>
-      </div>
-      {isVideoPoppedUp ? (
-        <div className="fixed inset-0 w-full h-full flex items-center justify-center z-50">
-          <div className="absolute inset-0 w-full h-full bg-black/50" onClick={() => setVideoPopUp(false)} />
-          <div className="px-4 relative">
-            <button className="w-12 h-12 mb-5 rounded-full duration-150 bg-green-500 hover:bg-green-600 text-white" onClick={() => setVideoPopUp(false)}>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 m-auto"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" /></svg>
-            </button>
-            <video className="rounded-lg w-full max-w-5xl" controls autoPlay>
-              <source src="https://raw.githubusercontent.com/sidiDev/remote-assets/main/FloatUI.mp4" type="video/mp4" />
-            </video>
-          </div>
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
-function CoveredCard() {
-  return (
-    <section className="py-16 md:py-32 bg-white">
-      <div className="mx-auto max-w-7xl space-y-5 px-6">
-        <h2 className="max-w-xl text-4xl text-neutral-900 font-medium lg:text-5xl">We&apos;ve got you covered.</h2>
-        <div className="space-y-4">
-          <p className="text-xl text-neutral-700">
-            Ib4me is a trusted leader in online fundraising. With <Link href="#" className="text-gray-900 underline hover:text-gray-700">simple pricing</Link> and a team of <Link href="#" className="text-gray-900 underline hover:text-gray-700">Trust & Safety</Link> experts in your corner, you can raise money or make a donation with peace of mind.
-          </p>
-          <div className="flex items-center gap-2">
-            <svg className="size-4 text-neutral-700" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            <p className="text-neutral-600 text-xs sm:text-sm">
-              <Link href="#" className="text-gray-900 hover:text-gray-700">Read the Ib4me Giving Guarantee</Link>
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function StoriesSection() {
-  const videos = [
-    { id: 1, title: "Cosmic Journey", description: "A masked traveler ventures through the cosmos in search of an elusive truth." },
-    { id: 2, title: "Ocean Depths", description: "A girl waits on a secluded shore, anticipating the arrival of the masked traveler." },
-    { id: 3, title: "Nature Whisper", description: "The traveler, immersed in nature, experiences profound emotions and goosebumps." },
-  ];
-  return (
-    <section className="bg-white py-8 md:py-16">
-      <div className="my-2 mx-auto max-w-5xl px-6">
-        <div className="text-center">
-          <h2 className="text-balance text-3xl font-semibold lg:text-4xl">Stories that will Inspire you</h2>
-        </div>
-      </div>
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {videos.map((v) => (
-            <article key={v.id} className="rounded-lg border p-4">
-              <div className="h-40 w-full rounded-md bg-neutral-200 flex items-center justify-center">Video</div>
-              <h3 className="mt-3 font-semibold">{v.title}</h3>
-              <p className="text-sm text-gray-600">{v.description}</p>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 function FundraiseSection() {
-  const items = [
-    { title: "Yourself", description: "Funds are delivered to your bank account for your own use", icon: User },
-    { title: "Friends and family", description: "You'll invite a beneficiary to receive funds or distribute them yourself.", icon: Users },
-    { title: "Charity", description: "Funds are delivered to your chosen nonprofit for you.", icon: HeartHandshake },
-  ];
   return (
-    <section className="py-8 md:py-16">
-      <div className="mx-auto max-w-5xl px-6">
-        <div className="text-center">
-          <h2 className="text-balance text-3xl font-semibold lg:text-4xl">Raise funds for anyone</h2>
+    <section className="relative overflow-hidden bg-fun-green py-12 sm:py-16 md:py-24 lg:py-28 text-white font-Sora">
+      {/* Decorative elements */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute right-0 top-0 h-64 w-64 sm:h-80 sm:w-80 md:h-96 md:w-96 rounded-full bg-fun-green/20 blur-3xl" />
+        <div className="absolute bottom-0 left-0 h-64 w-64 sm:h-80 sm:w-80 md:h-96 md:w-96 rounded-full bg-blaze-orange/20 blur-3xl" />
+      </div>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+        <div className="mb-4 inline-flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-white/20">
+          <Heart className="h-8 w-8 sm:h-10 sm:w-10 text-blaze-orange" aria-hidden="true" />
         </div>
-        <div className="mx-auto mt-8 grid max-w-sm divide-y overflow-hidden rounded-md border shadow-sm md:mt-16 md:max-w-full md:grid-cols-3 md:divide-x md:divide-y-0">
-          {items.map((it) => (
-            <Link key={it.title} href="/campaigns" className="group block">
-              <div className="p-6">
-                <div className="mx-auto flex size-12 items-center justify-center border-l border-t">
-                  <it.icon className="size-6" aria-hidden />
-                </div>
-                <h3 className="mt-6 font-semibold">{it.title}</h3>
-                <p className="text-sm mt-2">{it.description}</p>
-              </div>
+        <h2 className="mb-4 sm:mb-6 text-3xl sm:text-4xl md:text-5xl font-bold">
+          Ready to Make a <span className="text-orange-blaze">Difference</span>?
+        </h2>
+        <p className="mx-auto mb-8 sm:mb-10 max-w-2xl text-base sm:text-lg md:text-xl text-white/90">
+          Join thousands of compassionate donors helping patients access the medical care they need. Your contribution saves lives.
+        </p>
+        <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+          <Button
+            size="lg"
+            className="group h-11 sm:h-12 rounded-2xl bg-blaze-orange px-6 sm:px-8 text-sm sm:text-base font-semibold text-white transition-all hover:bg-blaze-orange/90 hover:shadow-lg"
+            asChild
+          >
+            <Link href="/campaigns">
+              Start Donating Today
+              <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
             </Link>
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            className="h-11 sm:h-12 rounded-2xl border-2 border-white bg-transparent px-6 sm:px-8 text-sm sm:text-base font-semibold text-white transition-all hover:bg-fun-green/80 hover:text-white"
+            asChild
+          >
+            <Link href="/start-campaign">Start Your Campaign</Link>
+          </Button>
+        </div>
+      </div>
+    </section>
+
+  )
+}
+
+
+const Testimonials = () => {
+  const testimonials = [
+    {
+      name: "Sarah Johnson",
+      role: "Heart Surgery Patient",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
+      quote: "Thanks to this platform, I received the heart surgery I desperately needed. The support from donors has given me a second chance at life."
+    },
+    {
+      name: "Michael Chen",
+      role: "Cancer Survivor",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Michael",
+      quote: "The community here is incredible. Not only did they help fund my treatment, but their encouragement kept me fighting through the hardest days."
+    },
+    {
+      name: "Emma Rodriguez",
+      role: "Grateful Mother",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emma",
+      quote: "My daughter can see clearly now thanks to everyone who donated. This platform connected us with people who truly care. Forever grateful."
+    }
+  ];
+
+  return (
+    <section className="bg-background py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="text-center mb-10 sm:mb-14 space-y-3 sm:space-y-4 animate-fade-in">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground">
+            Stories of <span className="text-fun-green">Hope</span>
+          </h2>
+          <p className="mx-auto max-w-2xl text-base sm:text-lg text-muted-foreground">
+            Hear from the people whose lives have been transformed by your generosity
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 auto-rows-fr gap-6 sm:gap-8">
+          {testimonials.map((testimonial, index) => (
+            <Card
+              key={index}
+              className="flex h-full flex-col rounded-3xl border-0 p-6 sm:p-8 shadow-[var(--shadow-soft)] transition-all hover:shadow-[var(--shadow-lift)] animate-scale-in motion-reduce:animate-none"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              <Quote className="h-8 w-8 sm:h-10 sm:w-10 text-blaze-orange mb-3 sm:mb-4" aria-hidden="true" />
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-5 sm:mb-6">
+                &quot;{testimonial.quote}&quot;
+              </p>
+
+              <div className="mt-auto flex items-center gap-3 sm:gap-4">
+                <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
+                  <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
+                  <AvatarFallback>{testimonial.name[0]}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="text-sm sm:text-base font-bold text-foreground">{testimonial.name}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">{testimonial.role}</div>
+                </div>
+              </div>
+            </Card>
           ))}
         </div>
       </div>
     </section>
   );
-}
+};

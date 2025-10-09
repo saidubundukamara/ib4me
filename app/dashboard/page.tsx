@@ -7,6 +7,7 @@ import { campaignService } from "@/services/CampaignService";
 import { donationRepository } from "@/repositories/DonationRepository";
 import Card from "./_components/Card";
 import ProgressBar from "./_components/ProgressBar";
+import { DollarSign, Heart, Users, TrendingUp } from "lucide-react";
 
 function formatCurrency(minor: number, currency: string): string {
   const value = minor / 100;
@@ -35,10 +36,12 @@ export default async function UserDashboardPage() {
     ? await donationRepository.listSucceededByCampaignIds(campaignIds)
     : [];
 
-  const currency = campaigns[0]?.goal?.currency ?? "USD";
+  const currency = campaigns[0]?.goal?.currency ?? "SLE";
 
   const totalRaisedMinor = campaigns.reduce((sum, c) => sum + (c.totals?.raisedMinor ?? 0), 0);
   const totalDonations = campaigns.reduce((sum, c) => sum + (c.totals?.donationCount ?? 0), 0);
+  const campaignsSupported = donations.length;
+  const avgDonationMinor = donations.length ? Math.round(donations.reduce((sum, d) => sum + d.amount.minor, 0) / donations.length) : 0;
 
   const averageProgressPct = (() => {
     const progressValues = campaigns
@@ -85,29 +88,47 @@ export default async function UserDashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h2 className="text-2xl font-semibold">Dashboard</h2>
-        <p className="text-sm text-slate-600 mt-1">Overview of your campaigns and donations.</p>
+        <h2 className="text-2xl font-bold text-foreground">Dashboard</h2>
+        <p className="text-sm text-muted-foreground mt-1">Overview of your campaigns and donations.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card gradient className="p-5">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm/5 opacity-90">Total Raised</p>
-              <p className="text-3xl font-semibold mt-1">{formatCurrency(totalRaisedMinor, currency)}</p>
-              <p className="text-xs mt-1 opacity-90">{totalDonations} total donations</p>
+      {/* Stats Grid (responsive, wraps cleanly) */}
+      <div className="grid gap-4 sm:gap-6 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
+        <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+              <DollarSign className="w-6 h-6 sm:w-7 sm:h-7 text-primary" aria-hidden />
             </div>
-            <span className="rounded-full bg-white/20 px-2 py-1 text-xs">Last 6 months</span>
+            <div className="min-w-0">
+              <div className="text-xs sm:text-sm text-muted-foreground">Total Raised</div>
+              <div className="text-xl sm:text-2xl font-bold text-foreground truncate">
+                {formatCurrency(totalRaisedMinor, currency)}
+              </div>
+              <div className="text-[11px] sm:text-xs text-muted-foreground">{totalDonations} total donations</div>
+            </div>
           </div>
+
           <div className="mt-4">
-            <div className="h-24 w-full rounded-xl bg-white/10 grid grid-cols-6 items-end gap-2 p-2">
-              {months.map((m) => {
+            <div
+              className="h-20 sm:h-24 w-full rounded-xl bg-muted grid grid-cols-6 items-end gap-2 p-2"
+              role="img"
+              aria-label="Monthly raised totals bar chart"
+            >
+              {months.map((m, idx) => {
                 const pct = Math.round((m.totalMinor / maxMinor) * 100);
+                const isKeyTick = idx === 0 || idx === Math.floor(months.length / 2) || idx === months.length - 1;
                 return (
                   <div key={m.key} className="flex flex-col items-center gap-1">
-                    <div className="w-full rounded-md bg-white/70 dark:bg-white/30" style={{ height: `${Math.max(6, pct)}%` }} />
-                    <span className="text-[10px] opacity-80">{m.label}</span>
+                    <div
+                      className="w-full rounded-md bg-primary/30"
+                      style={{ height: `${Math.max(6, pct)}%` }}
+                      aria-label={`${m.label} ${pct}% of max`}
+                    />
+                    <span className={`text-[10px] text-muted-foreground ${isKeyTick ? 'block' : 'hidden md:block'}`}>
+                      {m.label}
+                    </span>
                   </div>
                 );
               })}
@@ -115,88 +136,139 @@ export default async function UserDashboardPage() {
           </div>
         </Card>
 
-        <Card className="p-5">
-          <p className="text-sm text-slate-600">Active Campaigns</p>
-          <p className="text-3xl font-semibold mt-2">{activeCampaigns.length}</p>
+        <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-blaze-orange/10 rounded-full flex items-center justify-center shrink-0">
+              <Heart className="w-6 h-6 sm:w-7 sm:h-7 text-blaze-orange" aria-hidden />
+            </div>
+            <div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Active Campaigns</div>
+              <div className="text-xl sm:text-2xl font-bold text-foreground">{activeCampaigns.length}</div>
+            </div>
+          </div>
           <div className="mt-4">
-            <ProgressBar value={averageProgressPct} />
-            <div className="mt-2 text-xs text-slate-600">{averageProgressPct}% average progress</div>
+            <ProgressBar value={averageProgressPct} className="w-full" aria-label="Average campaign progress" />
+            <div className="mt-2 text-[11px] sm:text-xs text-muted-foreground">{averageProgressPct}% average progress</div>
           </div>
         </Card>
 
-        <Card className="p-5">
-          <p className="text-sm text-slate-600">Unique Donors</p>
-          <p className="text-3xl font-semibold mt-2">{uniqueDonorCount}</p>
-          <div className="mt-4 grid grid-cols-6 gap-2">
+        <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-chartereuse/10 rounded-full flex items-center justify-center shrink-0">
+              <Users className="w-6 h-6 sm:w-7 sm:h-7 text-chartereuse" aria-hidden />
+            </div>
+            <div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Unique Donors</div>
+              <div className="text-xl sm:text-2xl font-bold text-foreground">{uniqueDonorCount}</div>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-6 gap-1 sm:gap-2">
             {months.map((m) => (
-              <div key={m.key} className="h-8 rounded-lg bg-gray-100/70 dark:bg-white/10" />
+              <div key={m.key} className="h-6 sm:h-8 rounded-lg bg-muted" />
             ))}
+          </div>
+        </Card>
+
+        <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-orange-blaze/10 rounded-full flex items-center justify-center shrink-0">
+              <TrendingUp className="w-6 h-6 sm:w-7 sm:h-7 text-orange-blaze" aria-hidden />
+            </div>
+            <div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Total Donations</div>
+              <div className="text-xl sm:text-2xl font-bold text-foreground">{totalDonations}</div>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-success/10 rounded-full flex items-center justify-center shrink-0">
+              <Users className="w-6 h-6 sm:w-7 sm:h-7 text-success" aria-hidden />
+            </div>
+            <div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Avg. Donation</div>
+              <div className="text-xl sm:text-2xl font-bold text-foreground">{formatCurrency(avgDonationMinor, currency)}</div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-blaze-orange/10 rounded-full flex items-center justify-center shrink-0">
+              <Heart className="w-6 h-6 sm:w-7 sm:h-7 text-blaze-orange" aria-hidden />
+            </div>
+            <div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Campaigns Supported</div>
+              <div className="text-xl sm:text-2xl font-bold text-foreground">{campaignsSupported}</div>
+            </div>
+          </div>
+
+          <div className="mt-3 sm:mt-4">
+            <ProgressBar value={averageProgressPct} className="w-full" aria-label="Average progress" />
+            <div className="mt-1.5 sm:mt-2 text-[11px] sm:text-xs text-muted-foreground">
+              {averageProgressPct}% average progress
+            </div>
           </div>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="p-5 lg:col-span-2">
-          <div className="flex items-center justify-between">
-            <h3 className="font-medium">Your Campaigns</h3>
-            <Link href="/user/campaigns" className="text-sm text-indigo-600">View all</Link>
-          </div>
-          <div className="mt-4 grid sm:grid-cols-2 gap-3">
-            {campaigns.slice(0, 6).map((c) => {
-              const raised = c.totals?.raisedMinor ?? 0;
-              const goalMinor = c.goal?.amountMinor ?? 0;
-              const progress = goalMinor ? Math.min(100, Math.round((raised / goalMinor) * 100)) : 0;
-              const title = c.patient?.name || c.diagnosis || c.slug;
-              return (
-                <div key={String(c._id)} className="rounded-xl border p-4 bg-white">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-lg bg-indigo-100 text-indigo-700 grid place-items-center">
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>
-                    </div>
-                    <div className="font-medium truncate" title={title}>{title}</div>
+      {/* Your Campaigns */}
+      <Card className="p-8 rounded-3xl border-0 shadow-[var(--shadow-lift)]">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg sm:text-2xl font-bold text-foreground">Your Campaigns</h2>
+          <Link href="/user/campaigns" className="text-sm text-primary">View all</Link>
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {campaigns.slice(0, 6).map((c) => {
+            const raised = c.totals?.raisedMinor ?? 0;
+            const goalMinor = c.goal?.amountMinor ?? 0;
+            const progress = goalMinor ? Math.min(100, Math.round((raised / goalMinor) * 100)) : 0;
+            const title = c.patient?.name || c.diagnosis || c.slug;
+            return (
+              <Card key={String(c._id)} className="p-4 rounded-2xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6" /></svg>
                   </div>
-                  <div className="mt-3">
-                    <ProgressBar value={progress} />
-                    <div className="mt-1 text-xs text-slate-600 flex items-center justify-between">
-                      <span>{progress}%</span>
-                      <span>
-                        {formatCurrency(raised, c.goal?.currency ?? currency)} / {goalMinor ? formatCurrency(goalMinor, c.goal?.currency ?? currency) : "No goal"}
-                      </span>
-                    </div>
-                  </div>
+                  <div className="font-medium text-sm truncate" title={title}>{title}</div>
                 </div>
-              );
-            })}
-          </div>
-        </Card>
-
-        <Card className="p-5">
-          <div className="flex items-center justify-between">
-            <h3 className="font-medium">Recent Donations</h3>
-            <a href="/user/donations" className="text-sm text-indigo-600">View all</a>
-          </div>
-          <ul className="mt-4 space-y-3">
-            {recentDonations.length === 0 && (
-              <li className="text-sm text-slate-600">No recent donations yet.</li>
-            )}
-            {recentDonations.map((d) => (
-              <li key={String(d._id)} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-3">
-                  <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
-                  <span className="text-slate-800">
-                    {formatCurrency(d.amount.minor, d.amount.currency)}
+                <ProgressBar value={progress} className="w-full mb-2" />
+                <div className="text-xs text-muted-foreground flex items-center justify-between">
+                  <span>{progress}%</span>
+                  <span>
+                    {formatCurrency(raised, c.goal?.currency ?? currency)} / {goalMinor ? formatCurrency(goalMinor, c.goal?.currency ?? currency) : "No goal"}
                   </span>
                 </div>
-                <span className="text-slate-600">
-                  {new Date(d.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      </div>
+              </Card>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* Recent Donations */}
+      <Card className="p-8 rounded-3xl border-0 shadow-[var(--shadow-lift)]">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg sm:text-2xl font-bold text-foreground">Recent Donations</h2>
+          <a href="/user/donations" className="text-sm text-primary">View all</a>
+        </div>
+        <div className="space-y-4">
+          {recentDonations.length === 0 ? (
+            <div className="text-sm text-muted-foreground">No recent donations yet.</div>
+          ) : (
+            recentDonations.map((d) => (
+              <div key={String(d._id)} className="flex justify-between items-center p-4 bg-muted/30 rounded-2xl">
+                <div className="flex-1">
+                  <h3 className="font-bold text-foreground text-sm">Donation to your campaign</h3>
+                  <p className="text-sm text-muted-foreground">{new Date(d.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-xl font-bold text-blaze-orange">{formatCurrency(d.amount.minor, d.amount.currency)}</div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </Card>
     </div>
   );
 }
-
-
