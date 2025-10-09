@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -115,7 +115,7 @@ export default function AdminDonationDetailPage() {
   const [flagReason, setFlagReason] = useState("");
   const [refundReason, setRefundReason] = useState("");
 
-  const fetchDonation = async () => {
+  const fetchDonation = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -133,7 +133,7 @@ export default function AdminDonationDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [donationId]);
 
   const handleFlag = async () => {
     if (!flagReason.trim()) return;
@@ -274,7 +274,7 @@ export default function AdminDonationDetailPage() {
     if (donationId) {
       fetchDonation();
     }
-  }, [donationId]);
+  }, [donationId, fetchDonation]);
 
   if (loading) {
     return (

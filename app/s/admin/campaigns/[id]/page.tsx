@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -98,7 +98,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
   }, [params]);
 
   // Fetch campaign details
-  const fetchCampaignDetails = async () => {
+  const fetchCampaignDetails = useCallback(async () => {
     if (!id) return;
     
     try {
@@ -112,7 +112,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
     } catch (error) {
       console.error("Error fetching campaign:", error);
     }
-  };
+  }, [id, router]);
 
   // Fetch donations (mock for now - would need API endpoint)
   const fetchDonations = async () => {
@@ -136,7 +136,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
         fetchPayouts()
       ]).finally(() => setLoading(false));
     }
-  }, [id]);
+  }, [id, fetchCampaignDetails]);
 
   // Handle admin actions
   const handleAction = async () => {

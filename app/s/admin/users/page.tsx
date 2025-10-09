@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -77,7 +77,7 @@ export default function AdminUsersPage() {
   // Check if current user is SuperAdmin
   const isSuperAdmin = currentUser?.role === "SuperAdmin";
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -111,7 +111,7 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, search, statusFilter]);
 
   const handleDeleteClick = (user: User) => {
     setDeletingUser(user);
@@ -216,7 +216,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, [currentPage]);
+  }, [currentPage, fetchUsers]);
 
   useEffect(() => {
     if (success) {

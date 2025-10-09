@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -70,7 +70,7 @@ export default function AdminCampaignsPage() {
   };
 
   // Fetch campaigns
-  const fetchCampaigns = async () => {
+  const fetchCampaigns = useCallback(async () => {
     try {
       const params = new URLSearchParams({
         page: currentPage.toString(),
@@ -93,7 +93,7 @@ export default function AdminCampaignsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, search, statusFilter, verificationFilter, urgencyFilter]);
 
   // Quick actions
   const handleQuickAction = async (campaignId: string, action: string) => {
@@ -132,7 +132,7 @@ export default function AdminCampaignsPage() {
 
   useEffect(() => {
     fetchCampaigns();
-  }, [search, statusFilter, verificationFilter, urgencyFilter, currentPage]);
+  }, [search, statusFilter, verificationFilter, urgencyFilter, currentPage, fetchCampaigns]);
 
   const formatAmount = (amountMinor: number, currency: string = "SLE") => {
     return new Intl.NumberFormat("en-SL", {

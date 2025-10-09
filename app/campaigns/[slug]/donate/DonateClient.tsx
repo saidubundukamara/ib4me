@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 // import { useRouter } from "next/navigation"; // Future use
 
 export type DonateClientProps = {
@@ -272,7 +273,7 @@ export default function DonateClient(props: DonateClientProps) {
         <div className="rounded-lg border p-4 md:p-6">
           <div className="text-sm font-medium">Donation Summary</div>
           <div className="mt-4 flex items-center gap-3">
-            <img src={imageUrl} alt={title} className="h-16 w-16 rounded object-cover" />
+            <Image src={imageUrl} alt={title} width={64} height={64} className="h-16 w-16 rounded object-cover" />
             <div>
               <h3 className="font-medium">{title}</h3>
               <p className="text-xs text-gray-600">{organizerName ? `by ${organizerName}` : ""}</p>

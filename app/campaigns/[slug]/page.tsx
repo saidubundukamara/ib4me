@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import mongoose from "mongoose";
 import { campaignService, mediaAssetService } from "@/services";
@@ -39,26 +40,11 @@ export default async function CampaignDetailPage({ params }: PageParams) {
   const title = campaign.patient?.name || campaign.diagnosis || campaign.slug;
   const firstImageDoc = (campaign.documents || []).find((d) => d.type?.startsWith("image/"));
   let heroUrl = "/assets/Hero.png";
-  let heroSrcSet: string | undefined;
-  let heroSizes: string | undefined;
   if (firstImageDoc?.assetId) {
     const [asset] = await mediaAssetService.listByIds([firstImageDoc.assetId as unknown as mongoose.Types.ObjectId]);
     if (asset) {
       const key = asset.storage?.key;
       if (key) {
-        const widths = [640, 768, 1024, 1280, 1536];
-        heroSrcSet = widths
-          .map((w) =>
-            `${CloudinaryService.generateTransformationUrl(key, {
-              width: w,
-              crop: "fill",
-              gravity: "auto",
-              aspect_ratio: "16:9",
-              fetch_format: "auto",
-              quality: "auto",
-            })} ${w}w`
-          )
-          .join(", ");
         heroUrl = CloudinaryService.generateTransformationUrl(key, {
           width: 1280,
           crop: "fill",
@@ -67,7 +53,6 @@ export default async function CampaignDetailPage({ params }: PageParams) {
           fetch_format: "auto",
           quality: "auto",
         });
-        heroSizes = "(min-width: 1024px) 66vw, 100vw";
       } else {
         heroUrl = asset.url || heroUrl;
       }
@@ -104,7 +89,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
         <section className="lg:col-span-2">
           <div className="overflow-hidden rounded-lg border">
             <div className="aspect-[16/9] w-full bg-neutral-100">
-              <img src={heroUrl} srcSet={heroSrcSet} sizes={heroSizes} alt={title} className="h-full w-full object-cover" />
+              <Image src={heroUrl} alt={title} width={1200} height={675} className="h-full w-full object-cover" />
             </div>
             <div className="p-4 md:p-6">
               <h1 className="text-2xl md:text-3xl font-semibold">{title}</h1>

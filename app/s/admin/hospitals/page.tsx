@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -84,7 +84,7 @@ export default function AdminHospitalsPage() {
   };
 
   // Fetch hospitals
-  const fetchHospitals = async () => {
+  const fetchHospitals = useCallback(async () => {
     try {
       const params = new URLSearchParams({
         page: currentPage.toString(),
@@ -106,7 +106,7 @@ export default function AdminHospitalsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, search, verifiedFilter]);
 
   // Handle form submit
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -232,7 +232,7 @@ export default function AdminHospitalsPage() {
 
   useEffect(() => {
     fetchHospitals();
-  }, [search, verifiedFilter, currentPage]);
+  }, [search, verifiedFilter, currentPage, fetchHospitals]);
 
   const getVerificationBadge = (verified: boolean) => {
     return (

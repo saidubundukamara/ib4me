@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -62,12 +62,6 @@ interface TopCampaign {
   lastPayout: string;
 }
 
-interface StatusBreakdown {
-  status: string;
-  count: number;
-  amount: number;
-}
-
 interface PendingPayout {
   _id: string;
   campaignId: {
@@ -95,13 +89,12 @@ export default function AdminPayoutsPage() {
   const [analytics, setAnalytics] = useState<PayoutAnalytics | null>(null);
   const [methods, setMethods] = useState<MethodData[]>([]);
   const [topCampaigns, setTopCampaigns] = useState<TopCampaign[]>([]);
-  const [statusBreakdown, setStatusBreakdown] = useState<StatusBreakdown[]>([]);
   const [pendingPayouts, setPendingPayouts] = useState<PendingPayout[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -134,37 +127,34 @@ export default function AdminPayoutsPage() {
       if (dateTo) params.append("dateTo", dateTo);
 
       // Fetch all analytics data in parallel
-      const [analyticsRes, methodsRes, campaignsRes, statusRes, pendingRes] = await Promise.all([
+      const [analyticsRes, methodsRes, campaignsRes, pendingRes] = await Promise.all([
         fetch(`/api/admin/payouts/analytics?${params}`),
         fetch(`/api/admin/payouts/methods?${params}`),
         fetch("/api/admin/payouts/top-campaigns?limit=10"),
-        fetch("/api/admin/payouts/status-breakdown"),
         fetch("/api/admin/payouts/pending")
       ]);
 
-      if (!analyticsRes.ok || !methodsRes.ok || !campaignsRes.ok || !statusRes.ok || !pendingRes.ok) {
+      if (!analyticsRes.ok || !methodsRes.ok || !campaignsRes.ok || !pendingRes.ok) {
         throw new Error("Failed to fetch analytics data");
       }
 
-      const [analyticsData, methodsData, campaignsData, statusData, pendingData] = await Promise.all([
+      const [analyticsData, methodsData, campaignsData, pendingData] = await Promise.all([
         analyticsRes.json(),
         methodsRes.json(),
         campaignsRes.json(),
-        statusRes.json(),
         pendingRes.json()
       ]);
 
       setAnalytics(analyticsData.data);
       setMethods(methodsData.data);
       setTopCampaigns(campaignsData.data);
-      setStatusBreakdown(statusData.data);
       setPendingPayouts(pendingData.data);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to fetch analytics");
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateFilter]);
 
   const handleDateFilterChange = (filter: string) => {
     setDateFilter(filter);
@@ -206,7 +196,7 @@ export default function AdminPayoutsPage() {
 
   useEffect(() => {
     fetchAnalytics();
-  }, [dateFilter]);
+  }, [dateFilter, fetchAnalytics]);
 
   if (loading) {
     return (

@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { payoutService } from "@/services";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const statusBreakdown = await payoutService.getPayoutsByStatus();
-    
+
     return NextResponse.json({
       success: true,
       data: statusBreakdown,
@@ -12,10 +12,10 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching status breakdown:", error);
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: "Failed to fetch status breakdown",
-        message: error instanceof Error ? error.message : "Unknown error"
+        message: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );

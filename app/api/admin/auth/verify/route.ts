@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { userRepository } from "../../../../../repositories";
 import { IUser } from "../../../../../models/User";
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // Get token from cookie
     const cookieStore = await cookies();
