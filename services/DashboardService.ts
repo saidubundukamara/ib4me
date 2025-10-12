@@ -117,7 +117,7 @@ export class DashboardService {
             $sum: { 
               $cond: [
                 { $eq: ["$status", "completed"] },
-                "$amountMinor",
+                "$amount.minor",
                 0
               ]
             }
@@ -185,7 +185,7 @@ export class DashboardService {
             year: { $year: "$createdAt" },
             month: { $month: "$createdAt" }
           },
-          revenue: { $sum: "$amountMinor" }
+          revenue: { $sum: "$amount.minor" }
         }
       },
       {

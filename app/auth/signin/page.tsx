@@ -1,101 +1,180 @@
 "use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
+import { ArrowRight, Eye, EyeOff, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import Image from "next/image";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AuthLayout } from "../_components/AuthLayout";
+import { ContinueDivider } from "../_components/ContinueDivider";
+import { SignInAside } from "../_components/AuthSidePanels";
+import { SOCIAL_PROVIDERS, type SocialProvider } from "../_components/social-providers";
 
 export default function SignInPage() {
+  const router = useRouter();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setError(null);
-    const res = await signIn("credentials", {
-      redirect: false,
-      callbackUrl: "/",
-      identifier,
-      password,
-    });
-    if (res?.error) {
-      const message =
-        res.error === "CredentialsSignin"
-          ? "Invalid credentials"
-          : res.error;
+    setIsLoading(true);
+    try {
+      const response = await signIn("credentials", {
+        redirect: false,
+        callbackUrl: "/",
+        identifier,
+        password,
+      });
+
+      if (response?.error) {
+        const message = response.error === "CredentialsSignin" ? "Invalid credentials" : response.error;
+        setError(message);
+        toast.error(message);
+        return;
+      }
+
+      if (response?.ok) {
+        toast.success("Signed in successfully!");
+        router.push(response.url ?? "/");
+      }
+    } catch (submitError) {
+      console.error(submitError);
+      const message = "Unable to sign in. Please try again.";
       setError(message);
       toast.error(message);
-      return;
+    } finally {
+      setIsLoading(false);
     }
-    if (res?.ok) {
-      window.location.href = res.url ?? "/";
+  };
+
+  const handleSocialLogin = async (provider: SocialProvider["id"]) => {
+    try {
+      await signIn(provider, { callbackUrl: "/" });
+    } catch (submitError) {
+      console.error(submitError);
+      toast.error("Social login failed. Please try again.");
     }
   };
 
   return (
-    <div className="container mx-auto max-w-4xl p-6">
-      <div className="overflow-hidden rounded-lg border bg-white">
-        <div className="grid md:grid-cols-2">
-          <div className="p-6 md:p-8">
-            <div className="flex flex-col items-center text-center gap-1">
-              <h1 className="text-2xl font-bold">Welcome back</h1>
-              <p className="text-neutral-700">Login to your Ib4me account</p>
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button className="border px-3 py-2 w-full rounded-md" onClick={() => signIn("google", { callbackUrl: "/" })}>
-                Continue with Google
-              </button>
-              <button className="border px-3 py-2 w-full rounded-md" onClick={() => signIn("facebook", { callbackUrl: "/" })}>
-                Continue with Facebook
-              </button>
-            </div>
-
-            <div className="relative my-6 text-center text-sm after:absolute after:inset-0 after:top-1/2 after:flex after:items-center after:border-t">
-              <span className="relative mx-auto bg-white px-2 text-neutral-500">Or continue with</span>
-            </div>
-
-            <form onSubmit={onSubmit} className="space-y-4">
-              <div className="grid gap-2">
-                <label htmlFor="identifier" className="text-sm">Email or phone</label>
-                <input
-                  id="identifier"
-                  className="border w-full px-3 py-2 rounded-md"
-                  placeholder="m@example.com or +232..."
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <label htmlFor="password" className="text-sm">Password</label>
-                <input
-                  id="password"
-                  className="border w-full px-3 py-2 rounded-md"
-                  placeholder="Password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              {error && <p className="text-red-600 text-sm">{error}</p>}
-              <button className="w-full rounded-md bg-gray-900 text-white px-4 py-2" type="submit">Sign in</button>
-            </form>
-
-            <p className="mt-4 text-center text-sm">
-              Don’t have an account? <a href="/auth/register" className="underline">Sign up</a>
-            </p>
+    <AuthLayout
+      title="Welcome back"
+      subtitle="Sign in to keep supporting lifesaving campaigns."
+      highlight={
+        <p className="flex items-center justify-center gap-2 text-sm font-medium text-blaze-orange md:justify-start">
+          We&apos;re glad you&apos;re here
+          <Sparkles className="h-4 w-4 text-accent" />
+        </p>
+      }
+      lead={
+        <div className="space-y-4 sm:space-y-5">
+          <div className="grid w-full gap-3 sm:grid-cols-3">
+            {SOCIAL_PROVIDERS.map(({ id, icon: Icon, hover, iconColor }) => (
+              <Button
+                key={id}
+                type="button"
+                variant="outline"
+                className={`h-12 border-border/50 transition-all ${hover}`}
+                onClick={() => handleSocialLogin(id)}
+                disabled={isLoading}
+              >
+                <Icon className={`h-5 w-5 ${iconColor ?? ""}`} />
+              </Button>
+            ))}
           </div>
-          <div className="relative hidden md:block">
-            <Image src="/assets/donate_illustration.jpg" alt="Illustration" fill className="object-cover" />
+
+          <ContinueDivider label="Or continue with email" />
+        </div>
+      }
+      aside={<SignInAside />}
+      footer={
+        <>
+          Don&#39;t have an account?{" "}
+          <Link href="/auth/register" className="font-semibold text-primary hover:underline">
+            Create one
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={onSubmit} className="space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="identifier" className="text-sm font-semibold text-foreground">
+            Email or phone
+          </Label>
+          <Input
+            id="identifier"
+            placeholder="m@example.com or +232..."
+            value={identifier}
+            onChange={(event) => setIdentifier(event.target.value)}
+            autoComplete="username"
+            required
+            className="h-12 rounded-xl text-base"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="password" className="text-sm font-semibold text-foreground">
+            Password
+          </Label>
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter your password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              autoComplete="current-password"
+              className="h-12 rounded-xl pr-12 text-base"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-1/2 -translate-y-1/2"
+              onClick={() => setShowPassword((prev) => !prev)}
+            >
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              <span className="sr-only">Toggle password visibility</span>
+            </Button>
           </div>
         </div>
-      </div>
-      <p className="mt-3 text-center text-xs text-neutral-600">
-        By clicking continue, you agree to our <a className="underline" href="#">Terms of Service</a> and <a className="underline" href="#">Privacy Policy</a>.
-      </p>
-    </div>
+        <Link href="/auth/forgot-password" className="text-sm font-medium  text-primary hover:underline">
+          Forget password?
+        </Link>
+
+        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+        <Button
+          type="submit"
+          className="group flex h-12 w-full items-center justify-center rounded-xl mt-2 text-lg font-semibold shadow-lg transition-all hover:shadow-xl"
+          disabled={isLoading}
+        >
+          {isLoading ? "Signing in..." : "Sign in"}
+          <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+        </Button>
+
+        <p className="text-center text-xs text-muted-foreground">
+          By continuing, you agree to our{" "}
+          <Link href="/terms" className="font-medium text-primary hover:underline">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="font-medium text-primary hover:underline">
+            Privacy Policy
+          </Link>
+          .
+        </p>
+      </form>
+    </AuthLayout>
   );
 }
-

@@ -108,25 +108,18 @@ export default async function CampaignsListPage() {
             People around Sierra Leone and the world are raising money for what they are passionate about..
           </p>
         </div>
-        <Link href="/dashboard/campaigns/new">
+        <Link href="/dashboard">
           <Button className="w-full cursor-pointer sm:w-auto rounded-xl">
             Start a Campaign
           </Button>
         </Link>
 
         <CampaignsGrid items={items} />
-
-        <div className="text-center mt-12">
-          <Button variant="outline" size="lg" className="rounded-full">
-            Load More Campaigns
-          </Button>
-        </div>
-
         <div className="flex flex-col items-center justify-center space-y-3 py-8 md:py-16">
           <h2 className="text-balance my-5 text-3xl font-medium lg:text-4xl">
             Start a fundraiser for yourself or someone else.
           </h2>
-          <Link href="/dashboard/campaigns/new" className="flex items-center justify-center gap-2">
+          <Link href="/dashboard" className="flex items-center justify-center gap-2">
           <Button className="w-full cursor-pointer sm:w-auto bg-blaze-orange hover:bg-blaze-orange/90 ">
               Start a Campaign
           </Button>

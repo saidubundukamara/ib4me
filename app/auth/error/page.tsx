@@ -26,7 +26,7 @@ function AuthError() {
         <p className="text-sm text-neutral-700 mb-4">{message}</p>
         {code ? <p className="text-xs text-neutral-500 mb-6">Code: {code}</p> : null}
         <div className="flex gap-3">
-          <Link href="/auth/signin" className="rounded-md bg-gray-900 px-4 py-2 text-white">
+          <Link href="/auth/signin" className="rounded-md bg-fun-green px-4 py-2 text-white">
             Back to sign in
           </Link>
           <Link href="/" className="rounded-md border px-4 py-2">Go home</Link>

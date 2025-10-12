@@ -30,7 +30,8 @@ const DeleteCampaignDialog = ({ open, onOpenChange, campaignTitle, onConfirm }: 
 
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
-            <AlertDialogContent className="rounded-3xl">
+            <AlertDialogContent className="w-full max-w-[min(100vw-2rem,420px)] rounded-3xl border border-border/40 bg-card/95 p-0 shadow-2xl">
+                <div className="flex flex-col gap-5 p-5 sm:p-6">
                 <AlertDialogHeader>
                     <AlertDialogTitle>Delete Campaign?</AlertDialogTitle>
                     <AlertDialogDescription>
@@ -39,10 +40,11 @@ const DeleteCampaignDialog = ({ open, onOpenChange, campaignTitle, onConfirm }: 
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel className="rounded-2xl">Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="rounded-2xl bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    <AlertDialogAction onClick={handleDelete} className="rounded-2xl bg-destructive text-white hover:bg-destructive/90">
                         Delete
                     </AlertDialogAction>
                 </AlertDialogFooter>
+                </div>
             </AlertDialogContent>
         </AlertDialog>
     );

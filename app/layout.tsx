@@ -42,11 +42,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} ${sora.variable} antialiased`}>
         <Providers>
-          <HideOnRoutes hidePrefixes={["/user", "/admin", "/dashboard"]}>
+          <HideOnRoutes hidePrefixes={["/user", "/admin", "/dashboard", "/auth"]}>
             <Navbar/>
           </HideOnRoutes>
           <main>{children}</main>
-          <HideOnRoutes hidePrefixes={["/user", "/admin", "/dashboard"]}>
+          <HideOnRoutes hidePrefixes={["/user", "/admin", "/dashboard", "/auth"]}>
            <Footer/>
           </HideOnRoutes>
         </Providers>

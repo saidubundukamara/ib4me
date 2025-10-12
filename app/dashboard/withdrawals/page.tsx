@@ -7,6 +7,7 @@ import Card from "../_components/Card";
 import { Calendar, TrendingUp, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 function formatCurrency(minor: number, currency: string): string {
   const value = minor / 100;
@@ -42,6 +43,8 @@ interface Campaign {
   patient?: { name?: string };
   diagnosis?: string;
   goal?: { currency?: string };
+  totals?: { raisedMinor?: number };
+  withdrawals?: { totalPaidMinor?: number };
 }
 
 export default function UserWithdrawalsPage() {
@@ -50,6 +53,7 @@ export default function UserWithdrawalsPage() {
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"request" | "recent">("request");
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -69,7 +73,7 @@ export default function UserWithdrawalsPage() {
         setCampaigns(campaignsData);
 
         // Transform campaigns into options
-        const options = campaignsData.map((c: Campaign & { totals?: { raisedMinor?: number }; withdrawals?: { totalPaidMinor?: number } }) => {
+        const options = campaignsData.map((c: Campaign) => {
           const raised = c.totals?.raisedMinor ?? 0;
           const paid = c.withdrawals?.totalPaidMinor ?? 0;
           const available = Math.max(0, raised - paid);
@@ -101,158 +105,177 @@ export default function UserWithdrawalsPage() {
     fetchData();
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-6 max-w-2xl">
-        <div>
-          <Skeleton className="h-8 w-48 mb-2" />
-          <Skeleton className="h-4 w-64" />
-        </div>
-
-        {/* Stats Grid Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[...Array(3)].map((_, i) => (
-            <Card key={i} className="p-6 border-border bg-card">
-              <div className="flex items-center gap-4">
-                <Skeleton className="p-3 rounded-xl w-12 h-12" />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-6 w-20" />
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        {/* Recent Withdrawals Card Skeleton */}
-        <Card className="p-6 border-border bg-card">
-          <Skeleton className="h-6 w-32 mb-4" />
-          <div className="space-y-6">
-            {/* WithdrawalForm Skeleton */}
-            <div className="space-y-4">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-3/4" />
-              <Skeleton className="h-10 w-1/2" />
-              <Skeleton className="h-12 w-full rounded-lg" />
-            </div>
-
-            {/* Recent Withdrawals List Skeleton */}
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-lg border border-border bg-background">
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <Skeleton className="h-4 w-48" />
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="w-3 h-3 rounded-full" />
-                      <Skeleton className="h-3 w-32" />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 mt-2 md:mt-0">
-                    <Skeleton className="h-6 w-20 rounded-md" />
-                    <Skeleton className="h-5 w-16" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
+  const isLoading = loading;
   const totalAvailable = campaignOptions.reduce((sum, c) => sum + c.availableMinor, 0);
+  const totalWithdrawnMinor = payouts
+    .filter((p) => ["completed", "paid"].includes(p.status))
+    .reduce((sum, p) => sum + p.amountMinor, 0);
+  const pendingRequests = payouts.filter((p) =>
+    ["pending", "processing", "approved"].includes(p.status)
+  ).length;
+  const primaryCurrency =
+    campaignOptions[0]?.currency ?? campaigns[0]?.goal?.currency ?? "SLE";
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-6 border-border bg-card hover:shadow-lg transition-all">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Card className="border-border bg-card p-6 transition-all hover:shadow-lg">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-primary/10">
               <Wallet className="w-6 h-6 text-primary" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Available</p>
-              <p className="text-2xl font-bold text-foreground">{formatCurrency(totalAvailable, "SLE")}</p>
+              <div className="text-2xl font-bold text-foreground">
+                {isLoading ? (
+                  <Skeleton className="h-6 w-24 rounded-md" />
+                ) : (
+                  formatCurrency(totalAvailable, primaryCurrency)
+                )}
+              </div>
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 border-border bg-card hover:shadow-lg transition-all">
+        <Card className="border-border bg-card p-6 transition-all hover:shadow-lg">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-success/10">
-              <TrendingUp className="w-6 h-6 text-success" />
+            <div className="p-3 rounded-xl bg-blaze-orange/10">
+              <TrendingUp className="w-6 h-6 text-blaze-orange" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Withdrawn</p>
-              <p className="text-2xl font-bold text-foreground">$1,050.00</p>
+              <div className="text-2xl font-bold text-foreground">
+                {isLoading ? (
+                  <Skeleton className="h-6 w-24 rounded-md" />
+                ) : (
+                  formatCurrency(totalWithdrawnMinor, primaryCurrency)
+                )}
+              </div>
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 border-border bg-card hover:shadow-lg transition-all">
+        <Card className="border-border bg-card p-6 transition-all hover:shadow-lg">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-secondary/10">
-              <Calendar className="w-6 h-6 text-secondary-foreground" />
+            <div className="p-3 rounded-xl bg-chartereuse/10">
+              <Calendar className="w-6 h-6 text-chartereuse-foreground" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Pending Requests</p>
-              <p className="text-2xl font-bold text-foreground">1</p>
+              <div className="text-2xl font-bold text-foreground">
+                {isLoading ? (
+                  <Skeleton className="h-6 w-12 rounded-md" />
+                ) : (
+                  pendingRequests
+                )}
+              </div>
             </div>
           </div>
         </Card>
       </div>
-    <Card className="p-6 border-border bg-card">
-      <h3 className="text-xl font-semibold text-foreground mb-4">Recent Withdrawals</h3>
-      <div className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as "request" | "recent")}
+        className="space-y-6"
+      >
+        <TabsList className="grid w-full grid-cols-2 gap-2 rounded-2xl bg-muted/50 p-1 sm:flex sm:flex-wrap sm:gap-2 md:flex-nowrap md:overflow-x-auto lg:overflow-visible">
+          <TabsTrigger
+            value="request"
+            className="flex w-full items-center justify-center rounded-2xl px-3 py-2 text-xs font-medium transition data-[state=active]:bg-blaze-orange data-[state=active]:text-white data-[state=active]:shadow sm:flex-auto sm:px-4 sm:py-2 sm:text-sm md:w-auto"
+          >
+            Request Withdrawal
+          </TabsTrigger>
+          <TabsTrigger
+            value="recent"
+            className="flex w-full items-center justify-center rounded-2xl px-3 py-2 text-xs font-medium transition data-[state=active]:bg-blaze-orange data-[state=active]:text-white data-[state=active]:shadow sm:flex-auto sm:px-4 sm:py-2 sm:text-sm md:w-auto"
+          >
+            Recent Withdrawals
+          </TabsTrigger>
+        </TabsList>
 
-        <WithdrawalForm
-          campaignOptions={campaignOptions}
-          onSuccess={handlePayoutSuccess}
-        />
+        <TabsContent value="request" className="focus-visible:outline-none">
+          <Card className="border-border bg-card p-6">
+            <WithdrawalForm
+              campaignOptions={campaignOptions}
+              onSuccess={handlePayoutSuccess}
+              isLoading={isLoading}
+            />
+          </Card>
+        </TabsContent>
 
-        <div className="space-y-3">
-          {payouts.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <Wallet className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>No withdrawal requests yet</p>
-            </div>
-          )}
-          {payouts.map((p) => {
-            const campaign = campaigns.find((c) => String(c._id) === String(p.campaignId));
-            const currency = campaign?.goal?.currency ?? "SLE";
-            const title = campaign?.patient?.name || campaign?.diagnosis || campaign?.slug || "Campaign";
-            const statusColor =
-              p.status === "completed" || p.status === "paid"
-                ? "text-emerald-600"
-                : p.status === "failed" || p.status === "rejected"
-                  ? "text-rose-600"
-                  : p.status === "processing" || p.status === "approved"
-                    ? "text-amber-600"
-                    : "text-gray-500";
-
-            const displayStatus = p.status === "paid" ? "completed" : p.status;
-            return (
-              <div key={String(p._id)} className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-lg border border-border bg-background hover:shadow-md transition-all gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground truncate">{title}</p>
-
-                  <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                    <Calendar className="w-3 h-3" />
-                    <span className="text-gray-500">{new Date(p.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</span>
+        <TabsContent value="recent" className="focus-visible:outline-none">
+          <Card className="border-border bg-card p-6">
+            <h3 className="mb-4 text-xl font-semibold text-foreground">Recent Withdrawals</h3>
+            <div className="space-y-3">
+              {isLoading ? (
+                [...Array(4)].map((_, i) => (
+                  <div
+                    key={`payout-skel-${i}`}
+                    className="flex flex-col gap-3 rounded-2xl border border-border bg-background/80 p-4 md:flex-row md:items-center md:justify-between"
+                  >
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <Skeleton className="h-4 w-48 rounded-md" />
+                      <Skeleton className="h-3 w-32 rounded-md" />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-6 w-20 rounded-md" />
+                      <Skeleton className="h-5 w-16 rounded-md" />
+                    </div>
                   </div>
+                ))
+              ) : payouts.length === 0 ? (
+                <div className="py-12 text-center text-muted-foreground">
+                  <Wallet className="mx-auto mb-2 h-12 w-12 opacity-50" />
+                  <p>No withdrawal requests yet</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Badge variant="outline" className={statusColor}>
-                    <span className="sr-only">{displayStatus.replace("_", " ")}</span>
-                  </Badge>
-                  <span className="text-gray-700">{formatCurrency(p.amountMinor, currency)}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </Card>
-  </div>
+              ) : (
+                payouts.map((p) => {
+                  const campaign = campaigns.find((c) => String(c._id) === String(p.campaignId));
+                  const currency = campaign?.goal?.currency ?? "SLE";
+                  const title =
+                    campaign?.patient?.name || campaign?.diagnosis || campaign?.slug || "Campaign";
+                  const statusColor =
+                    p.status === "completed" || p.status === "paid"
+                      ? "text-emerald-600"
+                      : p.status === "failed" || p.status === "rejected"
+                      ? "text-rose-600"
+                      : p.status === "processing" || p.status === "approved"
+                      ? "text-amber-600"
+                      : "text-gray-500";
+
+                  const displayStatus = p.status === "paid" ? "completed" : p.status;
+                  return (
+                    <div
+                      key={String(p._id)}
+                      className="flex flex-col gap-3 rounded-2xl border border-border bg-background/80 p-4 transition-all hover:shadow-md md:flex-row md:items-center md:justify-between"
+                    >
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <p className="truncate font-medium text-foreground">{title}</p>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          <span>
+                            {new Date(p.createdAt).toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline" className={statusColor}>
+                          <span className="sr-only">{displayStatus.replace("_", " ")}</span>
+                        </Badge>
+                        <span className="text-gray-700">{formatCurrency(p.amountMinor, currency)}</span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>  
   );
 }

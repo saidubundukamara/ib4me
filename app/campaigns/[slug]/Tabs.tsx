@@ -1,11 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 export type CampaignUpdateItem = {
   id: string;
   content: string;
-  createdAt: string; // ISO string
+  createdAt: string;
 };
 
 export type CampaignCommentItem = {
@@ -21,79 +31,149 @@ type TabsProps = {
   comments?: CampaignCommentItem[];
 };
 
-export default function CampaignTabs({ story, updates, comments = [] }: TabsProps) {
+const tabItems: Array<{
+  key: "story" | "updates" | "comments";
+  label: string;
+}> = [
+  { key: "story", label: "Story" },
+  { key: "updates", label: "Updates" },
+  { key: "comments", label: "Comments" },
+];
+
+export default function CampaignTabs({
+  story,
+  updates,
+  comments = [],
+}: TabsProps) {
   const [active, setActive] = useState<"story" | "updates" | "comments">("story");
 
-  const baseBtn = "rounded-full border px-4 py-2 text-sm";
-  const activeBtn = "bg-white text-gray-900";
-  const inactiveBtn = "bg-neutral-50 text-gray-700";
-
   return (
-    <div>
-      <div className="mt-6 grid grid-cols-3 gap-3 text-sm">
-        <button
-          type="button"
-          className={`${baseBtn} ${active === "story" ? activeBtn : inactiveBtn}`}
-          onClick={() => setActive("story")}
-        >
-          Story
-        </button>
-        <button
-          type="button"
-          className={`${baseBtn} ${active === "updates" ? activeBtn : inactiveBtn}`}
-          onClick={() => setActive("updates")}
-        >
-          Updates ({updates.length})
-        </button>
-        <button
-          type="button"
-          className={`${baseBtn} ${active === "comments" ? activeBtn : inactiveBtn}`}
-          onClick={() => setActive("comments")}
-        >
-          Comments ({comments.length})
-        </button>
+    <div className="space-y-6">
+      <div className="flex flex-wrap gap-2 rounded-full bg-muted/40 p-1">
+        {tabItems.map((tab) => {
+          const count =
+            tab.key === "updates"
+              ? updates.length
+              : tab.key === "comments"
+                ? comments.length
+                : undefined;
+          const isActive = active === tab.key;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActive(tab.key)}
+              className={`flex-1 min-w-[120px] rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                isActive
+                  ? "bg-background text-foreground shadow-sm"
+                  : "bg-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+              {typeof count === "number" ? ` (${count})` : ""}
+            </button>
+          );
+        })}
       </div>
 
-      <div className="mt-6">
-        {active === "story" && (
-          <div className="text-sm md:text-base text-gray-800 whitespace-pre-line">{story || ""}</div>
-        )}
+      {active === "story" && (
+        <div className="rounded-2xl border border-border/50 bg-background/80 p-4 text-sm text-muted-foreground md:text-base">
+          {story ? story : "This campaign has not added a story yet."}
+        </div>
+      )}
 
-        {active === "updates" && (
-          <div className="space-y-4">
-            {updates.length === 0 ? (
-              <div className="text-sm text-gray-600">No updates yet.</div>
-            ) : (
-              updates.map((u) => (
-                <article key={u.id} className="rounded-lg border p-4">
-                  <div className="text-xs text-gray-600">{new Date(u.createdAt).toLocaleString()}</div>
-                  <div className="mt-2 text-sm md:text-base text-gray-800 whitespace-pre-line">{u.content}</div>
-                </article>
-              ))
-            )}
-          </div>
-        )}
-
-        {active === "comments" && (
-          <div className="space-y-4">
-            {comments.length === 0 ? (
-              <div className="text-sm text-gray-600">No comments yet.</div>
-            ) : (
-              comments.map((c) => (
-                <div key={c.id} className="rounded-lg border p-4">
-                  <div className="text-xs text-gray-600">
-                    {c.author ? `${c.author} • ` : ""}
-                    {new Date(c.createdAt).toLocaleString()}
+      {active === "updates" && (
+        <div className="space-y-4">
+          {updates.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border/60 bg-muted/30 p-6 text-sm text-muted-foreground">
+              No updates yet. Check back later for progress.
+            </div>
+          ) : (
+            updates.map((update) => (
+              <Card
+                key={update.id}
+                className="rounded-2xl border border-border/60 bg-background/80 shadow-sm transition-shadow hover:shadow-md"
+              >
+                <CardHeader>
+                  <div className="flex items-center justify-between gap-3">
+                    <CardTitle className="text-base font-semibold text-foreground">
+                      Campaign Update
+                    </CardTitle>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(update.createdAt).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
                   </div>
-                  <div className="mt-2 text-sm md:text-base text-gray-800 whitespace-pre-line">{c.content}</div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">
+                    {update.content}
+                  </p>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      )}
+
+      {active === "comments" && (
+        <div className="space-y-6">
+          {comments.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border/60 bg-muted/30 p-6 text-sm text-muted-foreground">
+              No comments yet. Be the first to leave a message of support.
+            </div>
+          ) : (
+            comments.map((comment) => (
+              <div
+                key={comment.id}
+                className="rounded-2xl border border-border/60 bg-background/80 p-4"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-foreground">
+                    {comment.author || "Anonymous"}
+                  </p>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(comment.createdAt).toLocaleDateString()}
+                  </span>
                 </div>
-              ))
-            )}
-          </div>
-        )}
-      </div>
+                <p className="mt-3 text-sm text-muted-foreground whitespace-pre-line">
+                  {comment.content}
+                </p>
+              </div>
+            ))
+          )}
+
+          <Card className="rounded-2xl border border-border/60 bg-muted/30">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold text-foreground">
+                Leave a Comment
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="comment-name">Name</Label>
+                  <Input id="comment-name" placeholder="Your name" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="comment-message">Comment</Label>
+                  <Textarea
+                    id="comment-message"
+                    placeholder="Write your message of support..."
+                    rows={4}
+                  />
+                </div>
+                <Button type="button"className="w-full sm:w-auto">
+                  Post Comment
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
-
-
