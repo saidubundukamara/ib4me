@@ -74,6 +74,12 @@ interface CampaignFormWizardProps {
 
 const defaultCurrency = "SLE";
 
+interface CategoryOption {
+  _id: string;
+  name: string;
+  slug: string;
+}
+
 const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
   mode,
   isOpen,
@@ -83,6 +89,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = React.useState<number>(1);
   const [title, setTitle] = React.useState("");
+  const [availableCategories, setAvailableCategories] = React.useState<CategoryOption[]>([]);
   const [typeOfEmergency, setTypeOfEmergency] = React.useState("");
   const [urgency, setUrgency] = React.useState<"low" | "medium" | "high">("medium");
   const [diagnosis, setDiagnosis] = React.useState("");
@@ -118,6 +125,24 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
     setRemovedDocumentIds([]);
     setRemovePatientPhoto(false);
     setErrors({});
+  }, []);
+
+  // Fetch categories on mount
+  React.useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch("/api/categories");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && Array.isArray(data.data)) {
+            setAvailableCategories(data.data);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchCategories();
   }, []);
 
   React.useEffect(() => {
@@ -454,10 +479,20 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Medical Emergency">Medical Emergency</SelectItem>
-                  <SelectItem value="Heart Surgery">Heart Surgery</SelectItem>
-                  <SelectItem value="Cancer Treatment">Cancer Treatment</SelectItem>
-                  <SelectItem value="Medical Support">Medical Support</SelectItem>
+                  {availableCategories.length > 0 ? (
+                    availableCategories.map((cat) => (
+                      <SelectItem key={cat._id} value={cat.name}>
+                        {cat.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <>
+                      <SelectItem value="Medical Emergency">Medical Emergency</SelectItem>
+                      <SelectItem value="Heart Surgery">Heart Surgery</SelectItem>
+                      <SelectItem value="Cancer Treatment">Cancer Treatment</SelectItem>
+                      <SelectItem value="Medical Support">Medical Support</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
               {errors.category && <p className="text-sm text-destructive mt-1">{errors.category}</p>}

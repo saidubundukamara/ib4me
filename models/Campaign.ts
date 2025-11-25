@@ -76,6 +76,7 @@ export interface ICampaign extends mongoose.Document {
   urgency?: "low" | "medium" | "high";
   typeOfEmergency?: string;
   category?: string;
+  categoryId?: mongoose.Types.ObjectId;
   share?: { whatsAppPostId?: string | null };
   totals?: ICampaignTotals;
   withdrawals?: ICampaignWithdrawals;
@@ -169,6 +170,11 @@ const campaignSchema = new mongoose.Schema<ICampaign>(
     },
     typeOfEmergency: { type: String },
     category: { type: String, trim: true },
+    categoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      index: true,
+    },
     share: {
       whatsAppPostId: { type: String, default: null },
     },
