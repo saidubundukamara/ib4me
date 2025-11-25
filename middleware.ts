@@ -70,16 +70,25 @@ export default async function middleware(req: NextRequest) {
   }
   
   // Block access to admin routes from main domain (redirect to admin subdomain)
-  if (!subdomain && pathname.startsWith("/admin")) {
+  if (!subdomain && (pathname.startsWith("/admin") || pathname.startsWith("/s/admin"))) {
     const adminUrl = new URL(req.url);
     adminUrl.hostname = `admin.${adminUrl.hostname}`;
-    adminUrl.pathname = pathname.replace("/admin", "");
+    if (pathname.startsWith("/s/admin")) {
+      adminUrl.pathname = pathname.replace("/s/admin", "");
+    } else {
+      adminUrl.pathname = pathname.replace("/admin", "");
+    }
     if (adminUrl.pathname === "") adminUrl.pathname = "/";
     return NextResponse.redirect(adminUrl);
   }
   
   // Handle admin routes (now only accessible via /s/admin from admin subdomain)
   if (pathname.startsWith("/s/admin") || pathname.startsWith("/api/admin")) {
+    // Ensure /s/admin routes are only accessible from admin subdomain
+    if (pathname.startsWith("/s/admin") && subdomain !== "admin") {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+    
     const routePath = pathname.startsWith("/s/admin") ? pathname.replace("/s/admin", "/admin") : pathname;
     
     // Allow public admin routes
