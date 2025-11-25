@@ -6,7 +6,7 @@ import Image from "next/image";
 
 interface CampaignCardProps {
   title: string;
-  description: string;
+  description?: string;
   imageUrl: string;
   raised: number;
   goal: number;
@@ -14,6 +14,9 @@ interface CampaignCardProps {
   daysLeft: number;
   verified?: boolean;
   urgent?: boolean;
+  href?: string;
+  onShare?: () => void;
+  currency?: string;
 }
 
 const CampaignCard = ({
@@ -26,8 +29,28 @@ const CampaignCard = ({
   daysLeft,
   verified = false,
   urgent = false,
+  href,
+  onShare,
+  currency = "SLE",
 }: CampaignCardProps) => {
-  const percentage = Math.min((raised / goal) * 100, 100);
+  const percentage = Math.min(goal > 0 ? (raised / goal) * 100 : 0, 100);
+
+  const currencyCode = (currency || "SLL").toUpperCase();
+
+  const formatCurrency = (value: number) => {
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency: currencyCode,
+        maximumFractionDigits: 0,
+      }).format(value);
+    } catch {
+      return `${currencyCode} ${value.toLocaleString()}`;
+    }
+  };
+
+  const raisedLabel = formatCurrency(raised);
+  const goalLabel = formatCurrency(goal);
 
   return (
     <Card className="overflow-hidden rounded-3xl bg-card hover:shadow-[var(--shadow-lift)] transition-all duration-300 hover:-translate-y-2 border-0">
@@ -60,9 +83,11 @@ const CampaignCard = ({
           <h3 className="text-xl font-bold text-card-foreground mb-2 line-clamp-2 hover:text-primary transition-colors">
             {title}
           </h3>
-          <p className="text-muted-foreground text-sm line-clamp-2">
-            {description}
-          </p>
+          {description && (
+            <p className="text-muted-foreground text-sm line-clamp-2">
+              {description}
+            </p>
+          )}
         </div>
 
         {/* Progress Bar with Gradient */}
@@ -74,9 +99,9 @@ const CampaignCard = ({
           <div className="flex justify-between items-center text-sm">
             <div>
               <span className="font-bold text-blaze-orange text-lg">
-                ${raised.toLocaleString()}
+                {raisedLabel}
               </span>
-              <span className="text-muted-foreground"> raised of ${goal.toLocaleString()}</span>
+              <span className="text-muted-foreground"> raised of {goalLabel}</span>
             </div>
             <span className="font-semibold text-primary">{Math.round(percentage)}%</span>
           </div>
@@ -96,10 +121,20 @@ const CampaignCard = ({
 
         {/* Actions */}
         <div className="flex gap-3 pt-2">
-          <Button className="flex-1" variant="default">
-            Donate Now
-          </Button>
-          <Button variant="outline" size="icon" className="rounded-full">
+          {href ? (
+            <Button asChild className="flex-1">
+              <a href={href}>Donate Now</a>
+            </Button>
+          ) : (
+            <Button className="flex-1">Donate Now</Button>
+          )}
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full"
+            onClick={onShare}
+            type="button"
+          >
             <Share2 className="w-4 h-4" />
           </Button>
         </div>

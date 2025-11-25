@@ -85,7 +85,7 @@ export default function DocumentUpload({ accept = ["image/*", "application/pdf"]
           {files.map((f) => (
             <li key={f.id} className="flex items-center gap-3 rounded-xl border p-3 bg-white/70 ">
               {f.previewUrl ? (
-                <Image src={f.previewUrl} alt={f.file.name} className="h-12 w-12 rounded-md object-cover" />
+                <Image src={f.previewUrl} alt={f.file.name} width={48} height={48}  className="h-12 w-12 rounded-md object-cover" />
               ) : (
                 <div className="h-12 w-12 grid place-items-center rounded-md bg-gray-100 ">
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>

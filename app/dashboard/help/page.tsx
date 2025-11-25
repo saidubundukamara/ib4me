@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button'
 
 const Help = () => {
     return (
-        <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-foreground mb-6">Help & Support</h2>
+        <div className="flex w-full flex-col gap-6">
+            <h2 className="text-3xl font-bold text-foreground">Help & Support</h2>
 
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -55,7 +55,7 @@ const Help = () => {
                         </div>
                         <div>
                             <h4 className="font-semibold text-foreground">Email Support</h4>
-                            <p className="text-sm text-muted-foreground">support@ib4me.org</p>
+                            <p className="text-sm text-muted-foreground">ib4me.organisation@gmail.com</p>
                             <p className="text-xs text-muted-foreground mt-1">Response within 24 hours</p>
                         </div>
                     </div>

@@ -87,7 +87,7 @@ export default async function UserDashboardPage() {
     : [];
 
   return (
-    <div className="space-y-6">
+    <div className="flex w-full flex-col gap-6">
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-foreground">Dashboard</h2>

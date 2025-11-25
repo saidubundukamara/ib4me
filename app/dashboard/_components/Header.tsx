@@ -40,53 +40,51 @@ export default function Header({
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2">
-            <Image
-              src={ib4meLogo}
-              alt="ib4me logo"
-              className="h-10 w-auto"
-              priority
-            />
-          </Link>
+    <header className="sticky top-0 z-50 border-b border-border/40 bg-white/80 backdrop-blur-lg">
+      <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <Link href="/" className="flex items-center gap-3">
+          <Image
+            src={ib4meLogo}
+            alt="ib4me logo"
+            className="h-10 w-auto"
+            priority
+          />
+        </Link>
 
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              aria-label={sidebarOpen ? "Close navigation menu" : "Open navigation menu"}
-              onClick={() => onToggleSidebar?.()}
-            >
-              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            aria-label={sidebarOpen ? "Close navigation menu" : "Open navigation menu"}
+            onClick={() => onToggleSidebar?.()}
+          >
+            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </Button>
 
-            <NotificationPopover
-              notifications={notifications}
-              onMarkAsRead={(id) =>
-                setNotifications((prev) =>
-                  prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-                )
-              }
-              onMarkAllAsRead={() =>
-                setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-              }
-              onDelete={(id) =>
-                setNotifications((prev) => prev.filter((n) => n.id !== id))
-              }
-            />
+          <NotificationPopover
+            notifications={notifications}
+            onMarkAsRead={(id) =>
+              setNotifications((prev) =>
+                prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+              )
+            }
+            onMarkAllAsRead={() =>
+              setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+            }
+            onDelete={(id) =>
+              setNotifications((prev) => prev.filter((n) => n.id !== id))
+            }
+          />
 
-            <Button
-              variant="outline"
-              className="rounded-2xl"
-              onClick={handleLogout}
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Logout</span>
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            className="rounded-full border-primary/40 text-primary hover:bg-primary hover:text-white"
+            onClick={handleLogout}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Logout</span>
+          </Button>
         </div>
       </div>
     </header>

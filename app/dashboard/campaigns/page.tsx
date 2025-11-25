@@ -1,16 +1,17 @@
 "use client";
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Plus, Trash2 } from "lucide-react";
 import Card from "../_components/Card";
 import ProgressBar from "../_components/ProgressBar";
-import EditCampaignDialog, { type EditCampaignResult } from "../_components/EditCampaignDialog";
+import CampaignFormWizard, {
+  type CampaignFormInitialValues,
+  type CampaignFormSubmitPayload,
+} from "../_components/CampaignFormWizard";
 import DeleteCampaignDialog from "../_components/DeleteCampaignDialog";
-import CreateCampaignDialog, { type CreateCampaignResult } from "../_components/CreateCampaignDialog";
-import { type CampaignFormInitialValues } from "../_components/CampaignFormWizard";
-import Image from "next/image";
 import { toast } from "sonner";
 
 type UrgencyValue = "low" | "medium" | "high";
@@ -36,13 +37,39 @@ type CampaignItem = {
   category?: string;
 };
 
+type CreateCampaignResult = {
+  id: string;
+  slug: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  form: CampaignFormSubmitPayload;
+};
+
+type EditCampaignResult = {
+  id: string;
+  slug: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  form: CampaignFormSubmitPayload;
+};
+
 const toTitleCase = (value: string) =>
   value
     ? value
-        .split("-")
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(" ")
+      .split("-")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ")
     : "Untitled campaign";
+
+const generateSlug = (value: string): string =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
 
 const resolveUrgency = (value: unknown): UrgencyValue | undefined => {
   if (value === "low" || value === "medium" || value === "high") {
@@ -127,7 +154,7 @@ const fromFormResult = (
     status: result.status ?? previous?.status ?? "active",
     urgency: form.urgency ?? previous?.urgency ?? null,
     goalAmount: safeGoalAmount >= 0 ? safeGoalAmount : previous?.goalAmount ?? 0,
-    goalCurrency: form.goal.currency || previous?.goalCurrency || "SLE",
+    goalCurrency: form.goal.currency || previous?.goalCurrency || "SLL",
     createdAt: result.createdAt ?? previous?.createdAt ?? result.updatedAt ?? new Date().toISOString(),
     imageUrl: previous?.imageUrl,
     description: form.description || form.story || previous?.description || "",
@@ -142,6 +169,20 @@ const fromFormResult = (
   };
 };
 
+const FALLBACK_CAMPAIGN_IMAGE = "/assets/Create-fundraiser.jpg";
+
+const normalizeCampaignImageSrc = (value?: string): string => {
+  if (!value) return FALLBACK_CAMPAIGN_IMAGE;
+  const trimmed = value.trim();
+  if (!trimmed) return FALLBACK_CAMPAIGN_IMAGE;
+  if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith("data:")) return trimmed;
+  if (trimmed.startsWith("//")) return `https:${trimmed}`;
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed.replace(/^\/+/, "")}`;
+};
+
+const isRemoteImageSrc = (src: string): boolean =>
+  /^https?:\/\//i.test(src) || src.startsWith("data:");
+
 export default function UserCampaignsPage() {
   const [items, setItems] = React.useState<CampaignItem[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
@@ -149,6 +190,8 @@ export default function UserCampaignsPage() {
   const [editingCampaign, setEditingCampaign] = React.useState<CampaignItem | null>(null);
   const [editInitialValues, setEditInitialValues] = React.useState<CampaignFormInitialValues | undefined>();
   const [editLoading, setEditLoading] = React.useState(false);
+  const [createSubmitting, setCreateSubmitting] = React.useState(false);
+  const [editSubmitting, setEditSubmitting] = React.useState(false);
   const [deletingCampaign, setDeletingCampaign] = React.useState<CampaignItem | null>(null);
 
   React.useEffect(() => {
@@ -180,7 +223,142 @@ export default function UserCampaignsPage() {
     [],
   );
 
+  const handleCancelCreate = React.useCallback(() => {
+    setIsCreateOpen(false);
+    setCreateSubmitting(false);
+  }, []);
+
+  const handleCancelEdit = React.useCallback(() => {
+    setEditingCampaign(null);
+    setEditInitialValues(undefined);
+    setEditLoading(false);
+    setEditSubmitting(false);
+  }, []);
+
+  const submitCreateCampaign = React.useCallback(
+    async (formValues: CampaignFormSubmitPayload) => {
+      if (createSubmitting) return;
+      setCreateSubmitting(true);
+      const formData = new FormData();
+      const slug = generateSlug(formValues.title || `campaign-${Date.now()}`);
+      formData.set("slug", slug);
+      if (formValues.diagnosis) formData.set("diagnosis", formValues.diagnosis);
+      if (formValues.typeOfEmergency)
+        formData.set("typeOfEmergency", formValues.typeOfEmergency);
+      formData.set("urgency", formValues.urgency);
+      formData.set("patient.name", formValues.patient.name);
+      if (formValues.patient.age !== undefined) {
+        formData.set("patient.age", String(formValues.patient.age));
+      }
+      if (formValues.hospital.name) {
+        formData.set("hospital.name", formValues.hospital.name);
+      }
+      if (formValues.description) {
+        formData.set("description", formValues.description);
+      }
+      if (formValues.category) {
+        formData.set("category", formValues.category);
+      }
+      const amountMinor = Math.max(0, Math.round(formValues.goal.amountMajor * 100));
+      formData.set("goal.currency", formValues.goal.currency);
+      formData.set("goal.amountMinor", String(amountMinor));
+      formData.set("story", formValues.story);
+      if (formValues.documents?.length) {
+        formValues.documents.forEach((file, index) => {
+          if (file) {
+            formData.append(`documents[${index}]`, file);
+          }
+        });
+      }
+
+      try {
+        const res = await fetch("/api/campaigns", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || "Failed to create campaign");
+        }
+
+        const data = await res.json().catch(() => ({}));
+        toast.success("Campaign created successfully!");
+        handleCreateCampaign({
+          id: data.id ?? `campaign-${Date.now()}`,
+          slug: data.slug ?? slug,
+          status: data.status ?? "active",
+          createdAt: data.createdAt ?? new Date().toISOString(),
+          form: formValues,
+        });
+        setIsCreateOpen(false);
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Failed to create campaign",
+        );
+        throw error;
+      } finally {
+        setCreateSubmitting(false);
+      }
+    },
+    [createSubmitting, handleCreateCampaign],
+  );
+
+  const submitEditCampaign = React.useCallback(
+    async (values: CampaignFormSubmitPayload) => {
+      if (!editingCampaign || editSubmitting) return;
+      setEditSubmitting(true);
+      const amountMinor = Math.max(0, Math.round(values.goal.amountMajor * 100));
+      const payload = {
+        diagnosis: values.diagnosis,
+        typeOfEmergency: values.typeOfEmergency,
+        urgency: values.urgency,
+        patient: {
+          name: values.patient.name,
+          ...(values.patient.age !== undefined ? { age: values.patient.age } : {}),
+        },
+        hospital: { name: values.hospital.name },
+        goal: {
+          currency: values.goal.currency,
+          amountMinor,
+        },
+        story: values.story,
+      };
+
+      try {
+        const res = await fetch(`/api/campaigns/${editingCampaign.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || "Failed to update campaign");
+        }
+
+        toast.success("Campaign updated successfully!");
+        handleUpdateCampaign({
+          id: editingCampaign.id,
+          slug: editingCampaign.slug,
+          status: editingCampaign.status,
+          updatedAt: new Date().toISOString(),
+          form: values,
+        });
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Failed to update campaign",
+        );
+        throw error;
+      } finally {
+        setEditSubmitting(false);
+      }
+    },
+    [editSubmitting, editingCampaign, handleUpdateCampaign],
+  );
+
   const handleOpenEdit = React.useCallback((campaign: CampaignItem) => {
+    setIsCreateOpen(false);
     setEditingCampaign(campaign);
     setEditInitialValues(undefined);
     setEditLoading(true);
@@ -218,11 +396,10 @@ export default function UserCampaignsPage() {
         toast.error(
           error instanceof Error ? error.message : "Failed to load campaign details",
         );
-        setEditingCampaign(null);
-        setEditInitialValues(undefined);
+        handleCancelEdit();
       })
       .finally(() => setEditLoading(false));
-  }, []);
+  }, [handleCancelEdit]);
 
   const handleDeleteCampaign = React.useCallback((id: string) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
@@ -231,20 +408,25 @@ export default function UserCampaignsPage() {
 
   // Responsive Skeleton + List
   const SkeletonCard = () => (
-    <Card className="p-4 sm:p-6 border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all rounded-3xl overflow-hidden animate-pulse">
+    <Card className="p-4 sm:p-6 border-0 shadow-[var(--shadow-soft)] rounded-3xl overflow-hidden animate-pulse">
       <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
-        <div className="w-full h-40 sm:h-48 lg:w-48 lg:h-48 bg-muted rounded-2xl" />
+        {/* Image Placeholder */}
+        <div className="h-48 sm:h-56 lg:h-48 w-full sm:w-64 lg:w-56 bg-muted rounded-2xl" />
+
+        {/* Content */}
         <div className="flex-1 space-y-3 sm:space-y-4">
+          {/* Title + Badge */}
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 sm:gap-3 mb-1.5 sm:mb-2">
-                <div className="h-7 sm:h-8 w-40 sm:w-48 bg-muted rounded" />
+                <div className="h-7 sm:h-8 w-40 sm:w-56 bg-muted rounded" />
                 <div className="h-5 sm:h-6 w-14 sm:w-16 bg-muted rounded" />
               </div>
               <div className="h-3.5 sm:h-4 w-full bg-muted rounded" />
             </div>
           </div>
 
+          {/* Progress */}
           <div className="space-y-2">
             <div className="flex justify-between">
               <div className="h-3.5 sm:h-4 w-14 sm:w-16 bg-muted rounded" />
@@ -252,12 +434,13 @@ export default function UserCampaignsPage() {
             </div>
             <div className="w-full bg-muted rounded-full h-2.5 sm:h-3" />
             <div className="flex justify-between items-center">
-              <div className="h-5 sm:h-6 w-20 sm:w-24 bg-muted rounded" />
-              <div className="h-3.5 sm:h-4 w-14 sm:w-16 bg-muted rounded" />
+              <div className="h-5 sm:h-6 w-24 sm:w-32 bg-muted rounded" />
+              <div className="h-3.5 sm:h-4 w-16 sm:w-20 bg-muted rounded" />
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          {/* Buttons */}
+          <div className="flex flex-wrap gap-2 pt-2">
             <div className="h-9 w-24 bg-muted rounded-xl" />
             <div className="h-9 w-32 bg-muted rounded-xl" />
             <div className="h-9 w-24 bg-muted rounded-xl" />
@@ -277,7 +460,7 @@ export default function UserCampaignsPage() {
           </Button>
         </div>
 
-        <div className="grid gap-4 sm:gap-6 [grid-template-columns:repeat(auto-fit,minmax(260px,1fr))]">
+        <div className="grid grid-cols-1 gap-4">
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
@@ -290,15 +473,92 @@ export default function UserCampaignsPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-2xl sm:text-3xl font-bold text-foreground">My Campaigns</h2>
-        <Button className="rounded-2xl w-full sm:w-auto" onClick={() => setIsCreateOpen(true)}>
+        <Button
+          className="rounded-2xl w-full sm:w-auto"
+          onClick={() => {
+            if (isCreateOpen) {
+              handleCancelCreate();
+            } else {
+              handleCancelEdit();
+              setIsCreateOpen(true);
+            }
+          }}
+        >
           <span className="mr-2">
             <Plus />
           </span>
-          Create Campaign
+          {isCreateOpen ? "Close Form" : "Create Campaign"}
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:gap-6 [grid-template-columns:repeat(auto-fit,minmax(260px,1fr))]">
+      {isCreateOpen ? (
+        <Card className="w-full overflow-hidden rounded-3xl border border-border/40 bg-card shadow-[0_25px_60px_-45px_rgba(15,23,42,0.35)]">
+          <div className="flex flex-col gap-4 p-5 sm:p-8">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-xl font-semibold text-foreground sm:text-2xl">Create Campaign</h3>
+                <p className="text-sm text-muted-foreground">
+                  Provide accurate details to help donors understand the need.
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                className="self-start sm:self-auto rounded-2xl"
+                onClick={handleCancelCreate}
+                disabled={createSubmitting}
+              >
+                Cancel
+              </Button>
+            </div>
+            <CampaignFormWizard
+              mode="create"
+              isOpen={isCreateOpen}
+              onSubmit={submitCreateCampaign}
+              submitLabel="Create Campaign"
+            />
+          </div>
+        </Card>
+      ) : null}
+
+      {editingCampaign ? (
+        <Card className="w-full overflow-hidden rounded-3xl border border-border/40 bg-card shadow-[0_25px_60px_-45px_rgba(15,23,42,0.35)]">
+          <div className="flex flex-col gap-4 p-5 sm:p-8">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-xl font-semibold text-foreground sm:text-2xl">
+                  Edit Campaign: {editingCampaign.title}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Adjust campaign details and keep supporters up to date.
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                className="self-start sm:self-auto rounded-2xl"
+                onClick={handleCancelEdit}
+                disabled={editSubmitting}
+              >
+                Cancel
+              </Button>
+            </div>
+            {editLoading ? (
+              <div className="rounded-2xl border border-border/40 bg-muted/30 p-6 animate-pulse text-sm text-muted-foreground">
+                Loading campaign...
+              </div>
+            ) : (
+              <CampaignFormWizard
+                mode="edit"
+                isOpen={Boolean(editingCampaign)}
+                initialValues={editInitialValues}
+                onSubmit={submitEditCampaign}
+                submitLabel="Save Changes"
+              />
+            )}
+          </div>
+        </Card>
+      ) : null}
+
+      <div className="grid gap-6">
         {items.length === 0 ? (
           <Card className="p-4 sm:p-6 border-0 shadow-[var(--shadow-soft)] rounded-3xl col-span-full">
             <div className="text-sm text-muted-foreground">No campaigns yet. Create your first campaign.</div>
@@ -316,70 +576,97 @@ export default function UserCampaignsPage() {
             const statusLabel = campaign.status
               ? campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)
               : "Unknown";
+            const imageSrc = normalizeCampaignImageSrc(campaign.imageUrl);
+            const isRemoteImage = isRemoteImageSrc(imageSrc);
 
             return (
+
               <Card
                 key={campaign.id}
                 className="p-4 sm:p-6 border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all rounded-3xl overflow-hidden"
               >
-                <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
-                  <Image
-                    src={campaign.imageUrl || "/placeholder.png"}
-                    alt={campaign.title}
-                    width={192}
-                    height={192}
-                    className="w-full h-40 sm:h-48 lg:w-48 lg:h-48 object-cover rounded-2xl"
-                  />
+                <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 overflow-hidden">
+                  {/* Image */}
+                  <div className="flex-shrink-0 w-full sm:w-64 lg:w-56">
+                    <Image
+                      src={imageSrc}
+                      alt={campaign.title}
+                      width={224}
+                      height={224}
+                      unoptimized={isRemoteImage}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      className="w-full h-48 sm:h-56 lg:h-48 rounded-2xl object-cover"
+                    />
+                  </div>
 
-                  <div className="flex-1 space-y-3 sm:space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 sm:gap-3 mb-1.5 sm:mb-2">
-                          <h3 className="font-bold text-foreground text-xl sm:text-2xl truncate">
+                  {/* Content */}
+                  <div className="flex-1 flex flex-col justify-between space-y-3 sm:space-y-4 overflow-hidden">
+                    {/* Title and Description */}
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 overflow-hidden">
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1.5 sm:mb-2 overflow-hidden">
+                          <h3 className="font-bold text-xs sm:text-sm lg:text-lg text-foreground truncate max-w-full">
                             {campaign.title}
                           </h3>
-                          <Badge className="bg-success/10 text-success border-success">{statusLabel}</Badge>
+                          <Badge className="bg-primary/10 text-primary border-primary flex-shrink-0 whitespace-nowrap hover:bg-primary/20">
+                            {statusLabel}
+                          </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground line-clamp-2">{campaign.description}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-2 break-words">
+                          {campaign.description}
+                        </p>
                       </div>
                     </div>
 
+                    {/* Progress Section */}
                     <div className="space-y-2">
                       <div className="flex justify-between text-xs sm:text-sm">
                         <span className="text-muted-foreground">Progress</span>
                         <span className="font-semibold text-foreground">{progress}%</span>
                       </div>
                       <ProgressBar value={progress} className="w-full h-2.5 sm:h-3 rounded-full" />
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                        <div>
-                          <span className="text-xl sm:text-2xl font-bold text-primary">
+
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
+                        <div className="flex flex-wrap items-center gap-1">
+                          <span className="text-base sm:text-lg lg:text-xl font-bold text-primary whitespace-nowrap">
                             {campaign.goalCurrency} {raisedAmount.toLocaleString()}
                           </span>
-                          <span className="text-muted-foreground"> raised of {formattedGoal}</span>
+                          <span className="text-muted-foreground whitespace-nowrap">
+                            raised of {formattedGoal}
+                          </span>
                         </div>
-                        <span className="text-xs sm:text-sm text-muted-foreground">{campaign.donors} donors</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                          {campaign.donors} donors
+                        </span>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
+                    {/* Actions */}
+                    <div className="flex flex-wrap gap-2 pt-2">
                       <Button
                         variant="default"
                         size="sm"
-                        className="rounded-xl"
+                        className="rounded-xl flex-1 sm:flex-none min-w-[90px]"
                         onClick={() => handleOpenEdit(campaign)}
                       >
                         <Edit className="w-4 h-4 mr-2" />
                         Edit
                       </Button>
-                      <Link href={`/dashboard/campaigns/${campaign.id}`}>
-                        <Button variant="outline" size="sm" className="rounded-xl">
+
+                      <Link href={`/dashboard/campaigns/${campaign.id}`} className="flex-1 sm:flex-none min-w-[130px]">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-xl w-full justify-center"
+                        >
                           View Campaign
                         </Button>
                       </Link>
+
                       <Button
                         variant="outline"
                         size="sm"
-                        className="rounded-xl text-destructive hover:text-destructive"
+                        className="rounded-xl text-destructive hover:text-destructive flex-1 sm:flex-none min-w-[90px]"
                         onClick={() => setDeletingCampaign(campaign)}
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
@@ -393,31 +680,6 @@ export default function UserCampaignsPage() {
           })
         )}
       </div>
-
-      <CreateCampaignDialog
-        open={isCreateOpen}
-        onOpenChange={setIsCreateOpen}
-        onSave={handleCreateCampaign}
-      />
-
-      {editingCampaign && (
-        <EditCampaignDialog
-          open={Boolean(editingCampaign)}
-          onOpenChange={(open) => {
-            if (!open) {
-              setEditingCampaign(null);
-              setEditInitialValues(undefined);
-              setEditLoading(false);
-            }
-          }}
-          campaignId={editingCampaign.id}
-          slug={editingCampaign.slug}
-          status={editingCampaign.status}
-          initialValues={editInitialValues}
-          loading={editLoading}
-          onSave={handleUpdateCampaign}
-        />
-      )}
 
       {deletingCampaign && (
         <DeleteCampaignDialog

@@ -499,7 +499,11 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
             </Button>
           ) : (
             <Button onClick={handleSubmit} className="rounded-2xl w-full sm:w-auto" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : submitLabel ?? (mode === "create" ? "Create Campaign" : "Save Changes")}
+              {isSubmitting
+                ? mode === "create"
+                  ? "Creating..."
+                  : "Saving..."
+                : submitLabel ?? (mode === "create" ? "Create Campaign" : "Save Changes")}
             </Button>
           )}
         </div>

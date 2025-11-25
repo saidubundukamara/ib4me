@@ -18,6 +18,7 @@ import { TfiSupport } from "react-icons/tfi";
 import Logo from "@/public/assets/ib4melogowhite.png";
 import CampaignCard from "./_components/CampaignCard";
 import { stats } from "./_components/stats";
+import { toast } from "sonner";
 
 export default function Home() {
   return (
@@ -88,7 +89,7 @@ function HeroSection() {
               className="h-11 sm:h-12 rounded-2xl border-2 border-white bg-transparent px-6 sm:px-8 text-sm sm:text-base font-semibold text-white transition-all hover:bg-primary hover:text-white"
               asChild
             >
-              <Link href="/start-campaign">Start a Campaign</Link>
+              <Link href="/dashboard">Start a Campaign</Link>
             </Button>
           </div>
 
@@ -171,21 +172,22 @@ function StatsSection() {
 
 
 function DiscoverCampaigns() {
-  function formatAmount(amount: number, currency: string) {
-    return new Intl.NumberFormat("en-GB", {
-      style: "currency",
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+function formatAmount(amount: number, currency = "SLE") {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
     }).format(amount);
   }
 
   type Item = {
     id: string;
-    slug: string;
-    title: string;
-    currency: string;
-    amountRaised: number;
+  slug: string;
+  title: string;
+  currency: string;
+  description?: string;
+  amountRaised: number;
     goalAmount: number;
     donationsCount: number;
     imageUrl: string;
@@ -212,11 +214,39 @@ function DiscoverCampaigns() {
     };
   }, []);
 
+  const handleShare = (campaign: Item) => {
+    if (typeof window === "undefined") return;
+
+    const url = `${window.location.origin}/campaigns/${campaign.slug}`;
+    const shareData = {
+      title: campaign.title,
+      text: campaign.description || "Support this campaign on ib4me",
+      url,
+    };
+
+    if (navigator.share) {
+      navigator.share(shareData).catch(() => {
+        /* share dismissed */
+      });
+      return;
+    }
+
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard
+        .writeText(url)
+        .then(() => toast.success("Campaign link copied"))
+        .catch(() => toast.error("Unable to copy link"));
+    } else {
+      toast.info("Share not supported on this device");
+    }
+  };
+
+
 
   return (
     <main className="container max-w-screen-xl mx-auto py-16 px-4 font-Sora">
       <div className="text-center mb-16 space-y-4 animate-fade-in">
-        <h2 className="text-4xl sm:text-5xl font-bold text-foreground">
+        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground">
           Featured <span className="text-blaze-orange">Campaigns</span>
         </h2>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -306,22 +336,23 @@ function DiscoverCampaigns() {
           {items.map((c) => (
             <CarouselItem key={c.id} className="md:basis-1/2 lg:basis-1/3">
               <div className="p-1">
-                <Link href={`/campaigns/${c.slug}`} aria-label={`View details for ${c.title}`}>
-                  <CampaignCard
-                    title={c.title}
-                    description={`${formatAmount(c.amountRaised, c.currency)} raised of ${formatAmount(
-                      c.goalAmount,
-                      c.currency
-                    )}`}
-                    imageUrl={c.imageUrl}
-                    raised={c.amountRaised}
-                    goal={c.goalAmount}
-                    donors={c.donationsCount}
-                    daysLeft={30}
-                    verified={false}
-                    urgent={false}
-                  />
-                </Link>
+                <CampaignCard
+                  title={c.title}
+                  description={`${formatAmount(c.amountRaised, c.currency)} raised of ${formatAmount(
+                    c.goalAmount,
+                    c.currency
+                  )}`}
+                  imageUrl={c.imageUrl}
+                  raised={c.amountRaised}
+                  goal={c.goalAmount}
+                  donors={c.donationsCount}
+                  daysLeft={30}
+                  verified={false}
+                  urgent={false}
+                  href={`/campaigns/${c.slug}`}
+                  currency={c.currency || "SLE"}
+                  onShare={() => handleShare(c)}
+                />
               </div>
             </CarouselItem>
           ))}
@@ -496,7 +527,7 @@ function FundraiseSection() {
             className="h-11 sm:h-12 rounded-2xl border-2 border-white bg-transparent px-6 sm:px-8 text-sm sm:text-base font-semibold text-white transition-all hover:bg-fun-green/80 hover:text-white"
             asChild
           >
-            <Link href="/start-campaign">Start Your Campaign</Link>
+            <Link href="/dashboard">Start Your Campaign</Link>
           </Button>
         </div>
       </div>

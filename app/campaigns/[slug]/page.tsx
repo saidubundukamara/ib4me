@@ -2,14 +2,31 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import mongoose from "mongoose";
+import { Heart, Clock } from "lucide-react";
+import {
+  FaFacebookF,
+  FaXTwitter,
+  FaInstagram,
+  FaWhatsapp,
+  FaLinkedinIn,
+} from "react-icons/fa6";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { campaignService, mediaAssetService } from "@/services";
 import { CloudinaryService } from "@/lib/cloudinary";
-import { donationRepository, campaignUpdateRepository, userRepository } from "@/repositories";
+import {
+  donationRepository,
+  campaignUpdateRepository,
+  userRepository,
+} from "@/repositories";
 import CampaignTabs, { CampaignUpdateItem } from "./Tabs";
 
 type PageParams = { params: { slug: string } };
 
-function formatAmount(amount: number, currency: string) {
+function formatAmount(amount: number, currency: string = "SLE") {
   return new Intl.NumberFormat("en-GB", {
     style: "currency",
     currency,
@@ -36,12 +53,19 @@ export default async function CampaignDetailPage({ params }: PageParams) {
   const goalMinor = campaign.goal?.amountMinor ?? 0;
   const amountRaised = Math.max(0, Math.floor(raisedMinor) / 100);
   const goalAmount = Math.max(0, Math.floor(goalMinor) / 100);
-  const progress = goalAmount > 0 ? Math.min(100, Math.round((amountRaised / goalAmount) * 100)) : 0;
+  const progress =
+    goalAmount > 0 ? Math.min(100, Math.round((amountRaised / goalAmount) * 100)) : 0;
+
   const title = campaign.patient?.name || campaign.diagnosis || campaign.slug;
-  const firstImageDoc = (campaign.documents || []).find((d) => d.type?.startsWith("image/"));
+
+  const firstImageDoc = (campaign.documents || []).find((d) =>
+    d.type?.startsWith("image/"),
+  );
   let heroUrl = "/assets/Hero.png";
   if (firstImageDoc?.assetId) {
-    const [asset] = await mediaAssetService.listByIds([firstImageDoc.assetId as unknown as mongoose.Types.ObjectId]);
+    const [asset] = await mediaAssetService.listByIds([
+      firstImageDoc.assetId as unknown as mongoose.Types.ObjectId,
+    ]);
     if (asset) {
       const key = asset.storage?.key;
       if (key) {
@@ -59,13 +83,12 @@ export default async function CampaignDetailPage({ params }: PageParams) {
     }
   }
 
-  // Sidebar data: organizer and donations
   const organizer = campaign.ownerId
     ? await userRepository.findById(String(campaign.ownerId))
     : null;
 
   const donations = await donationRepository.listByCampaign(
-    campaign._id as mongoose.Types.ObjectId
+    campaign._id as mongoose.Types.ObjectId,
   );
   const recentDonations = donations
     .filter((d) => d.status === "succeeded")
@@ -80,101 +103,257 @@ export default async function CampaignDetailPage({ params }: PageParams) {
     createdAt: new Date(u.createdAt).toISOString(),
   }));
 
+  const supporters = campaign.totals?.donationCount ?? recentDonations.length ?? 0;
+
+  const goalDeadline =
+    (campaign.goal as { deadline?: string | Date } | null)?.deadline ?? null;
+  const deadlineDate = goalDeadline ? new Date(goalDeadline) : null;
+  const daysLeft =
+    deadlineDate && !Number.isNaN(deadlineDate.getTime())
+      ? Math.max(
+          0,
+          Math.ceil((deadlineDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+        )
+      : null;
+
+  const organizerName = organizer?.name ?? "Campaign organizer";
+  const organizerInitials = organizerName
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  const organizerPhoto = organizer?.photoUrl ?? null;
+  const createdLabel = campaign.createdAt ? formatDate(campaign.createdAt) : null;
+
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
   const absoluteUrl = `${siteUrl}/campaigns/${campaign.slug}`;
 
+  const shareLinks = [
+    {
+      name: "Facebook",
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+        absoluteUrl,
+      )}`,
+      icon: FaFacebookF,
+      bgColor: "bg-blue-50",
+      hoverbg: "hover:border-blue-300"
+    },
+    {
+      name: "X",
+      href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+        absoluteUrl,
+      )}&text=${encodeURIComponent(title)}`,
+      icon: FaXTwitter,
+      bgColor: "bg-gray-50",
+      hoverbg: "hover:border-gray-400"
+    },
+    {
+      name: "Instagram",
+      href: `https://www.instagram.com/?url=${encodeURIComponent(absoluteUrl)}`,
+      icon: FaInstagram,
+      bgColor: "bg-pink-50",
+      hoverbg: "hover:border-pink-300"
+    },
+    
+    {
+      name: "WhatsApp",
+      href: `https://wa.me/?text=${encodeURIComponent(`${title} – ${absoluteUrl}`)}`,
+      icon: FaWhatsapp,
+      bgColor: "bg-green-50",
+      hoverbg: "hover:border-green-300"
+    },
+    {
+      name: "LinkedIn",
+      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+        absoluteUrl,
+      )}`,
+      icon: FaLinkedinIn,
+      bgColor: "bg-blue-50",
+      hoverbg: "hover:border-blue-400"
+    },
+  ];
+
   return (
-    <main className="container mx-auto max-w-6xl px-4 py-8">
-      <div className="grid gap-8 lg:grid-cols-3">
-        <section className="lg:col-span-2">
-          <div className="overflow-hidden rounded-lg border">
-            <div className="aspect-[16/9] w-full bg-neutral-100">
-              <Image src={heroUrl} alt={title} width={1200} height={675} className="h-full w-full object-cover" />
-            </div>
-            <div className="p-4 md:p-6">
-              <h1 className="text-2xl md:text-3xl font-semibold">{title}</h1>
-
-              <CampaignTabs story={campaign.story} updates={updates} comments={[]} />
-            </div>
-          </div>
-        </section>
-
-        <aside className="space-y-6">
-          <div className="rounded-lg border p-4 md:p-6">
-            <div className="flex items-end gap-2">
-              <div className="text-2xl md:text-3xl font-semibold">{formatAmount(amountRaised, currency)}</div>
-              <div className="text-sm text-gray-600">of {formatAmount(goalAmount, currency)} goal</div>
-            </div>
-            <div className="mt-3 h-2 w-full overflow-hidden rounded bg-neutral-200">
-              <div className="h-2 bg-green-600" style={{ width: `${progress}%` }} />
-            </div>
-            <div className="mt-4 flex items-center justify-between text-sm text-gray-700">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-neutral-100">🤍</span>
-                <span>{campaign.totals?.donationCount ?? 0} supporters</span>
+    <div className="min-h-dvh bg-gradient-to-b from-background to-muted/20">
+      <main className="py-8 md:py-12">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-8 lg:grid-cols-12">
+            <section className="space-y-6 lg:col-span-8">
+              <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border/40 bg-muted shadow-lg">
+                <Image
+                  src={heroUrl}
+                  alt={title}
+                  width={1280}
+                  height={720}
+                  className="size-full object-cover transition-transform duration-500 hover:scale-105"
+                />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-500 hover:opacity-100" />
               </div>
-              {/* Days left not tracked; omit to keep accurate */}
-            </div>
 
-            <Link
-              href={`/campaigns/${campaign.slug}/donate`}
-              className="mt-6 inline-flex w-full items-center justify-center rounded-md bg-gray-900 px-4 py-2 text-white hover:bg-gray-800"
-            >
-              Donate Now
-            </Link>
-          </div>
-
-          <div className="rounded-lg border p-4 md:p-6">
-            <div className="text-center font-medium text-gray-800">Help Share</div>
-            <div className="mt-4 flex items-center justify-center gap-3">
-              <a className="inline-flex h-9 w-9 items-center justify-center rounded-full border" href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(absoluteUrl)}`} aria-label="Share on Facebook">f</a>
-              <a className="inline-flex h-9 w-9 items-center justify-center rounded-full border" href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(absoluteUrl)}`} aria-label="Share on X">x</a>
-              <a className="inline-flex h-9 w-9 items-center justify-center rounded-full border" href={`https://www.instagram.com/?url=${encodeURIComponent(absoluteUrl)}`} aria-label="Share on Instagram">ig</a>
-              <a className="inline-flex h-9 w-9 items-center justify-center rounded-full border" href={`https://wa.me/?text=${encodeURIComponent(absoluteUrl)}`} aria-label="Share on WhatsApp">wa</a>
-              <a className="inline-flex h-9 w-9 items-center justify-center rounded-full border" href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(absoluteUrl)}`} aria-label="Share on LinkedIn">in</a>
-            </div>
-          </div>
-
-          <div className="rounded-lg border p-4 md:p-6">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-neutral-200" />
-              <div>
-                <div className="font-medium text-gray-900">{organizer?.name ?? "Organizer"}</div>
-                <div className="text-xs text-gray-600">Organizer • Campaign created {campaign.createdAt ? formatDate(campaign.createdAt) : ""}</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-lg border p-4 md:p-6">
-            <div className="font-medium text-gray-900">Recent Donations</div>
-            <div className="mt-4 space-y-4">
-              {recentDonations.length === 0 && (
-                <div className="text-sm text-gray-600">No donations yet.</div>
-              )}
-              {recentDonations.map((d) => (
-                <div key={String(d._id)} className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">{d.isAnonymous ? "Anonymous" : d.donorSnapshot?.name || "Donor"}</div>
-                    <div className="text-xs text-gray-600">{formatDate(d.createdAt)}</div>
-                    {d.message ? <div className="mt-1 text-sm text-gray-700">{d.message}</div> : null}
+              <Card className="rounded-3xl border border-border/50 bg-card/70 shadow-xl backdrop-blur">
+                <CardContent className="space-y-6 p-6 sm:p-8">
+                  <div className="space-y-4">
+                    <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                      Medical Campaign
+                    </span>
+                    <h1 className="text-3xl font-bold leading-tight text-foreground sm:text-4xl">
+                      {title}
+                    </h1>
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-blaze-orange">
+                      <span>
+                        {supporters} supporter{supporters === 1 ? "" : "s"}
+                      </span>
+                      {daysLeft !== null ? <span>• {daysLeft} days left</span> : null}
+                      {createdLabel ? <span>• Created {createdLabel}</span> : null}
+                    </div>
                   </div>
-                  <div className="text-sm font-medium text-gray-900">{formatAmount(Math.floor((d.amount?.minor ?? 0) / 100), d.amount?.currency || currency)}</div>
-                </div>
-              ))}
-            </div>
 
-            <a href="#donations" className="mt-6 inline-flex w-full items-center justify-center rounded-md border px-4 py-2 text-gray-900 hover:bg-neutral-50">See All Donations</a>
+                  <CampaignTabs story={campaign.story} updates={updates} comments={[]} />
+                </CardContent>
+              </Card>
+            </section>
+
+            <aside className="space-y-6 lg:col-span-4">
+              <div className="space-y-6 lg:sticky lg:top-6">
+                <Card className="overflow-hidden rounded-3xl border border-border/50 shadow-xl">
+                  <div className="h-1 bg-gradient-to-r from-primary via-primary/80 to-primary/40" />
+                  <CardContent className="space-y-6 p-5 sm:p-6">
+                    <div>
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <span className="text-3xl font-semibold text-primary">
+                          {formatAmount(amountRaised, currency)}
+                        </span>
+                        <span className="text-sm text-blaze-orange">
+                          of {formatAmount(goalAmount, currency)} goal
+                        </span>
+                      </div>
+                      <Progress value={progress} className="mt-4 h-3" />
+                      <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-blaze-orange">
+                        <span className="inline-flex items-center gap-2">
+                          <Heart className="h-4 w-4 text-primary" />
+                          {supporters} supporter{supporters === 1 ? "" : "s"}
+                        </span>
+                        {daysLeft !== null ? (
+                          <span className="inline-flex items-center gap-2">
+                            <Clock className="h-4 w-4" />
+                            {daysLeft} days left
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <Button
+                      asChild
+                      className="h-11 w-full text-base font-semibold shadow-lg hover:shadow-xl"
+                    >
+                      <Link href={`/campaigns/${campaign.slug}/donate`}>Donate Now</Link>
+                    </Button>
+
+                    <div>
+                      <h3 className="text-center text-sm font-semibold text-blaze-orange">
+                        Share Campaign
+                      </h3>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {shareLinks.map(({ name, href, icon: Icon, bgColor, hoverbg}) => (
+                          <Button
+                            key={name}
+                            variant="outline"
+                            size="icon"
+                            className={`${bgColor} ${hoverbg} flex-1 min-w-12`}
+                            asChild
+                          >
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={`Share on ${name}`}
+                            >
+                              <Icon className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="flex items-center gap-3 rounded-2xl bg-muted/40 p-3">
+                      <Avatar className="h-12 w-12">
+                        {organizerPhoto ? (
+                          <AvatarImage src={organizerPhoto} alt={organizerName} />
+                        ) : (
+                          <AvatarFallback>{organizerInitials}</AvatarFallback>
+                        )}
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-foreground">
+                          {organizerName}
+                        </p>
+                        <p className="text-xs text-blaze-orange">
+                          Campaign organizer
+                          {createdLabel ? ` • Created ${createdLabel}` : ""}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground">
+                        Recent Donations
+                      </h4>
+                      <div className="mt-3 space-y-3">
+                        {recentDonations.length === 0 ? (
+                          <p className="text-sm text-blaze-orange">
+                            No donations yet.
+                          </p>
+                        ) : (
+                          recentDonations.map((d) => (
+                            <div
+                              key={String(d._id)}
+                              className="rounded-xl border border-border/50 bg-muted/30 p-3"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-semibold text-foreground">
+                                    {d.isAnonymous
+                                      ? "Anonymous"
+                                      : d.donorSnapshot?.name || "Supporter"}
+                                  </p>
+                                  <p className="text-xs text-blaze-orange">
+                                    {formatDate(d.createdAt)}
+                                  </p>
+                                  {d.message ? (
+                                    <p className="mt-2 text-sm text-blaze-orange italic">
+                                      “{d.message}”
+                                    </p>
+                                  ) : null}
+                                </div>
+                                <p className="text-sm font-semibold text-primary">
+                                  {formatAmount(
+                                    Math.floor((d.amount?.minor ?? 0) / 100),
+                                    d.amount?.currency || currency,
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </aside>
           </div>
-        </aside>
-      </div>
-
-      <div className="mt-6">
-        <Link href="/campaigns" className="text-sm text-gray-900 underline">
-          Back to campaigns
-        </Link>
-      </div>
-    </main>
+        </div>
+        <div className="mt-10 text-center text-sm">
+          <Link href="/campaigns" className="text-blaze-orange hover:text-primary">
+            ← Back to all campaigns
+          </Link>
+        </div>
+      </main>
+    </div>
   );
 }
-
-

@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectValue, SelectItem, SelectTrigger, SelectContent } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Mail, Phone, MapPin, Clock, Send } from "lucide-react";
 
@@ -28,128 +29,127 @@ const Contact = () => {
                 <form className="space-y-6">
                   <div className="grid sm:grid-cols-2 gap-6">
                     <div>
-                      <Label htmlFor="firstName">First Name *</Label>
+                      <Label htmlFor="firstName">First Name <span className="text-red-600">*</span></Label>
                       <Input id="firstName" placeholder="John" className="mt-2" />
                     </div>
                     <div>
-                      <Label htmlFor="lastName">Last Name *</Label>
+                      <Label htmlFor="lastName">Last Name <span className="text-red-600">*</span></Label>
                       <Input id="lastName" placeholder="Doe" className="mt-2" />
                     </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="email">Email Address *</Label>
+                    <Label htmlFor="email">Email Address <span className="text-red-600">*</span></Label>
                     <Input id="email" type="email" placeholder="john@example.com" className="mt-2" />
                   </div>
 
                   <div>
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" type="tel" placeholder="+1 (555) 123-4567" className="mt-2" />
+                    <Input id="phone" type="tel" placeholder="+232 (00) 000-000" className="mt-2" />
                   </div>
 
-                  <div>
-                    <Label htmlFor="subject">Subject *</Label>
-                    <select
-                      id="subject"
-                      className="w-full mt-2 h-10 rounded-lg border border-input bg-background px-3 py-2"
-                    >
-                      <option>Select a subject</option>
-                      <option>General Inquiry</option>
-                      <option>Campaign Support</option>
-                      <option>Technical Issue</option>
-                      <option>Partnership Opportunity</option>
-                      <option>Media Inquiry</option>
-                      <option>Other</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="message">Message *</Label>
-                    <Textarea
-                      id="message"
-                      placeholder="Tell us how we can help you..."
-                      className="mt-2 min-h-[150px]"
-                    />
-                  </div>
-
-                  <Button variant="secondary" size="lg" className="w-full">
-                    <Send className="w-5 h-5 mr-2" />
-                    Send Message
-                  </Button>
-                </form>
-              </Card>
-            </div>
-
-            {/* Contact Information */}
-            <div className="space-y-6">
-              <Card className="p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)]">
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Mail className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-foreground mb-1">Email Us</h3>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Send us an email anytime
-                    </p>
-                    <a href="mailto:support@ib4me.org" className="text-primary hover:underline">
-                      support@ib4me.org
-                    </a>
-                  </div>
+                <div>
+                  <Label htmlFor="subject">Subject <span className="text-red-600">*</span></Label>
+                  <Select>
+                    <SelectTrigger id="subject" className="rounded-2xl my-2">
+                      <SelectValue placeholder="Select a subject" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">General Inquiry</SelectItem>
+                      <SelectItem value="campaign">Campaign Support</SelectItem>
+                      <SelectItem value="technical">Technical Issue</SelectItem>
+                      <SelectItem value="partnership">Partnership Opportunity</SelectItem>
+                      <SelectItem value="media">Media Inquiry</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </Card>
 
-              <Card className="p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)]">
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Phone className="w-6 h-6 text-accent" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-foreground mb-1">Call Us</h3>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Mon-Fri from 8am to 6pm
-                    </p>
-                    <a href="tel:+15551234567" className="text-primary hover:underline">
-                      +1 (555) 123-4567
-                    </a>
-                  </div>
+                <div>
+                  <Label htmlFor="message">Message <span className="text-red-600">*</span></Label>
+                  <Textarea
+                    id="message"
+                    placeholder="Tell us how we can help you..."
+                    className="mt-2 min-h-[150px]"
+                  />
                 </div>
-              </Card>
 
-              <Card className="p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)]">
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="w-12 h-12 bg-success/10 rounded-full flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-6 h-6 text-success" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-foreground mb-1">Visit Us</h3>
-                    <p className="text-sm text-muted-foreground">
-                      123 Healthcare Ave<br />
-                      Medical District<br />
-                      City, State 12345
-                    </p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)]">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-secondary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Clock className="w-6 h-6 text-secondary" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-foreground mb-1">Business Hours</h3>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>Monday - Friday: 8am - 6pm</p>
-                      <p>Saturday: 9am - 4pm</p>
-                      <p>Sunday: Closed</p>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </div>
+                <Button variant="secondary" size="lg" className="w-full">
+                  <Send className="w-5 h-5 mr-2" />
+                  Send Message
+                </Button>
+              </form>
+            </Card>
           </div>
-          
+          {/* Contact Information */}
+          <div className="space-y-6">
+            <Card className="p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)]">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Mail className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground mb-1">Email Us</h3>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Send us an email anytime
+                  </p>
+                  <a href="mailto:ib4me.organisation@gmail.com" className="text-primary hover:underline text-sm">
+                    ib4me.organisation@gmail.com
+                  </a>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)]">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="w-12 h-12 bg-blaze-orange/10 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Phone className="w-6 h-6 text-blaze-orange" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground mb-1">Call Us</h3>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Mon-Sun from 8am to 6pm
+                  </p>
+                  <a href="tel:+232000000000" className="text-primary hover:underline text-sm">
+                    +232 (000) 000-000
+                  </a>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)]">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="w-12 h-12 bg-chartereuse/10 rounded-full flex items-center justify-center flex-shrink-0">
+                  <MapPin className="w-6 h-6 text-chartereuse" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground mb-1">Visit Us</h3>
+                  <p className="text-sm text-muted-foreground">
+                    27B Grassfield<br />
+                    Lumley<br />
+                    Freetown, Sierra Leone
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)]">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-orange-blaze/10 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-6 h-6 text-orange-blaze" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground mb-1">Business Hours</h3>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>Monday - Friday: 8am - 6pm</p>
+                    <p>Saturday: 9am - 4pm</p>
+                    <p>Sunday: Closed</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+          </div>
         </div>
       </main>
     </div>
