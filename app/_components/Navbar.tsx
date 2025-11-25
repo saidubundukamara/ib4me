@@ -131,7 +131,7 @@ const Navbar = ({
     const name = session?.user?.name ?? "User";
     const initial = name.trim().charAt(0).toUpperCase();
     return (
-        <section className={`py-3 sticky top-0 z-40 w-full bg-white transition-all ${hasScrolled ? "border-b border-gray-100 shadow-sm" : "border-b-0"
+        <section data-testid="navbar" className={`py-3 sticky top-0 z-40 w-full bg-white transition-all ${hasScrolled ? "border-b border-gray-100 shadow-sm" : "border-b-0"
             }`}>
             <div className="container max-w-screen-xl px-5 mx-auto">
                 {/* Desktop Menu */}

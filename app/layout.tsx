@@ -5,6 +5,7 @@ import Providers from "./providers";
 import HideOnRoutes from "./HideOnRoutes";
 import { Navbar } from "./_components/Navbar";
 import Footer from "./_components/Footer";
+import { headers } from "next/headers";
 
 export const geistSans = Geist({
 variable: "--font-geist-sans",
@@ -33,22 +34,36 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Check if we're on admin subdomain - if so, provide minimal layout
+  // and let admin layout handle everything
+  const headersList = await headers();
+  const host = headersList.get('host') || '';
+  const isAdminSubdomain = host.startsWith('admin.');
+
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} ${sora.variable} antialiased`}>
         <Providers>
-          <HideOnRoutes hidePrefixes={["/user", "/admin", "/dashboard"]}>
-            <Navbar/>
-          </HideOnRoutes>
-          <main>{children}</main>
-          <HideOnRoutes hidePrefixes={["/user", "/admin", "/dashboard"]}>
-           <Footer/>
-          </HideOnRoutes>
+          {isAdminSubdomain ? (
+            // Admin subdomain: minimal layout, let admin layout handle everything
+            <main>{children}</main>
+          ) : (
+            // Main domain: full layout with navbar/footer
+            <>
+              <HideOnRoutes hidePrefixes={["/user", "/admin", "/dashboard", "/s"]}>
+                <Navbar/>
+              </HideOnRoutes>
+              <main>{children}</main>
+              <HideOnRoutes hidePrefixes={["/user", "/admin", "/dashboard", "/s"]}>
+               <Footer/>
+              </HideOnRoutes>
+            </>
+          )}
         </Providers>
       </body>
     </html>

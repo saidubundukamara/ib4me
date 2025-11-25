@@ -71,7 +71,7 @@ const Footer = ({
 }: FooterProps
 ) => {
     return (
-        <section className="mt-16 pt-10 bg-primary text-white font-Sora">
+        <section data-testid="footer" className="mt-16 pt-10 bg-primary text-white font-Sora">
             <div>
                 <footer>
                     <div className=" container max-w-screen-2xl mx-auto px-10 grid grid-cols-2 gap-8 lg:grid-cols-5 lg:gap-16">
