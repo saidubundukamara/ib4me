@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import {
-    Menu, ChevronRight, PhoneCall, Heart, MessageCircleQuestion, DollarSign, 
+    Menu, ChevronRight, PhoneCall, Heart, MessageCircleQuestion, DollarSign,
+    LogOutIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -32,6 +33,7 @@ import Userprofile from "./UserMenu";
 import Ib4meLogo from "@/public/assets/ib4melogo.png"
 import Image from "next/image";
 import type { StaticImageData } from "next/image";
+import { logout } from "@/lib/authClient";
 import { useSession } from "next-auth/react";
 
 
@@ -100,7 +102,7 @@ const Navbar = ({
                     description: "Get in touch with our support team.",
                     icon: <PhoneCall className="size-5 shrink-0" />,
                     url: "/contact",
-                }, 
+                },
                 {
                     title: "About ib4me",
                     description: "Learn more about our mission and team.",
@@ -118,6 +120,8 @@ const Navbar = ({
 }: NavbarProps) => {
     const [hasScrolled, setHasScrolled] = useState(false);
     const { data: session, status } = useSession();
+    const isLoadingSession = status === "loading";
+    const isAuthenticated = status === "authenticated";
 
     useEffect(() => {
         const handleScroll = () => {
@@ -149,7 +153,14 @@ const Navbar = ({
                         </div>
                     </div>
                     <div className="flex gap-2 font-Sora">
-                        {status !== "authenticated" ? (
+                        {isLoadingSession ? (
+                            <div
+                                className="h-10 w-10 rounded-full border border-muted-foreground/30 animate-pulse"
+                                aria-hidden="true"
+                            />
+                        ) : isAuthenticated ? (
+                            <Userprofile />
+                        ) : (
                             <>
                                 <Button asChild variant="outline" size="sm">
                                     <a href={auth.login.url}>{auth.login.text}</a>
@@ -157,10 +168,6 @@ const Navbar = ({
                                 <Button asChild size="sm">
                                     <a href={auth.startcampaign.url}>{auth.startcampaign.text}</a>
                                 </Button>
-                            </>
-                        ) : (
-                            <>
-                                <Userprofile />
                             </>
                         )}
                     </div>
@@ -188,27 +195,31 @@ const Navbar = ({
                                 {status === "authenticated" && (
                                     <Card className="border-none shadow-none">
                                         <CardContent className="flex flex-col items-center text-center">
-                                            {avatarUrl ? (
-                                                <Avatar className="w-20 h-20">
-                                                    <AvatarImage src={avatarUrl} alt={name} />
-                                                </Avatar>
-                                            ) : (
-                                                <AvatarFallback>
-                                                    {initial}
-                                                </AvatarFallback>
-                                            )}
+                                            <Avatar className="h-20 w-20">
+                                                <AvatarImage
+                                                    src={avatarUrl ?? undefined}
+                                                    alt={name || "User avatar"}
+                                                    className="h-full w-full object-cover"
+                                                />
+                                                <AvatarFallback>{initial}</AvatarFallback>
+                                            </Avatar>
+
                                             <h2 className="mt-2 text-sm sm:text-lg font-Lora font-semibold">{name}</h2>
                                             <div className="w-full mt-4 space-y-2">
                                                 <a href="/dashboard">
-                                                    <button className="flex w-full cursor-pointer justify-between items-center px-4 py-2 rounded-lg hover:bg-gray-100">
-                                                        My Campaigns <ChevronRight size={16} />
+                                                    <button className="flex w-full cursor-pointer justify-between items-center hover:text-fun-green px-4 py-2 rounded-lg hover:bg-gray-100">
+                                                        Manage Campaigns <ChevronRight size={16} />
                                                     </button>
                                                 </a>
-                                                <a href="/dashboard/settings">
-                                                    <button className="flex w-full cursor-pointer justify-between items-center px-4 py-2 rounded-lg hover:bg-gray-100">
-                                                        Settings <ChevronRight size={16} />
-                                                    </button>
-                                                </a>
+                                                <Button
+                                                    type="button"
+                                                    onClick={() => logout({ redirectTo: "/" })}
+                                                    variant="destructive"
+                                                    className="inline-flex items-center gap-2 mt-2"
+                                                >
+                                                    <LogOutIcon size={16} className="opacity-70" aria-hidden="true" />
+                                                    <span>LogOut</span>
+                                                </Button>
                                             </div>
                                         </CardContent>
                                     </Card>

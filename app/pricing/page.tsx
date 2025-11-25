@@ -205,7 +205,7 @@ const Pricing = () => {
 
 
                     {/* CTA Section */}
-                    <div className="mx-auto max-w-5xl rounded-3xl bg-primary/80 px-6 py-8 sm:px-8 sm:py-10 md:px-12 md:py-12 text-center text-white">
+                    <div className="mx-auto max-w-5xl rounded-3xl bg-primary px-6 py-8 sm:px-8 sm:py-10 md:px-12 md:py-12 text-center text-white">
                         <h3 className="mb-4 sm:mb-6 text-2xl sm:text-3xl md:text-4xl font-bold">
                             Everything you need to fundraise
                         </h3>
@@ -216,7 +216,7 @@ const Pricing = () => {
                         </p>
 
                         <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
-                            <Link href="/create-campaign" className="w-full sm:w-auto">
+                            <Link href="/dashboard" className="w-full sm:w-auto">
                                 <Button size="lg" className="w-full sm:w-auto bg-blaze-orange text-white hover:bg-blaze-orange/90">
                                     Start a Campaign
                                 </Button>

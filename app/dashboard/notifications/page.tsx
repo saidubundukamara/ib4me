@@ -17,8 +17,8 @@ const dummyNotifications: UserNotification[] = [
 
 export default function UserNotificationsPage() {
   return (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-foreground mb-6">Notifications</h2>
+    <div className="flex w-full flex-col gap-4">
+      <h2 className="text-2xl font-bold text-foreground">Notifications</h2>
       {dummyNotifications.map((notification) => (
         <Card key={notification.id} className={`p-6 border border-border hover:shadow-md transition-all rounded-3xl ${!notification.read ? 'bg-primary/5' : ''}`}>
           <div className="flex items-start gap-4">

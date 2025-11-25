@@ -308,7 +308,7 @@ const HowItWorks = () => {
                 asChild
                 className="w-full sm:w-auto rounded-full bg-fun-green font-bold text-white transition-all hover:scale-[1.02] hover:bg-fun-green/90"
               >
-                <Link href="/create-campaign" className="inline-flex items-center justify-center">
+                <Link href="/dashboard" className="inline-flex items-center justify-center">
                   Start a Campaign
                   <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
                 </Link>
@@ -319,7 +319,7 @@ const HowItWorks = () => {
                 asChild
                 className="w-full sm:w-auto rounded-full bg-blaze-orange font-bold text-white transition-all hover:scale-[1.02] hover:bg-blaze-orange/90"
               >
-                <Link href="/browse-campaigns" className="inline-flex items-center justify-center">
+                <Link href="/campaigns" className="inline-flex items-center justify-center">
                   Browse Campaigns
                 </Link>
               </Button>

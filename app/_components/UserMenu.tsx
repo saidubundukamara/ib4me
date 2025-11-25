@@ -2,14 +2,13 @@
 
 import {
     LogOutIcon,
-    Settings,
     Heart,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { logout } from "@/lib/authClient";
-
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button"
 import {
     DropdownMenu,
@@ -41,7 +40,7 @@ const UserMenu = () => {
         return (
             <Link
                 href="/auth/signin"
-                className="inline-flex items-center font-pt-serif rounded-md border px-3 py-2 text-sm font-medium text-neutral-900 hover:bg-gray-50"
+                className="inline-flex items-center font-pt-serif rounded-md border px-3 py-2 text-sm font-medium bg-primary text-white hover:bg-primary/10"
             >
                 Log in
             </Link>
@@ -55,28 +54,28 @@ const UserMenu = () => {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button size="icon" variant="outline" aria-label="Open account menu">
-                    {avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={avatarUrl} alt={name} className="h-full w-full object-cover" />
-                    ) : (
-                        <span className="flex h-full w-full items-center justify-center text-sm font-medium text-gray-700">
-                            {initial}
-                        </span>
-                    )}
+                <Button size="icon" variant="outline" aria-label="Open account menu" className="rounded-full p-0">
+                    <Avatar>
+                        <AvatarImage
+                            src={avatarUrl ?? undefined}
+                            alt={name || "User avatar"}
+                            className="h-full w-full object-cover"
+                        />
+                        <AvatarFallback>{initial}</AvatarFallback>
+                    </Avatar>
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="max-w-64">
                 <DropdownMenuLabel className="flex items-start gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full overflow-hidden">
-                        {avatarUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={avatarUrl} alt={name} className="h-full w-full object-cover" />
-                        ) : (
-                            <span className="flex h-full w-full items-center justify-center text-sm font-medium text-gray-700 bg-gray-100">
-                                {initial}
-                            </span>
-                        )}
+                        <Avatar>
+                            <AvatarImage
+                                src={avatarUrl ?? undefined}
+                                alt={name || "User avatar"}
+                                className="h-full w-full object-cover"
+                            />
+                            <AvatarFallback>{initial}</AvatarFallback>
+                        </Avatar>
                     </div>
                     <div className="flex min-w-0 flex-col">
                         <span className="text-sm font-medium">
@@ -92,13 +91,7 @@ const UserMenu = () => {
                     <DropdownMenuItem>
                         <Heart size={16} className="opacity-60" aria-hidden="true" />
                         <Link href='/dashboard'>
-                            My Fundraisers
-                        </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                        <Settings size={16} className="opacity-60" aria-hidden="true" />
-                        <Link href='/dashboard/settings'>
-                            Settings
+                            Manage Campaigns
                         </Link>
                     </DropdownMenuItem>
                 </DropdownMenuGroup>

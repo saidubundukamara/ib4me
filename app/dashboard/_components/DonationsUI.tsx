@@ -65,12 +65,12 @@ export default function DonationsUI({
   donationsMade,
   csvHref,
   avgPct,
-  primaryCurrency = "LE",
+  primaryCurrency = "SLE",
 }: DonationsUIProps) {
   const [activeTab, setActiveTab] = useState("received");
 
   return (
-    <div className="space-y-6">
+    <div className="flex w-full flex-col gap-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold text-foreground">Donations</h2>
@@ -88,20 +88,20 @@ export default function DonationsUI({
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2 bg-muted/30 rounded-2xl p-1 mb-6">
+        <TabsList className="flex w-full flex-col gap-2 rounded-2xl bg-muted/30 p-1 mb-6 sm:grid sm:max-w-md sm:grid-cols-2 sm:gap-0">
           <TabsTrigger
             value="received"
-            className="rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            className="rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-sm sm:flex-row"
           >
-            <Heart className="w-4 h-4 mr-2" />
-            Donations Received
+            <Heart className="mr-2 h-4 w-4" />
+            <span>Donations Received</span>
           </TabsTrigger>
           <TabsTrigger
             value="made"
-            className="rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            className="rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-sm sm:flex-row"
           >
-            <Users className="w-4 h-4 mr-2" />
-            Donations Made
+            <Users className="mr-2 h-4 w-4" />
+            <span>Donations Made</span>
           </TabsTrigger>
         </TabsList>
 

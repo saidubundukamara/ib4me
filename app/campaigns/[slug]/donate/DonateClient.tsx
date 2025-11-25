@@ -1,21 +1,35 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import Image from "next/image";
-// import { useRouter } from "next/navigation"; // Future use
+import { useMemo, useState } from "react";
+import { Heart, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 
 export type DonateClientProps = {
   slug: string;
   currency: string;
   title: string;
   organizerName?: string | null;
-  progressPercent: number; // 0-100
-  amountRaised: number; // major units
-  goalAmount: number; // major units
+  progressPercent: number;
+  amountRaised: number;
+  goalAmount: number;
   imageUrl: string;
 };
 
-function formatAmount(amount: number, currency: string) {
+function formatAmount(amount: number, currency: string = "SLE") {
   return new Intl.NumberFormat("en-GB", {
     style: "currency",
     currency,
@@ -24,293 +38,374 @@ function formatAmount(amount: number, currency: string) {
   }).format(amount);
 }
 
-export default function DonateClient(props: DonateClientProps) {
-  const { slug, currency, title, organizerName, progressPercent, amountRaised, goalAmount, imageUrl } = props;
+const PRESET_AMOUNTS = [100, 250, 500];
 
-  const presetAmounts = [25, 50, 100];
-  const [selectedPreset, setSelectedPreset] = useState<number | "custom">(50);
-  const [customAmount, setCustomAmount] = useState<string>("");
+export default function DonateClient({
+  slug,
+  currency,
+  title,
+  organizerName,
+  progressPercent,
+  amountRaised,
+  goalAmount,
+  imageUrl,
+}: DonateClientProps) {
+  const [selectedPreset, setSelectedPreset] = useState<number | "custom">(PRESET_AMOUNTS[1]);
+  const [customAmount, setCustomAmount] = useState("");
 
-  // Removed payment method selection since Monime handles this
-
-  // Donor details
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState("");
 
-  // Form state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // const router = useRouter(); // Future use for programmatic navigation
 
   const amount = useMemo(() => {
     if (selectedPreset === "custom") {
-      const n = Number.parseFloat(customAmount || "0");
-      return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+      const parsed = Number.parseFloat(customAmount || "0");
+      return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : 0;
     }
     return selectedPreset;
   }, [selectedPreset, customAmount]);
 
-  const donateLabel = `Donate ${formatAmount(amount, currency)}`;
+  const donateLabel = amount > 0 ? `Donate ${formatAmount(amount, currency)}` : "Enter amount";
 
   const handleDonateSubmit = async () => {
-    // Clear any previous errors
     setError(null);
-    
-    // Basic validation
+
     if (amount <= 0) {
-      setError("Please enter a valid donation amount");
+      setError("Please enter a valid donation amount.");
       return;
     }
 
     if (!anonymous && (!firstName.trim() || !email.trim())) {
-      setError("Please provide your name and email address");
+      setError("Please provide your name and email address.");
       return;
     }
 
-    if (email && !email.includes('@')) {
-      setError("Please enter a valid email address");
+    if (email && !email.includes("@")) {
+      setError("Please enter a valid email address.");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Prepare donation data
       const donationData = {
         campaignSlug: slug,
         amount,
         currency,
-        donor: anonymous ? undefined : {
-          name: `${firstName.trim()} ${lastName.trim()}`.trim(),
-          email: email.trim(),
-        },
+        donor: anonymous
+          ? undefined
+          : {
+              name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+              email: email.trim(),
+            },
         isAnonymous: anonymous,
         message: message.trim() || undefined,
-        // Payment methods handled by Monime checkout page
       };
 
-      // Create donation and get checkout URL
       const response = await fetch("/api/donations/create", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(donationData),
       });
 
       const result = await response.json();
-
       if (!response.ok) {
         throw new Error(result.error || "Failed to create donation");
       }
 
-      // Redirect to Monime checkout
       if (result.data?.checkoutUrl) {
         window.location.href = result.data.checkoutUrl;
       } else {
         throw new Error("No checkout URL received");
       }
-    } catch (error) {
-      console.error("Donation creation error:", error);
-      setError(error instanceof Error ? error.message : "Failed to process donation");
+    } catch (err) {
+      console.error("Donation creation error:", err);
+      setError(err instanceof Error ? err.message : "Failed to process donation");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const isFormValid = amount > 0 && (anonymous || (firstName.trim() && email.trim()));
+  const isFormValid =
+    amount > 0 && (anonymous || (firstName.trim() && email.trim()));
 
   return (
-    <div className="grid gap-8 lg:grid-cols-3">
-      <section className="lg:col-span-2">
-        <div className="space-y-8">
-          {/* Header */}
-          <div>
-            <h1 className="text-2xl font-semibold">Make a Donation</h1>
-            <p className="text-gray-600 mt-1">Your contribution will help {title}</p>
+    <div className="font-Sora space-y-8">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <div className="space-y-6">
+          <div className="relative aspect-video w-full overflow-hidden rounded-3xl border border-border/40 shadow-xl">
+            <Image
+              src={imageUrl}
+              alt={title}
+              width={1600}
+              height={900}
+              className="size-full object-cover transition-transform duration-500 hover:scale-105"
+            />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 hover:opacity-100" />
           </div>
 
-          {/* Donation Amount */}
-          <div className="rounded-lg border p-4 md:p-6">
-            <div className="text-sm font-medium">Donation Amount</div>
-            <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {presetAmounts.map((amt) => (
-                <button
-                  key={amt}
-                  type="button"
-                  className={`rounded-md border px-4 py-2 text-sm ${selectedPreset === amt ? "border-gray-900" : "border-neutral-300"}`}
-                  onClick={() => setSelectedPreset(amt)}
-                >
-                  {formatAmount(amt, currency)}
-                </button>
-              ))}
-              <button
-                type="button"
-                className={`rounded-md border px-4 py-2 text-sm ${selectedPreset === "custom" ? "border-gray-900" : "border-neutral-300"}`}
-                onClick={() => setSelectedPreset("custom")}
-              >
-                Custom
-              </button>
-            </div>
-            {selectedPreset === "custom" && (
-              <div className="mt-3 max-w-xs">
-                <label className="text-xs text-gray-700">Enter amount</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  value={customAmount}
-                  onChange={(e) => setCustomAmount(e.target.value)}
-                  className="mt-1 w-full rounded-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-900"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Payment Info */}
-          <div className="rounded-lg border p-4 md:p-6">
-            <div className="text-sm font-medium">Payment</div>
-            <div className="mt-4 space-y-3">
-              <div className="flex items-center gap-4 text-sm text-gray-700">
-                <div className="flex items-center gap-2">
-                  <span className="inline-block h-6 w-6 bg-blue-100 rounded text-blue-600 text-xs flex items-center justify-center font-medium">📱</span>
-                  Mobile Money
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-block h-6 w-6 bg-green-100 rounded text-green-600 text-xs flex items-center justify-center font-medium">💳</span>
-                  Credit/Debit Cards
-                </div>
-              </div>
-              <div className="text-xs text-gray-600">
-                You&apos;ll choose your preferred payment method on the secure checkout page.
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-600">
-                <span className="inline-block h-4 w-4 rounded-full bg-green-200" />
-                Secured by Monime - Your payment information is encrypted and secure
-              </div>
-            </div>
-          </div>
-
-          {/* Personal Details */}
-          <div className="rounded-lg border p-4 md:p-6">
-            <div className="text-sm font-medium">Personal Details</div>
-            <div className="mt-4 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-gray-700">First Name</label>
-                  <input value={firstName} onChange={(e) => setFirstName(e.target.value)} className="mt-1 w-full rounded-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-900" placeholder="First Name" />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-700">Last Name</label>
-                  <input value={lastName} onChange={(e) => setLastName(e.target.value)} className="mt-1 w-full rounded-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-900" placeholder="Last Name" />
-                </div>
+          <Card className="rounded-3xl border border-border/40 bg-card/80 shadow-2xl backdrop-blur">
+            <CardHeader className="space-y-4">
+              <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                Support this campaign
+              </span>
+              <CardTitle className="text-3xl font-bold text-foreground sm:text-4xl">
+                {title}
+              </CardTitle>
+              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                <span>{organizerName ? `Organized by ${organizerName}` : "Campaign organizer"}</span>
+                <span className="inline-flex items-center gap-2">
+                  <Heart className="h-4 w-4 text-primary" />
+                  {formatAmount(amountRaised, currency)} raised of {formatAmount(goalAmount, currency)}
+                </span>
               </div>
               <div>
-                <label className="text-xs text-gray-700">Email</label>
-                <input value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 w-full rounded-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-900" placeholder="Email" inputMode="email" />
-                <p className="text-xs text-gray-600 mt-1">Your receipt will be sent to this email address.</p>
+                <Progress value={progressPercent} className="h-3" />
+                <div className="mt-2 flex justify-between text-xs font-medium text-blaze-orange">
+                  <span>{progressPercent}% funded</span>
+                  <span>Goal {formatAmount(goalAmount, currency)}</span>
+                </div>
               </div>
-              <label className="flex items-center gap-2 text-sm text-gray-800">
-                <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} className="h-4 w-4" />
-                Make this donation anonymous
-              </label>
-            </div>
-          </div>
+            </CardHeader>
 
-          {/* Message */}
-          <div className="rounded-lg border p-4 md:p-6">
-            <div className="text-sm font-medium">Leave a Message (Optional)</div>
-            <div className="mt-4">
-              <label className="text-xs text-gray-700">Your Message</label>
-              <textarea value={message} onChange={(e) => setMessage(e.target.value)} className="mt-1 w-full rounded-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-900" rows={4} placeholder="Write a kind note..." />
-            </div>
-          </div>
+            <CardContent className="space-y-8">
+              <section className="space-y-3">
+                <h2 className="text-lg font-semibold text-foreground">
+                  Choose your donation
+                </h2>
+                <div className="grid gap-3 sm:grid-cols-4">
+                  {PRESET_AMOUNTS.map((preset) => (
+                    <Button
+                      key={preset}
+                      type="button"
+                      variant={selectedPreset === preset ? "default" : "outline"}
+                      className={cn(
+                        "h-12 rounded-2xl border-2 transition-all",
+                        selectedPreset === preset
+                          ? "border-primary shadow-lg"
+                          : "border-border/60 hover:border-primary/60",
+                      )}
+                      onClick={() => setSelectedPreset(preset)}
+                    >
+                      {formatAmount(preset, currency)}
+                    </Button>
+                  ))}
+                  <Button
+                    type="button"
+                    variant={selectedPreset === "custom" ? "default" : "outline"}
+                    className={cn(
+                      "h-12 rounded-2xl border-2 transition-all",
+                      selectedPreset === "custom"
+                        ? "border-primary shadow-lg"
+                        : "border-border/60 hover:border-primary/60",
+                    )}
+                    onClick={() => setSelectedPreset("custom")}
+                  >
+                    Custom amount
+                  </Button>
+                </div>
+                {selectedPreset === "custom" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="custom-amount">Enter amount</Label>
+                    <Input
+                      id="custom-amount"
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={customAmount}
+                      onChange={(event) => setCustomAmount(event.target.value)}
+                      placeholder="Enter amount"
+                      className="h-12 rounded-2xl border-border/50"
+                    />
+                  </div>
+                )}
+              </section>
 
-          {/* Error Message */}
-          {error && (
-            <div className="rounded-md bg-red-50 border border-red-200 p-3">
-              <div className="flex items-center gap-2 text-sm text-red-800">
-                <span className="inline-block h-4 w-4 rounded-full bg-red-300" />
-                {error}
+              <Separator />
+
+              <section className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-foreground">Your details</h2>
+                  <span className="inline-flex items-center gap-2 text-xs text-blaze-orange">
+                    <Lock className="h-3.5 w-3.5" />
+                    Secure donation
+                  </span>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="first-name">First name</Label>
+                    <Input
+                      id="first-name"
+                      value={firstName}
+                      onChange={(event) => setFirstName(event.target.value)}
+                      disabled={anonymous}
+                      placeholder="Jane"
+                      className="rounded-2xl border-border/50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="last-name">Last name</Label>
+                    <Input
+                      id="last-name"
+                      value={lastName}
+                      onChange={(event) => setLastName(event.target.value)}
+                      disabled={anonymous}
+                      placeholder="Doe"
+                      className="rounded-2xl border-border/50"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="donor-email">Email address</Label>
+                  <Input
+                    id="donor-email"
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    disabled={anonymous}
+                    placeholder="you@example.com"
+                    className="rounded-2xl border-border/50"
+                  />
+                  <p className="text-xs text-blaze-orange">
+                    We&#39;ll send your receipt to this email.
+                  </p>
+                </div>
+                <div className="flex items-center justify-between rounded-2xl border border-border/50 bg-muted/30 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      Make this donation anonymous
+                    </p>
+                    <p className="text-xs text-blaze-orange">
+                      Your name won&#39;t be displayed publicly on the campaign.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={anonymous}
+                    onCheckedChange={setAnonymous}
+                    aria-label="Toggle anonymous donation"
+                  />
+                </div>
+              </section>
+
+              <Separator />
+
+              <section className="space-y-2">
+                <Label htmlFor="support-message">Message of support (optional)</Label>
+                <Textarea
+                  id="support-message"
+                  value={message}
+                  onChange={(event) => setMessage(event.target.value)}
+                  placeholder="Write a kind note..."
+                  rows={4}
+                  className="rounded-2xl border-border/50"
+                />
+              </section>
+
+              {error ? (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {error}
+                </div>
+              ) : null}
+
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <Button
+                  type="button"
+                  onClick={handleDonateSubmit}
+                  disabled={isSubmitting || !isFormValid}
+                  className="h-12 flex-1 rounded-2xl text-base font-semibold shadow-lg hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Processing…
+                    </>
+                  ) : (
+                    donateLabel
+                  )}
+                </Button>
+                <p className="text-xs text-blaze-orange">
+                  Secured by Monime • Encrypted checkout
+                </p>
               </div>
-            </div>
-          )}
-
-          {/* CTA */}
-          <div className="flex items-center justify-between gap-4">
-            <button 
-              type="button" 
-              onClick={handleDonateSubmit}
-              disabled={isSubmitting || !isFormValid}
-              className={`inline-flex items-center rounded-md px-4 py-2 text-white transition-colors ${
-                isSubmitting || !isFormValid
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-gray-900 hover:bg-gray-800"
-              }`}
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                  Processing...
-                </>
-              ) : (
-                donateLabel
-              )}
-            </button>
-            <div className="flex items-center gap-2 text-xs text-gray-600">
-              <span className="inline-block h-4 w-4 rounded-full bg-green-200" />
-              Secure donation processed by Monime
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
-      </section>
 
-      {/* Summary */}
-      <aside>
-        <div className="rounded-lg border p-4 md:p-6">
-          <div className="text-sm font-medium">Donation Summary</div>
-          <div className="mt-4 flex items-center gap-3">
-            <Image src={imageUrl} alt={title} width={64} height={64} className="h-16 w-16 rounded object-cover" />
-            <div>
-              <h3 className="font-medium">{title}</h3>
-              <p className="text-xs text-gray-600">{organizerName ? `by ${organizerName}` : ""}</p>
-            </div>
-          </div>
-          <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <div className="text-xs text-gray-600">Campaign Progress</div>
-              <div className="font-medium">{progressPercent}%</div>
-            </div>
-            <div className="text-right">
-              <div className="text-xs text-gray-600">{formatAmount(amountRaised, currency)}</div>
-              <div className="text-xs text-gray-600">of {formatAmount(goalAmount, currency)}</div>
-            </div>
-          </div>
-          <div className="mt-4 space-y-2 text-sm">
-            <div className="flex items-center justify-between">
-              <div className="text-gray-600">Your Donation</div>
-              <div className="font-medium">{formatAmount(amount, currency)}</div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="text-gray-600">Processing Fee</div>
-              <div className="font-medium">{formatAmount(0, currency)}</div>
-            </div>
-            <div className="flex items-center justify-between border-t pt-2">
-              <div className="font-medium">Total</div>
-              <div className="font-semibold">{formatAmount(amount, currency)}</div>
-            </div>
-          </div>
-          <div className="mt-4 flex items-center gap-2 rounded-md bg-green-50 p-3 text-xs text-green-800">
-            <span className="inline-block h-4 w-4 rounded-full bg-green-300" />
-            100% of your donation goes directly to the campaign.
-          </div>
-        </div>
-      </aside>
+        <aside className="space-y-6 lg:sticky lg:top-6">
+          <Card className="rounded-3xl border border-border/40 bg-card/80 shadow-xl">
+            <CardContent className="space-y-6 p-5 sm:p-6">
+              <div className="flex items-start gap-4">
+                <Image
+                  src={imageUrl}
+                  alt={title}
+                  width={80}
+                  height={80}
+                  className="h-20 w-20 rounded-2xl object-cover"
+                />
+                <div className="min-w-0">
+                  <h3 className="text-base font-semibold text-foreground">{title}</h3>
+                  <p className="text-xs text-blaze-orange">
+                    {organizerName ? `by ${organizerName}` : "Campaign organizer"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-sm text-blaze-orange">
+                <div className="flex items-center justify-between">
+                  <span>Campaign progress</span>
+                  <span className="font-semibold text-foreground">{progressPercent}%</span>
+                </div>
+                <Progress value={progressPercent} className="h-2" />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs">Raised</span>
+                  <span className="font-medium text-foreground">
+                    {formatAmount(amountRaised, currency)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs">Goal</span>
+                  <span className="font-medium text-foreground">
+                    {formatAmount(goalAmount, currency)}
+                  </span>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2 text-sm text-blaze-orange">
+                <div className="flex items-center justify-between">
+                  <span>Your donation</span>
+                  <span className="font-medium text-foreground">
+                    {formatAmount(amount, currency)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Processing fee</span>
+                  <span className="font-medium text-foreground">
+                    {formatAmount(0, currency)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-t border-border/40 pt-2">
+                  <span className="font-semibold text-foreground">Total</span>
+                  <span className="font-semibold text-foreground">
+                    {formatAmount(amount, currency)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 rounded-2xl bg-primary/10 p-4 text-xs text-primary">
+                <Lock className="mt-0.5 h-4 w-4" />
+                <p>99% of your donation goes directly to this campaign.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </aside>
+      </div>
     </div>
   );
 }
-
-
