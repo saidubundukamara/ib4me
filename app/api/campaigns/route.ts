@@ -32,15 +32,78 @@ export async function GET() {
   const items = await CampaignModel.find({ ownerId })
     .sort({ createdAt: -1 })
     .lean();
+
+  // Collect all asset IDs (patient photos and first document images) for batch fetch
+  const assetIds: mongoose.Types.ObjectId[] = [];
+  const campaignToPatientPhotoId = new Map<string, string>();
+  const campaignToFirstDocImageId = new Map<string, string>();
+
+  for (const c of items) {
+    const campaignId = String(c._id);
+
+    // Patient photo takes priority
+    if (c.patient?.photoAssetId) {
+      assetIds.push(c.patient.photoAssetId as mongoose.Types.ObjectId);
+      campaignToPatientPhotoId.set(campaignId, String(c.patient.photoAssetId));
+    }
+
+    // First document image as fallback
+    const firstImageDoc = (c.documents || []).find(
+      (d: { type?: string }) => d.type?.startsWith("image/")
+    );
+    if (firstImageDoc?.assetId) {
+      assetIds.push(firstImageDoc.assetId as mongoose.Types.ObjectId);
+      campaignToFirstDocImageId.set(campaignId, String(firstImageDoc.assetId));
+    }
+  }
+
+  // Batch fetch all assets
+  const assets = assetIds.length > 0
+    ? await MediaAssetModel.find({ _id: { $in: assetIds } }).lean()
+    : [];
+
+  // Create URL map
+  const assetIdToUrl = new Map<string, string>();
+  for (const asset of assets) {
+    const key = asset.storage?.key;
+    const url = key
+      ? CloudinaryService.generateTransformationUrl(key, {
+          width: 800,
+          crop: "fill",
+          gravity: "auto",
+          aspect_ratio: "16:9",
+          fetch_format: "auto",
+          quality: "auto",
+        })
+      : asset.url || "";
+    assetIdToUrl.set(String(asset._id), url);
+  }
+
   return NextResponse.json(
-    items.map((c) => ({
-      id: String(c._id),
-      slug: c.slug,
-      status: c.status,
-      urgency: c.urgency,
-      goal: c.goal,
-      createdAt: c.createdAt,
-    })),
+    items.map((c) => {
+      const campaignId = String(c._id);
+      // Priority: patient photo > document image > null
+      const patientPhotoId = campaignToPatientPhotoId.get(campaignId);
+      const docImageId = campaignToFirstDocImageId.get(campaignId);
+      const imageUrl = patientPhotoId
+        ? assetIdToUrl.get(patientPhotoId)
+        : docImageId
+          ? assetIdToUrl.get(docImageId)
+          : null;
+
+      return {
+        id: campaignId,
+        slug: c.slug,
+        status: c.status,
+        urgency: c.urgency,
+        goal: c.goal,
+        createdAt: c.createdAt,
+        totals: c.totals,
+        patient: c.patient,
+        story: c.story,
+        imageUrl,
+      };
+    }),
     { status: 200 }
   );
 }
@@ -67,6 +130,7 @@ export async function POST(req: NextRequest) {
     (form.get("typeOfEmergency") as string | null) || undefined;
   const urgency =
     (form.get("urgency") as "low" | "medium" | "high" | null) || "medium";
+  const category = (form.get("category") as string | null) || undefined;
   const patientName = (form.get("patient.name") as string | null) || "";
   const patientAgeRaw = (form.get("patient.age") as string | null) || "";
   const hospitalName = (form.get("hospital.name") as string | null) || "";
@@ -102,6 +166,7 @@ export async function POST(req: NextRequest) {
       diagnosis: diagnosis || undefined,
       typeOfEmergency: typeOfEmergency || undefined,
       urgency,
+      category: category || undefined,
       patient: {
         name: patientName,
         age: Number.isFinite(patientAge as number) ? patientAge : undefined,
@@ -111,7 +176,13 @@ export async function POST(req: NextRequest) {
       story,
     });
 
-    const files = form.getAll("documents").filter(Boolean) as unknown as File[];
+    // Extract document files - form sends them as documents[0], documents[1], etc.
+    const files: File[] = [];
+    for (const [key, value] of form.entries()) {
+      if (key.startsWith("documents[") && value instanceof File) {
+        files.push(value);
+      }
+    }
     const uploadedAssets: { type: string; assetId: mongoose.Types.ObjectId }[] =
       [];
     for (const f of files) {
@@ -137,6 +208,29 @@ export async function POST(req: NextRequest) {
     if (uploadedAssets.length > 0) {
       await CampaignModel.findByIdAndUpdate(created._id, {
         $push: { documents: { $each: uploadedAssets } },
+      });
+    }
+
+    // Handle patient photo upload
+    const patientPhoto = form.get("patientPhoto") as File | null;
+    if (patientPhoto && patientPhoto.size > 0) {
+      const photoBuffer = Buffer.from(await patientPhoto.arrayBuffer());
+      const photoResult = await CloudinaryService.uploadBuffer(photoBuffer, {
+        folder: `campaigns/${session.user.id}/patient`,
+        resource_type: "image",
+      });
+
+      const photoAsset = await MediaAssetModel.create({
+        ownerId,
+        campaignId: created._id,
+        type: patientPhoto.type || "image",
+        storage: { provider: "cloudinary", key: photoResult.public_id },
+        url: photoResult.secure_url,
+        size: patientPhoto.size ?? photoResult.bytes,
+      });
+
+      await CampaignModel.findByIdAndUpdate(created._id, {
+        "patient.photoAssetId": photoAsset._id,
       });
     }
 

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import DocumentUpload, { SelectedFile } from "./DocumentUpload";
+import PatientImageUpload, { SelectedImage } from "./PatientImageUpload";
 
 const steps = [
   { number: 1, label: "Details" },
@@ -32,20 +33,36 @@ export type CampaignFormSubmitPayload = {
   diagnosis: string;
   description: string;
   category: string;
-  patient: { name: string; age?: number };
+  patient: {
+    name: string;
+    age?: number;
+    photo?: File;
+    removePhoto?: boolean;  // Flag to remove existing photo
+  };
   hospital: { name: string };
   goal: { currency: string; amountMajor: number };
   story: string;
   documents?: File[];
+  removedDocumentIds?: string[];  // IDs of documents to remove
 };
 
-export type CampaignFormInitialValues = Partial<
-  CampaignFormSubmitPayload & {
-    patient: { name: string; age?: number };
-    goal: { currency: string; amountMajor: number };
-    documents?: SelectedFile[];
-  }
->;
+export type CampaignFormInitialValues = Partial<{
+  title: string;
+  typeOfEmergency: string;
+  urgency: "low" | "medium" | "high";
+  diagnosis: string;
+  description: string;
+  category: string;
+  patient: {
+    name: string;
+    age?: number;
+    photo?: SelectedImage;  // Can be existing (with URL) or new
+  };
+  hospital: { name: string };
+  goal: { currency: string; amountMajor: number };
+  story: string;
+  documents?: SelectedFile[];  // Can include existing docs
+}>;
 
 interface CampaignFormWizardProps {
   mode: "create" | "edit";
@@ -73,10 +90,13 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
   const [category, setCategory] = React.useState("");
   const [patientName, setPatientName] = React.useState("");
   const [patientAge, setPatientAge] = React.useState<string>("");
+  const [patientPhoto, setPatientPhoto] = React.useState<SelectedImage | null>(null);
   const [hospitalName, setHospitalName] = React.useState("");
   const [goalAmount, setGoalAmount] = React.useState<string>("");
   const [story, setStory] = React.useState("");
   const [documents, setDocuments] = React.useState<SelectedFile[]>([]);
+  const [removedDocumentIds, setRemovedDocumentIds] = React.useState<string[]>([]);
+  const [removePatientPhoto, setRemovePatientPhoto] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -90,10 +110,13 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
     setCategory("");
     setPatientName("");
     setPatientAge("");
+    setPatientPhoto(null);
     setHospitalName("");
     setGoalAmount("");
     setStory("");
     setDocuments([]);
+    setRemovedDocumentIds([]);
+    setRemovePatientPhoto(false);
     setErrors({});
   }, []);
 
@@ -115,6 +138,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
           ? String(initialValues.patient?.age)
           : "",
       );
+      setPatientPhoto(initialValues.patient?.photo ?? null);
       setHospitalName(initialValues.hospital?.name ?? "");
       setGoalAmount(
         initialValues.goal?.amountMajor !== undefined && initialValues.goal?.amountMajor !== null
@@ -169,6 +193,11 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
       trimmedAge.length > 0 ? Number.parseInt(trimmedAge, 10) : undefined;
     setIsSubmitting(true);
     try {
+      // Extract only new document files (not existing ones)
+      const newDocumentFiles = documents
+        .filter((d) => !d.isExisting && d.file)
+        .map((d) => d.file as File);
+
       await onSubmit({
         title: title.trim(),
         typeOfEmergency: typeOfEmergency.trim(),
@@ -179,6 +208,12 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
         patient: {
           name: patientName.trim(),
           ...(Number.isFinite(parsedAge as number) ? { age: parsedAge } : {}),
+          // Only include photo file if it's a new upload
+          ...(patientPhoto && !patientPhoto.isExisting && patientPhoto.file
+            ? { photo: patientPhoto.file }
+            : {}),
+          // Include removePhoto flag if we're removing an existing photo
+          ...(removePatientPhoto ? { removePhoto: true } : {}),
         },
         hospital: { name: hospitalName.trim() },
         goal: {
@@ -186,7 +221,8 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
           amountMajor: Number.isFinite(amountMajor) && amountMajor > 0 ? amountMajor : 0,
         },
         story: story.trim(),
-        documents: documents.map((d) => d.file),
+        documents: newDocumentFiles,
+        removedDocumentIds: removedDocumentIds.length > 0 ? removedDocumentIds : undefined,
       });
       if (mode === "create") {
         resetState();
@@ -205,6 +241,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
     onSubmit,
     patientAge,
     patientName,
+    patientPhoto,
     resetState,
     story,
     title,
@@ -214,6 +251,8 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
     currentStep,
     category,
     description,
+    removePatientPhoto,
+    removedDocumentIds,
   ]);
 
   const reviewItems = [
@@ -235,6 +274,15 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
       label: "Patient",
       value: `${patientName} ${patientAge ? `(${patientAge})` : ""}`.trim() || "—",
       key: "patient" as const,
+    },
+    {
+      label: "Patient Photo",
+      value: patientPhoto
+        ? patientPhoto.isExisting
+          ? "Current photo (existing)"
+          : patientPhoto.file?.name || "Photo selected"
+        : "No photo",
+      key: "patientPhoto" as const,
     },
     { label: "Hospital", value: hospitalName || "—", key: "hospital" as const },
     {
@@ -353,6 +401,17 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
               {errors.patientName && <p className="text-sm text-destructive mt-1">{errors.patientName}</p>}
             </div>
 
+            <PatientImageUpload
+              value={patientPhoto}
+              onChange={(image, removeExisting) => {
+                setPatientPhoto(image);
+                if (removeExisting) {
+                  setRemovePatientPhoto(true);
+                }
+              }}
+              label="Patient Photo (Optional)"
+            />
+
             <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="patient-age">Age</Label>
@@ -458,8 +517,14 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Upload Medical Documents</Label>
-              <DocumentUpload value={documents} onChange={setDocuments} />
-              <p className="text-xs text-muted-foreground mt-2">Supported: images and PDFs. Max 10 files.</p>
+              <DocumentUpload
+                value={documents}
+                onChange={(files, removedIds) => {
+                  setDocuments(files);
+                  setRemovedDocumentIds(removedIds);
+                }}
+              />
+              <p className="text-xs text-muted-foreground mt-2">Supported: images and PDFs. Max 5 files.</p>
             </div>
           </div>
         )}

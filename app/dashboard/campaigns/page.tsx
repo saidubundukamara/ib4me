@@ -250,6 +250,9 @@ export default function UserCampaignsPage() {
       if (formValues.patient.age !== undefined) {
         formData.set("patient.age", String(formValues.patient.age));
       }
+      if (formValues.patient.photo) {
+        formData.set("patientPhoto", formValues.patient.photo);
+      }
       if (formValues.hospital.name) {
         formData.set("hospital.name", formValues.hospital.name);
       }
@@ -308,28 +311,56 @@ export default function UserCampaignsPage() {
     async (values: CampaignFormSubmitPayload) => {
       if (!editingCampaign || editSubmitting) return;
       setEditSubmitting(true);
+
+      const formData = new FormData();
+
+      // Basic text fields
+      if (values.diagnosis) formData.set("diagnosis", values.diagnosis);
+      if (values.typeOfEmergency) formData.set("typeOfEmergency", values.typeOfEmergency);
+      formData.set("urgency", values.urgency);
+      if (values.category) formData.set("category", values.category);
+      formData.set("patient.name", values.patient.name);
+      if (values.patient.age !== undefined) {
+        formData.set("patient.age", String(values.patient.age));
+      }
+      if (values.hospital.name) {
+        formData.set("hospital.name", values.hospital.name);
+      }
+
+      // Goal
       const amountMinor = Math.max(0, Math.round(values.goal.amountMajor * 100));
-      const payload = {
-        diagnosis: values.diagnosis,
-        typeOfEmergency: values.typeOfEmergency,
-        urgency: values.urgency,
-        patient: {
-          name: values.patient.name,
-          ...(values.patient.age !== undefined ? { age: values.patient.age } : {}),
-        },
-        hospital: { name: values.hospital.name },
-        goal: {
-          currency: values.goal.currency,
-          amountMinor,
-        },
-        story: values.story,
-      };
+      formData.set("goal.currency", values.goal.currency);
+      formData.set("goal.amountMinor", String(amountMinor));
+
+      // Story
+      if (values.story) formData.set("story", values.story);
+
+      // Patient photo
+      if (values.patient.photo) {
+        formData.set("patientPhoto", values.patient.photo);
+      }
+      if (values.patient.removePhoto) {
+        formData.set("removePatientPhoto", "true");
+      }
+
+      // New documents
+      if (values.documents?.length) {
+        values.documents.forEach((file, index) => {
+          if (file) {
+            formData.append(`documents[${index}]`, file);
+          }
+        });
+      }
+
+      // Removed documents
+      if (values.removedDocumentIds?.length) {
+        formData.set("removedDocumentIds", JSON.stringify(values.removedDocumentIds));
+      }
 
       try {
         const res = await fetch(`/api/campaigns/${editingCampaign.id}`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: formData, // No Content-Type header - browser sets it with boundary
         });
 
         if (!res.ok) {
@@ -370,16 +401,41 @@ export default function UserCampaignsPage() {
         }
         const data = await res.json();
         const goalAmountMinor = Number(data?.goal?.amountMinor ?? 0);
+
+        // Build existing patient photo if available
+        let existingPatientPhoto;
+        if (data?.patient?.photoUrl && data?.patient?.photoAssetId) {
+          existingPatientPhoto = {
+            id: "existing-patient-photo",
+            previewUrl: data.patient.photoUrl,
+            existingAssetId: data.patient.photoAssetId,
+            isExisting: true,
+          };
+        }
+
+        // Build existing documents with URLs
+        const existingDocuments = (data?.documents || [])
+          .filter((doc: { assetId?: string; url?: string }) => doc.assetId && doc.url)
+          .map((doc: { type?: string; assetId: string; url: string }, i: number) => ({
+            id: `existing-doc-${i}`,
+            previewUrl: doc.url,
+            existingAssetId: doc.assetId,
+            isExisting: true,
+            fileName: `Document ${i + 1}`,
+            fileType: doc.type || "application/octet-stream",
+          }));
+
         const initial: CampaignFormInitialValues = {
           title: campaign.title,
           typeOfEmergency: data?.typeOfEmergency ?? campaign.typeOfEmergency ?? "",
           urgency: resolveUrgency(data?.urgency) ?? resolveUrgency(campaign.urgency) ?? "medium",
           diagnosis: data?.diagnosis ?? campaign.diagnosis ?? "",
           description: campaign.description ?? "",
-          category: campaign.category ?? "",
+          category: data?.category ?? campaign.category ?? "",
           patient: {
             name: data?.patient?.name ?? campaign.patientName ?? "",
             ...(data?.patient?.age !== undefined ? { age: data.patient.age } : {}),
+            ...(existingPatientPhoto ? { photo: existingPatientPhoto } : {}),
           },
           hospital: {
             name: data?.hospital?.name ?? campaign.hospitalName ?? "",
@@ -389,6 +445,7 @@ export default function UserCampaignsPage() {
             amountMajor: goalAmountMinor > 0 ? goalAmountMinor / 100 : campaign.goalAmount,
           },
           story: data?.story ?? campaign.story ?? "",
+          documents: existingDocuments,
         };
         setEditInitialValues(initial);
       })

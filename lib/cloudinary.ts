@@ -227,4 +227,30 @@ export class CloudinaryService {
   }
 }
 
+/**
+ * Delete a MediaAsset and its associated Cloudinary file.
+ * Must be called with connected DB and imported MediaAssetModel.
+ */
+export async function deleteMediaAssetWithCloudinary(
+  assetId: string | import("mongoose").Types.ObjectId,
+  MediaAssetModel: import("mongoose").Model<import("@/models/MediaAsset").IMediaAsset>
+): Promise<boolean> {
+  const asset = await MediaAssetModel.findById(assetId);
+  if (!asset) return false;
+
+  // Delete from Cloudinary if we have a storage key
+  if (asset.storage?.key) {
+    try {
+      await CloudinaryService.deleteFile(asset.storage.key);
+    } catch (error) {
+      console.error("Failed to delete from Cloudinary:", error);
+      // Continue to delete the DB record even if Cloudinary delete fails
+    }
+  }
+
+  // Delete the MediaAsset record
+  await MediaAssetModel.findByIdAndDelete(assetId);
+  return true;
+}
+
 export default CloudinaryService;
