@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { BaseRepository } from "./BaseRepository";
-import AuditLog, { IAuditLog } from "../models/AuditLog";
+import AuditLogModel, { IAuditLog } from "../models/AuditLog";
 
 export interface AuditLogFilters {
   action?: string;
@@ -47,7 +47,7 @@ export interface AuditLogStats {
 
 export class AuditLogRepository extends BaseRepository<IAuditLog> {
   constructor() {
-    super(AuditLog);
+    super(AuditLogModel);
   }
 
   async listByTarget(
@@ -115,15 +115,18 @@ export class AuditLogRepository extends BaseRepository<IAuditLog> {
       ];
     }
 
+    // Ensure database connection
+    await this.ensureConnection();
+
     // Execute queries in parallel
     const [logs, totalCount] = await Promise.all([
-      AuditLog.find(query)
+      this.model.find(query)
         .populate('actor.userId', 'name email')
         .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-      AuditLog.countDocuments(query)
+      this.model.countDocuments(query)
     ]);
 
     const totalPages = Math.ceil(totalCount / limit);
@@ -156,16 +159,19 @@ export class AuditLogRepository extends BaseRepository<IAuditLog> {
       baseQuery['target.type'] = filters.targetType;
     }
 
+    // Ensure database connection
+    await this.ensureConnection();
+
     // Get total logs count
-    const totalLogs = await AuditLog.countDocuments(baseQuery);
+    const totalLogs = await this.model.countDocuments(baseQuery);
 
     // Get unique admins count
-    const uniqueAdmins = await AuditLog.distinct('actor.userId', baseQuery).then(ids => 
+    const uniqueAdmins = await this.model.distinct('actor.userId', baseQuery).then(ids =>
       ids.filter(id => id != null).length
     );
 
     // Get most active admin
-    const mostActiveAdminResult = await AuditLog.aggregate([
+    const mostActiveAdminResult = await this.model.aggregate([
       { $match: { ...baseQuery, 'actor.userId': { $ne: null } } },
       { $group: { _id: '$actor.userId', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
@@ -189,7 +195,7 @@ export class AuditLogRepository extends BaseRepository<IAuditLog> {
     } : null;
 
     // Get most common action
-    const mostCommonActionResult = await AuditLog.aggregate([
+    const mostCommonActionResult = await this.model.aggregate([
       { $match: baseQuery },
       { $group: { _id: '$action', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
@@ -203,7 +209,7 @@ export class AuditLogRepository extends BaseRepository<IAuditLog> {
 
     // Get recent activity count (last 24 hours)
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const recentActivityCount = await AuditLog.countDocuments({
+    const recentActivityCount = await this.model.countDocuments({
       ...baseQuery,
       at: { $gte: oneDayAgo }
     });
@@ -218,19 +224,22 @@ export class AuditLogRepository extends BaseRepository<IAuditLog> {
   }
 
   async getActionTypes(): Promise<string[]> {
-    return AuditLog.distinct('action').then(actions => 
+    await this.ensureConnection();
+    return this.model.distinct('action').then(actions =>
       actions.filter(action => action != null).sort()
     );
   }
 
   async getTargetTypes(): Promise<string[]> {
-    return AuditLog.distinct('target.type').then(types => 
+    await this.ensureConnection();
+    return this.model.distinct('target.type').then(types =>
       types.filter(type => type != null).sort()
     );
   }
 
   async getAdminUsers(): Promise<Array<{ _id: mongoose.Types.ObjectId; name?: string; email: string; }>> {
-    const adminIds = await AuditLog.distinct('actor.userId').then(ids => 
+    await this.ensureConnection();
+    const adminIds = await this.model.distinct('actor.userId').then(ids =>
       ids.filter(id => id != null)
     );
     

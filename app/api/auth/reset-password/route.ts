@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import UserModel from "@/models/User";
 import bcrypt from "bcrypt";
-import { authCodeRepository } from "@/repositories/AuthCodeRepository";
+import { authCodeService, userService } from "@/services";
+import type { IAuthCode } from "@/models/AuthCode";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body)
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+
   const { identifier, code, newPassword } = body as {
     identifier?: string;
     code?: string;
@@ -16,30 +17,36 @@ export async function POST(req: NextRequest) {
   if (!identifier || !code || !newPassword) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
+
   await connectDB();
-  const id = String(identifier).toLowerCase();
-  const user = await UserModel.findOne({ $or: [{ email: id }, { phone: id }] });
+
+  const user = await userService.getByEmailOrPhone(identifier);
   if (!user)
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
-  const authCode = await authCodeRepository.findValid(
-    user._id,
-    "reset_password",
-    user.email && id === user.email ? "email" : "sms"
-  );
-  if (!authCode)
+
+  // Determine channel based on identifier match
+  const id = identifier.toLowerCase();
+  const channel: IAuthCode["channel"] =
+    user.email && id === user.email ? "email" : "sms";
+
+  // Validate and consume the reset code
+  const isValid = await authCodeService.validateAndConsume({
+    userId: String(user._id),
+    code,
+    purpose: "reset_password",
+    channel,
+  });
+
+  if (!isValid) {
     return NextResponse.json(
       { error: "Invalid or expired code" },
       { status: 400 }
     );
-  const ok = await bcrypt.compare(String(code), authCode.codeHash);
-  if (!ok)
-    return NextResponse.json(
-      { error: "Invalid or expired code" },
-      { status: 400 }
-    );
-  await authCodeRepository.consume(String(authCode._id));
-  user.passwordHash = await bcrypt.hash(String(newPassword), 10);
-  user.passwordChangedAt = new Date();
-  await user.save();
+  }
+
+  // Hash the new password and update user
+  const passwordHash = await bcrypt.hash(String(newPassword), 10);
+  await userService.updatePassword(String(user._id), passwordHash);
+
   return NextResponse.json({ success: true }, { status: 200 });
 }

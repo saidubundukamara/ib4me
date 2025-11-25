@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { campaignRepository } from "../repositories";
 import { ICampaign } from "../models/Campaign";
-import { monimeService, MonimeFinancialAccountRequest } from "../lib/monime";
+import { monimeService, MonimeFinancialAccountRequest, MonimeApiError } from "../lib/monime";
 import { runInTransaction } from "./ServiceTransaction";
 import { auditLogService } from "./AuditLogService";
 import type { AuditContext } from "../lib/admin-auth";
@@ -310,6 +310,11 @@ export class CampaignService {
         return updatedCampaign;
       } catch (error) {
         // Financial account creation failed - transaction will be rolled back
+        console.error('Financial account creation error:', error);
+
+        if (error instanceof MonimeApiError) {
+          throw new Error(`Failed to create financial account: ${error.message} (Status: ${error.statusCode}, Code: ${error.code})`);
+        }
         throw new Error(`Failed to create financial account: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     });
