@@ -2,6 +2,7 @@ import { userRepository, AdminUserFilters, PaginatedUsers } from "../repositorie
 import { auditLogService } from "./AuditLogService";
 import { IUser } from "../models/User";
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 
 export interface AdminUserCreateData {
   name: string;
@@ -17,6 +18,15 @@ export interface AdminUserUpdateData {
   phone?: string;
   role?: "User" | "Admin" | "SuperAdmin";
   isActive?: boolean;
+}
+
+export interface AdminCreateData {
+  name: string;
+  email: string;
+  phone?: string;
+  role: "Admin" | "SuperAdmin";
+  status?: "active" | "inactive";
+  password?: string;
 }
 
 export interface AdminContext {
@@ -57,6 +67,15 @@ export class UserService {
     return userRepository.findUsersWithPagination(filters);
   }
 
+  async getAdminsForAdmin(filters: AdminUserFilters): Promise<PaginatedUsers> {
+    return userRepository.findAdminsWithPagination(filters);
+  }
+
+  async checkEmailExists(email: string): Promise<boolean> {
+    const user = await userRepository.findByEmail(email);
+    return Boolean(user);
+  }
+
   async createUserAsAdmin(
     data: AdminUserCreateData,
     adminContext: AdminContext,
@@ -89,6 +108,49 @@ export class UserService {
         id: user._id as mongoose.Types.ObjectId,
       },
       diff: userData,
+      ip: auditContext?.ip,
+      userAgent: auditContext?.userAgent,
+    });
+
+    return user;
+  }
+
+  async createAdminUser(
+    data: AdminCreateData,
+    adminContext: AdminContext,
+    auditContext?: { ip?: string; userAgent?: string }
+  ): Promise<IUser> {
+    // Only SuperAdmin can create admin users
+    if (adminContext.role !== "SuperAdmin") {
+      throw new Error("Only SuperAdmin can create admin users");
+    }
+
+    // Hash the password (use default if not provided)
+    const passwordHash = await bcrypt.hash(data.password || "password", 10);
+
+    const userData = {
+      name: data.name,
+      email: data.email,
+      phone: data.phone || null,
+      roles: data.role,
+      status: data.status || "active",
+      passwordHash,
+    };
+
+    const user = await userRepository.create(userData as unknown as Partial<IUser>);
+
+    // Log the action
+    await auditLogService.record({
+      actor: {
+        userId: adminContext.adminId,
+        role: adminContext.role,
+      },
+      action: "admin.created",
+      target: {
+        type: "user",
+        id: user._id as mongoose.Types.ObjectId,
+      },
+      diff: { ...userData, passwordHash: "[REDACTED]" },
       ip: auditContext?.ip,
       userAgent: auditContext?.userAgent,
     });
@@ -260,6 +322,190 @@ export class UserService {
 
   async getUserById(userId: string): Promise<IUser | null> {
     return userRepository.findById(userId);
+  }
+
+  async getAdminById(userId: string): Promise<IUser | null> {
+    const user = await userRepository.findById(userId);
+    if (!user) return null;
+
+    // Verify this is actually an admin user
+    if (!user.roles || !["Admin", "SuperAdmin", "admin", "superadmin"].includes(user.roles)) {
+      return null;
+    }
+
+    return user;
+  }
+
+  async updateAdminAsAdmin(
+    userId: string,
+    data: AdminUserUpdateData,
+    adminContext: AdminContext,
+    auditContext?: { ip?: string; userAgent?: string }
+  ): Promise<IUser> {
+    // Only SuperAdmin can manage admin users
+    if (adminContext.role !== "SuperAdmin") {
+      throw new Error("Only SuperAdmin can update admin users");
+    }
+
+    const existingUser = await userRepository.findById(userId);
+    if (!existingUser) {
+      throw new Error("Admin user not found");
+    }
+
+    // Verify this is actually an admin user
+    if (!existingUser.roles || !["Admin", "SuperAdmin", "admin", "superadmin"].includes(existingUser.roles)) {
+      throw new Error("User is not an admin");
+    }
+
+    // Build update data
+    const updateData: Partial<IUser> = {};
+    const changes: Record<string, { from: unknown; to: unknown }> = {};
+
+    if (data.name !== undefined && data.name !== existingUser.name) {
+      updateData.name = data.name;
+      changes.name = { from: existingUser.name, to: data.name };
+    }
+
+    if (data.email !== undefined && data.email !== existingUser.email) {
+      // Check if email is already taken by another user
+      const emailExists = await userRepository.findByEmail(data.email);
+      if (emailExists && emailExists._id?.toString() !== userId) {
+        throw new Error("Email is already taken by another user");
+      }
+      updateData.email = data.email;
+      changes.email = { from: existingUser.email, to: data.email };
+    }
+
+    if (data.phone !== undefined && data.phone !== existingUser.phone) {
+      updateData.phone = data.phone || null;
+      changes.phone = { from: existingUser.phone, to: data.phone };
+    }
+
+    if (data.role !== undefined && data.role !== existingUser.roles) {
+      // Validate role is admin-level
+      if (!["Admin", "SuperAdmin"].includes(data.role)) {
+        throw new Error("Role must be Admin or SuperAdmin");
+      }
+      (updateData as Record<string, unknown>).roles = data.role;
+      changes.role = { from: existingUser.roles, to: data.role };
+    }
+
+    if (data.isActive !== undefined) {
+      const newStatus = data.isActive ? "active" : "inactive";
+      if (newStatus !== existingUser.status) {
+        updateData.status = newStatus;
+        changes.status = { from: existingUser.status, to: newStatus };
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return existingUser; // No changes to make
+    }
+
+    const updatedUser = await userRepository.updateById(userId, {
+      $set: updateData,
+    } as never);
+
+    if (!updatedUser) {
+      throw new Error("Failed to update admin user");
+    }
+
+    // Log the action
+    await auditLogService.record({
+      actor: {
+        userId: adminContext.adminId,
+        role: adminContext.role,
+      },
+      action: "admin.updated",
+      target: {
+        type: "user",
+        id: updatedUser._id as mongoose.Types.ObjectId,
+      },
+      diff: changes,
+      ip: auditContext?.ip,
+      userAgent: auditContext?.userAgent,
+    });
+
+    return updatedUser;
+  }
+
+  async deleteAdminAsAdmin(
+    userId: string,
+    adminContext: AdminContext,
+    auditContext?: { ip?: string; userAgent?: string }
+  ): Promise<boolean> {
+    // Only SuperAdmin can delete admin users
+    if (adminContext.role !== "SuperAdmin") {
+      throw new Error("Only SuperAdmin can delete admin users");
+    }
+
+    const existingUser = await userRepository.findById(userId);
+    if (!existingUser) {
+      throw new Error("Admin user not found");
+    }
+
+    // Verify this is actually an admin user
+    if (!existingUser.roles || !["Admin", "SuperAdmin", "admin", "superadmin"].includes(existingUser.roles)) {
+      throw new Error("User is not an admin");
+    }
+
+    // Prevent deleting yourself
+    if (adminContext.adminId.toString() === userId) {
+      throw new Error("Cannot delete your own account");
+    }
+
+    const result = await userRepository.deleteById(userId);
+
+    if (result) {
+      // Log the action
+      await auditLogService.record({
+        actor: {
+          userId: adminContext.adminId,
+          role: adminContext.role,
+        },
+        action: "admin.deleted",
+        target: {
+          type: "user",
+          id: new mongoose.Types.ObjectId(userId),
+        },
+        diff: {
+          deleted: { from: false, to: true },
+          deletedAt: { from: null, to: new Date() }
+        },
+        ip: auditContext?.ip,
+        userAgent: auditContext?.userAgent,
+      });
+    }
+
+    return result;
+  }
+
+  async getByEmailOrPhone(identifier: string): Promise<IUser | null> {
+    const id = identifier.toLowerCase();
+    return userRepository.findOne({
+      $or: [{ email: id }, { phone: id }],
+    } as never);
+  }
+
+  async markEmailVerified(userId: string): Promise<IUser | null> {
+    return userRepository.updateById(userId, {
+      $set: { emailVerified: new Date() },
+    } as never);
+  }
+
+  async markPhoneVerified(userId: string): Promise<IUser | null> {
+    return userRepository.updateById(userId, {
+      $set: { phoneVerified: new Date() },
+    } as never);
+  }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<IUser | null> {
+    return userRepository.updateById(userId, {
+      $set: {
+        passwordHash,
+        passwordChangedAt: new Date(),
+      },
+    } as never);
   }
 
   async getUserStats(): Promise<{

@@ -5,11 +5,12 @@ import { getToken } from "next-auth/jwt";
 // Public admin routes that don't require authentication
 const publicAdminRoutes = [
   // Old admin routes (for fallback)
-  "/admin/login", "/admin/forgot-password", 
+  "/admin/login", "/admin/forgot-password",
   // New subdomain routes
   "/login", "/forgot-password", "/s/admin/login", "/s/admin/forgot-password",
   // API routes
-  "/api/admin/auth/login", "/api/admin/auth/verify"
+  "/api/admin/auth/login", "/api/admin/auth/verify",
+  "/api/admin/settings" // GET is public for site name fetching
 ];
 
 // Helper function to check if user has admin token

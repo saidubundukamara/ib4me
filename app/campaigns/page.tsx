@@ -22,19 +22,38 @@ type CampaignListItem = {
 async function getActiveCampaigns(): Promise<CampaignListItem[]> {
   const campaigns = await campaignService.listActive();
 
-  // Collect first image assetIds per campaign
-  const campaignIdToFirstImageAssetId = new Map<string, string>();
+  // Collect asset IDs: patient photos (priority) and first document images (fallback)
+  const campaignToPatientPhotoId = new Map<string, string>();
+  const campaignToFirstDocImageId = new Map<string, string>();
+
   for (const c of campaigns) {
+    const campaignId = String(c._id);
+
+    // Patient photo takes priority
+    if (c.patient?.photoAssetId) {
+      campaignToPatientPhotoId.set(campaignId, String(c.patient.photoAssetId));
+    }
+
+    // First document image as fallback
     const firstImageDoc = (c.documents || []).find((d) => d.type?.startsWith("image/"));
     if (firstImageDoc?.assetId) {
-      campaignIdToFirstImageAssetId.set(String(c._id), String(firstImageDoc.assetId));
+      campaignToFirstDocImageId.set(campaignId, String(firstImageDoc.assetId));
     }
   }
 
-  // Fetch media assets in batch
-  const allAssetIds = Array.from(campaignIdToFirstImageAssetId.values());
+  // Collect all unique asset IDs for batch fetch
+  const allAssetIds = [
+    ...Array.from(campaignToPatientPhotoId.values()),
+    ...Array.from(campaignToFirstDocImageId.values()),
+  ];
   const uniqueAssetIds = Array.from(new Set(allAssetIds));
-  const assets = await mediaAssetService.listByIds(uniqueAssetIds.map((id) => new mongoose.Types.ObjectId(id)));
+
+  // Fetch media assets in batch
+  const assets = uniqueAssetIds.length > 0
+    ? await mediaAssetService.listByIds(uniqueAssetIds.map((id) => new mongoose.Types.ObjectId(id)))
+    : [];
+
+  // Build asset ID to image URL map
   const assetIdToImage = new Map<string, { src: string; srcSet?: string; sizes?: string }>();
   for (const a of assets) {
     const key = a.storage?.key;
@@ -69,17 +88,27 @@ async function getActiveCampaigns(): Promise<CampaignListItem[]> {
   }
 
   return campaigns.map((c) => {
+    const campaignId = String(c._id);
     const raisedMinor = c.totals?.raisedMinor ?? 0;
     const goalMinor = c.goal?.amountMinor ?? 0;
     const currency = c.goal?.currency || "SLE";
     const titleBase = c.patient?.name?.trim() || c.hospital?.name?.trim() || c.diagnosis?.trim() || c.slug;
-    const imageAssetId = campaignIdToFirstImageAssetId.get(String(c._id));
-    const img = imageAssetId ? assetIdToImage.get(imageAssetId) : undefined;
+
+    // Priority: patient photo > document image > fallback
+    const patientPhotoId = campaignToPatientPhotoId.get(campaignId);
+    const docImageId = campaignToFirstDocImageId.get(campaignId);
+    const img = patientPhotoId
+      ? assetIdToImage.get(patientPhotoId)
+      : docImageId
+        ? assetIdToImage.get(docImageId)
+        : undefined;
+
     const imageUrl = img?.src || "/assets/Hero.png";
     const imageSrcSet = img?.srcSet;
     const imageSizes = img?.sizes;
+
     return {
-      id: String(c._id),
+      id: campaignId,
       slug: c.slug,
       title: titleBase,
       currency,

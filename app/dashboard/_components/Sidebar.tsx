@@ -13,6 +13,8 @@ import {
   Bell,
   Settings,
   HelpCircle,
+  ShieldCheck,
+  Building,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Ib4meLogo from "@/public/assets/ib4melogo.png";
@@ -27,6 +29,8 @@ type SidebarProps = {
 const menuItems = [
   { icon: Home, label: "Dashboard", path: "/dashboard" },
   { icon: FolderOpen, label: "My Campaigns", path: "/dashboard/campaigns" },
+  { icon: ShieldCheck, label: "Verification", path: "/dashboard/verification" },
+  { icon: Building, label: "Organization", path: "/dashboard/organization" },
   { icon: Heart, label: "My Donations", path: "/dashboard/donations" },
   { icon: CreditCard, label: "Withdrawals", path: "/dashboard/withdrawals" },
   { icon: Bell, label: "Notifications", path: "/dashboard/notifications" },

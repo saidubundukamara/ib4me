@@ -1,8 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Smartphone, CreditCard } from "lucide-react";
+import { Smartphone, CreditCard, Ban } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface CampaignOption {
   id: string;
@@ -35,16 +36,26 @@ function formatCurrency(minor: number, currency: string): string {
   }
 }
 
+interface WithdrawalBlockStatus {
+  blocked: boolean;
+  reason?: string;
+}
+
 interface WithdrawalFormProps {
   campaignOptions: CampaignOption[];
   onSuccess?: () => void;
   isLoading?: boolean;
+  withdrawalBlockStatus?: WithdrawalBlockStatus;
 }
+
+// 99% of available balance can be withdrawn (1% buffer reserved)
+const WITHDRAWAL_BUFFER_PERCENT = 0.99;
 
 export function WithdrawalForm({
   campaignOptions,
   onSuccess,
   isLoading = false,
+  withdrawalBlockStatus,
 }: WithdrawalFormProps) {
   const [payoutType, setPayoutType] = useState<"mobile_money" | "bank">(
     "mobile_money",
@@ -56,22 +67,45 @@ export function WithdrawalForm({
     undefined,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [amount, setAmount] = useState<string>("");
   const formRef = useRef<HTMLFormElement>(null);
 
   const hasCampaigns = campaignOptions.length > 0;
   const campaignSelectPlaceholder = hasCampaigns
     ? "Choose a campaign"
     : "No campaigns available";
+  const isWithdrawalsBlocked = withdrawalBlockStatus?.blocked ?? false;
+
+  // Calculate max withdrawable amount with buffer
+  const selectedCampaignOption = useMemo(
+    () => campaignOptions.find((c) => c.id === selectedCampaign),
+    [campaignOptions, selectedCampaign],
+  );
+  const availableMinor = selectedCampaignOption?.availableMinor ?? 0;
+  const maxWithdrawableMinor = Math.floor(availableMinor * WITHDRAWAL_BUFFER_PERCENT);
+  const maxWithdrawable = maxWithdrawableMinor / 100; // Convert to major units
+
+  // Amount validation
+  const amountValue = parseFloat(amount) || 0;
+  const isAmountExceeded = amountValue > maxWithdrawable && maxWithdrawable > 0;
+  const isAmountValid = amountValue > 0 && !isAmountExceeded;
+
+  const hasNoFundsAvailable = !!(selectedCampaign && selectedCampaign !== "__none" && maxWithdrawable <= 0);
+
   const isSubmitDisabled =
     isSubmitting ||
     isLoading ||
     !hasCampaigns ||
     !selectedCampaign ||
-    selectedCampaign === "__none";
+    selectedCampaign === "__none" ||
+    isWithdrawalsBlocked ||
+    !isAmountValid ||
+    hasNoFundsAvailable;
 
   useEffect(() => {
     if (!hasCampaigns) {
       setSelectedCampaign(undefined);
+      setAmount("");
       return;
     }
     if (
@@ -79,8 +113,14 @@ export function WithdrawalForm({
       !campaignOptions.some((option) => option.id === selectedCampaign)
     ) {
       setSelectedCampaign(undefined);
+      setAmount("");
     }
   }, [hasCampaigns, campaignOptions, selectedCampaign]);
+
+  // Reset amount when campaign selection changes
+  useEffect(() => {
+    setAmount("");
+  }, [selectedCampaign]);
 
   const campaignOptionsContent = useMemo(() => {
     if (!hasCampaigns) {
@@ -101,11 +141,6 @@ export function WithdrawalForm({
       </SelectItem>
     ));
   }, [campaignOptions, hasCampaigns]);
-
-  const selectedCampaignOption = useMemo(
-    () => campaignOptions.find((c) => c.id === selectedCampaign),
-    [campaignOptions, selectedCampaign],
-  );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -132,11 +167,15 @@ export function WithdrawalForm({
         setPayoutType("mobile_money");
         setSelectedCampaign(undefined);
         setSelectedBank(undefined);
+        setAmount("");
         onSuccess?.();
       } else {
-        toast.error(result.error || "Failed to submit payout request", {
-          description: "Please check your information and try again.",
-        });
+        const errorMessage = result.error || "Failed to submit payout request";
+        const description = errorMessage.includes("Insufficient funds")
+          ? `Available balance: ${formatCurrency(maxWithdrawableMinor, selectedCampaignOption?.currency ?? "SLE")}`
+          : "Please check your information and try again.";
+
+        toast.error(errorMessage, { description });
       }
     } catch (error) {
       console.error("Unexpected error:", error);
@@ -157,6 +196,18 @@ export function WithdrawalForm({
           Withdraw funds from your campaign to your preferred payout method.
         </p>
       </div>
+
+      {isWithdrawalsBlocked && (
+        <Alert variant="destructive">
+          <Ban className="h-4 w-4" />
+          <AlertTitle>Withdrawals Temporarily Disabled</AlertTitle>
+          <AlertDescription>
+            {withdrawalBlockStatus?.reason
+              ? withdrawalBlockStatus.reason
+              : "Withdrawals are currently disabled. Please check back later or contact support for more information."}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {isLoading ? (
         <div className="space-y-4">
@@ -215,13 +266,33 @@ export function WithdrawalForm({
           <Input
             name="amount"
             required
-            disabled={isSubmitDisabled}
+            disabled={!selectedCampaign || isSubmitting || isWithdrawalsBlocked || hasNoFundsAvailable}
             type="number"
             step="0.01"
             min="0.01"
-            className="rounded-xl border bg-white/70 px-3 py-2 dark:bg-white/5 disabled:opacity-50"
-            placeholder="200"
+            max={maxWithdrawable > 0 ? maxWithdrawable : undefined}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className={`rounded-xl border bg-white/70 px-3 py-2 dark:bg-white/5 disabled:opacity-50 ${
+              isAmountExceeded ? "border-red-500 focus-visible:ring-red-500" : ""
+            }`}
+            placeholder={maxWithdrawable > 0 ? `Max: ${maxWithdrawable.toFixed(2)}` : "200"}
           />
+          {isAmountExceeded && selectedCampaignOption && (
+            <p className="text-sm text-red-500">
+              Maximum withdrawable is {formatCurrency(maxWithdrawableMinor, selectedCampaignOption.currency)} (1% buffer reserved)
+            </p>
+          )}
+          {selectedCampaignOption && !isAmountExceeded && maxWithdrawable > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Max withdrawable: {formatCurrency(maxWithdrawableMinor, selectedCampaignOption.currency)}
+            </p>
+          )}
+          {hasNoFundsAvailable && selectedCampaignOption && (
+            <p className="text-sm text-amber-600">
+              This campaign has no funds available for withdrawal yet.
+            </p>
+          )}
         </div>
 
         <div className="space-y-2 min-w-0">

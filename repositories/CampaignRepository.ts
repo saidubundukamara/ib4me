@@ -30,6 +30,18 @@ export class CampaignRepository extends BaseRepository<ICampaign> {
   ): Promise<ICampaign | null> {
     return this.updateById(campaignId, { $set: { totals } } as never, session);
   }
+
+  /**
+   * Count active and approved campaigns for a given owner.
+   * "Active" = status="active" AND verification.status="approved"
+   */
+  async countActiveApprovedByOwner(ownerId: mongoose.Types.ObjectId): Promise<number> {
+    return this.count({
+      ownerId,
+      status: "active",
+      "verification.status": "approved"
+    } as never);
+  }
 }
 
 export const campaignRepository = new CampaignRepository();

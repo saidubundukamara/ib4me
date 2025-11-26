@@ -58,28 +58,63 @@ export default async function CampaignDetailPage({ params }: PageParams) {
 
   const title = campaign.patient?.name || campaign.diagnosis || campaign.slug;
 
+  // Collect asset IDs: patient photo (priority) and first document image (fallback)
+  const assetIds: mongoose.Types.ObjectId[] = [];
+  if (campaign.patient?.photoAssetId) {
+    assetIds.push(campaign.patient.photoAssetId as mongoose.Types.ObjectId);
+  }
   const firstImageDoc = (campaign.documents || []).find((d) =>
     d.type?.startsWith("image/"),
   );
-  let heroUrl = "/assets/Hero.png";
   if (firstImageDoc?.assetId) {
-    const [asset] = await mediaAssetService.listByIds([
-      firstImageDoc.assetId as unknown as mongoose.Types.ObjectId,
-    ]);
-    if (asset) {
-      const key = asset.storage?.key;
-      if (key) {
-        heroUrl = CloudinaryService.generateTransformationUrl(key, {
-          width: 1280,
-          crop: "fill",
-          gravity: "auto",
-          aspect_ratio: "16:9",
-          fetch_format: "auto",
-          quality: "auto",
-        });
-      } else {
-        heroUrl = asset.url || heroUrl;
+    assetIds.push(firstImageDoc.assetId as unknown as mongoose.Types.ObjectId);
+  }
+
+  // Fetch assets in batch
+  let heroUrl = "/assets/Hero.png";
+  if (assetIds.length > 0) {
+    const assets = await mediaAssetService.listByIds(assetIds);
+    const assetMap = new Map(assets.map((a) => [String(a._id), a]));
+
+    // Try patient photo first
+    let resolvedUrl: string | null = null;
+    if (campaign.patient?.photoAssetId) {
+      const photoAsset = assetMap.get(String(campaign.patient.photoAssetId));
+      if (photoAsset) {
+        const key = photoAsset.storage?.key;
+        resolvedUrl = key
+          ? CloudinaryService.generateTransformationUrl(key, {
+              width: 1280,
+              crop: "fill",
+              gravity: "auto",
+              aspect_ratio: "16:9",
+              fetch_format: "auto",
+              quality: "auto",
+            })
+          : photoAsset.url || null;
       }
+    }
+
+    // Fallback to first document image
+    if (!resolvedUrl && firstImageDoc?.assetId) {
+      const docAsset = assetMap.get(String(firstImageDoc.assetId));
+      if (docAsset) {
+        const key = docAsset.storage?.key;
+        resolvedUrl = key
+          ? CloudinaryService.generateTransformationUrl(key, {
+              width: 1280,
+              crop: "fill",
+              gravity: "auto",
+              aspect_ratio: "16:9",
+              fetch_format: "auto",
+              quality: "auto",
+            })
+          : docAsset.url || null;
+      }
+    }
+
+    if (resolvedUrl) {
+      heroUrl = resolvedUrl;
     }
   }
 

@@ -6,14 +6,18 @@ import {Button} from "@/components/ui/button";
 
 export type SelectedFile = {
   id: string;
-  file: File;
-  previewUrl?: string;
+  file?: File;           // For new uploads
+  previewUrl?: string;   // For both new and existing
+  existingAssetId?: string;  // For existing documents from DB
+  isExisting?: boolean;  // Flag to distinguish existing vs new
+  fileName?: string;     // Display name for existing files
+  fileType?: string;     // MIME type for existing files
 };
 
 type DocumentUploadProps = {
   accept?: string[]; // e.g. ["image/*","application/pdf"]
   maxFiles?: number;
-  onChange?: (files: SelectedFile[]) => void;
+  onChange?: (files: SelectedFile[], removedAssetIds: string[]) => void;
   value?: SelectedFile[];
   label?: string;
 };
@@ -26,8 +30,9 @@ function formatBytes(bytes: number): string {
   return `${val.toFixed(1)} ${sizes[i]}`;
 }
 
-export default function DocumentUpload({ accept = ["image/*", "application/pdf"], maxFiles = 10, onChange, value, label = "Add documents" }: DocumentUploadProps) {
+export default function DocumentUpload({ accept = ["image/*", "application/pdf"], maxFiles = 5, onChange, value, label = "Add documents" }: DocumentUploadProps) {
   const [files, setFiles] = React.useState<SelectedFile[]>(value || []);
+  const [removedAssetIds, setRemovedAssetIds] = React.useState<string[]>([]);
   const inputRef = React.useRef<HTMLInputElement | null>(null);
   const onChangeRef = React.useRef<DocumentUploadProps["onChange"] | undefined>(undefined);
 
@@ -38,8 +43,8 @@ export default function DocumentUpload({ accept = ["image/*", "application/pdf"]
 
   // Notify parent only when files actually change
   React.useEffect(() => {
-    onChangeRef.current?.(files);
-  }, [files]);
+    onChangeRef.current?.(files, removedAssetIds);
+  }, [files, removedAssetIds]);
 
   // Sync internal state if controlled value prop changes
   React.useEffect(() => {
@@ -54,7 +59,12 @@ export default function DocumentUpload({ accept = ["image/*", "application/pdf"]
   function handleFiles(list: FileList | null) {
     if (!list) return;
     const arr = Array.from(list).slice(0, Math.max(0, maxFiles - files.length));
-    const mapped = arr.map((file): SelectedFile => ({ id: `${Date.now()}-${file.name}-${Math.random().toString(36).slice(2)}`, file, previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined }));
+    const mapped = arr.map((file): SelectedFile => ({
+      id: `${Date.now()}-${file.name}-${Math.random().toString(36).slice(2)}`,
+      file,
+      previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined,
+      isExisting: false,
+    }));
     setFiles((prev) => [...prev, ...mapped]);
   }
 
@@ -64,6 +74,11 @@ export default function DocumentUpload({ accept = ["image/*", "application/pdf"]
   }
 
   function remove(id: string) {
+    const fileToRemove = files.find((f) => f.id === id);
+    if (fileToRemove?.isExisting && fileToRemove.existingAssetId) {
+      // Track removed existing documents
+      setRemovedAssetIds((prev) => [...prev, fileToRemove.existingAssetId!]);
+    }
     setFiles((prev) => prev.filter((f) => f.id !== id));
   }
 
@@ -82,26 +97,37 @@ export default function DocumentUpload({ accept = ["image/*", "application/pdf"]
 
       {files.length > 0 && (
         <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {files.map((f) => (
-            <li key={f.id} className="flex items-center gap-3 rounded-xl border p-3 bg-white/70 ">
-              {f.previewUrl ? (
-                <Image src={f.previewUrl} alt={f.file.name} width={48} height={48}  className="h-12 w-12 rounded-md object-cover" />
-              ) : (
-                <div className="h-12 w-12 grid place-items-center rounded-md bg-gray-100 ">
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          {files.map((f) => {
+            const displayName = f.file?.name || f.fileName || "Document";
+            const displayType = f.file?.type || f.fileType || "file";
+            const displaySize = f.file ? formatBytes(f.file.size) : null;
+            const isImage = displayType.startsWith("image/");
+
+            return (
+              <li key={f.id} className="flex items-center gap-3 rounded-xl border p-3 bg-white/70 ">
+                {f.previewUrl && isImage ? (
+                  <Image src={f.previewUrl} alt={displayName} width={48} height={48} className="h-12 w-12 rounded-md object-cover" />
+                ) : (
+                  <div className="h-12 w-12 grid place-items-center rounded-md bg-gray-100 ">
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="truncate text-sm font-medium">
+                    {displayName}
+                    {f.isExisting && <span className="ml-2 text-xs text-gray-400">(existing)</span>}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {displayType}
+                    {displaySize && ` • ${displaySize}`}
+                  </div>
                 </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="truncate text-sm font-medium">{f.file.name}</div>
-                <div className="text-xs text-gray-500">{f.file.type || "file"} • {formatBytes(f.file.size)}</div>
-              </div>
-              <Button type="button" onClick={() => remove(f.id)} variant="destructive">Remove</Button>
-            </li>
-          ))}
+                <Button type="button" onClick={() => remove(f.id)} variant="destructive">Remove</Button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
   );
 }
-
-

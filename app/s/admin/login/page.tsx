@@ -67,11 +67,9 @@ export default function AdminLoginPage() {
       setUser(data.user);
       setAccessToken(data.token);
 
-      // Wait for cookie to be set, then redirect
-      setTimeout(() => {
-        // Use window.location.href for a full page redirect
-        window.location.href = "/";
-      }, 500);
+      // Redirect to dashboard (cookie is already set by server response)
+      toast.success("Login successful");
+      window.location.href = "/";
     } catch (error) {
       toast.error("Login Failed", {
         description: error instanceof Error ? error.message : "Login failed. Please try again.",

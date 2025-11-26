@@ -38,13 +38,19 @@ interface Payout {
 }
 
 interface Campaign {
-  _id: string;
+  _id?: string;
+  id?: string;
   slug: string;
   patient?: { name?: string };
   diagnosis?: string;
   goal?: { currency?: string };
   totals?: { raisedMinor?: number };
   withdrawals?: { totalPaidMinor?: number };
+}
+
+interface WithdrawalBlockStatus {
+  blocked: boolean;
+  reason?: string;
 }
 
 export default function UserWithdrawalsPage() {
@@ -54,6 +60,9 @@ export default function UserWithdrawalsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"request" | "recent">("request");
+  const [withdrawalBlockStatus, setWithdrawalBlockStatus] = useState<WithdrawalBlockStatus>({
+    blocked: false,
+  });
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -63,9 +72,10 @@ export default function UserWithdrawalsPage() {
 
   async function fetchData() {
     try {
-      const [campaignsRes, payoutsRes] = await Promise.all([
+      const [campaignsRes, payoutsRes, settingsRes] = await Promise.all([
         fetch("/api/campaigns"),
         fetch("/api/user/payouts"),
+        fetch("/api/admin/settings?category=withdrawal"),
       ]);
 
       if (campaignsRes.ok) {
@@ -80,7 +90,7 @@ export default function UserWithdrawalsPage() {
           const currency = c.goal?.currency ?? "SLE";
           const title = c.patient?.name || c.diagnosis || c.slug;
           return {
-            id: String(c._id),
+            id: c.id || String(c._id),
             title,
             currency,
             availableMinor: available,
@@ -92,6 +102,14 @@ export default function UserWithdrawalsPage() {
       if (payoutsRes.ok) {
         const payoutsData = await payoutsRes.json();
         setPayouts(payoutsData);
+      }
+
+      if (settingsRes.ok) {
+        const settingsData = await settingsRes.json();
+        setWithdrawalBlockStatus({
+          blocked: settingsData.settings?.withdrawalsBlocked ?? false,
+          reason: settingsData.settings?.blockedReason,
+        });
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);
@@ -199,6 +217,7 @@ export default function UserWithdrawalsPage() {
               campaignOptions={campaignOptions}
               onSuccess={handlePayoutSuccess}
               isLoading={isLoading}
+              withdrawalBlockStatus={withdrawalBlockStatus}
             />
           </Card>
         </TabsContent>
@@ -230,7 +249,7 @@ export default function UserWithdrawalsPage() {
                 </div>
               ) : (
                 payouts.map((p) => {
-                  const campaign = campaigns.find((c) => String(c._id) === String(p.campaignId));
+                  const campaign = campaigns.find((c) => (c.id || String(c._id)) === String(p.campaignId));
                   const currency = campaign?.goal?.currency ?? "SLE";
                   const title =
                     campaign?.patient?.name || campaign?.diagnosis || campaign?.slug || "Campaign";

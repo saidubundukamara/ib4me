@@ -5,8 +5,7 @@ import React, { createContext, useContext, useState, useEffect } from "react"
 interface User {
   _id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   role: "SuperAdmin" | "Admin" | "User";
   isActive: boolean;
 }
@@ -29,29 +28,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // Check if we're on the client side
     if (typeof window !== "undefined") {
-      // First check localStorage for regular user tokens
-      const storedToken = localStorage.getItem("auth_token")
-      const storedUser = localStorage.getItem("user")
+      // Clean up legacy localStorage tokens (security improvement)
+      // We now rely solely on httpOnly cookies for authentication
+      localStorage.removeItem("auth_token")
 
-      if (storedToken && storedUser) {
-        try {
-          setAccessToken(storedToken)
-          setUser(JSON.parse(storedUser))
-          setIsLoading(false)
-          return
-        } catch (error) {
-          console.error("Error parsing stored user data:", error)
-          localStorage.removeItem("auth_token")
-          localStorage.removeItem("user")
-        }
-      }
-
-      // Check for admin token in cookies
+      // Check for admin token in cookies (the only valid auth method)
       const adminToken = getCookie("admin_token")
       if (adminToken) {
         // Verify admin token with server
         verifyAdminToken(adminToken)
       } else {
+        // No token - try to restore cached user display data only
+        const storedUser = localStorage.getItem("admin_user_display")
+        if (storedUser) {
+          try {
+            // This is display-only data, not auth - still need to verify with server
+            // Just clear it since we have no valid token
+            localStorage.removeItem("admin_user_display")
+          } catch {
+            localStorage.removeItem("admin_user_display")
+          }
+        }
         setIsLoading(false)
       }
     } else {
@@ -99,19 +96,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // Store user display data only (non-sensitive info for UI)
+      // Authentication is handled by httpOnly cookies
       if (user) {
-        localStorage.setItem("user", JSON.stringify(user))
+        localStorage.setItem("admin_user_display", JSON.stringify({
+          name: user.name,
+          role: user.role,
+        }))
       } else {
-        localStorage.removeItem("user")
+        localStorage.removeItem("admin_user_display")
       }
-
-      if (accessToken) {
-        localStorage.setItem("auth_token", accessToken)
-      } else {
-        localStorage.removeItem("auth_token")
-      }
+      // Note: We no longer store auth_token in localStorage for security
+      // The admin_token cookie handles authentication
     }
-  }, [user, accessToken])
+  }, [user])
 
   const value: AuthContextType = {
     user,

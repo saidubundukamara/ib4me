@@ -1,12 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
-import { userRepository } from "@/repositories/UserRepository";
+import { userService } from "@/services";
+import { validateAdminAuth, extractAuditContext, AdminAuthError } from "@/lib/admin-auth";
 import mongoose from "mongoose";
+
+// Helper to transform user data for frontend
+function transformUser(user: { _id?: unknown; name?: string; email?: string | null; phone?: string | null; roles?: string; status?: string; createdAt?: Date; updatedAt?: Date }) {
+  return {
+    _id: user._id?.toString() || '',
+    email: user.email || '',
+    firstName: user.name?.split(' ')[0] || '',
+    lastName: user.name?.split(' ').slice(1).join(' ') || '',
+    role: user.roles || 'Admin',
+    isActive: user.status === 'active',
+    phone: user.phone || undefined,
+    createdAt: user.createdAt?.toISOString() || '',
+    updatedAt: user.updatedAt?.toISOString() || '',
+  };
+}
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Validate admin authentication - only SuperAdmin can manage admins
+    const adminContext = await validateAdminAuth();
+
+    if (adminContext.role !== "SuperAdmin") {
+      return NextResponse.json(
+        { success: false, message: "Only SuperAdmin can access admin management" },
+        { status: 403 }
+      );
+    }
+
     const { id: userId } = await params;
 
     // Validate ObjectId format
@@ -17,8 +43,8 @@ export async function GET(
       );
     }
 
-    const user = await userRepository.findById(userId);
-    
+    const user = await userService.getAdminById(userId);
+
     if (!user) {
       return NextResponse.json(
         { success: false, message: "Admin user not found" },
@@ -26,27 +52,8 @@ export async function GET(
       );
     }
 
-    // Verify this is actually an admin user
-    const userRole = user.roles as string;
-    if (!userRole || !['admin', 'superadmin', 'Admin', 'SuperAdmin'].includes(userRole)) {
-      return NextResponse.json(
-        { success: false, message: "User is not an admin" },
-        { status: 403 }
-      );
-    }
-
     // Transform user to match frontend expectations
-    const transformedUser = {
-      _id: user._id?.toString() || '',
-      email: user.email || '',
-      firstName: user.name?.split(' ')[0] || '',
-      lastName: user.name?.split(' ').slice(1).join(' ') || '',
-      role: user.roles || 'Admin',
-      isActive: user.status === 'active',
-      phone: user.phone || undefined,
-      createdAt: user.createdAt?.toISOString() || '',
-      updatedAt: user.updatedAt?.toISOString() || '',
-    };
+    const transformedUser = transformUser(user);
 
     return NextResponse.json({
       success: true,
@@ -54,6 +61,12 @@ export async function GET(
     });
 
   } catch (error) {
+    if (error instanceof AdminAuthError) {
+      return NextResponse.json(
+        { success: false, message: error.message },
+        { status: error.statusCode }
+      );
+    }
     console.error(`GET /api/admin/admins/[id] error:`, error);
     return NextResponse.json(
       { success: false, message: error instanceof Error ? error.message : 'Failed to fetch admin user' },
@@ -67,6 +80,17 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Validate admin authentication - only SuperAdmin can manage admins
+    const adminContext = await validateAdminAuth();
+    const auditContext = extractAuditContext(request);
+
+    if (adminContext.role !== "SuperAdmin") {
+      return NextResponse.json(
+        { success: false, message: "Only SuperAdmin can update admin users" },
+        { status: 403 }
+      );
+    }
+
     const { id: userId } = await params;
 
     // Validate ObjectId format
@@ -80,19 +104,15 @@ export async function PUT(
     const body = await request.json();
     const { name, email, phone, role, isActive } = body;
 
-    // Build update data
-    const updateData: Record<string, string | boolean> = {};
-    
-    if (name !== undefined) {
-      if (!name.trim()) {
-        return NextResponse.json(
-          { success: false, message: "Name cannot be empty" },
-          { status: 400 }
-        );
-      }
-      updateData.name = name.trim();
+    // Validate name if provided
+    if (name !== undefined && !name.trim()) {
+      return NextResponse.json(
+        { success: false, message: "Name cannot be empty" },
+        { status: 400 }
+      );
     }
 
+    // Validate email format if provided
     if (email !== undefined) {
       if (!email.trim()) {
         return NextResponse.json(
@@ -100,8 +120,7 @@ export async function PUT(
           { status: 400 }
         );
       }
-      
-      // Validate email format
+
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         return NextResponse.json(
@@ -109,68 +128,32 @@ export async function PUT(
           { status: 400 }
         );
       }
-
-      // Check if email is already taken by another user
-      const existingUser = await userRepository.findByEmail(email);
-      if (existingUser && existingUser._id?.toString() !== userId) {
-        return NextResponse.json(
-          { success: false, message: "Email is already taken by another user" },
-          { status: 409 }
-        );
-      }
-      
-      updateData.email = email.trim();
     }
 
-    if (phone !== undefined) {
-      updateData.phone = phone?.trim() || null;
-    }
-
-    if (role !== undefined) {
-      if (!['Admin', 'SuperAdmin'].includes(role)) {
-        return NextResponse.json(
-          { success: false, message: "Role must be Admin or SuperAdmin" },
-          { status: 400 }
-        );
-      }
-      updateData.roles = role;
-    }
-
-    if (isActive !== undefined) {
-      updateData.status = Boolean(isActive) ? "active" : "inactive";
-    }
-
-    // Check if there are any changes to make
-    if (Object.keys(updateData).length === 0) {
+    // Validate role if provided - must be admin-level
+    if (role !== undefined && !['Admin', 'SuperAdmin'].includes(role)) {
       return NextResponse.json(
-        { success: false, message: "No valid fields to update" },
+        { success: false, message: "Role must be Admin or SuperAdmin" },
         { status: 400 }
       );
     }
 
-    const updatedUser = await userRepository.updateById(userId, {
-      $set: updateData,
-    } as never);
-
-    if (!updatedUser) {
-      return NextResponse.json(
-        { success: false, message: "Admin user not found" },
-        { status: 404 }
-      );
-    }
+    // Update admin through service (includes audit logging and permission checks)
+    const updatedUser = await userService.updateAdminAsAdmin(
+      userId,
+      {
+        name: name?.trim(),
+        email: email?.trim(),
+        phone: phone?.trim() || undefined,
+        role: role as "Admin" | "SuperAdmin" | undefined,
+        isActive,
+      },
+      adminContext,
+      auditContext
+    );
 
     // Transform response to match frontend expectations
-    const transformedUser = {
-      _id: updatedUser._id?.toString() || '',
-      email: updatedUser.email || '',
-      firstName: updatedUser.name?.split(' ')[0] || '',
-      lastName: updatedUser.name?.split(' ').slice(1).join(' ') || '',
-      role: updatedUser.roles || 'Admin',
-      isActive: updatedUser.status === 'active',
-      phone: updatedUser.phone || undefined,
-      createdAt: updatedUser.createdAt?.toISOString() || '',
-      updatedAt: updatedUser.updatedAt?.toISOString() || '',
-    };
+    const transformedUser = transformUser(updatedUser);
 
     return NextResponse.json({
       success: true,
@@ -179,6 +162,12 @@ export async function PUT(
     });
 
   } catch (error) {
+    if (error instanceof AdminAuthError) {
+      return NextResponse.json(
+        { success: false, message: error.message },
+        { status: error.statusCode }
+      );
+    }
     console.error(`PUT /api/admin/admins/[id] error:`, error);
     return NextResponse.json(
       { success: false, message: error instanceof Error ? error.message : 'Failed to update admin user' },
@@ -192,6 +181,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Validate admin authentication - only SuperAdmin can manage admins
+    const adminContext = await validateAdminAuth();
+    const auditContext = extractAuditContext(request);
+
+    if (adminContext.role !== "SuperAdmin") {
+      return NextResponse.json(
+        { success: false, message: "Only SuperAdmin can delete admin users" },
+        { status: 403 }
+      );
+    }
+
     const { id: userId } = await params;
 
     // Validate ObjectId format
@@ -202,7 +202,8 @@ export async function DELETE(
       );
     }
 
-    const result = await userRepository.deleteById(userId);
+    // Delete admin through service (includes audit logging and permission checks)
+    const result = await userService.deleteAdminAsAdmin(userId, adminContext, auditContext);
 
     if (!result) {
       return NextResponse.json(
@@ -217,6 +218,12 @@ export async function DELETE(
     });
 
   } catch (error) {
+    if (error instanceof AdminAuthError) {
+      return NextResponse.json(
+        { success: false, message: error.message },
+        { status: error.statusCode }
+      );
+    }
     console.error(`DELETE /api/admin/admins/[id] error:`, error);
     return NextResponse.json(
       { success: false, message: error instanceof Error ? error.message : 'Failed to delete admin user' },

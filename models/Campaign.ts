@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 export interface ICampaignPatient {
   name: string;
   age?: number;
-  photoUrls?: string[];
+  photoAssetId?: mongoose.Types.ObjectId;
 }
 
 export interface ICampaignGoal {
@@ -75,6 +75,8 @@ export interface ICampaign extends mongoose.Document {
   outcome?: ICampaignOutcome;
   urgency?: "low" | "medium" | "high";
   typeOfEmergency?: string;
+  category?: string;
+  categoryId?: mongoose.Types.ObjectId;
   share?: { whatsAppPostId?: string | null };
   totals?: ICampaignTotals;
   withdrawals?: ICampaignWithdrawals;
@@ -102,7 +104,10 @@ const campaignSchema = new mongoose.Schema<ICampaign>(
     patient: {
       name: { type: String, trim: true },
       age: { type: Number, min: 0 },
-      photoUrls: [{ type: String }],
+      photoAssetId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "MediaAsset",
+      },
     },
     diagnosis: { type: String },
     hospital: {
@@ -164,6 +169,12 @@ const campaignSchema = new mongoose.Schema<ICampaign>(
       default: "medium",
     },
     typeOfEmergency: { type: String },
+    category: { type: String, trim: true },
+    categoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      index: true,
+    },
     share: {
       whatsAppPostId: { type: String, default: null },
     },

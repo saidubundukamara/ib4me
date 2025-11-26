@@ -108,9 +108,12 @@ export default function AdminLayout({
       items: [
         { name: "Dashboard", href: "/", icon: "dashboard", current: pathname === "/" },
         { name: "Campaigns", href: "/campaigns", icon: "campaigns", current: pathname.startsWith("/campaigns") },
+        { name: "Verifications", href: "/verifications", icon: "verifications", current: pathname.startsWith("/verifications") },
         { name: "Donations", href: "/donations", icon: "donations", current: pathname.startsWith("/donations") },
+        { name: "Tips", href: "/tips", icon: "tips", current: pathname.startsWith("/tips") },
         { name: "Payouts", href: "/payouts", icon: "payouts", current: pathname.startsWith("/payouts") },
         { name: "Hospitals", href: "/hospitals", icon: "hospitals", current: pathname.startsWith("/hospitals") },
+        { name: "Categories", href: "/categories", icon: "categories", current: pathname.startsWith("/categories") },
         { name: "Users", href: "/users", icon: "users", current: pathname.startsWith("/users") },
       ]
     },
@@ -144,6 +147,11 @@ export default function AdminLayout({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
         </svg>
       ),
+      verifications: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      ),
       donations: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -154,9 +162,19 @@ export default function AdminLayout({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
         </svg>
       ),
+      tips: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+        </svg>
+      ),
       hospitals: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+      ),
+      categories: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
         </svg>
       ),
       users: (
@@ -234,12 +252,12 @@ export default function AdminLayout({
             <div className="flex items-center">
               <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-medium">
-                  {user.firstName?.[0]}{user.lastName?.[0]}
+                  {user.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
                 </span>
               </div>
               <div className="ml-3">
                 <div className="text-sm font-medium text-white">
-                  {user.firstName} {user.lastName}
+                  {user.name}
                 </div>
                 <div className="text-xs text-gray-300">{user.role}</div>
               </div>
@@ -323,12 +341,12 @@ export default function AdminLayout({
                   >
                     <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                       <span className="text-white font-medium text-sm">
-                        {user.firstName?.[0]}{user.lastName?.[0]}
+                        {user.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
                       </span>
                     </div>
                     <div className="hidden md:block text-left">
                       <div className="font-medium text-gray-900">
-                        {user.firstName} {user.lastName}
+                        {user.name}
                       </div>
                       <div className="text-xs text-gray-500">{user.role}</div>
                     </div>
@@ -346,12 +364,12 @@ export default function AdminLayout({
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
                               <span className="text-white font-medium">
-                                {user.firstName?.[0]}{user.lastName?.[0]}
+                                {user.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
                               </span>
                             </div>
                             <div>
                               <div className="font-medium text-gray-900">
-                                {user.firstName} {user.lastName}
+                                {user.name}
                               </div>
                               <div className="text-sm text-gray-500">{user.email}</div>
                               <div className="text-xs text-blue-600 font-medium">{user.role}</div>

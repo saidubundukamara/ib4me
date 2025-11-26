@@ -1,9 +1,11 @@
 import mongoose from "mongoose";
-import { campaignRepository } from "../repositories";
+import { campaignRepository, userRepository } from "../repositories";
 import { ICampaign } from "../models/Campaign";
-import { monimeService, MonimeFinancialAccountRequest } from "../lib/monime";
+import { monimeService, MonimeFinancialAccountRequest, MonimeApiError } from "../lib/monime";
 import { runInTransaction } from "./ServiceTransaction";
 import { auditLogService } from "./AuditLogService";
+import { verificationService } from "./VerificationService";
+import { settingService } from "./SettingService";
 import type { AuditContext } from "../lib/admin-auth";
 
 interface CampaignFilters {
@@ -29,6 +31,14 @@ interface PaginatedCampaigns {
   totalPages: number;
 }
 
+export interface CampaignLimitCheckResult {
+  allowed: boolean;
+  currentCount: number;
+  maxAllowed: number;
+  userType: "individual" | "organization";
+  reason?: string;
+}
+
 export class CampaignService {
   async getBySlug(slug: string): Promise<ICampaign | null> {
     return campaignRepository.findBySlug(slug);
@@ -36,6 +46,23 @@ export class CampaignService {
 
   async getById(id: string): Promise<ICampaign | null> {
     return campaignRepository.findById(id);
+  }
+
+  /**
+   * Determine if a campaign is for an individual or organization based on owner's role
+   */
+  async getCampaignType(campaignId: string): Promise<"individual" | "organization"> {
+    const campaign = await campaignRepository.findById(campaignId);
+    if (!campaign) {
+      return "individual"; // Default to individual if campaign not found
+    }
+
+    const owner = await userRepository.findById(campaign.ownerId.toString());
+    if (!owner) {
+      return "individual"; // Default to individual if owner not found
+    }
+
+    return owner.roles === "Organization" ? "organization" : "individual";
   }
 
   async listByOwner(ownerId: mongoose.Types.ObjectId): Promise<ICampaign[]> {
@@ -270,7 +297,80 @@ export class CampaignService {
     };
   }
 
+  async checkCampaignLimitForUser(userId: string): Promise<CampaignLimitCheckResult> {
+    // Fetch user to determine role
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      return {
+        allowed: false,
+        currentCount: 0,
+        maxAllowed: 0,
+        userType: "individual",
+        reason: "User not found"
+      };
+    }
+
+    const role = user.roles ?? "User";
+
+    // Admins and SuperAdmins have no limit
+    if (role === "Admin" || role === "SuperAdmin") {
+      return {
+        allowed: true,
+        currentCount: 0,
+        maxAllowed: Infinity,
+        userType: "individual"
+      };
+    }
+
+    // Get configurable limits from settings
+    const limits = await settingService.getCampaignLimitsSettings();
+    const isOrganization = role === "Organization";
+    const maxAllowed = isOrganization
+      ? limits.maxActiveCampaignsOrganization
+      : limits.maxActiveCampaignsIndividual;
+
+    // Count current active campaigns
+    const currentCount = await campaignRepository.countActiveApprovedByOwner(
+      new mongoose.Types.ObjectId(userId)
+    );
+
+    if (currentCount >= maxAllowed) {
+      const userLabel = isOrganization ? "Organizations" : "Individual users";
+      return {
+        allowed: false,
+        currentCount,
+        maxAllowed,
+        userType: isOrganization ? "organization" : "individual",
+        reason: `${userLabel} can have a maximum of ${maxAllowed} active campaigns. You currently have ${currentCount}.`
+      };
+    }
+
+    return {
+      allowed: true,
+      currentCount,
+      maxAllowed,
+      userType: isOrganization ? "organization" : "individual"
+    };
+  }
+
   async createCampaign(campaignData: Partial<ICampaign>): Promise<ICampaign> {
+    // Check if user is verified before creating campaign
+    if (campaignData.ownerId) {
+      const verificationStatus = await verificationService.isUserVerifiedForCampaigns(
+        campaignData.ownerId.toString()
+      );
+
+      if (!verificationStatus.verified) {
+        throw new Error(verificationStatus.reason || "User verification required to create campaigns");
+      }
+
+      // Check campaign limit
+      const limitCheck = await this.checkCampaignLimitForUser(campaignData.ownerId.toString());
+      if (!limitCheck.allowed) {
+        throw new Error(limitCheck.reason || "Campaign limit reached");
+      }
+    }
+
     return runInTransaction(async (session) => {
       // Create the campaign first
       const campaign = await campaignRepository.create(campaignData, session);
@@ -310,6 +410,11 @@ export class CampaignService {
         return updatedCampaign;
       } catch (error) {
         // Financial account creation failed - transaction will be rolled back
+        console.error('Financial account creation error:', error);
+
+        if (error instanceof MonimeApiError) {
+          throw new Error(`Failed to create financial account: ${error.message} (Status: ${error.statusCode}, Code: ${error.code})`);
+        }
         throw new Error(`Failed to create financial account: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     });

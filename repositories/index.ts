@@ -13,3 +13,6 @@ export * from "./ReceiptMedicalRepository";
 export * from "./SettingRepository";
 export * from "./WebhookEventRepository";
 export * from "./AuditLogRepository";
+export * from "./CategoryRepository";
+export * from "./VerificationRepository";
+export * from "./TipRepository";

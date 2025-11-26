@@ -18,7 +18,15 @@ export interface IDonationProvider {
 }
 
 export interface IDonationFees {
-  paymentFeeMinor?: number;
+  // New fee structure (fees added on top)
+  baseFeeMinor?: number;           // Fixed base fee (e.g., Le 0.50)
+  processingFeeMinor?: number;     // Percentage-based processing fee
+  processingFeeBps?: number;       // Rate applied (for audit trail)
+  campaignType?: "individual" | "organization";  // Type at time of donation
+  totalFeeMinor?: number;          // Total fees = baseFeeMinor + processingFeeMinor
+
+  // Legacy fields (for backward compatibility with existing donations)
+  paymentFeeMinor?: number;        // Payment processor fees from Monime
   platformFeeMinor?: number;
 }
 
@@ -28,12 +36,13 @@ export interface IDonation extends mongoose.Document {
   donorSnapshot?: { name?: string; email?: string } | null;
   isAnonymous: boolean;
   message?: string | null;
-  amount: IDonationAmount;
+  amount: IDonationAmount;                    // Donation amount (what campaign receives)
+  totalChargedMinor?: number | null;          // Total charged to donor (amount + fees)
   fx?: IDonationFx | null;
   provider: IDonationProvider;
   status: "pending" | "succeeded" | "failed" | "refunded";
   fees?: IDonationFees | null;
-  netAmountMinor?: number | null;
+  netAmountMinor?: number | null;             // For backward compat, equals amount.minor
   receiptUrl?: string | null;
   notifiedAt?: Date | null;
   idempotencyKey?: string | null;
@@ -83,9 +92,20 @@ const donationSchema = new mongoose.Schema<IDonation>(
       index: true,
     },
     fees: {
+      // New fee structure
+      baseFeeMinor: { type: Number, default: 0 },
+      processingFeeMinor: { type: Number, default: 0 },
+      processingFeeBps: { type: Number },
+      campaignType: {
+        type: String,
+        enum: ["individual", "organization"],
+      },
+      totalFeeMinor: { type: Number, default: 0 },
+      // Legacy fields
       paymentFeeMinor: { type: Number, default: 0 },
       platformFeeMinor: { type: Number, default: 0 },
     },
+    totalChargedMinor: { type: Number, default: null },
     netAmountMinor: { type: Number, default: null },
     receiptUrl: { type: String, default: null },
     notifiedAt: { type: Date, default: null },

@@ -12,7 +12,16 @@ import CampaignFormWizard, {
   type CampaignFormSubmitPayload,
 } from "../_components/CampaignFormWizard";
 import DeleteCampaignDialog from "../_components/DeleteCampaignDialog";
+import CampaignLimitBanner from "../_components/CampaignLimitBanner";
 import { toast } from "sonner";
+
+interface CampaignLimitInfo {
+  allowed: boolean;
+  currentCount: number;
+  maxAllowed: number;
+  userType: "individual" | "organization";
+  remainingSlots: number | null;
+}
 
 type UrgencyValue = "low" | "medium" | "high";
 
@@ -193,15 +202,39 @@ export default function UserCampaignsPage() {
   const [createSubmitting, setCreateSubmitting] = React.useState(false);
   const [editSubmitting, setEditSubmitting] = React.useState(false);
   const [deletingCampaign, setDeletingCampaign] = React.useState<CampaignItem | null>(null);
+  const [limitInfo, setLimitInfo] = React.useState<CampaignLimitInfo | null>(null);
+
+  const refreshLimitInfo = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/user/campaign-limits");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setLimitInfo(data.data);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to refresh campaign limits:", error);
+    }
+  }, []);
 
   React.useEffect(() => {
-    fetch("/api/campaigns")
-      .then(async (r) => {
+    Promise.all([
+      fetch("/api/campaigns").then(async (r) => {
         if (r.ok) {
           const data = await r.json();
           setItems(Array.isArray(data) ? data.map(normalizeFromApi) : []);
         }
+      }),
+      fetch("/api/user/campaign-limits").then(async (r) => {
+        if (r.ok) {
+          const data = await r.json();
+          if (data.success) {
+            setLimitInfo(data.data);
+          }
+        }
       })
+    ])
       .catch(() => {
         setItems([]);
       })
@@ -250,6 +283,9 @@ export default function UserCampaignsPage() {
       if (formValues.patient.age !== undefined) {
         formData.set("patient.age", String(formValues.patient.age));
       }
+      if (formValues.patient.photo) {
+        formData.set("patientPhoto", formValues.patient.photo);
+      }
       if (formValues.hospital.name) {
         formData.set("hospital.name", formValues.hospital.name);
       }
@@ -279,6 +315,17 @@ export default function UserCampaignsPage() {
 
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
+
+          // Handle campaign limit exceeded error specifically
+          if (err.code === "CAMPAIGN_LIMIT_EXCEEDED") {
+            toast.error(
+              `Campaign limit reached. You can have up to ${limitInfo?.maxAllowed ?? "a limited number of"} active campaigns.`
+            );
+            await refreshLimitInfo();
+            setIsCreateOpen(false);
+            return;
+          }
+
           throw new Error(err.error || "Failed to create campaign");
         }
 
@@ -292,6 +339,9 @@ export default function UserCampaignsPage() {
           form: formValues,
         });
         setIsCreateOpen(false);
+
+        // Refresh limit info after successful creation
+        await refreshLimitInfo();
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : "Failed to create campaign",
@@ -301,35 +351,63 @@ export default function UserCampaignsPage() {
         setCreateSubmitting(false);
       }
     },
-    [createSubmitting, handleCreateCampaign],
+    [createSubmitting, handleCreateCampaign, limitInfo?.maxAllowed, refreshLimitInfo],
   );
 
   const submitEditCampaign = React.useCallback(
     async (values: CampaignFormSubmitPayload) => {
       if (!editingCampaign || editSubmitting) return;
       setEditSubmitting(true);
+
+      const formData = new FormData();
+
+      // Basic text fields
+      if (values.diagnosis) formData.set("diagnosis", values.diagnosis);
+      if (values.typeOfEmergency) formData.set("typeOfEmergency", values.typeOfEmergency);
+      formData.set("urgency", values.urgency);
+      if (values.category) formData.set("category", values.category);
+      formData.set("patient.name", values.patient.name);
+      if (values.patient.age !== undefined) {
+        formData.set("patient.age", String(values.patient.age));
+      }
+      if (values.hospital.name) {
+        formData.set("hospital.name", values.hospital.name);
+      }
+
+      // Goal
       const amountMinor = Math.max(0, Math.round(values.goal.amountMajor * 100));
-      const payload = {
-        diagnosis: values.diagnosis,
-        typeOfEmergency: values.typeOfEmergency,
-        urgency: values.urgency,
-        patient: {
-          name: values.patient.name,
-          ...(values.patient.age !== undefined ? { age: values.patient.age } : {}),
-        },
-        hospital: { name: values.hospital.name },
-        goal: {
-          currency: values.goal.currency,
-          amountMinor,
-        },
-        story: values.story,
-      };
+      formData.set("goal.currency", values.goal.currency);
+      formData.set("goal.amountMinor", String(amountMinor));
+
+      // Story
+      if (values.story) formData.set("story", values.story);
+
+      // Patient photo
+      if (values.patient.photo) {
+        formData.set("patientPhoto", values.patient.photo);
+      }
+      if (values.patient.removePhoto) {
+        formData.set("removePatientPhoto", "true");
+      }
+
+      // New documents
+      if (values.documents?.length) {
+        values.documents.forEach((file, index) => {
+          if (file) {
+            formData.append(`documents[${index}]`, file);
+          }
+        });
+      }
+
+      // Removed documents
+      if (values.removedDocumentIds?.length) {
+        formData.set("removedDocumentIds", JSON.stringify(values.removedDocumentIds));
+      }
 
       try {
         const res = await fetch(`/api/campaigns/${editingCampaign.id}`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: formData, // No Content-Type header - browser sets it with boundary
         });
 
         if (!res.ok) {
@@ -370,16 +448,41 @@ export default function UserCampaignsPage() {
         }
         const data = await res.json();
         const goalAmountMinor = Number(data?.goal?.amountMinor ?? 0);
+
+        // Build existing patient photo if available
+        let existingPatientPhoto;
+        if (data?.patient?.photoUrl && data?.patient?.photoAssetId) {
+          existingPatientPhoto = {
+            id: "existing-patient-photo",
+            previewUrl: data.patient.photoUrl,
+            existingAssetId: data.patient.photoAssetId,
+            isExisting: true,
+          };
+        }
+
+        // Build existing documents with URLs
+        const existingDocuments = (data?.documents || [])
+          .filter((doc: { assetId?: string; url?: string }) => doc.assetId && doc.url)
+          .map((doc: { type?: string; assetId: string; url: string }, i: number) => ({
+            id: `existing-doc-${i}`,
+            previewUrl: doc.url,
+            existingAssetId: doc.assetId,
+            isExisting: true,
+            fileName: `Document ${i + 1}`,
+            fileType: doc.type || "application/octet-stream",
+          }));
+
         const initial: CampaignFormInitialValues = {
           title: campaign.title,
           typeOfEmergency: data?.typeOfEmergency ?? campaign.typeOfEmergency ?? "",
           urgency: resolveUrgency(data?.urgency) ?? resolveUrgency(campaign.urgency) ?? "medium",
           diagnosis: data?.diagnosis ?? campaign.diagnosis ?? "",
           description: campaign.description ?? "",
-          category: campaign.category ?? "",
+          category: data?.category ?? campaign.category ?? "",
           patient: {
             name: data?.patient?.name ?? campaign.patientName ?? "",
             ...(data?.patient?.age !== undefined ? { age: data.patient.age } : {}),
+            ...(existingPatientPhoto ? { photo: existingPatientPhoto } : {}),
           },
           hospital: {
             name: data?.hospital?.name ?? campaign.hospitalName ?? "",
@@ -389,6 +492,7 @@ export default function UserCampaignsPage() {
             amountMajor: goalAmountMinor > 0 ? goalAmountMinor / 100 : campaign.goalAmount,
           },
           story: data?.story ?? campaign.story ?? "",
+          documents: existingDocuments,
         };
         setEditInitialValues(initial);
       })
@@ -475,10 +579,23 @@ export default function UserCampaignsPage() {
         <h2 className="text-2xl sm:text-3xl font-bold text-foreground">My Campaigns</h2>
         <Button
           className="rounded-2xl w-full sm:w-auto"
+          disabled={!isCreateOpen && limitInfo !== null && !limitInfo.allowed}
+          title={
+            !isCreateOpen && limitInfo !== null && !limitInfo.allowed
+              ? `You've reached your limit of ${limitInfo.maxAllowed} active campaigns`
+              : undefined
+          }
           onClick={() => {
             if (isCreateOpen) {
               handleCancelCreate();
             } else {
+              // Check limit before opening form
+              if (limitInfo && !limitInfo.allowed) {
+                toast.error(
+                  `Campaign limit reached. You can have up to ${limitInfo.maxAllowed} active campaigns.`
+                );
+                return;
+              }
               handleCancelEdit();
               setIsCreateOpen(true);
             }
@@ -490,6 +607,15 @@ export default function UserCampaignsPage() {
           {isCreateOpen ? "Close Form" : "Create Campaign"}
         </Button>
       </div>
+
+      {/* Campaign Limit Banner - only shows when near or at limit */}
+      {limitInfo && limitInfo.maxAllowed !== Infinity && (
+        <CampaignLimitBanner
+          currentCount={limitInfo.currentCount}
+          maxAllowed={limitInfo.maxAllowed}
+          userType={limitInfo.userType}
+        />
+      )}
 
       {isCreateOpen ? (
         <Card className="w-full overflow-hidden rounded-3xl border border-border/40 bg-card shadow-[0_25px_60px_-45px_rgba(15,23,42,0.35)]">

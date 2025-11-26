@@ -54,16 +54,36 @@ export async function POST(request: NextRequest) {
 
     // Generate a simple token (for now, using a random string + user ID)
     const token = crypto.randomBytes(32).toString('hex') + ':' + String(user._id);
-    
-    // Set cookie with token
-    const cookieStore = await cookies();
-    cookieStore.set('admin_token', token, {
+
+    // Get the host for cookie domain configuration
+    const host = request.headers.get('host') || '';
+
+    // Build cookie options - domain is only set for production
+    // Browsers don't support domain='localhost' for subdomain cookies
+    const cookieOptions: {
+      httpOnly: boolean;
+      secure: boolean;
+      sameSite: 'lax';
+      path: string;
+      maxAge: number;
+      domain?: string;
+    } = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    });
+      maxAge: 24 * 60 * 60, // 24 hours (in seconds)
+    };
+
+    // Only set domain for production (real domains support subdomain cookies)
+    if (!host.includes('localhost')) {
+      const rootDomain = process.env.ROOT_DOMAIN || 'ib4me.com';
+      cookieOptions.domain = `.${rootDomain}`;
+    }
+
+    // Set cookie with token
+    const cookieStore = await cookies();
+    cookieStore.set('admin_token', token, cookieOptions);
 
     // Update last login information
     await userRepository.updateById(String(user._id), {

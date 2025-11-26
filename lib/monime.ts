@@ -275,11 +275,24 @@ export class MonimeService {
 
       if (!response.ok) {
         const error = responseData as MonimeError;
+        // Log the full error response for debugging
+        console.error('Monime API error response:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: responseData
+        });
+
+        // Try to extract error message from various possible response formats
+        const errorMessage = error.message
+          || (responseData as { error?: string }).error
+          || (responseData as { detail?: string }).detail
+          || JSON.stringify(responseData);
+
         throw new MonimeApiError(
           error.code || "API_ERROR",
-          error.message || "Unknown API error",
+          errorMessage,
           response.status,
-          error.details
+          responseData // Pass full response as details for debugging
         );
       }
 

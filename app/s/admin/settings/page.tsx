@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSettings } from "@/lib/settings-provider";
-import { Loader2, Settings, CreditCard, ToggleLeft, Phone, Share2, Search } from "lucide-react";
+import { Loader2, Settings, CreditCard, ToggleLeft, Phone, Share2, Search, BarChart3, Percent, Wallet } from "lucide-react";
 // import { toast } from "sonner";
 
 // Import setting components (we'll create these)
@@ -15,6 +15,9 @@ import FeatureSettings from "./components/FeatureSettings";
 import ContactSettings from "./components/ContactSettings";
 import SocialSettings from "./components/SocialSettings";
 import SEOSettings from "./components/SEOSettings";
+import CampaignLimitsSettings from "./components/CampaignLimitsSettings";
+import FeeSettings from "./components/FeeSettings";
+import PlatformAccountSettings from "./components/PlatformAccountSettings";
 
 export default function AdminSettingsPage() {
   const { loading, error, clearError } = useSettings();
@@ -58,10 +61,18 @@ export default function AdminSettingsPage() {
 
       {/* Settings Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-9">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">General</span>
+          </TabsTrigger>
+          <TabsTrigger value="fees" className="flex items-center gap-2">
+            <Percent className="h-4 w-4" />
+            <span className="hidden sm:inline">Fees</span>
+          </TabsTrigger>
+          <TabsTrigger value="platform" className="flex items-center gap-2">
+            <Wallet className="h-4 w-4" />
+            <span className="hidden sm:inline">Platform</span>
           </TabsTrigger>
           <TabsTrigger value="payment" className="flex items-center gap-2">
             <CreditCard className="h-4 w-4" />
@@ -70,6 +81,10 @@ export default function AdminSettingsPage() {
           <TabsTrigger value="features" className="flex items-center gap-2">
             <ToggleLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Features</span>
+          </TabsTrigger>
+          <TabsTrigger value="campaigns" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            <span className="hidden sm:inline">Campaigns</span>
           </TabsTrigger>
           <TabsTrigger value="contact" className="flex items-center gap-2">
             <Phone className="h-4 w-4" />
@@ -99,6 +114,34 @@ export default function AdminSettingsPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="fees">
+          <Card>
+            <CardHeader>
+              <CardTitle>Platform Fees</CardTitle>
+              <CardDescription>
+                Configure base fees and processing fees for donations. Fees are added on top of donations.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FeeSettings />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="platform">
+          <Card>
+            <CardHeader>
+              <CardTitle>Platform Account & Tipping</CardTitle>
+              <CardDescription>
+                Configure the platform&apos;s financial account for receiving tips and manage tipping settings.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PlatformAccountSettings />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="payment">
           <Card>
             <CardHeader>
@@ -123,6 +166,20 @@ export default function AdminSettingsPage() {
             </CardHeader>
             <CardContent>
               <FeatureSettings />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="campaigns">
+          <Card>
+            <CardHeader>
+              <CardTitle>Campaign Limits</CardTitle>
+              <CardDescription>
+                Configure maximum active campaigns per user type to manage platform capacity.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CampaignLimitsSettings />
             </CardContent>
           </Card>
         </TabsContent>

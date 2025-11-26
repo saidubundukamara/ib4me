@@ -6,6 +6,7 @@ import { authConfig } from "@/app/api/auth/[...nextauth]/route";
 import { connectDB } from "@/lib/db";
 import { campaignService } from "@/services/CampaignService";
 import { payoutService } from "@/services/PayoutService";
+import { settingService } from "@/services/SettingService";
 
 export async function POST(request: NextRequest) {
   try {
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Build method object based on type
-    const method = payoutType === "mobile_money" 
+    const method = payoutType === "mobile_money"
       ? {
           type: "mobile_money" as const,
           msisdn,
@@ -94,12 +95,21 @@ export async function POST(request: NextRequest) {
           accountName,
         };
 
-    await payoutService.requestPayout({
-      campaignId: new mongoose.Types.ObjectId(campaignIdStr),
-      requestedBy: userId,
-      amountMinor,
-      method,
-    });
+    // Get withdrawal settings for threshold checks
+    const withdrawalSettings = await settingService.getWithdrawalSettings();
+
+    await payoutService.requestPayout(
+      {
+        campaignId: new mongoose.Types.ObjectId(campaignIdStr),
+        requestedBy: userId,
+        amountMinor,
+        method,
+      },
+      {
+        minimumWithdrawalAmount: withdrawalSettings.minAmountMinor,
+        minimumWithdrawalPercent: withdrawalSettings.minPercent,
+      }
+    );
     
     return NextResponse.json({ success: true });
     
@@ -108,21 +118,25 @@ export async function POST(request: NextRequest) {
     
     // More specific error messages for common failures
     if (error instanceof Error) {
-      if (error.message.includes("financial account")) {
-        return NextResponse.json({ 
-          error: "Campaign setup is incomplete. Please contact support to enable withdrawals." 
+      if (error.message.includes("Withdrawals are temporarily disabled")) {
+        return NextResponse.json({
+          error: error.message
+        }, { status: 403 });
+      } else if (error.message.includes("financial account")) {
+        return NextResponse.json({
+          error: "Campaign setup is incomplete. Please contact support to enable withdrawals."
         }, { status: 400 });
       } else if (error.message.includes("Insufficient funds")) {
-        return NextResponse.json({ 
-          error: "Insufficient funds available for withdrawal" 
+        return NextResponse.json({
+          error: "Insufficient funds available for withdrawal"
         }, { status: 400 });
       } else if (error.message.includes("Payout failed")) {
-        return NextResponse.json({ 
-          error: "Unable to process payout at this time. Please try again in a few minutes." 
+        return NextResponse.json({
+          error: "Unable to process payout at this time. Please try again in a few minutes."
         }, { status: 500 });
       } else if (error.message.includes("NETWORK_ERROR")) {
-        return NextResponse.json({ 
-          error: "Network error. Please check your connection and try again." 
+        return NextResponse.json({
+          error: "Network error. Please check your connection and try again."
         }, { status: 500 });
       }
     }

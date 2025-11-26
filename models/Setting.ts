@@ -4,11 +4,44 @@ export interface IWithdrawalSetting {
   minAmountMinor?: number;
   minPercent?: number;
   allowEmergencyOverride?: boolean;
+  withdrawalsBlocked?: boolean;
+  blockedReason?: string;
+  blockedBy?: mongoose.Types.ObjectId;
+  blockedAt?: Date;
+}
+
+export interface ITieredFeeRate {
+  individualBps: number;      // Rate for individual campaigns (e.g., 260 = 2.6%)
+  organizationBps: number;    // Rate for organization campaigns (e.g., 200 = 2.0%)
 }
 
 export interface IFeeSetting {
+  // Base fee - fixed amount per transaction (in minor units)
+  baseFeeMinor?: number;           // e.g., 50 for Le 0.50
+
+  // Processing fee - percentage-based, tiered by campaign type
+  processingFee?: ITieredFeeRate;
+
+  // Legacy fields (kept for backward compatibility)
   platformFeeBps?: number;
   mobileMoneyFeeBps?: number;
+}
+
+export interface IPlatformFinancialAccount {
+  id?: string;    // Monime financial account ID
+  uvan?: string;  // Universal Virtual Account Number
+}
+
+export interface ITipFinancialAccount {
+  id?: string;    // Monime financial account ID for receiving tips
+  uvan?: string;  // Universal Virtual Account Number
+}
+
+export interface ITippingSettings {
+  enabled?: boolean;
+  suggestedAmounts?: number[];  // In minor units, e.g., [5000, 10000, 25000]
+  minAmountMinor?: number;
+  maxAmountMinor?: number;
 }
 
 export interface IFeatureFlags {
@@ -55,6 +88,11 @@ export interface ISeoSettings {
   twitterSite?: string;
 }
 
+export interface ICampaignLimitsSettings {
+  maxActiveCampaignsIndividual?: number;  // Default: 2
+  maxActiveCampaignsOrganization?: number; // Default: 8
+}
+
 export interface ISetting extends mongoose.Document {
   _id: string; // "platform"
   withdrawal?: IWithdrawalSetting;
@@ -64,6 +102,10 @@ export interface ISetting extends mongoose.Document {
   contact?: IContactSettings;
   social?: ISocialSettings;
   seo?: ISeoSettings;
+  campaignLimits?: ICampaignLimitsSettings;
+  platformFinancialAccount?: IPlatformFinancialAccount;  // For receiving platform fees
+  tipFinancialAccount?: ITipFinancialAccount;            // For receiving tips
+  tipping?: ITippingSettings;
   updatedAt: Date;
 }
 
@@ -74,8 +116,18 @@ const settingSchema = new mongoose.Schema<ISetting>(
       minAmountMinor: { type: Number },
       minPercent: { type: Number },
       allowEmergencyOverride: { type: Boolean },
+      withdrawalsBlocked: { type: Boolean, default: false },
+      blockedReason: { type: String },
+      blockedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      blockedAt: { type: Date },
     },
     fees: {
+      baseFeeMinor: { type: Number, default: 50 },  // Le 0.50 = 50 minor units
+      processingFee: {
+        individualBps: { type: Number, default: 260 },     // 2.6%
+        organizationBps: { type: Number, default: 200 },   // 2.0%
+      },
+      // Legacy fields
       platformFeeBps: { type: Number },
       mobileMoneyFeeBps: { type: Number },
     },
@@ -117,6 +169,24 @@ const settingSchema = new mongoose.Schema<ISetting>(
       ogImage: { type: String },
       twitterCard: { type: String },
       twitterSite: { type: String },
+    },
+    campaignLimits: {
+      maxActiveCampaignsIndividual: { type: Number, default: 2 },
+      maxActiveCampaignsOrganization: { type: Number, default: 8 },
+    },
+    platformFinancialAccount: {
+      id: { type: String },
+      uvan: { type: String },
+    },
+    tipFinancialAccount: {
+      id: { type: String },
+      uvan: { type: String },
+    },
+    tipping: {
+      enabled: { type: Boolean, default: false },
+      suggestedAmounts: [{ type: Number }],
+      minAmountMinor: { type: Number, default: 100 },
+      maxAmountMinor: { type: Number, default: 10000000 },
     },
   },
   { timestamps: { createdAt: false, updatedAt: true }, _id: false }
