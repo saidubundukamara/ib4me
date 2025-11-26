@@ -1,5 +1,19 @@
 import mongoose from "mongoose";
 
+export interface IUserOrganization {
+  name?: string | null;
+  type?: "ngo" | "charity" | null;
+  registrationNumber?: string | null;
+  taxId?: string | null;
+  description?: string | null;
+  website?: string | null;
+  address?: {
+    street?: string | null;
+    city?: string | null;
+    country?: string | null;
+  } | null;
+}
+
 export interface IUser extends mongoose.Document {
   name: string;
   email?: string | null;
@@ -9,8 +23,9 @@ export interface IUser extends mongoose.Document {
   emailVerified?: Date | null;
   phoneVerified?: Date | null;
   passwordChangedAt?: Date | null;
-  roles?: "SuperAdmin" | "Admin" | "User";
+  roles?: "SuperAdmin" | "Admin" | "User" | "Organization";
   status?: "active" | "inactive" | "blocked";
+  organization?: IUserOrganization | null;
   whatsappOptIn?: boolean;
   twoFactorEnabled?: boolean;
   twoFactorMethod?: "sms" | "email" | "totp" | null;
@@ -58,7 +73,7 @@ const userSchema = new mongoose.Schema<IUser>(
     passwordChangedAt: { type: Date, default: null },
     roles: {
       type: String,
-      enum: ["SuperAdmin", "Admin", "User"],
+      enum: ["SuperAdmin", "Admin", "User", "Organization"],
       default: "User",
     },
     status: {
@@ -66,6 +81,23 @@ const userSchema = new mongoose.Schema<IUser>(
       enum: ["active", "inactive", "blocked"],
       default: "active",
       index: true,
+    },
+    organization: {
+      name: { type: String, default: null, trim: true },
+      type: {
+        type: String,
+        enum: ["ngo", "charity"],
+        default: null,
+      },
+      registrationNumber: { type: String, default: null, trim: true },
+      taxId: { type: String, default: null, trim: true },
+      description: { type: String, default: null },
+      website: { type: String, default: null, trim: true },
+      address: {
+        street: { type: String, default: null, trim: true },
+        city: { type: String, default: null, trim: true },
+        country: { type: String, default: null, trim: true },
+      },
     },
     whatsappOptIn: { type: Boolean, default: false },
     twoFactorEnabled: { type: Boolean, default: false },
@@ -103,6 +135,7 @@ const userSchema = new mongoose.Schema<IUser>(
 
 userSchema.index({ email: 1 }, { unique: true, sparse: true });
 userSchema.index({ phone: 1 }, { unique: true, sparse: true });
+userSchema.index({ roles: 1 });
 
 export default mongoose.models.User ||
   mongoose.model<IUser>("User", userSchema);

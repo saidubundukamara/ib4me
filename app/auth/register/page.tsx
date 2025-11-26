@@ -4,13 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { FormEvent, useState } from "react";
-import { ArrowRight, Eye, EyeOff, Sparkles } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Sparkles, Building, User } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { AuthLayout } from "../_components/AuthLayout";
 import { RegisterAside } from "../_components/AuthSidePanels";
 import { ContinueDivider } from "../_components/ContinueDivider";
@@ -26,6 +28,13 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Organization fields
+  const [accountType, setAccountType] = useState<"individual" | "organization">("individual");
+  const [orgName, setOrgName] = useState("");
+  const [orgType, setOrgType] = useState<"ngo" | "charity">("ngo");
+  const [orgDescription, setOrgDescription] = useState("");
+  const [orgWebsite, setOrgWebsite] = useState("");
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -43,17 +52,38 @@ export default function RegisterPage() {
       return;
     }
 
+    // Validate organization fields
+    if (accountType === "organization" && !orgName) {
+      const message = "Organization name is required.";
+      setError(message);
+      toast.error(message);
+      return;
+    }
+
     setIsLoading(true);
     try {
+      const requestBody: Record<string, unknown> = {
+        name,
+        email: email || undefined,
+        phone: phone || undefined,
+        password,
+        accountType,
+      };
+
+      // Add organization data if registering as organization
+      if (accountType === "organization") {
+        requestBody.organization = {
+          name: orgName,
+          type: orgType,
+          description: orgDescription || undefined,
+          website: orgWebsite || undefined,
+        };
+      }
+
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email: email || undefined,
-          phone: phone || undefined,
-          password,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -140,20 +170,118 @@ export default function RegisterPage() {
       }
     >
       <form onSubmit={onSubmit} className="space-y-5">
+        {/* Account Type Toggle */}
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold text-foreground">Account Type</Label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setAccountType("individual")}
+              className={`flex items-center justify-center gap-2 rounded-xl border-2 p-4 transition-all ${
+                accountType === "individual"
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <User className="h-5 w-5" />
+              <span className="font-medium">Individual</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setAccountType("organization")}
+              className={`flex items-center justify-center gap-2 rounded-xl border-2 p-4 transition-all ${
+                accountType === "organization"
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <Building className="h-5 w-5" />
+              <span className="font-medium">Organization</span>
+            </button>
+          </div>
+        </div>
+
         <div className="space-y-2">
           <Label htmlFor="name" className="text-sm font-semibold text-foreground">
-            Full Name
+            {accountType === "organization" ? "Contact Person Name" : "Full Name"}
           </Label>
           <Input
             id="name"
             autoComplete="name"
-            placeholder="John Doe"
+            placeholder={accountType === "organization" ? "Contact person name" : "John Doe"}
             value={name}
             onChange={(event) => setName(event.target.value)}
             required
             className="h-12 rounded-xl text-base"
           />
         </div>
+
+        {/* Organization Fields */}
+        {accountType === "organization" && (
+          <div className="space-y-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4">
+            <h3 className="font-semibold text-primary flex items-center gap-2">
+              <Building className="h-4 w-4" />
+              Organization Details
+            </h3>
+
+            <div className="space-y-2">
+              <Label htmlFor="orgName" className="text-sm font-semibold text-foreground">
+                Organization Name *
+              </Label>
+              <Input
+                id="orgName"
+                placeholder="Your NGO/Charity name"
+                value={orgName}
+                onChange={(event) => setOrgName(event.target.value)}
+                required
+                className="h-12 rounded-xl text-base"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="orgType" className="text-sm font-semibold text-foreground">
+                Organization Type *
+              </Label>
+              <Select value={orgType} onValueChange={(value: "ngo" | "charity") => setOrgType(value)}>
+                <SelectTrigger className="h-12 rounded-xl">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ngo">NGO (Non-Governmental Organization)</SelectItem>
+                  <SelectItem value="charity">Charity</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="orgDescription" className="text-sm font-semibold text-foreground">
+                Description (optional)
+              </Label>
+              <Textarea
+                id="orgDescription"
+                placeholder="Brief description of your organization"
+                value={orgDescription}
+                onChange={(event) => setOrgDescription(event.target.value)}
+                className="rounded-xl resize-none"
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="orgWebsite" className="text-sm font-semibold text-foreground">
+                Website (optional)
+              </Label>
+              <Input
+                id="orgWebsite"
+                type="url"
+                placeholder="https://yourorganization.org"
+                value={orgWebsite}
+                onChange={(event) => setOrgWebsite(event.target.value)}
+                className="h-12 rounded-xl text-base"
+              />
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div className="space-y-2">

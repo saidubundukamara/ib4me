@@ -4,6 +4,7 @@ import { ICampaign } from "../models/Campaign";
 import { monimeService, MonimeFinancialAccountRequest, MonimeApiError } from "../lib/monime";
 import { runInTransaction } from "./ServiceTransaction";
 import { auditLogService } from "./AuditLogService";
+import { verificationService } from "./VerificationService";
 import type { AuditContext } from "../lib/admin-auth";
 
 interface CampaignFilters {
@@ -271,6 +272,17 @@ export class CampaignService {
   }
 
   async createCampaign(campaignData: Partial<ICampaign>): Promise<ICampaign> {
+    // Check if user is verified before creating campaign
+    if (campaignData.ownerId) {
+      const verificationStatus = await verificationService.isUserVerifiedForCampaigns(
+        campaignData.ownerId.toString()
+      );
+
+      if (!verificationStatus.verified) {
+        throw new Error(verificationStatus.reason || "User verification required to create campaigns");
+      }
+    }
+
     return runInTransaction(async (session) => {
       // Create the campaign first
       const campaign = await campaignRepository.create(campaignData, session);
