@@ -1,10 +1,11 @@
 import mongoose from "mongoose";
-import { campaignRepository } from "../repositories";
+import { campaignRepository, userRepository } from "../repositories";
 import { ICampaign } from "../models/Campaign";
 import { monimeService, MonimeFinancialAccountRequest, MonimeApiError } from "../lib/monime";
 import { runInTransaction } from "./ServiceTransaction";
 import { auditLogService } from "./AuditLogService";
 import { verificationService } from "./VerificationService";
+import { settingService } from "./SettingService";
 import type { AuditContext } from "../lib/admin-auth";
 
 interface CampaignFilters {
@@ -28,6 +29,14 @@ interface PaginatedCampaigns {
   total: number;
   page: number;
   totalPages: number;
+}
+
+export interface CampaignLimitCheckResult {
+  allowed: boolean;
+  currentCount: number;
+  maxAllowed: number;
+  userType: "individual" | "organization";
+  reason?: string;
 }
 
 export class CampaignService {
@@ -271,6 +280,62 @@ export class CampaignService {
     };
   }
 
+  async checkCampaignLimitForUser(userId: string): Promise<CampaignLimitCheckResult> {
+    // Fetch user to determine role
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      return {
+        allowed: false,
+        currentCount: 0,
+        maxAllowed: 0,
+        userType: "individual",
+        reason: "User not found"
+      };
+    }
+
+    const role = user.roles ?? "User";
+
+    // Admins and SuperAdmins have no limit
+    if (role === "Admin" || role === "SuperAdmin") {
+      return {
+        allowed: true,
+        currentCount: 0,
+        maxAllowed: Infinity,
+        userType: "individual"
+      };
+    }
+
+    // Get configurable limits from settings
+    const limits = await settingService.getCampaignLimitsSettings();
+    const isOrganization = role === "Organization";
+    const maxAllowed = isOrganization
+      ? limits.maxActiveCampaignsOrganization
+      : limits.maxActiveCampaignsIndividual;
+
+    // Count current active campaigns
+    const currentCount = await campaignRepository.countActiveApprovedByOwner(
+      new mongoose.Types.ObjectId(userId)
+    );
+
+    if (currentCount >= maxAllowed) {
+      const userLabel = isOrganization ? "Organizations" : "Individual users";
+      return {
+        allowed: false,
+        currentCount,
+        maxAllowed,
+        userType: isOrganization ? "organization" : "individual",
+        reason: `${userLabel} can have a maximum of ${maxAllowed} active campaigns. You currently have ${currentCount}.`
+      };
+    }
+
+    return {
+      allowed: true,
+      currentCount,
+      maxAllowed,
+      userType: isOrganization ? "organization" : "individual"
+    };
+  }
+
   async createCampaign(campaignData: Partial<ICampaign>): Promise<ICampaign> {
     // Check if user is verified before creating campaign
     if (campaignData.ownerId) {
@@ -280,6 +345,12 @@ export class CampaignService {
 
       if (!verificationStatus.verified) {
         throw new Error(verificationStatus.reason || "User verification required to create campaigns");
+      }
+
+      // Check campaign limit
+      const limitCheck = await this.checkCampaignLimitForUser(campaignData.ownerId.toString());
+      if (!limitCheck.allowed) {
+        throw new Error(limitCheck.reason || "Campaign limit reached");
       }
     }
 

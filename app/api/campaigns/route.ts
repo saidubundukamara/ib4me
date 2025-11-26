@@ -240,8 +240,21 @@ export async function POST(req: NextRequest) {
     );
   } catch (error) {
     console.error('Failed to create campaign:', error);
+
+    // Check for campaign limit exceeded error
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create campaign';
+    if (errorMessage.includes("maximum of") && errorMessage.includes("active campaigns")) {
+      return NextResponse.json(
+        {
+          error: errorMessage,
+          code: "CAMPAIGN_LIMIT_EXCEEDED"
+        },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to create campaign' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

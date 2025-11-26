@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { settingRepository } from "../repositories";
-import { ISetting, IWithdrawalSetting, IFeeSetting, IFeatureFlags, IWebsiteSettings, IContactSettings, ISocialSettings, ISeoSettings } from "../models/Setting";
+import { ISetting, IWithdrawalSetting, IFeeSetting, IFeatureFlags, IWebsiteSettings, IContactSettings, ISocialSettings, ISeoSettings, ICampaignLimitsSettings } from "../models/Setting";
 import { createSimpleAuditLog } from "../lib/simple-admin-audit";
 
 interface WebsiteSettings {
@@ -81,6 +81,11 @@ interface SeoSettings {
   ogImage?: string;
   twitterCard?: string;
   twitterSite?: string;
+}
+
+interface CampaignLimitsSettings {
+  maxActiveCampaignsIndividual: number;
+  maxActiveCampaignsOrganization: number;
 }
 
 export class SettingService {
@@ -337,12 +342,36 @@ export class SettingService {
     const settings = await this.getOrCreatePlatform();
     const extendedSettings = settings as ISetting & { seo?: ISeoSettings };
     const currentSeo = extendedSettings.seo || {};
-    
+
     await this.updatePlatformSettings({
       seo: { ...currentSeo, ...updates }
     } as Partial<ISetting>, adminUserId);
 
     return { ...currentSeo, ...updates };
+  }
+
+  async getCampaignLimitsSettings(): Promise<CampaignLimitsSettings> {
+    const settings = await this.getOrCreatePlatform();
+    const extendedSettings = settings as ISetting & { campaignLimits?: ICampaignLimitsSettings };
+    return {
+      maxActiveCampaignsIndividual: extendedSettings.campaignLimits?.maxActiveCampaignsIndividual ?? 2,
+      maxActiveCampaignsOrganization: extendedSettings.campaignLimits?.maxActiveCampaignsOrganization ?? 8,
+    };
+  }
+
+  async updateCampaignLimitsSettings(
+    updates: Partial<CampaignLimitsSettings>,
+    adminUserId?: string
+  ): Promise<CampaignLimitsSettings> {
+    const settings = await this.getOrCreatePlatform();
+    const extendedSettings = settings as ISetting & { campaignLimits?: ICampaignLimitsSettings };
+    const currentLimits = extendedSettings.campaignLimits || {};
+
+    await this.updatePlatformSettings({
+      campaignLimits: { ...currentLimits, ...updates }
+    } as Partial<ISetting>, adminUserId);
+
+    return this.getCampaignLimitsSettings();
   }
 }
 

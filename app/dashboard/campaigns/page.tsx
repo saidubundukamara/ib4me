@@ -12,7 +12,16 @@ import CampaignFormWizard, {
   type CampaignFormSubmitPayload,
 } from "../_components/CampaignFormWizard";
 import DeleteCampaignDialog from "../_components/DeleteCampaignDialog";
+import CampaignLimitBanner from "../_components/CampaignLimitBanner";
 import { toast } from "sonner";
+
+interface CampaignLimitInfo {
+  allowed: boolean;
+  currentCount: number;
+  maxAllowed: number;
+  userType: "individual" | "organization";
+  remainingSlots: number | null;
+}
 
 type UrgencyValue = "low" | "medium" | "high";
 
@@ -193,15 +202,39 @@ export default function UserCampaignsPage() {
   const [createSubmitting, setCreateSubmitting] = React.useState(false);
   const [editSubmitting, setEditSubmitting] = React.useState(false);
   const [deletingCampaign, setDeletingCampaign] = React.useState<CampaignItem | null>(null);
+  const [limitInfo, setLimitInfo] = React.useState<CampaignLimitInfo | null>(null);
+
+  const refreshLimitInfo = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/user/campaign-limits");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setLimitInfo(data.data);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to refresh campaign limits:", error);
+    }
+  }, []);
 
   React.useEffect(() => {
-    fetch("/api/campaigns")
-      .then(async (r) => {
+    Promise.all([
+      fetch("/api/campaigns").then(async (r) => {
         if (r.ok) {
           const data = await r.json();
           setItems(Array.isArray(data) ? data.map(normalizeFromApi) : []);
         }
+      }),
+      fetch("/api/user/campaign-limits").then(async (r) => {
+        if (r.ok) {
+          const data = await r.json();
+          if (data.success) {
+            setLimitInfo(data.data);
+          }
+        }
       })
+    ])
       .catch(() => {
         setItems([]);
       })
@@ -282,6 +315,17 @@ export default function UserCampaignsPage() {
 
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
+
+          // Handle campaign limit exceeded error specifically
+          if (err.code === "CAMPAIGN_LIMIT_EXCEEDED") {
+            toast.error(
+              `Campaign limit reached. You can have up to ${limitInfo?.maxAllowed ?? "a limited number of"} active campaigns.`
+            );
+            await refreshLimitInfo();
+            setIsCreateOpen(false);
+            return;
+          }
+
           throw new Error(err.error || "Failed to create campaign");
         }
 
@@ -295,6 +339,9 @@ export default function UserCampaignsPage() {
           form: formValues,
         });
         setIsCreateOpen(false);
+
+        // Refresh limit info after successful creation
+        await refreshLimitInfo();
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : "Failed to create campaign",
@@ -304,7 +351,7 @@ export default function UserCampaignsPage() {
         setCreateSubmitting(false);
       }
     },
-    [createSubmitting, handleCreateCampaign],
+    [createSubmitting, handleCreateCampaign, limitInfo?.maxAllowed, refreshLimitInfo],
   );
 
   const submitEditCampaign = React.useCallback(
@@ -532,10 +579,23 @@ export default function UserCampaignsPage() {
         <h2 className="text-2xl sm:text-3xl font-bold text-foreground">My Campaigns</h2>
         <Button
           className="rounded-2xl w-full sm:w-auto"
+          disabled={!isCreateOpen && limitInfo !== null && !limitInfo.allowed}
+          title={
+            !isCreateOpen && limitInfo !== null && !limitInfo.allowed
+              ? `You've reached your limit of ${limitInfo.maxAllowed} active campaigns`
+              : undefined
+          }
           onClick={() => {
             if (isCreateOpen) {
               handleCancelCreate();
             } else {
+              // Check limit before opening form
+              if (limitInfo && !limitInfo.allowed) {
+                toast.error(
+                  `Campaign limit reached. You can have up to ${limitInfo.maxAllowed} active campaigns.`
+                );
+                return;
+              }
               handleCancelEdit();
               setIsCreateOpen(true);
             }
@@ -547,6 +607,15 @@ export default function UserCampaignsPage() {
           {isCreateOpen ? "Close Form" : "Create Campaign"}
         </Button>
       </div>
+
+      {/* Campaign Limit Banner - only shows when near or at limit */}
+      {limitInfo && limitInfo.maxAllowed !== Infinity && (
+        <CampaignLimitBanner
+          currentCount={limitInfo.currentCount}
+          maxAllowed={limitInfo.maxAllowed}
+          userType={limitInfo.userType}
+        />
+      )}
 
       {isCreateOpen ? (
         <Card className="w-full overflow-hidden rounded-3xl border border-border/40 bg-card shadow-[0_25px_60px_-45px_rgba(15,23,42,0.35)]">

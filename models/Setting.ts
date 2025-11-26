@@ -59,6 +59,11 @@ export interface ISeoSettings {
   twitterSite?: string;
 }
 
+export interface ICampaignLimitsSettings {
+  maxActiveCampaignsIndividual?: number;  // Default: 2
+  maxActiveCampaignsOrganization?: number; // Default: 8
+}
+
 export interface ISetting extends mongoose.Document {
   _id: string; // "platform"
   withdrawal?: IWithdrawalSetting;
@@ -68,6 +73,7 @@ export interface ISetting extends mongoose.Document {
   contact?: IContactSettings;
   social?: ISocialSettings;
   seo?: ISeoSettings;
+  campaignLimits?: ICampaignLimitsSettings;
   updatedAt: Date;
 }
 
@@ -125,6 +131,10 @@ const settingSchema = new mongoose.Schema<ISetting>(
       ogImage: { type: String },
       twitterCard: { type: String },
       twitterSite: { type: String },
+    },
+    campaignLimits: {
+      maxActiveCampaignsIndividual: { type: Number, default: 2 },
+      maxActiveCampaignsOrganization: { type: Number, default: 8 },
     },
   },
   { timestamps: { createdAt: false, updatedAt: true }, _id: false }

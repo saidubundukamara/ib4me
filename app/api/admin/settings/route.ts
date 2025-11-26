@@ -35,9 +35,12 @@ export async function GET(request: NextRequest) {
       case "withdrawal":
         settings = await settingService.getWithdrawalSettings();
         break;
+      case "campaignLimits":
+        settings = await settingService.getCampaignLimitsSettings();
+        break;
       default:
         // Return all categories when no specific category is requested
-        const [website, payment, features, contact, social, seo] =
+        const [website, payment, features, contact, social, seo, campaignLimits] =
           await Promise.all([
             settingService.getWebsiteSettings(),
             settingService.getPaymentSettings(),
@@ -45,11 +48,12 @@ export async function GET(request: NextRequest) {
             settingService.getContactSettings(),
             settingService.getSocialSettings(),
             settingService.getSeoSettings(),
+            settingService.getCampaignLimitsSettings(),
           ]);
 
         return NextResponse.json({
           success: true,
-          settings: { website, payment, features, contact, social, seo },
+          settings: { website, payment, features, contact, social, seo, campaignLimits },
         });
     }
 
@@ -149,6 +153,12 @@ export async function PUT(request: NextRequest) {
           // Return withdrawal settings format
           updatedSettings = await settingService.getWithdrawalSettings();
         }
+        break;
+      case "campaignLimits":
+        updatedSettings = await settingService.updateCampaignLimitsSettings(
+          body,
+          adminContext.adminId.toString()
+        );
         break;
       default:
         return NextResponse.json(
