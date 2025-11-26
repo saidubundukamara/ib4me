@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { settingRepository } from "../repositories";
 import { ISetting, IWithdrawalSetting, IFeeSetting, IFeatureFlags, IWebsiteSettings, IContactSettings, ISocialSettings, ISeoSettings } from "../models/Setting";
 import { createSimpleAuditLog } from "../lib/simple-admin-audit";
@@ -32,9 +33,25 @@ interface FeatureSettings {
   enableSMSNotifications?: boolean;
   enableEmailNotifications?: boolean;
   minimumWithdrawalAmount?: number;
+  minimumWithdrawalPercent?: number;
+  allowEmergencyOverride?: boolean;
+  withdrawalsBlocked?: boolean;
+  blockedReason?: string;
+  blockedBy?: string;
+  blockedAt?: string;
   whatsAppAutoPost?: boolean;
   paypalEnabled?: boolean;
   emergencyPoolFund?: boolean;
+}
+
+interface WithdrawalSettings {
+  minAmountMinor: number;
+  minPercent: number;
+  allowEmergencyOverride: boolean;
+  withdrawalsBlocked: boolean;
+  blockedReason?: string;
+  blockedBy?: string;
+  blockedAt?: string;
 }
 
 interface ContactSettings {
@@ -182,7 +199,7 @@ export class SettingService {
     const settings = await this.getOrCreatePlatform();
     const features = settings.features || {};
     const withdrawal = settings.withdrawal || {};
-    
+
     return {
       maintenanceMode: false,
       allowRegistration: true,
@@ -191,9 +208,30 @@ export class SettingService {
       enableSMSNotifications: true,
       enableEmailNotifications: true,
       minimumWithdrawalAmount: withdrawal.minAmountMinor || 50000,
+      minimumWithdrawalPercent: withdrawal.minPercent || 10,
+      allowEmergencyOverride: withdrawal.allowEmergencyOverride ?? true,
+      withdrawalsBlocked: withdrawal.withdrawalsBlocked || false,
+      blockedReason: withdrawal.blockedReason,
+      blockedBy: withdrawal.blockedBy?.toString(),
+      blockedAt: withdrawal.blockedAt?.toISOString(),
       whatsAppAutoPost: features.whatsAppAutoPost || false,
       paypalEnabled: features.paypalEnabled || false,
       emergencyPoolFund: features.emergencyPoolFund || false
+    };
+  }
+
+  async getWithdrawalSettings(): Promise<WithdrawalSettings> {
+    const settings = await this.getOrCreatePlatform();
+    const withdrawal = settings.withdrawal || {};
+
+    return {
+      minAmountMinor: withdrawal.minAmountMinor || 50000,
+      minPercent: withdrawal.minPercent || 10,
+      allowEmergencyOverride: withdrawal.allowEmergencyOverride ?? true,
+      withdrawalsBlocked: withdrawal.withdrawalsBlocked || false,
+      blockedReason: withdrawal.blockedReason,
+      blockedBy: withdrawal.blockedBy?.toString(),
+      blockedAt: withdrawal.blockedAt?.toISOString()
     };
   }
 
@@ -201,7 +239,7 @@ export class SettingService {
     const settings = await this.getOrCreatePlatform();
     const currentFeatures = settings.features || {};
     const currentWithdrawal = settings.withdrawal || {};
-    
+
     const featureUpdates: Partial<IFeatureFlags> = {};
     if (updates.whatsAppAutoPost !== undefined) featureUpdates.whatsAppAutoPost = updates.whatsAppAutoPost;
     if (updates.paypalEnabled !== undefined) featureUpdates.paypalEnabled = updates.paypalEnabled;
@@ -209,6 +247,8 @@ export class SettingService {
 
     const withdrawalUpdates: Partial<IWithdrawalSetting> = {};
     if (updates.minimumWithdrawalAmount !== undefined) withdrawalUpdates.minAmountMinor = updates.minimumWithdrawalAmount;
+    if (updates.minimumWithdrawalPercent !== undefined) withdrawalUpdates.minPercent = updates.minimumWithdrawalPercent;
+    if (updates.allowEmergencyOverride !== undefined) withdrawalUpdates.allowEmergencyOverride = updates.allowEmergencyOverride;
 
     await this.updatePlatformSettings({
       features: { ...currentFeatures, ...featureUpdates },
@@ -216,6 +256,39 @@ export class SettingService {
     }, adminUserId);
 
     return this.getFeatureSettings();
+  }
+
+  async toggleWithdrawalsBlocked(
+    blocked: boolean,
+    reason: string | undefined,
+    adminUserId: string
+  ): Promise<WithdrawalSettings> {
+    const settings = await this.getOrCreatePlatform();
+    const currentWithdrawal = settings.withdrawal || {};
+
+    const withdrawalUpdates: Partial<IWithdrawalSetting> = {
+      withdrawalsBlocked: blocked,
+      blockedReason: blocked ? reason : undefined,
+      blockedBy: blocked ? new mongoose.Types.ObjectId(adminUserId) : undefined,
+      blockedAt: blocked ? new Date() : undefined
+    };
+
+    await this.updatePlatformSettings({
+      withdrawal: { ...currentWithdrawal, ...withdrawalUpdates }
+    }, adminUserId);
+
+    await createSimpleAuditLog(
+      blocked ? 'withdrawals_blocked' : 'withdrawals_unblocked',
+      'Setting',
+      'platform',
+      {
+        blocked,
+        reason: reason || null,
+        adminUserId
+      }
+    );
+
+    return this.getWithdrawalSettings();
   }
 
   async getContactSettings(): Promise<ContactSettings | null> {

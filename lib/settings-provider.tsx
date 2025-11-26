@@ -32,6 +32,12 @@ interface FeatureSettings {
   enableSMSNotifications?: boolean;
   enableEmailNotifications?: boolean;
   minimumWithdrawalAmount?: number;
+  minimumWithdrawalPercent?: number;
+  allowEmergencyOverride?: boolean;
+  withdrawalsBlocked?: boolean;
+  blockedReason?: string;
+  blockedBy?: string;
+  blockedAt?: string;
   whatsAppAutoPost?: boolean;
   paypalEnabled?: boolean;
   emergencyPoolFund?: boolean;
@@ -87,6 +93,7 @@ interface SettingsContextType {
   updateContactSettings: (data: Partial<ContactSettings>) => Promise<boolean>;
   updateSocialSettings: (data: Partial<SocialSettings>) => Promise<boolean>;
   updateSeoSettings: (data: Partial<SeoSettings>) => Promise<boolean>;
+  updateWithdrawalBlock: (blocked: boolean, reason?: string) => Promise<boolean>;
   
   // Error handling
   error: string | null;
@@ -108,6 +115,9 @@ const defaultFeatureSettings: FeatureSettings = {
   enableSMSNotifications: true,
   enableEmailNotifications: true,
   minimumWithdrawalAmount: 50000, // 50,000 SLE
+  minimumWithdrawalPercent: 10,
+  allowEmergencyOverride: true,
+  withdrawalsBlocked: false,
 };
 
 const defaultSocialSettings: SocialSettings = {};
@@ -259,6 +269,19 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const updateWithdrawalBlock = async (blocked: boolean, reason?: string): Promise<boolean> => {
+    return updateSettings("withdrawal", { withdrawalsBlocked: blocked, blockedReason: reason }, (newData) => {
+      const withdrawalData = newData as { withdrawalsBlocked: boolean; blockedReason?: string; blockedBy?: string; blockedAt?: string };
+      setFeatures(prev => ({
+        ...prev,
+        withdrawalsBlocked: withdrawalData.withdrawalsBlocked,
+        blockedReason: withdrawalData.blockedReason,
+        blockedBy: withdrawalData.blockedBy,
+        blockedAt: withdrawalData.blockedAt,
+      }));
+    });
+  };
+
   useEffect(() => {
     refreshSettings();
   }, []);
@@ -284,7 +307,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     updateContactSettings,
     updateSocialSettings,
     updateSeoSettings,
-    
+    updateWithdrawalBlock,
+
     // Error handling
     error,
     clearError,

@@ -51,8 +51,19 @@ export async function POST(
       );
     }
 
+    // Check if it's a withdrawal blocked error
+    if (error instanceof Error && error.message.includes("Withdrawals are")) {
+      return NextResponse.json(
+        {
+          error: "Withdrawals blocked",
+          message: error.message
+        },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json(
-      { 
+      {
         error: "Failed to process payout",
         message: error instanceof Error ? error.message : "Unknown error"
       },

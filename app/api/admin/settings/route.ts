@@ -32,6 +32,9 @@ export async function GET(request: NextRequest) {
       case "seo":
         settings = await settingService.getSeoSettings();
         break;
+      case "withdrawal":
+        settings = await settingService.getWithdrawalSettings();
+        break;
       default:
         // Return all categories when no specific category is requested
         const [website, payment, features, contact, social, seo] =
@@ -117,6 +120,35 @@ export async function PUT(request: NextRequest) {
           body,
           adminContext.adminId.toString()
         );
+        break;
+      case "withdrawal":
+        // Check if trying to toggle withdrawalsBlocked - superadmin only
+        if (body.withdrawalsBlocked !== undefined) {
+          if (adminContext.role !== "SuperAdmin") {
+            return NextResponse.json(
+              { error: "Only superadmins can toggle the withdrawal block" },
+              { status: 403 }
+            );
+          }
+          // Use dedicated toggle method for block status
+          updatedSettings = await settingService.toggleWithdrawalsBlocked(
+            body.withdrawalsBlocked,
+            body.blockedReason,
+            adminContext.adminId.toString()
+          );
+        } else {
+          // Regular withdrawal settings update (threshold, percentage, etc.)
+          updatedSettings = await settingService.updateFeatureSettings(
+            {
+              minimumWithdrawalAmount: body.minAmountMinor,
+              minimumWithdrawalPercent: body.minPercent,
+              allowEmergencyOverride: body.allowEmergencyOverride,
+            },
+            adminContext.adminId.toString()
+          );
+          // Return withdrawal settings format
+          updatedSettings = await settingService.getWithdrawalSettings();
+        }
         break;
       default:
         return NextResponse.json(

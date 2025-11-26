@@ -124,7 +124,7 @@ export default function AdminDashboardPage() {
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
                 <p className="text-gray-600 mt-1">
-                  Welcome back, {user?.firstName} {user?.lastName}
+                  Welcome back, {user?.name}
                 </p>
               </div>
               <div className="flex items-center space-x-4">

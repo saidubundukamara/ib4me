@@ -5,8 +5,7 @@ import React, { createContext, useContext, useState, useEffect } from "react"
 interface User {
   _id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   role: "SuperAdmin" | "Admin" | "User";
   isActive: boolean;
 }
@@ -101,8 +100,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Authentication is handled by httpOnly cookies
       if (user) {
         localStorage.setItem("admin_user_display", JSON.stringify({
-          firstName: user.firstName,
-          lastName: user.lastName,
+          name: user.name,
           role: user.role,
         }))
       } else {

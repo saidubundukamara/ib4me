@@ -10,6 +10,7 @@ import { monimeService, MonimePayoutRequest } from "../lib/monime";
 import { randomUUID } from "crypto";
 import type { PayoutFilters, PayoutListOptions } from "../repositories/PayoutRepository";
 import { auditLogService } from "./AuditLogService";
+import { settingService } from "./SettingService";
 
 export interface RequestPayoutInput {
   campaignId: mongoose.Types.ObjectId;
@@ -20,26 +21,44 @@ export interface RequestPayoutInput {
 
 export class PayoutService {
   /**
+   * Check if withdrawals are globally blocked
+   */
+  async isWithdrawalsBlocked(): Promise<{ blocked: boolean; reason?: string }> {
+    const withdrawalSettings = await settingService.getWithdrawalSettings();
+    return {
+      blocked: withdrawalSettings.withdrawalsBlocked,
+      reason: withdrawalSettings.blockedReason
+    };
+  }
+
+  /**
    * Check if payout amount meets minimum withdrawal threshold
+   * Threshold is based on:
+   * 1. Fixed minimum amount (e.g., 50,000 SLE)
+   * 2. Percentage of AMOUNT RAISED (not goal)
    */
   private async checkMinimumThreshold(
     amountMinor: number,
     campaignId: mongoose.Types.ObjectId,
-    settings?: { minimumWithdrawalAmount?: number }
+    settings?: { minimumWithdrawalAmount?: number; minimumWithdrawalPercent?: number }
   ): Promise<IPayoutPolicyCheck> {
-    // Default minimum withdrawal amount (50,000 SLE minor units)
-    const defaultMinThreshold = 50000;
-    const minThreshold = settings?.minimumWithdrawalAmount ?? defaultMinThreshold;
+    // Get withdrawal settings from platform settings
+    const withdrawalSettings = await settingService.getWithdrawalSettings();
+
+    // Use provided settings or fall back to platform settings
+    const minThreshold = settings?.minimumWithdrawalAmount ?? withdrawalSettings.minAmountMinor;
+    const minPercent = settings?.minimumWithdrawalPercent ?? withdrawalSettings.minPercent;
 
     // Check fixed amount threshold
     const fixedThresholdMet = amountMinor >= minThreshold;
 
-    // Optional: Check percentage-based threshold (e.g., 10% of goal)
+    // Check percentage-based threshold (percentage of AMOUNT RAISED)
     const campaign = await campaignRepository.findById(campaignId.toString());
-    let percentageThresholdMet = true; // Default to true if no percentage rule
+    let percentageThresholdMet = true; // Default to true if no raised amount
 
-    if ((campaign?.goal as any)?.targetMinor) {
-      const percentageThreshold = (campaign?.goal as any).targetMinor * 0.1; // 10% of goal
+    const raisedMinor = campaign?.totals?.raisedMinor ?? 0;
+    if (raisedMinor > 0 && minPercent > 0) {
+      const percentageThreshold = raisedMinor * (minPercent / 100);
       percentageThresholdMet = amountMinor >= percentageThreshold;
     }
 
@@ -53,11 +72,20 @@ export class PayoutService {
 
   async requestPayout(
     input: RequestPayoutInput,
-    settings?: { minimumWithdrawalAmount?: number },
+    settings?: { minimumWithdrawalAmount?: number; minimumWithdrawalPercent?: number },
     auditContext?: { ip?: string; userAgent?: string }
   ): Promise<IPayout> {
     if (input.amountMinor <= 0)
       throw new Error("Payout amount must be positive");
+
+    // Check if withdrawals are globally blocked
+    const blockStatus = await this.isWithdrawalsBlocked();
+    if (blockStatus.blocked) {
+      const message = blockStatus.reason
+        ? `Withdrawals are temporarily disabled: ${blockStatus.reason}`
+        : "Withdrawals are temporarily disabled. Please try again later.";
+      throw new Error(message);
+    }
 
     return runInTransaction<IPayout>(async (txn) => {
       // Get campaign and verify financial account exists
@@ -533,6 +561,15 @@ export class PayoutService {
     adminId: mongoose.Types.ObjectId,
     session?: ServiceSession
   ): Promise<IPayout> {
+    // Check if withdrawals are globally blocked (blocks even approved payouts)
+    const blockStatus = await this.isWithdrawalsBlocked();
+    if (blockStatus.blocked) {
+      const message = blockStatus.reason
+        ? `Cannot process payout: Withdrawals are blocked - ${blockStatus.reason}`
+        : "Cannot process payout: Withdrawals are currently blocked.";
+      throw new Error(message);
+    }
+
     return runInTransaction<IPayout>(async (txn) => {
       const payout = await payoutRepository.findById(payoutId);
       if (!payout) {

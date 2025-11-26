@@ -240,12 +240,12 @@ export default function AdminLayout({
             <div className="flex items-center">
               <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-medium">
-                  {user.firstName?.[0]}{user.lastName?.[0]}
+                  {user.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
                 </span>
               </div>
               <div className="ml-3">
                 <div className="text-sm font-medium text-white">
-                  {user.firstName} {user.lastName}
+                  {user.name}
                 </div>
                 <div className="text-xs text-gray-300">{user.role}</div>
               </div>
@@ -329,12 +329,12 @@ export default function AdminLayout({
                   >
                     <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                       <span className="text-white font-medium text-sm">
-                        {user.firstName?.[0]}{user.lastName?.[0]}
+                        {user.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
                       </span>
                     </div>
                     <div className="hidden md:block text-left">
                       <div className="font-medium text-gray-900">
-                        {user.firstName} {user.lastName}
+                        {user.name}
                       </div>
                       <div className="text-xs text-gray-500">{user.role}</div>
                     </div>
@@ -352,12 +352,12 @@ export default function AdminLayout({
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
                               <span className="text-white font-medium">
-                                {user.firstName?.[0]}{user.lastName?.[0]}
+                                {user.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
                               </span>
                             </div>
                             <div>
                               <div className="font-medium text-gray-900">
-                                {user.firstName} {user.lastName}
+                                {user.name}
                               </div>
                               <div className="text-sm text-gray-500">{user.email}</div>
                               <div className="text-xs text-blue-600 font-medium">{user.role}</div>

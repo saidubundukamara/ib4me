@@ -4,6 +4,10 @@ export interface IWithdrawalSetting {
   minAmountMinor?: number;
   minPercent?: number;
   allowEmergencyOverride?: boolean;
+  withdrawalsBlocked?: boolean;
+  blockedReason?: string;
+  blockedBy?: mongoose.Types.ObjectId;
+  blockedAt?: Date;
 }
 
 export interface IFeeSetting {
@@ -74,6 +78,10 @@ const settingSchema = new mongoose.Schema<ISetting>(
       minAmountMinor: { type: Number },
       minPercent: { type: Number },
       allowEmergencyOverride: { type: Boolean },
+      withdrawalsBlocked: { type: Boolean, default: false },
+      blockedReason: { type: String },
+      blockedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      blockedAt: { type: Date },
     },
     fees: {
       platformFeeBps: { type: Number },
