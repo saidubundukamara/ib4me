@@ -10,15 +10,25 @@ import type { DonationFilters, DonationListOptions } from "../repositories/Donat
 import { auditLogService } from "./AuditLogService";
 import type { AuditContext } from "../lib/admin-auth";
 
+export interface DonationFeeInput {
+  baseFeeMinor: number;
+  processingFeeMinor: number;
+  processingFeeBps: number;
+  campaignType: "individual" | "organization";
+  totalFeeMinor: number;
+}
+
 export interface CreateDonationInput {
   campaignId: mongoose.Types.ObjectId;
   donorId?: mongoose.Types.ObjectId | null;
   donorSnapshot?: { name?: string; email?: string } | null;
   isAnonymous?: boolean;
   message?: string | null;
-  amountMinor: number;
+  amountMinor: number;              // Donation amount (what campaign receives)
+  totalChargedMinor?: number;       // Total charged to donor (amount + fees)
   currency: string;
   provider: { name: string; paymentId?: string; checkoutSessionId?: string };
+  fees?: DonationFeeInput;          // Fee breakdown
   idempotencyKey?: string | null;
 }
 
@@ -29,6 +39,18 @@ export class DonationService {
       : null;
     if (existing) return existing;
 
+    // Build fee object if fees are provided
+    const fees = input.fees ? {
+      baseFeeMinor: input.fees.baseFeeMinor,
+      processingFeeMinor: input.fees.processingFeeMinor,
+      processingFeeBps: input.fees.processingFeeBps,
+      campaignType: input.fees.campaignType,
+      totalFeeMinor: input.fees.totalFeeMinor,
+      // Legacy fields
+      paymentFeeMinor: 0,
+      platformFeeMinor: input.fees.totalFeeMinor, // For backward compat
+    } : undefined;
+
     return donationRepository.create({
       campaignId: input.campaignId,
       donorId: input.donorId ?? null,
@@ -36,6 +58,9 @@ export class DonationService {
       isAnonymous: Boolean(input.isAnonymous),
       message: input.message ?? null,
       amount: { currency: input.currency, minor: input.amountMinor },
+      totalChargedMinor: input.totalChargedMinor ?? input.amountMinor,
+      fees,
+      netAmountMinor: input.amountMinor, // Campaign gets full donation amount
       provider: input.provider,
       status: "pending",
       idempotencyKey: input.idempotencyKey ?? null,
@@ -156,25 +181,36 @@ export class DonationService {
         );
       }
 
-      // Calculate fees and net amount
-      const fees = paymentDetails.fees ? {
-        paymentFeeMinor: Math.round(paymentDetails.fees.total),
-        platformFeeMinor: 0, // We can add platform fees later
-      } : undefined;
-      
-      const netAmountMinor = donation.amount.minor - (fees?.paymentFeeMinor || 0);
+      // Preserve existing fee data (from donation creation) and add payment processor fees
+      const existingFees = donation.fees || {};
+      const paymentProcessorFee = paymentDetails.fees ? Math.round(paymentDetails.fees.total) : 0;
+
+      const fees = {
+        // Preserve platform fees from donation creation
+        baseFeeMinor: existingFees.baseFeeMinor || 0,
+        processingFeeMinor: existingFees.processingFeeMinor || 0,
+        processingFeeBps: existingFees.processingFeeBps,
+        campaignType: existingFees.campaignType,
+        totalFeeMinor: existingFees.totalFeeMinor || 0,
+        // Add payment processor fees from Monime
+        paymentFeeMinor: paymentProcessorFee,
+        platformFeeMinor: existingFees.platformFeeMinor || existingFees.totalFeeMinor || 0,
+      };
+
+      // Net amount = donation amount (campaign receives full amount since fees are added on top)
+      const netAmountMinor = donation.amount.minor;
 
       const updated = await donationRepository.updateById(
         donation.id,
-        { 
-          $set: { 
+        {
+          $set: {
             status: "succeeded",
             "provider.paymentId": paymentDetails.paymentId,
             fees,
             netAmountMinor,
             completedAt: paymentDetails.completedAt ? new Date(paymentDetails.completedAt) : new Date(),
             updatedAt: new Date()
-          } 
+          }
         } as never,
         txn
       );

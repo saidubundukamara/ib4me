@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { monimeService, toMinorUnits, MonimeApiError } from "@/lib/monime";
-import { donationService } from "@/services";
-import { campaignService } from "@/services";
+import { monimeService, toMinorUnits, fromMinorUnits, MonimeApiError } from "@/lib/monime";
+import { donationService, settingService, campaignService } from "@/services";
 
 const createDonationSchema = z.object({
   campaignSlug: z.string().min(1),
@@ -48,25 +47,48 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Convert amount to minor units
-    const amountMinor = toMinorUnits(validatedData.amount, validatedData.currency);
+    // Convert donation amount to minor units
+    const donationAmountMinor = toMinorUnits(validatedData.amount, validatedData.currency);
+
+    // Get fee settings and determine campaign type
+    const feeSettings = await settingService.getFeeSettings();
+    const campaignId = String(campaign._id);
+    const campaignType = await campaignService.getCampaignType(campaignId);
+
+    // Calculate fees (fees are added ON TOP of donation)
+    const calculatedFees = settingService.calculateDonationFees(
+      donationAmountMinor,
+      campaignType,
+      feeSettings
+    );
+
+    // Total amount to charge donor = donation + fees
+    const totalChargedMinor = calculatedFees.totalChargedMinor;
 
     // Generate unique reference for this donation
     const reference = `donation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // Create pending donation record
+    // Create pending donation record with fee breakdown
     const donation = await donationService.createPending({
       campaignId: campaign._id as import("mongoose").Types.ObjectId,
       donorId: null, // Anonymous for now, could be linked later
       donorSnapshot: validatedData.donor || null,
       isAnonymous: validatedData.isAnonymous,
       message: validatedData.message || null,
-      amountMinor,
+      amountMinor: donationAmountMinor,        // What campaign receives
+      totalChargedMinor,                        // What donor pays
       currency: validatedData.currency,
       provider: {
         name: "MONIME",
         paymentId: undefined,
         checkoutSessionId: undefined, // Will be updated after session creation
+      },
+      fees: {
+        baseFeeMinor: calculatedFees.baseFeeMinor,
+        processingFeeMinor: calculatedFees.processingFeeMinor,
+        processingFeeBps: calculatedFees.processingFeeBps,
+        campaignType: calculatedFees.campaignType,
+        totalFeeMinor: calculatedFees.totalFeeMinor,
       },
       idempotencyKey: reference,
     });
@@ -80,6 +102,17 @@ export async function POST(req: NextRequest) {
     // const webhookUrl = `${baseUrl}/api/donations/webhook`;
 
     // Create Monime checkout session with idempotency key
+    // Note: We charge totalChargedMinor (donation + fees) to the donor
+    // The campaign's financial account receives this amount, and we track fees separately
+    const feeDescriptionParts = [];
+    if (calculatedFees.baseFeeMinor > 0) {
+      feeDescriptionParts.push(`Base fee: ${fromMinorUnits(calculatedFees.baseFeeMinor, validatedData.currency)} ${validatedData.currency}`);
+    }
+    if (calculatedFees.processingFeeMinor > 0) {
+      feeDescriptionParts.push(`Processing fee (${calculatedFees.processingFeeBps / 100}%): ${fromMinorUnits(calculatedFees.processingFeeMinor, validatedData.currency)} ${validatedData.currency}`);
+    }
+    const feeDescription = feeDescriptionParts.length > 0 ? ` | Fees: ${feeDescriptionParts.join(', ')}` : '';
+
     const checkoutSession = await monimeService.createCheckoutSession({
       name: `Donation for ${campaign.patient?.name || campaign.diagnosis || "medical campaign"}`,
       successUrl,
@@ -90,10 +123,10 @@ export async function POST(req: NextRequest) {
         name: `Donation for ${campaign.patient?.name || campaign.diagnosis || "medical campaign"}`,
         price: {
           currency: validatedData.currency,
-          value: amountMinor,
+          value: totalChargedMinor,  // Charge total amount (donation + fees) to donor
         },
         quantity: 1,
-        description: `Medical donation for ${campaign.diagnosis}${validatedData.message ? ` - ${validatedData.message}` : ''}`,
+        description: `Medical donation for ${campaign.diagnosis}${validatedData.message ? ` - ${validatedData.message}` : ''}${feeDescription}`,
         reference,
       }],
       metadata: {
@@ -103,6 +136,10 @@ export async function POST(req: NextRequest) {
         isAnonymous: validatedData.isAnonymous.toString(),
         donorName: validatedData.donor?.name || 'Anonymous',
         financialAccountId: campaign.financial_account.id,
+        // Fee metadata for transparency
+        donationAmountMinor: donationAmountMinor.toString(),
+        totalFeeMinor: calculatedFees.totalFeeMinor.toString(),
+        campaignType: calculatedFees.campaignType,
       },
       callbackState: reference,
     }, reference); // Use reference as idempotency key
@@ -119,6 +156,17 @@ export async function POST(req: NextRequest) {
         checkoutUrl: checkoutSession.redirectUrl,
         checkoutSessionId: checkoutSession.id,
         expiresAt: checkoutSession.expiresAt,
+        // Fee breakdown for display
+        fees: {
+          donationAmount: fromMinorUnits(donationAmountMinor, validatedData.currency),
+          baseFee: fromMinorUnits(calculatedFees.baseFeeMinor, validatedData.currency),
+          processingFee: fromMinorUnits(calculatedFees.processingFeeMinor, validatedData.currency),
+          processingFeeRate: calculatedFees.processingFeeBps / 100, // As percentage
+          totalFees: fromMinorUnits(calculatedFees.totalFeeMinor, validatedData.currency),
+          totalCharged: fromMinorUnits(totalChargedMinor, validatedData.currency),
+          currency: validatedData.currency,
+          campaignType: calculatedFees.campaignType,
+        }
       }
     });
 

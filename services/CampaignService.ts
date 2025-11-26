@@ -48,6 +48,23 @@ export class CampaignService {
     return campaignRepository.findById(id);
   }
 
+  /**
+   * Determine if a campaign is for an individual or organization based on owner's role
+   */
+  async getCampaignType(campaignId: string): Promise<"individual" | "organization"> {
+    const campaign = await campaignRepository.findById(campaignId);
+    if (!campaign) {
+      return "individual"; // Default to individual if campaign not found
+    }
+
+    const owner = await userRepository.findById(campaign.ownerId.toString());
+    if (!owner) {
+      return "individual"; // Default to individual if owner not found
+    }
+
+    return owner.roles === "Organization" ? "organization" : "individual";
+  }
+
   async listByOwner(ownerId: mongoose.Types.ObjectId): Promise<ICampaign[]> {
     return campaignRepository.listByOwner(ownerId);
   }

@@ -88,6 +88,43 @@ interface CampaignLimitsSettings {
   maxActiveCampaignsOrganization: number;
 }
 
+// Fee calculation types
+export type CampaignType = "individual" | "organization";
+
+export interface FeeSettings {
+  baseFeeMinor: number;
+  processingFee: {
+    individualBps: number;
+    organizationBps: number;
+  };
+}
+
+export interface CalculatedFees {
+  baseFeeMinor: number;
+  processingFeeMinor: number;
+  processingFeeBps: number;
+  campaignType: CampaignType;
+  totalFeeMinor: number;
+  totalChargedMinor: number;
+}
+
+export interface PlatformAccountSettings {
+  id?: string;
+  uvan?: string;
+}
+
+export interface TipFinancialAccountSettings {
+  id?: string;
+  uvan?: string;
+}
+
+export interface TippingSettings {
+  enabled: boolean;
+  suggestedAmounts: number[];
+  minAmountMinor: number;
+  maxAmountMinor: number;
+}
+
 export class SettingService {
   async getPlatform(): Promise<ISetting | null> {
     return settingRepository.getPlatformSettings();
@@ -104,6 +141,12 @@ export class SettingService {
           allowEmergencyOverride: true
         },
         fees: {
+          baseFeeMinor: 50,  // Le 0.50
+          processingFee: {
+            individualBps: 260,    // 2.6%
+            organizationBps: 200,  // 2.0%
+          },
+          // Legacy
           platformFeeBps: 500,
           mobileMoneyFeeBps: 200
         },
@@ -111,6 +154,12 @@ export class SettingService {
           whatsAppAutoPost: true,
           paypalEnabled: false,
           emergencyPoolFund: false
+        },
+        tipping: {
+          enabled: false,
+          suggestedAmounts: [5000, 10000, 25000, 50000],
+          minAmountMinor: 100,
+          maxAmountMinor: 10000000
         }
       } as Partial<ISetting>);
     }
@@ -372,6 +421,151 @@ export class SettingService {
     } as Partial<ISetting>, adminUserId);
 
     return this.getCampaignLimitsSettings();
+  }
+
+  // ==================== Fee Settings ====================
+
+  async getFeeSettings(): Promise<FeeSettings> {
+    const settings = await this.getOrCreatePlatform();
+    const fees = settings.fees || {};
+
+    return {
+      baseFeeMinor: fees.baseFeeMinor ?? 50,  // Default Le 0.50
+      processingFee: {
+        individualBps: fees.processingFee?.individualBps ?? 260,    // Default 2.6%
+        organizationBps: fees.processingFee?.organizationBps ?? 200, // Default 2.0%
+      }
+    };
+  }
+
+  async updateFeeSettings(
+    updates: Partial<FeeSettings>,
+    adminUserId?: string
+  ): Promise<FeeSettings> {
+    const settings = await this.getOrCreatePlatform();
+    const currentFees = settings.fees || {};
+
+    const feeUpdates: Partial<IFeeSetting> = { ...currentFees };
+
+    if (updates.baseFeeMinor !== undefined) {
+      feeUpdates.baseFeeMinor = updates.baseFeeMinor;
+    }
+
+    if (updates.processingFee) {
+      feeUpdates.processingFee = {
+        individualBps: updates.processingFee.individualBps ?? currentFees.processingFee?.individualBps ?? 260,
+        organizationBps: updates.processingFee.organizationBps ?? currentFees.processingFee?.organizationBps ?? 200,
+      };
+    }
+
+    await this.updatePlatformSettings({ fees: feeUpdates }, adminUserId);
+
+    return this.getFeeSettings();
+  }
+
+  /**
+   * Calculate fees for a donation based on campaign type
+   * Fees are added ON TOP of the donation amount
+   */
+  calculateDonationFees(
+    donationAmountMinor: number,
+    campaignType: CampaignType,
+    feeSettings: FeeSettings
+  ): CalculatedFees {
+    const baseFeeMinor = feeSettings.baseFeeMinor;
+    const processingFeeBps = campaignType === "organization"
+      ? feeSettings.processingFee.organizationBps
+      : feeSettings.processingFee.individualBps;
+
+    // Calculate processing fee: amount * (bps / 10000)
+    const processingFeeMinor = Math.round(donationAmountMinor * processingFeeBps / 10000);
+    const totalFeeMinor = baseFeeMinor + processingFeeMinor;
+    const totalChargedMinor = donationAmountMinor + totalFeeMinor;
+
+    return {
+      baseFeeMinor,
+      processingFeeMinor,
+      processingFeeBps,
+      campaignType,
+      totalFeeMinor,
+      totalChargedMinor
+    };
+  }
+
+  // ==================== Platform Account Settings ====================
+
+  async getPlatformAccountSettings(): Promise<PlatformAccountSettings> {
+    const settings = await this.getOrCreatePlatform();
+    return {
+      id: settings.platformFinancialAccount?.id,
+      uvan: settings.platformFinancialAccount?.uvan
+    };
+  }
+
+  async updatePlatformAccountSettings(
+    updates: Partial<PlatformAccountSettings>,
+    adminUserId?: string
+  ): Promise<PlatformAccountSettings> {
+    const settings = await this.getOrCreatePlatform();
+    const currentAccount = settings.platformFinancialAccount || {};
+
+    await this.updatePlatformSettings({
+      platformFinancialAccount: { ...currentAccount, ...updates }
+    } as Partial<ISetting>, adminUserId);
+
+    return this.getPlatformAccountSettings();
+  }
+
+  // ==================== Tip Financial Account Settings ====================
+
+  async getTipFinancialAccountSettings(): Promise<TipFinancialAccountSettings> {
+    const settings = await this.getOrCreatePlatform();
+    return {
+      id: settings.tipFinancialAccount?.id,
+      uvan: settings.tipFinancialAccount?.uvan
+    };
+  }
+
+  async updateTipFinancialAccountSettings(
+    updates: Partial<TipFinancialAccountSettings>,
+    adminUserId?: string
+  ): Promise<TipFinancialAccountSettings> {
+    const settings = await this.getOrCreatePlatform();
+    const currentAccount = settings.tipFinancialAccount || {};
+
+    await this.updatePlatformSettings({
+      tipFinancialAccount: { ...currentAccount, ...updates }
+    } as Partial<ISetting>, adminUserId);
+
+    return this.getTipFinancialAccountSettings();
+  }
+
+  // ==================== Tipping Settings ====================
+
+  async getTippingSettings(): Promise<TippingSettings> {
+    const settings = await this.getOrCreatePlatform();
+    const tipping = settings.tipping || {};
+
+    return {
+      enabled: tipping.enabled ?? false,
+      suggestedAmounts: tipping.suggestedAmounts ?? [5000, 10000, 25000, 50000],
+      minAmountMinor: tipping.minAmountMinor ?? 100,
+      maxAmountMinor: tipping.maxAmountMinor ?? 10000000
+    };
+  }
+
+  async updateTippingSettings(
+    updates: Partial<TippingSettings>,
+    adminUserId?: string
+  ): Promise<TippingSettings> {
+    const settings = await this.getOrCreatePlatform();
+    const currentTipping = settings.tipping || {};
+
+    await this.updatePlatformSettings({
+      tipping: { ...currentTipping, ...updates }
+    } as Partial<ISetting>, adminUserId);
+
+    return this.getTippingSettings();
   }
 }
 

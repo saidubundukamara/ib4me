@@ -102,10 +102,12 @@ We're not adapting a Western platform to Africa. We built this *for* Sierra Leon
 
 | Feature | IB4ME | GoFundMe | Others |
 |---------|-------|----------|--------|
-| **Platform Fee** | **1%** | 2.9% + $0.30 | 3-5% |
+| **Platform Fee** | **1% + 2-2.6%*** | 2.9% + $0.30 | 3-5% |
 | **Medical Verification** | ✅ Hospital Partners | ❌ Self-reported | ❌ |
 | **Mobile Money** | ✅ Orange, AfriMoney | ❌ Cards only | Limited |
 | **Local Language** | ✅ Krio + English | ❌ | ❌ |
+
+**Processing fee: 2.0% for NGOs/charities, 2.6% for individuals*
 
 *Built FOR Sierra Leone, not adapted to it.*
 
@@ -115,7 +117,7 @@ We're not adapting a Western platform to Africa. We built this *for* Sierra Leon
 
 "Why will we win?
 
-First, pricing. We charge just 1 percent — compared to GoFundMe's 2.9 percent plus transaction fees, or Ketto's 5 percent. When you're raising money for a sick family member, every dollar matters.
+First, pricing. We charge just 1 percent platform fee plus a small processing fee — compared to GoFundMe's 2.9 percent plus transaction fees, or Ketto's 5 percent. And we support both individuals *and* organizations like NGOs and charities — with organizations getting even lower processing fees at 2 percent versus 2.6 percent for individuals. When you're raising money for a sick family member, every dollar matters.
 
 Second, trust. We're the *only* platform with hospital-based medical verification. Every other crowdfunding platform relies on self-reported information. That's why fraud rates in crowdfunding can hit 5 to 10 percent. Our verification system makes donors confident their money goes to real medical needs.
 
@@ -137,6 +139,7 @@ We didn't take an American platform and try to make it work in Africa. We built 
 - ✅ Payment integration complete (Monime)
 - ✅ Off-platform campaigns prove market demand
 - ✅ Enterprise-grade security & audit systems
+- ✅ NGO/charity support with KYB verification
 
 **Founding Team:**
 - **Joseph Melvin Kanu** — COO & Co-Founder
@@ -153,7 +156,7 @@ We didn't take an American platform and try to make it work in Africa. We built 
 
 Our platform is production-ready. It's not a prototype — it's a fully functional system with campaign management, payment processing, admin verification workflows, and enterprise-grade security.
 
-We've signed an MOU with Connaught Hospital — Sierra Leone's largest public hospital — to verify medical campaigns. Our payment integration with Monime is live, supporting Orange Money, AfriMoney, and credit cards.
+We've signed an MOU with Connaught Hospital — Sierra Leone's largest public hospital — to verify medical campaigns. Our payment integration with Monime is live, supporting Orange Money, AfriMoney, and credit cards. And we've built full support for organizations — NGOs and charities can register with KYB verification and run multiple campaigns at lower processing fees.
 
 And here's what proves the market exists: we've already run fundraising campaigns off-platform, using WhatsApp groups and manual processes. They work — people donate. We've proven the demand. Now we have the technology to scale it.
 
@@ -252,6 +255,9 @@ A: GoFundMe doesn't support mobile money payments — which is how 95%+ of Sierr
 
 **Q: What happens if you don't raise the full $35K?**
 A: We can launch with less, but with reduced marketing reach. The platform is built — we need capital for operations and customer acquisition, not development.
+
+**Q: Do you support organizations like NGOs and charities?**
+A: Yes. Organizations can register with full KYB (Know Your Business) verification, including registration certificates and tax documentation. They receive lower processing fees (2.0% vs 2.6%) and can run up to 8 campaigns simultaneously (vs 2 for individuals). This makes IB4ME ideal for established healthcare NGOs running multiple patient campaigns.
 
 ---
 

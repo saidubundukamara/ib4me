@@ -72,6 +72,31 @@ interface SeoSettings {
   twitterSite?: string;
 }
 
+interface FeeSettings {
+  baseFeeMinor: number;
+  processingFee: {
+    individualBps: number;
+    organizationBps: number;
+  };
+}
+
+interface PlatformAccountSettings {
+  id?: string;
+  uvan?: string;
+}
+
+interface TipFinancialAccountSettings {
+  id?: string;
+  uvan?: string;
+}
+
+interface TippingSettings {
+  enabled: boolean;
+  suggestedAmounts: number[];
+  minAmountMinor: number;
+  maxAmountMinor: number;
+}
+
 interface SettingsContextType {
   // Settings data
   website: WebsiteSettings;
@@ -80,11 +105,15 @@ interface SettingsContextType {
   contact: ContactSettings | null;
   social: SocialSettings;
   seo: SeoSettings;
-  
+  fees: FeeSettings | null;
+  platformAccount: PlatformAccountSettings | null;
+  tipFinancialAccount: TipFinancialAccountSettings | null;
+  tipping: TippingSettings | null;
+
   // Loading states
   loading: boolean;
   updating: boolean;
-  
+
   // Actions
   refreshSettings: () => Promise<void>;
   updateWebsiteSettings: (data: Partial<WebsiteSettings>) => Promise<boolean>;
@@ -94,7 +123,11 @@ interface SettingsContextType {
   updateSocialSettings: (data: Partial<SocialSettings>) => Promise<boolean>;
   updateSeoSettings: (data: Partial<SeoSettings>) => Promise<boolean>;
   updateWithdrawalBlock: (blocked: boolean, reason?: string) => Promise<boolean>;
-  
+  updateFeeSettings: (data: Partial<FeeSettings>) => Promise<boolean>;
+  updatePlatformAccountSettings: (data: Partial<PlatformAccountSettings>) => Promise<boolean>;
+  updateTipFinancialAccountSettings: (data: Partial<TipFinancialAccountSettings>) => Promise<boolean>;
+  updateTippingSettings: (data: Partial<TippingSettings>) => Promise<boolean>;
+
   // Error handling
   error: string | null;
   clearError: () => void;
@@ -122,6 +155,13 @@ const defaultFeatureSettings: FeatureSettings = {
 
 const defaultSocialSettings: SocialSettings = {};
 const defaultSeoSettings: SeoSettings = {};
+const defaultFeeSettings: FeeSettings = {
+  baseFeeMinor: 50,
+  processingFee: {
+    individualBps: 260,
+    organizationBps: 200,
+  },
+};
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
@@ -132,7 +172,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [contact, setContact] = useState<ContactSettings | null>(null);
   const [social, setSocial] = useState<SocialSettings>(defaultSocialSettings);
   const [seo, setSeo] = useState<SeoSettings>(defaultSeoSettings);
-  
+  const [fees, setFees] = useState<FeeSettings | null>(defaultFeeSettings);
+  const [platformAccount, setPlatformAccount] = useState<PlatformAccountSettings | null>(null);
+  const [tipFinancialAccount, setTipFinancialAccount] = useState<TipFinancialAccountSettings | null>(null);
+  const [tipping, setTipping] = useState<TippingSettings | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -152,6 +196,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         contactRes,
         socialRes,
         seoRes,
+        feesRes,
+        platformAccountRes,
+        tipFinancialAccountRes,
+        tippingRes,
       ] = await Promise.all([
         fetch("/api/admin/settings?category=website"),
         fetch("/api/admin/settings?category=payment"),
@@ -159,6 +207,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         fetch("/api/admin/settings?category=contact"),
         fetch("/api/admin/settings?category=social"),
         fetch("/api/admin/settings?category=seo"),
+        fetch("/api/admin/settings?category=fees"),
+        fetch("/api/admin/settings?category=platformAccount"),
+        fetch("/api/admin/settings?category=tipFinancialAccount"),
+        fetch("/api/admin/settings?category=tipping"),
       ]);
 
       if (websiteRes.ok) {
@@ -189,6 +241,26 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       if (seoRes.ok) {
         const seoData = await seoRes.json();
         setSeo(seoData.settings || defaultSeoSettings);
+      }
+
+      if (feesRes.ok) {
+        const feesData = await feesRes.json();
+        setFees(feesData.settings || defaultFeeSettings);
+      }
+
+      if (platformAccountRes.ok) {
+        const platformAccountData = await platformAccountRes.json();
+        setPlatformAccount(platformAccountData.settings || null);
+      }
+
+      if (tipFinancialAccountRes.ok) {
+        const tipFinancialAccountData = await tipFinancialAccountRes.json();
+        setTipFinancialAccount(tipFinancialAccountData.settings || null);
+      }
+
+      if (tippingRes.ok) {
+        const tippingData = await tippingRes.json();
+        setTipping(tippingData.settings || null);
       }
     } catch (err) {
       console.error("Error refreshing settings:", err);
@@ -269,6 +341,30 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const updateFeeSettings = async (data: Partial<FeeSettings>): Promise<boolean> => {
+    return updateSettings("fees", data, (newData) => {
+      setFees(prev => ({ ...prev, ...(newData as FeeSettings) }));
+    });
+  };
+
+  const updatePlatformAccountSettings = async (data: Partial<PlatformAccountSettings>): Promise<boolean> => {
+    return updateSettings("platformAccount", data, (newData) => {
+      setPlatformAccount(prev => ({ ...prev, ...(newData as PlatformAccountSettings) }));
+    });
+  };
+
+  const updateTipFinancialAccountSettings = async (data: Partial<TipFinancialAccountSettings>): Promise<boolean> => {
+    return updateSettings("tipFinancialAccount", data, (newData) => {
+      setTipFinancialAccount(prev => ({ ...prev, ...(newData as TipFinancialAccountSettings) }));
+    });
+  };
+
+  const updateTippingSettings = async (data: Partial<TippingSettings>): Promise<boolean> => {
+    return updateSettings("tipping", data, (newData) => {
+      setTipping(prev => ({ ...prev, ...(newData as TippingSettings) }));
+    });
+  };
+
   const updateWithdrawalBlock = async (blocked: boolean, reason?: string): Promise<boolean> => {
     return updateSettings("withdrawal", { withdrawalsBlocked: blocked, blockedReason: reason }, (newData) => {
       const withdrawalData = newData as { withdrawalsBlocked: boolean; blockedReason?: string; blockedBy?: string; blockedAt?: string };
@@ -294,11 +390,15 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     contact,
     social,
     seo,
-    
+    fees,
+    platformAccount,
+    tipFinancialAccount,
+    tipping,
+
     // Loading states
     loading,
     updating,
-    
+
     // Actions
     refreshSettings,
     updateWebsiteSettings,
@@ -308,6 +408,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     updateSocialSettings,
     updateSeoSettings,
     updateWithdrawalBlock,
+    updateFeeSettings,
+    updatePlatformAccountSettings,
+    updateTipFinancialAccountSettings,
+    updateTippingSettings,
 
     // Error handling
     error,
@@ -336,4 +440,8 @@ export type {
   ContactSettings,
   SocialSettings,
   SeoSettings,
+  FeeSettings,
+  PlatformAccountSettings,
+  TipFinancialAccountSettings,
+  TippingSettings,
 };

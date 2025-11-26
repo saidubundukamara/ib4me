@@ -38,6 +38,18 @@ export async function GET(request: NextRequest) {
       case "campaignLimits":
         settings = await settingService.getCampaignLimitsSettings();
         break;
+      case "fees":
+        settings = await settingService.getFeeSettings();
+        break;
+      case "platformAccount":
+        settings = await settingService.getPlatformAccountSettings();
+        break;
+      case "tipFinancialAccount":
+        settings = await settingService.getTipFinancialAccountSettings();
+        break;
+      case "tipping":
+        settings = await settingService.getTippingSettings();
+        break;
       default:
         // Return all categories when no specific category is requested
         const [website, payment, features, contact, social, seo, campaignLimits] =
@@ -156,6 +168,30 @@ export async function PUT(request: NextRequest) {
         break;
       case "campaignLimits":
         updatedSettings = await settingService.updateCampaignLimitsSettings(
+          body,
+          adminContext.adminId.toString()
+        );
+        break;
+      case "fees":
+        updatedSettings = await settingService.updateFeeSettings(
+          body,
+          adminContext.adminId.toString()
+        );
+        break;
+      case "platformAccount":
+        updatedSettings = await settingService.updatePlatformAccountSettings(
+          body,
+          adminContext.adminId.toString()
+        );
+        break;
+      case "tipFinancialAccount":
+        updatedSettings = await settingService.updateTipFinancialAccountSettings(
+          body,
+          adminContext.adminId.toString()
+        );
+        break;
+      case "tipping":
+        updatedSettings = await settingService.updateTippingSettings(
           body,
           adminContext.adminId.toString()
         );
