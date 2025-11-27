@@ -133,6 +133,7 @@ export async function POST(req: NextRequest) {
   const category = (form.get("category") as string | null) || undefined;
   const patientName = (form.get("patient.name") as string | null) || "";
   const patientAgeRaw = (form.get("patient.age") as string | null) || "";
+  const hospitalId = (form.get("hospital.hospitalId") as string | null) || undefined;
   const hospitalName = (form.get("hospital.name") as string | null) || "";
   const goalCurrency = (form.get("goal.currency") as string | null) || "SLE";
   const goalAmountMinorRaw =
@@ -160,7 +161,7 @@ export async function POST(req: NextRequest) {
 
   try {
     // Create campaign using service (includes financial account creation)
-    const created = await campaignService.createCampaign({
+    const result = await campaignService.createCampaign({
       ownerId,
       slug,
       diagnosis: diagnosis || undefined,
@@ -171,10 +172,17 @@ export async function POST(req: NextRequest) {
         name: patientName,
         age: Number.isFinite(patientAge as number) ? patientAge : undefined,
       },
-      hospital: { name: hospitalName || undefined },
+      hospital: {
+        hospitalId: hospitalId && mongoose.Types.ObjectId.isValid(hospitalId)
+          ? new mongoose.Types.ObjectId(hospitalId)
+          : undefined,
+        name: hospitalName || undefined,
+      },
       goal: { currency: goalCurrency || "SLE", amountMinor: goalAmountMinor },
       story,
     });
+
+    const created = result.campaign;
 
     // Extract document files - form sends them as documents[0], documents[1], etc.
     const files: File[] = [];
@@ -235,7 +243,11 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(
-      { id: String(created._id), slug: created.slug },
+      {
+        id: String(created._id),
+        slug: created.slug,
+        ownerVerification: result.ownerVerification,
+      },
       { status: 201 }
     );
   } catch (error) {

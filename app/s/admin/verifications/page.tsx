@@ -92,9 +92,9 @@ export default function AdminVerificationsPage() {
       const response = await fetch(`/api/admin/verifications?${params}`);
       if (response.ok) {
         const data = await response.json();
-        setVerifications(data.data.verifications);
-        setTotalPages(data.data.totalPages);
-        setTotal(data.data.total);
+        setVerifications(data.verifications);
+        setTotalPages(data.totalPages);
+        setTotal(data.total);
       }
     } catch (error) {
       console.error("Error fetching verifications:", error);
@@ -115,7 +115,7 @@ export default function AdminVerificationsPage() {
           );
           if (response.ok) {
             const data = await response.json();
-            return { status, count: data.data.total };
+            return { status, count: data.total };
           }
           return { status, count: 0 };
         })

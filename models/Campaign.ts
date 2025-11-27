@@ -58,6 +58,12 @@ export interface ICampaignFlags {
   adminVerified?: boolean;
 }
 
+export interface ICampaignOwnerVerification {
+  verified: boolean;
+  verifiedAt?: Date | null;
+  status: "not_started" | "pending" | "under_review" | "approved" | "rejected";
+}
+
 export interface ICampaign extends mongoose.Document {
   ownerId: mongoose.Types.ObjectId;
   slug: string;
@@ -82,6 +88,7 @@ export interface ICampaign extends mongoose.Document {
   withdrawals?: ICampaignWithdrawals;
   financial_account?: ICampaignFinancialAccount;
   flags?: ICampaignFlags;
+  ownerVerification?: ICampaignOwnerVerification;
   archivedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -146,7 +153,7 @@ const campaignSchema = new mongoose.Schema<ICampaign>(
     status: {
       type: String,
       enum: ["draft", "active", "paused", "completed", "archived"],
-      default: "active",
+      default: "draft",
       index: true,
     },
     outcome: {
@@ -195,6 +202,15 @@ const campaignSchema = new mongoose.Schema<ICampaign>(
     flags: {
       featured: { type: Boolean, default: false },
       adminVerified: { type: Boolean, default: false },
+    },
+    ownerVerification: {
+      verified: { type: Boolean, default: false },
+      verifiedAt: { type: Date, default: null },
+      status: {
+        type: String,
+        enum: ["not_started", "pending", "under_review", "approved", "rejected"],
+        default: "not_started",
+      },
     },
     archivedAt: { type: Date, default: null },
   },

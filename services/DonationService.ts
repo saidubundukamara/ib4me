@@ -4,11 +4,12 @@ import {
   campaignRepository,
   ledgerEntryRepository,
 } from "../repositories";
-import { IDonation } from "../models/Donation";
+import { IDonation, IDonationTransfer } from "../models/Donation";
 import { runInTransaction, ServiceSession } from "./ServiceTransaction";
 import type { DonationFilters, DonationListOptions } from "../repositories/DonationRepository";
 import { auditLogService } from "./AuditLogService";
 import type { AuditContext } from "../lib/admin-auth";
+import type { ILedgerEntry } from "../models/LedgerEntry";
 
 export interface DonationFeeInput {
   baseFeeMinor: number;
@@ -142,23 +143,231 @@ export class DonationService {
   ): Promise<IDonation> {
     const donation = await donationRepository.findById(donationId);
     if (!donation) throw new Error("Donation not found");
-    
+
     if (donation.status === "succeeded") {
       throw new Error("Cannot mark succeeded donation as failed");
     }
 
     const updated = await donationRepository.updateById(
       donationId,
-      { 
-        $set: { 
+      {
+        $set: {
           status: "failed",
           failureReason: failureReason || "Payment failed",
           updatedAt: new Date()
-        } 
+        }
       } as never
     );
     if (!updated) throw new Error("Failed to update donation status");
     return updated;
+  }
+
+  /**
+   * Mark donation as payment_received (payment completed, transfer pending)
+   * This is the intermediate status before the internal transfer to campaign
+   */
+  async markPaymentReceived(
+    donationId: string,
+    paymentDetails: {
+      paymentId: string;
+      paymentMethod: { type: string; provider?: string };
+      fees?: { total: number; breakdown: Record<string, number> };
+      completedAt?: string;
+    }
+  ): Promise<IDonation> {
+    const donation = await donationRepository.findById(donationId);
+    if (!donation) throw new Error("Donation not found");
+
+    if (donation.status !== "pending") {
+      throw new Error(`Cannot mark donation as payment_received from status: ${donation.status}`);
+    }
+
+    // Preserve existing fee data and add payment processor fees
+    const existingFees = donation.fees || {};
+    const paymentProcessorFee = paymentDetails.fees ? Math.round(paymentDetails.fees.total) : 0;
+
+    const fees = {
+      baseFeeMinor: existingFees.baseFeeMinor || 0,
+      processingFeeMinor: existingFees.processingFeeMinor || 0,
+      processingFeeBps: existingFees.processingFeeBps,
+      campaignType: existingFees.campaignType,
+      totalFeeMinor: existingFees.totalFeeMinor || 0,
+      paymentFeeMinor: paymentProcessorFee,
+      platformFeeMinor: existingFees.platformFeeMinor || existingFees.totalFeeMinor || 0,
+    };
+
+    const updated = await donationRepository.updateById(
+      donationId,
+      {
+        $set: {
+          status: "payment_received",
+          "provider.paymentId": paymentDetails.paymentId,
+          fees,
+          updatedAt: new Date()
+        }
+      } as never
+    );
+    if (!updated) throw new Error("Failed to mark donation as payment_received");
+    return updated;
+  }
+
+  /**
+   * Update transfer status on a donation
+   */
+  async updateTransferStatus(
+    donationId: string,
+    transfer: Partial<IDonationTransfer>
+  ): Promise<IDonation> {
+    const donation = await donationRepository.findById(donationId);
+    if (!donation) throw new Error("Donation not found");
+
+    const currentTransfer = donation.transfer || {};
+    const updatedTransfer = {
+      ...currentTransfer,
+      ...transfer,
+    };
+
+    const updated = await donationRepository.updateById(
+      donationId,
+      {
+        $set: {
+          transfer: updatedTransfer,
+          updatedAt: new Date()
+        }
+      } as never
+    );
+    if (!updated) throw new Error("Failed to update transfer status");
+    return updated;
+  }
+
+  /**
+   * Complete a donation after successful internal transfer
+   * Creates ledger entries and updates campaign totals
+   */
+  async completeWithTransfer(
+    donationId: string,
+    transferId: string,
+    session?: ServiceSession
+  ): Promise<IDonation> {
+    return runInTransaction<IDonation>(async (txn) => {
+      const donation = await donationRepository.findById(donationId);
+      if (!donation) throw new Error("Donation not found");
+
+      if (donation.status !== "payment_received") {
+        throw new Error(`Cannot complete donation from status: ${donation.status}`);
+      }
+
+      // Update donation to succeeded
+      const updated = await donationRepository.updateById(
+        donationId,
+        {
+          $set: {
+            status: "succeeded",
+            transfer: {
+              id: transferId,
+              status: "completed" as const,
+              initiatedAt: donation.transfer?.initiatedAt || new Date(),
+              completedAt: new Date(),
+              retryCount: donation.transfer?.retryCount || 0
+            },
+            completedAt: new Date(),
+            updatedAt: new Date()
+          }
+        } as never,
+        txn
+      );
+      if (!updated) throw new Error("Failed to complete donation");
+
+      // Create platform receipt ledger entry
+      await ledgerEntryRepository.create({
+        accountType: "platform",
+        refType: "platform_receipt",
+        refId: donation._id,
+        direction: "in",
+        amountMinor: donation.totalChargedMinor || donation.amount.minor,
+        currency: donation.amount.currency,
+        description: `Payment received for donation ${donationId}`,
+      } as unknown as Partial<ILedgerEntry>, txn);
+
+      // Create platform fee ledger entry (if there are fees)
+      const totalFees = donation.fees?.totalFeeMinor || 0;
+      if (totalFees > 0) {
+        await ledgerEntryRepository.create({
+          accountType: "platform",
+          campaignId: donation.campaignId,
+          refType: "platform_fee",
+          refId: donation._id,
+          direction: "in",
+          amountMinor: totalFees,
+          currency: donation.amount.currency,
+          description: `Platform fee for donation ${donationId}`,
+        } as unknown as Partial<ILedgerEntry>, txn);
+      }
+
+      // Create platform transfer out ledger entry
+      await ledgerEntryRepository.create({
+        accountType: "platform",
+        campaignId: donation.campaignId,
+        refType: "platform_transfer_out",
+        refId: donation._id,
+        direction: "out",
+        amountMinor: donation.amount.minor,
+        currency: donation.amount.currency,
+        transferId,
+        description: `Transfer to campaign for donation ${donationId}`,
+      } as unknown as Partial<ILedgerEntry>, txn);
+
+      // Create campaign transfer in ledger entry
+      await ledgerEntryRepository.create({
+        accountType: "campaign",
+        campaignId: donation.campaignId,
+        refType: "campaign_transfer_in",
+        refId: donation._id,
+        direction: "in",
+        amountMinor: donation.amount.minor,
+        currency: donation.amount.currency,
+        transferId,
+        description: `Donation received from transfer ${transferId}`,
+      } as unknown as Partial<ILedgerEntry>, txn);
+
+      // Update campaign totals
+      const incUpdate: Record<string, number> = {
+        "totals.raisedMinor": donation.amount.minor,
+        "totals.donationCount": 1,
+      };
+      const setUpdate: Record<string, unknown> = {
+        "totals.lastDonationAt": new Date(),
+      };
+
+      await campaignRepository.updateById(
+        donation.campaignId.toString(),
+        { $inc: incUpdate as never, $set: setUpdate as never } as never,
+        txn
+      );
+
+      return updated;
+    }, session);
+  }
+
+  /**
+   * Get donations that need transfer retry
+   */
+  async getDonationsNeedingTransferRetry(maxRetries: number = 3): Promise<IDonation[]> {
+    return donationRepository.findMany({
+      status: "payment_received",
+      $or: [
+        { "transfer.status": "failed" },
+        { "transfer.status": { $exists: false } }
+      ],
+      $and: [
+        {
+          $or: [
+            { "transfer.retryCount": { $lt: maxRetries } },
+            { "transfer.retryCount": { $exists: false } }
+          ]
+        }
+      ]
+    } as never);
   }
 
   async markSucceededWithPaymentDetails(

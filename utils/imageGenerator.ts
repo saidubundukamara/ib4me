@@ -46,7 +46,7 @@ function wrapText(
   return currentY + lineHeight;
 }
 
-export async function generateCampaignImage(
+export async function generateCampaignImageLegacy(
   campaign: CampaignImageData,
   baseUrl: string
 ): Promise<Blob> {
@@ -110,10 +110,8 @@ export async function generateCampaignImage(
     );
     ctx.fill();
 
-    // Generate and load QR code image - use Monime payment URL if UVAN available
-    const qrCodeUrl = campaign.financial_account?.uvan
-      ? `https://pay.monime.io/${campaign.financial_account.uvan}`
-      : `${baseUrl}/campaigns/${campaign.slug}`;
+    // Generate QR code URL - links directly to the donate page
+    const qrCodeUrl = `${baseUrl}/campaigns/${campaign.slug}/donate`;
     const qrImageUrl = generateQRCodeDataURL(qrCodeUrl, 280);
 
     const qrImage = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -234,6 +232,155 @@ export async function generateCampaignImage(
       width / 2,
       height - 40
     );
+
+    // Convert canvas to blob
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error("Failed to generate image"));
+          }
+        },
+        "image/png",
+        0.9
+      );
+    });
+  } catch (error) {
+    console.error("Error generating image:", error);
+    throw error;
+  }
+}
+
+// Base template image path
+const BASE_TEMPLATE_PATH = "/assets/campaign_base.png";
+
+export async function generateCampaignImage(
+  campaign: CampaignImageData,
+  baseUrl: string
+): Promise<Blob> {
+  // Ensure we're in the browser environment
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    throw new Error("Image generation only works in browser environment");
+  }
+
+  console.log("Generating campaign image for campaign:", campaign);
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  if (!ctx) {
+    throw new Error("Could not get canvas context");
+  }
+
+  // Set canvas dimensions for mobile-friendly sharing (1080x1080 square)
+  const width = 1080;
+  const height = 1080;
+  canvas.width = width;
+  canvas.height = height;
+
+  try {
+    // Load and draw the base template image
+    const templateImage = await new Promise<HTMLImageElement>(
+      (resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("Failed to load base template"));
+        img.src = BASE_TEMPLATE_PATH;
+      }
+    );
+
+    // Draw the template as background
+    ctx.drawImage(templateImage, 0, 0, width, height);
+
+    // Campaign information section (top area)
+    // Based on reference image: labels left-aligned, values aligned after labels
+    const contentStartY = 140; // Moved down from 100
+    const labelX = 165; // Left margin for labels
+    const valueX = 470; // X position where values start (aligned for all rows)
+
+    // Name row
+    ctx.font = "bold 36px Arial, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#047857"; // Green for label
+    ctx.fillText("Name:", labelX, contentStartY);
+    ctx.fillStyle = "#1F2937"; // Dark gray for value
+    const patientName = campaign.patient?.name || "Patient";
+    ctx.fillText(patientName, valueX, contentStartY);
+
+    // Diagnosis row
+    ctx.fillStyle = "#047857";
+    ctx.fillText("Diagnosis:", labelX, contentStartY + 60);
+    ctx.fillStyle = "#1F2937";
+    const diagnosis = campaign.diagnosis || "Medical Treatment";
+    if (diagnosis.length > 25) {
+      ctx.font = "bold 32px Arial, sans-serif";
+    }
+    ctx.fillText(diagnosis, valueX, contentStartY + 60);
+    ctx.font = "bold 36px Arial, sans-serif";
+
+    // Campaign Goal row
+    ctx.fillStyle = "#047857";
+    ctx.fillText("Campaign Goal:", labelX, contentStartY + 120);
+    ctx.fillStyle = "#1F2937";
+    const goal = (campaign.goal?.amountMinor ?? 0) / 100;
+    const goalFormatted = `LE ${goal.toLocaleString()}`;
+    ctx.fillText(goalFormatted, valueX, contentStartY + 120);
+
+    // Call to action - single line, centered
+    const ctaY = contentStartY + 210;
+    ctx.font = "bold 26px Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#1F2937";
+    ctx.fillText("Scan To Donate Directly Via", width / 2 - 90, ctaY);
+
+    // "Mobile Money" in orange - on same line
+    ctx.fillStyle = "#F97316";
+    ctx.fillText("Mobile Money", width / 2 + 175, ctaY);
+
+    // QR Code section
+    const qrContainerSize = 320;
+    const qrContainer = {
+      x: (width - qrContainerSize) / 2,
+      y: ctaY + 60, // Space below CTA text
+      width: qrContainerSize,
+      height: qrContainerSize,
+      borderRadius: 24,
+    };
+
+    // Draw green rounded background for QR code
+    ctx.fillStyle = "#047857";
+    ctx.beginPath();
+    ctx.roundRect(
+      qrContainer.x,
+      qrContainer.y,
+      qrContainer.width,
+      qrContainer.height,
+      qrContainer.borderRadius
+    );
+    ctx.fill();
+
+    // Generate QR code URL - links directly to the donate page
+    const qrCodeUrl = `${baseUrl}/campaigns/${campaign.slug}/donate`;
+
+    // Generate QR with white background and green color
+    const qrSize = 280;
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(qrCodeUrl)}&format=png&bgcolor=ffffff&color=047857&qzone=2`;
+
+    const qrImage = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Failed to load QR code"));
+      img.src = qrImageUrl;
+    });
+
+    // Draw QR code centered in the container
+    const qrX = qrContainer.x + (qrContainer.width - qrSize) / 2;
+    const qrY = qrContainer.y + (qrContainer.height - qrSize) / 2;
+    ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
 
     // Convert canvas to blob
     return new Promise((resolve, reject) => {

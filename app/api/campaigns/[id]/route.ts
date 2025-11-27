@@ -158,6 +158,7 @@ export async function PATCH(
   const category = form.get("category") as string | null;
   const patientName = form.get("patient.name") as string | null;
   const patientAgeStr = form.get("patient.age") as string | null;
+  const hospitalId = form.get("hospital.hospitalId") as string | null;
   const hospitalName = form.get("hospital.name") as string | null;
   const goalCurrency = form.get("goal.currency") as string | null;
   const goalAmountMinorStr = form.get("goal.amountMinor") as string | null;
@@ -212,8 +213,18 @@ export async function PATCH(
   }
 
   // Handle hospital
-  if (hospitalName !== null) {
-    updatable["hospital.name"] = hospitalName;
+  if (hospitalId !== null || hospitalName !== null) {
+    if (hospitalId) {
+      updatable["hospital.hospitalId"] = mongoose.Types.ObjectId.isValid(hospitalId)
+        ? new mongoose.Types.ObjectId(hospitalId)
+        : null;
+    } else if (hospitalId === "") {
+      // Clear hospitalId if empty string passed
+      updatable["hospital.hospitalId"] = null;
+    }
+    if (hospitalName !== null) {
+      updatable["hospital.name"] = hospitalName;
+    }
   }
 
   // Handle goal

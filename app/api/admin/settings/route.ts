@@ -50,6 +50,9 @@ export async function GET(request: NextRequest) {
       case "tipping":
         settings = await settingService.getTippingSettings();
         break;
+      case "cookieConsent":
+        settings = await settingService.getCookieConsentSettings();
+        break;
       default:
         // Return all categories when no specific category is requested
         const [website, payment, features, contact, social, seo, campaignLimits] =
@@ -192,6 +195,12 @@ export async function PUT(request: NextRequest) {
         break;
       case "tipping":
         updatedSettings = await settingService.updateTippingSettings(
+          body,
+          adminContext.adminId.toString()
+        );
+        break;
+      case "cookieConsent":
+        updatedSettings = await settingService.updateCookieConsentSettings(
           body,
           adminContext.adminId.toString()
         );

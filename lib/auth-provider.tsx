@@ -32,63 +32,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // We now rely solely on httpOnly cookies for authentication
       localStorage.removeItem("auth_token")
 
-      // Check for admin token in cookies (the only valid auth method)
-      const adminToken = getCookie("admin_token")
-      if (adminToken) {
-        // Verify admin token with server
-        verifyAdminToken(adminToken)
-      } else {
-        // No token - try to restore cached user display data only
-        const storedUser = localStorage.getItem("admin_user_display")
-        if (storedUser) {
-          try {
-            // This is display-only data, not auth - still need to verify with server
-            // Just clear it since we have no valid token
-            localStorage.removeItem("admin_user_display")
-          } catch {
-            localStorage.removeItem("admin_user_display")
-          }
-        }
-        setIsLoading(false)
-      }
+      // Always verify session with server
+      // The httpOnly cookie is automatically sent with the request
+      // We can't read httpOnly cookies via JavaScript (that's the security point)
+      verifyAdminSession()
     } else {
       setIsLoading(false)
     }
   }, [])
 
-  // Helper function to get cookie value
-  const getCookie = (name: string) => {
-    if (typeof document === "undefined") return null
-    const value = `; ${document.cookie}`
-    const parts = value.split(`; ${name}=`)
-    if (parts.length === 2) return parts.pop()?.split(';').shift()
-    return null
-  }
-
-  // Verify admin token with server
-  const verifyAdminToken = async (token: string) => {
+  // Verify admin session with server
+  // The httpOnly cookie is automatically sent with credentials: "include"
+  const verifyAdminSession = async () => {
     try {
       const response = await fetch("/api/admin/auth/verify", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include",
+        credentials: "include", // Important: sends httpOnly cookies automatically
       })
 
       const data = await response.json()
 
       if (response.ok && data.user) {
         setUser(data.user)
-        setAccessToken(token)
-        console.log("Admin token verified successfully")
+        setAccessToken("valid") // Token is in httpOnly cookie, just mark as valid
+        console.log("Admin session verified successfully")
       } else {
-        console.log("Admin token verification failed:", data.message)
-        // Clear invalid token
-        document.cookie = "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+        console.log("Admin session verification failed:", data.message || data.error)
+        // Clear any cached user display data
+        localStorage.removeItem("admin_user_display")
       }
     } catch (error) {
-      console.error("Error verifying admin token:", error)
+      console.error("Error verifying admin session:", error)
+      localStorage.removeItem("admin_user_display")
     } finally {
       setIsLoading(false)
     }

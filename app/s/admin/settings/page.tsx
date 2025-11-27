@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSettings } from "@/lib/settings-provider";
-import { Loader2, Settings, CreditCard, ToggleLeft, Phone, Share2, Search, BarChart3, Percent, Wallet } from "lucide-react";
+import { Loader2, Settings, CreditCard, ToggleLeft, Phone, Share2, Search, BarChart3, Percent, Wallet, Cookie } from "lucide-react";
 // import { toast } from "sonner";
 
 // Import setting components (we'll create these)
@@ -18,6 +18,7 @@ import SEOSettings from "./components/SEOSettings";
 import CampaignLimitsSettings from "./components/CampaignLimitsSettings";
 import FeeSettings from "./components/FeeSettings";
 import PlatformAccountSettings from "./components/PlatformAccountSettings";
+import CookieConsentSettings from "./components/CookieConsentSettings";
 
 export default function AdminSettingsPage() {
   const { loading, error, clearError } = useSettings();
@@ -61,7 +62,7 @@ export default function AdminSettingsPage() {
 
       {/* Settings Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-9">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-10">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">General</span>
@@ -97,6 +98,10 @@ export default function AdminSettingsPage() {
           <TabsTrigger value="seo" className="flex items-center gap-2">
             <Search className="h-4 w-4" />
             <span className="hidden sm:inline">SEO</span>
+          </TabsTrigger>
+          <TabsTrigger value="cookies" className="flex items-center gap-2">
+            <Cookie className="h-4 w-4" />
+            <span className="hidden sm:inline">Cookies</span>
           </TabsTrigger>
         </TabsList>
 
@@ -222,6 +227,20 @@ export default function AdminSettingsPage() {
             </CardHeader>
             <CardContent>
               <SEOSettings />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="cookies">
+          <Card>
+            <CardHeader>
+              <CardTitle>Cookie Consent & Analytics</CardTitle>
+              <CardDescription>
+                Configure cookie consent banners and analytics tracking for GDPR compliance.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CookieConsentSettings />
             </CardContent>
           </Card>
         </TabsContent>

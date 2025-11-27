@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { settingRepository } from "../repositories";
-import { ISetting, IWithdrawalSetting, IFeeSetting, IFeatureFlags, IWebsiteSettings, IContactSettings, ISocialSettings, ISeoSettings, ICampaignLimitsSettings } from "../models/Setting";
+import { ISetting, IWithdrawalSetting, IFeeSetting, IFeatureFlags, IWebsiteSettings, IContactSettings, ISocialSettings, ISeoSettings, ICampaignLimitsSettings, ICookieConsentSettings, IAnalyticsService } from "../models/Setting";
 import { createSimpleAuditLog } from "../lib/simple-admin-audit";
 
 interface WebsiteSettings {
@@ -125,6 +125,56 @@ export interface TippingSettings {
   maxAmountMinor: number;
 }
 
+export interface CookieConsentSettings {
+  enabled: boolean;
+  banner: {
+    title: string;
+    message: string;
+    acceptAllText: string;
+    rejectAllText: string;
+    customizeText: string;
+  };
+  categories: {
+    essential: { name: string; description: string };
+    analytics: { name: string; description: string };
+    marketing: { name: string; description: string };
+    functional: { name: string; description: string };
+  };
+  services: IAnalyticsService[];
+  consentExpiryDays: number;
+}
+
+const DEFAULT_COOKIE_CONSENT_SETTINGS: CookieConsentSettings = {
+  enabled: false,
+  banner: {
+    title: "Cookie Preferences",
+    message: "We use cookies to enhance your browsing experience and analyze our traffic. By clicking 'Accept All', you consent to our use of cookies.",
+    acceptAllText: "Accept All",
+    rejectAllText: "Reject Non-Essential",
+    customizeText: "Customize",
+  },
+  categories: {
+    essential: {
+      name: "Essential Cookies",
+      description: "Required for the website to function properly. Cannot be disabled.",
+    },
+    analytics: {
+      name: "Analytics Cookies",
+      description: "Help us understand how visitors interact with our website.",
+    },
+    marketing: {
+      name: "Marketing Cookies",
+      description: "Used to track visitors across websites for advertising purposes.",
+    },
+    functional: {
+      name: "Functional Cookies",
+      description: "Enable enhanced functionality and personalization.",
+    },
+  },
+  services: [],
+  consentExpiryDays: 365,
+};
+
 export class SettingService {
   async getPlatform(): Promise<ISetting | null> {
     return settingRepository.getPlatformSettings();
@@ -141,7 +191,7 @@ export class SettingService {
           allowEmergencyOverride: true
         },
         fees: {
-          baseFeeMinor: 50,  // Le 0.50
+          baseFeeMinor: 0,  // Set to 0 - Monime deducts 1% automatically
           processingFee: {
             individualBps: 260,    // 2.6%
             organizationBps: 200,  // 2.0%
@@ -430,7 +480,7 @@ export class SettingService {
     const fees = settings.fees || {};
 
     return {
-      baseFeeMinor: fees.baseFeeMinor ?? 50,  // Default Le 0.50
+      baseFeeMinor: fees.baseFeeMinor ?? 0,  // Default 0 - Monime deducts 1% automatically
       processingFee: {
         individualBps: fees.processingFee?.individualBps ?? 260,    // Default 2.6%
         organizationBps: fees.processingFee?.organizationBps ?? 200, // Default 2.0%
@@ -466,13 +516,20 @@ export class SettingService {
   /**
    * Calculate fees for a donation based on campaign type
    * Fees are added ON TOP of the donation amount
+   *
+   * Fee structure:
+   * - Base fee: 1% (100 bps) - Monime payment processor fee (charged to donor, deducted by Monime)
+   * - Processing fee: 2.6% (individual) / 2.0% (organization) - Platform fee
    */
   calculateDonationFees(
     donationAmountMinor: number,
     campaignType: CampaignType,
     feeSettings: FeeSettings
   ): CalculatedFees {
-    const baseFeeMinor = feeSettings.baseFeeMinor;
+    // Base fee is Monime's 1% (100 bps) - always percentage-based
+    const BASE_FEE_BPS = 100; // 1%
+    const baseFeeMinor = Math.round(donationAmountMinor * BASE_FEE_BPS / 10000);
+
     const processingFeeBps = campaignType === "organization"
       ? feeSettings.processingFee.organizationBps
       : feeSettings.processingFee.individualBps;
@@ -566,6 +623,139 @@ export class SettingService {
     } as Partial<ISetting>, adminUserId);
 
     return this.getTippingSettings();
+  }
+
+  // ==================== Cookie Consent Settings ====================
+
+  async getCookieConsentSettings(): Promise<CookieConsentSettings> {
+    const settings = await this.getOrCreatePlatform();
+    const cookieConsent = settings.cookieConsent || {};
+
+    return {
+      enabled: cookieConsent.enabled ?? DEFAULT_COOKIE_CONSENT_SETTINGS.enabled,
+      banner: {
+        title: cookieConsent.banner?.title ?? DEFAULT_COOKIE_CONSENT_SETTINGS.banner.title,
+        message: cookieConsent.banner?.message ?? DEFAULT_COOKIE_CONSENT_SETTINGS.banner.message,
+        acceptAllText: cookieConsent.banner?.acceptAllText ?? DEFAULT_COOKIE_CONSENT_SETTINGS.banner.acceptAllText,
+        rejectAllText: cookieConsent.banner?.rejectAllText ?? DEFAULT_COOKIE_CONSENT_SETTINGS.banner.rejectAllText,
+        customizeText: cookieConsent.banner?.customizeText ?? DEFAULT_COOKIE_CONSENT_SETTINGS.banner.customizeText,
+      },
+      categories: {
+        essential: {
+          name: cookieConsent.categories?.essential?.name ?? DEFAULT_COOKIE_CONSENT_SETTINGS.categories.essential.name,
+          description: cookieConsent.categories?.essential?.description ?? DEFAULT_COOKIE_CONSENT_SETTINGS.categories.essential.description,
+        },
+        analytics: {
+          name: cookieConsent.categories?.analytics?.name ?? DEFAULT_COOKIE_CONSENT_SETTINGS.categories.analytics.name,
+          description: cookieConsent.categories?.analytics?.description ?? DEFAULT_COOKIE_CONSENT_SETTINGS.categories.analytics.description,
+        },
+        marketing: {
+          name: cookieConsent.categories?.marketing?.name ?? DEFAULT_COOKIE_CONSENT_SETTINGS.categories.marketing.name,
+          description: cookieConsent.categories?.marketing?.description ?? DEFAULT_COOKIE_CONSENT_SETTINGS.categories.marketing.description,
+        },
+        functional: {
+          name: cookieConsent.categories?.functional?.name ?? DEFAULT_COOKIE_CONSENT_SETTINGS.categories.functional.name,
+          description: cookieConsent.categories?.functional?.description ?? DEFAULT_COOKIE_CONSENT_SETTINGS.categories.functional.description,
+        },
+      },
+      services: cookieConsent.services || [],
+      consentExpiryDays: cookieConsent.consentExpiryDays ?? DEFAULT_COOKIE_CONSENT_SETTINGS.consentExpiryDays,
+    };
+  }
+
+  async updateCookieConsentSettings(
+    updates: Partial<CookieConsentSettings>,
+    adminUserId?: string
+  ): Promise<CookieConsentSettings> {
+    const settings = await this.getOrCreatePlatform();
+    const currentCookieConsent = settings.cookieConsent || {};
+
+    // Deep merge the updates
+    const updatedCookieConsent: Partial<ICookieConsentSettings> = {
+      ...currentCookieConsent,
+    };
+
+    if (updates.enabled !== undefined) {
+      updatedCookieConsent.enabled = updates.enabled;
+    }
+
+    if (updates.banner) {
+      updatedCookieConsent.banner = {
+        ...currentCookieConsent.banner,
+        ...updates.banner,
+      };
+    }
+
+    if (updates.categories) {
+      updatedCookieConsent.categories = {
+        essential: { ...currentCookieConsent.categories?.essential, ...updates.categories.essential },
+        analytics: { ...currentCookieConsent.categories?.analytics, ...updates.categories.analytics },
+        marketing: { ...currentCookieConsent.categories?.marketing, ...updates.categories.marketing },
+        functional: { ...currentCookieConsent.categories?.functional, ...updates.categories.functional },
+      };
+    }
+
+    if (updates.services !== undefined) {
+      updatedCookieConsent.services = updates.services;
+    }
+
+    if (updates.consentExpiryDays !== undefined) {
+      updatedCookieConsent.consentExpiryDays = updates.consentExpiryDays;
+    }
+
+    await this.updatePlatformSettings({
+      cookieConsent: updatedCookieConsent
+    } as Partial<ISetting>, adminUserId);
+
+    return this.getCookieConsentSettings();
+  }
+
+  /**
+   * Get public cookie consent config (without tracking IDs)
+   * Used by the frontend to display the consent banner
+   */
+  async getPublicCookieConsentConfig(): Promise<{
+    enabled: boolean;
+    banner: CookieConsentSettings['banner'];
+    categories: CookieConsentSettings['categories'];
+    services: Array<{ id: string; name: string; category: string }>;
+    consentExpiryDays: number;
+  }> {
+    const settings = await this.getCookieConsentSettings();
+
+    return {
+      enabled: settings.enabled,
+      banner: settings.banner,
+      categories: settings.categories,
+      services: settings.services
+        .filter((s) => s.enabled)
+        .map((s) => ({
+          id: s.id,
+          name: s.name,
+          category: s.category,
+        })),
+      consentExpiryDays: settings.consentExpiryDays,
+    };
+  }
+
+  /**
+   * Get analytics config with tracking IDs (for loading scripts after consent)
+   */
+  async getAnalyticsConfig(): Promise<{
+    services: Array<{ id: string; name: string; category: string; trackingId: string }>;
+  }> {
+    const settings = await this.getCookieConsentSettings();
+
+    return {
+      services: settings.services
+        .filter((s) => s.enabled && s.trackingId)
+        .map((s) => ({
+          id: s.id,
+          name: s.name,
+          category: s.category,
+          trackingId: s.trackingId!,
+        })),
+    };
   }
 }
 

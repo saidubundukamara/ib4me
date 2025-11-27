@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -5,6 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectValue, SelectItem, SelectTrigger, SelectContent } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Mail, Phone, MapPin, Clock, Send } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: 'Contact Us',
+  description: 'Get in touch with the ib4me team for support with your medical fundraising campaign.',
+};
 
 const Contact = () => {
   return (

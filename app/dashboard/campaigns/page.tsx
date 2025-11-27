@@ -2,6 +2,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Plus, Trash2 } from "lucide-react";
@@ -13,6 +14,8 @@ import CampaignFormWizard, {
 } from "../_components/CampaignFormWizard";
 import DeleteCampaignDialog from "../_components/DeleteCampaignDialog";
 import CampaignLimitBanner from "../_components/CampaignLimitBanner";
+import VerificationRequiredBanner from "../_components/VerificationRequiredBanner";
+import VerificationRequiredModal from "../_components/VerificationRequiredModal";
 import { toast } from "sonner";
 
 interface CampaignLimitInfo {
@@ -21,6 +24,12 @@ interface CampaignLimitInfo {
   maxAllowed: number;
   userType: "individual" | "organization";
   remainingSlots: number | null;
+  verification?: {
+    verified: boolean;
+    status?: "not_started" | "pending" | "under_review" | "approved" | "rejected";
+    reason?: string;
+    type: "kyc" | "kyb";
+  };
 }
 
 type UrgencyValue = "low" | "medium" | "high";
@@ -193,6 +202,7 @@ const isRemoteImageSrc = (src: string): boolean =>
   /^https?:\/\//i.test(src) || src.startsWith("data:");
 
 export default function UserCampaignsPage() {
+  const router = useRouter();
   const [items, setItems] = React.useState<CampaignItem[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
@@ -203,6 +213,7 @@ export default function UserCampaignsPage() {
   const [editSubmitting, setEditSubmitting] = React.useState(false);
   const [deletingCampaign, setDeletingCampaign] = React.useState<CampaignItem | null>(null);
   const [limitInfo, setLimitInfo] = React.useState<CampaignLimitInfo | null>(null);
+  const [showVerificationModal, setShowVerificationModal] = React.useState(false);
 
   const refreshLimitInfo = React.useCallback(async () => {
     try {
@@ -286,6 +297,9 @@ export default function UserCampaignsPage() {
       if (formValues.patient.photo) {
         formData.set("patientPhoto", formValues.patient.photo);
       }
+      if (formValues.hospital.hospitalId) {
+        formData.set("hospital.hospitalId", formValues.hospital.hospitalId);
+      }
       if (formValues.hospital.name) {
         formData.set("hospital.name", formValues.hospital.name);
       }
@@ -340,6 +354,11 @@ export default function UserCampaignsPage() {
         });
         setIsCreateOpen(false);
 
+        // Show verification modal if user is not verified
+        if (data.ownerVerification && !data.ownerVerification.verified) {
+          setShowVerificationModal(true);
+        }
+
         // Refresh limit info after successful creation
         await refreshLimitInfo();
       } catch (error) {
@@ -369,6 +388,9 @@ export default function UserCampaignsPage() {
       formData.set("patient.name", values.patient.name);
       if (values.patient.age !== undefined) {
         formData.set("patient.age", String(values.patient.age));
+      }
+      if (values.hospital.hospitalId) {
+        formData.set("hospital.hospitalId", values.hospital.hospitalId);
       }
       if (values.hospital.name) {
         formData.set("hospital.name", values.hospital.name);
@@ -485,6 +507,7 @@ export default function UserCampaignsPage() {
             ...(existingPatientPhoto ? { photo: existingPatientPhoto } : {}),
           },
           hospital: {
+            hospitalId: data?.hospital?.hospitalId ?? undefined,
             name: data?.hospital?.name ?? campaign.hospitalName ?? "",
           },
           goal: {
@@ -607,6 +630,19 @@ export default function UserCampaignsPage() {
           {isCreateOpen ? "Close Form" : "Create Campaign"}
         </Button>
       </div>
+
+      {/* Verification Required Banner */}
+      {limitInfo?.verification && !limitInfo.verification.verified && limitInfo.verification.status !== "approved" && (
+        <VerificationRequiredBanner
+          verificationStatus={limitInfo.verification.status as "not_started" | "pending" | "under_review" | "rejected" ?? "not_started"}
+          verificationType={limitInfo.verification.type}
+          rejectionReason={
+            limitInfo.verification.status === "rejected"
+              ? limitInfo.verification.reason
+              : undefined
+          }
+        />
+      )}
 
       {/* Campaign Limit Banner - only shows when near or at limit */}
       {limitInfo && limitInfo.maxAllowed !== Infinity && (
@@ -817,6 +853,18 @@ export default function UserCampaignsPage() {
           onConfirm={() => handleDeleteCampaign(deletingCampaign.id)}
         />
       )}
+
+      {/* Verification Required Modal - shown after campaign creation for unverified users */}
+      <VerificationRequiredModal
+        open={showVerificationModal}
+        onOpenChange={setShowVerificationModal}
+        verificationStatus={(limitInfo?.verification?.status === "approved" ? "not_started" : limitInfo?.verification?.status) ?? "not_started"}
+        verificationType={limitInfo?.verification?.type ?? "kyc"}
+        onGoToVerification={() => {
+          setShowVerificationModal(false);
+          router.push("/dashboard/verification");
+        }}
+      />
     </div>
   );
 }

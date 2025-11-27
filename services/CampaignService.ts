@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { campaignRepository, userRepository } from "../repositories";
-import { ICampaign } from "../models/Campaign";
+import { ICampaign, ICampaignOwnerVerification } from "../models/Campaign";
 import { monimeService, MonimeFinancialAccountRequest, MonimeApiError } from "../lib/monime";
 import { runInTransaction } from "./ServiceTransaction";
 import { auditLogService } from "./AuditLogService";
@@ -37,6 +37,15 @@ export interface CampaignLimitCheckResult {
   maxAllowed: number;
   userType: "individual" | "organization";
   reason?: string;
+}
+
+export interface CreateCampaignResult {
+  campaign: ICampaign;
+  ownerVerification: {
+    verified: boolean;
+    status: ICampaignOwnerVerification["status"];
+    message?: string;
+  };
 }
 
 export class CampaignService {
@@ -202,6 +211,7 @@ export class CampaignService {
       }
 
       const previousVerificationStatus = originalCampaign.verification?.status;
+      const previousStatus = originalCampaign.status;
 
       const updateData: Record<string, unknown> = {
         "verification.status": verificationStatus,
@@ -209,6 +219,11 @@ export class CampaignService {
         "verification.verifiedBy": adminId,
         updatedAt: new Date()
       };
+
+      // When approving a campaign, also set its status to "active" so it becomes visible
+      if (verificationStatus === "approved") {
+        updateData.status = "active";
+      }
 
       const updatedCampaign = await campaignRepository.updateById(
         campaignId,
@@ -234,6 +249,8 @@ export class CampaignService {
         diff: {
           previousVerificationStatus,
           newVerificationStatus: verificationStatus,
+          previousStatus,
+          newStatus: verificationStatus === "approved" ? "active" : previousStatus,
           reason,
           campaignId,
           campaignSlug: originalCampaign.slug,
@@ -353,28 +370,73 @@ export class CampaignService {
     };
   }
 
-  async createCampaign(campaignData: Partial<ICampaign>): Promise<ICampaign> {
-    // Check if user is verified before creating campaign
+  async createCampaign(campaignData: Partial<ICampaign>): Promise<CreateCampaignResult> {
+    // Check verification status (informational, not blocking)
+    let ownerVerificationData: ICampaignOwnerVerification = {
+      verified: false,
+      verifiedAt: null,
+      status: "not_started",
+    };
+    let verificationMessage: string | undefined;
+
+    // Determine initial campaign status and verification
+    // Default: draft status, pending verification (requires admin approval)
+    let initialStatus: ICampaign["status"] = "draft";
+    let initialVerificationStatus: "pending" | "under_review" | "approved" | "rejected" = "pending";
+
     if (campaignData.ownerId) {
       const verificationStatus = await verificationService.isUserVerifiedForCampaigns(
         campaignData.ownerId.toString()
       );
 
-      if (!verificationStatus.verified) {
-        throw new Error(verificationStatus.reason || "User verification required to create campaigns");
+      ownerVerificationData = {
+        verified: verificationStatus.verified,
+        verifiedAt: verificationStatus.verified ? new Date() : null,
+        status: (verificationStatus.status || "not_started") as ICampaignOwnerVerification["status"],
+      };
+
+      // Auto-approve for verified organizations
+      // Verified organizations get their campaigns automatically approved and made active
+      if (verificationStatus.verified && verificationStatus.role === "Organization") {
+        initialStatus = "active";
+        initialVerificationStatus = "approved";
       }
 
-      // Check campaign limit
+      // Set message based on verification status
+      if (!verificationStatus.verified) {
+        if (verificationStatus.status === "pending" || verificationStatus.status === "under_review") {
+          verificationMessage = "Your verification is being reviewed. You can create campaigns but they will be hidden until approved by admin.";
+        } else if (verificationStatus.status === "rejected") {
+          verificationMessage = "Your verification was rejected. Please resubmit to enable donations.";
+        } else {
+          verificationMessage = "Please complete KYC verification. Your campaign will be hidden until approved by admin.";
+        }
+      }
+
+      // Check campaign limit (still enforced)
       const limitCheck = await this.checkCampaignLimitForUser(campaignData.ownerId.toString());
       if (!limitCheck.allowed) {
         throw new Error(limitCheck.reason || "Campaign limit reached");
       }
     }
 
-    return runInTransaction(async (session) => {
+    // Include ownerVerification and initial status in campaign data
+    const campaignWithVerification = {
+      ...campaignData,
+      status: initialStatus,
+      verification: {
+        status: initialVerificationStatus,
+        verifiedAt: initialVerificationStatus === "approved" ? new Date() : null,
+        verifiedBy: null, // null indicates system auto-approved
+        hospitalVerified: false,
+      },
+      ownerVerification: ownerVerificationData,
+    };
+
+    const campaign = await runInTransaction(async (session) => {
       // Create the campaign first
-      const campaign = await campaignRepository.create(campaignData, session);
-      
+      const campaign = await campaignRepository.create(campaignWithVerification, session);
+
       // Create financial account with Monime
       const financialAccountRequest: MonimeFinancialAccountRequest = {
         name: `Campaign: ${campaign.slug}`,
@@ -382,13 +444,13 @@ export class CampaignService {
         reference: campaign.slug,
         description: `Financial account for campaign: ${campaign.patient?.name || campaign.diagnosis || campaign.slug}`,
       };
-      
+
       try {
         const financialAccount = await monimeService.createFinancialAccount(
           financialAccountRequest,
           `campaign-${campaign._id}-${Date.now()}`
         );
-        
+
         // Update campaign with financial account details
         const updatedCampaign = await campaignRepository.updateById(
           String(campaign._id),
@@ -418,6 +480,32 @@ export class CampaignService {
         throw new Error(`Failed to create financial account: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     });
+
+    return {
+      campaign,
+      ownerVerification: {
+        verified: ownerVerificationData.verified,
+        status: ownerVerificationData.status,
+        message: verificationMessage,
+      },
+    };
+  }
+
+  /**
+   * Update ownerVerification for all campaigns owned by a user.
+   * Called when user's KYC verification status changes.
+   */
+  async updateCampaignsOwnerVerification(
+    ownerId: mongoose.Types.ObjectId,
+    verified: boolean,
+    status: ICampaignOwnerVerification["status"]
+  ): Promise<number> {
+    const result = await campaignRepository.updateManyByOwner(ownerId, {
+      "ownerVerification.verified": verified,
+      "ownerVerification.status": status,
+      "ownerVerification.verifiedAt": verified ? new Date() : null,
+    });
+    return result.modifiedCount;
   }
 }
 

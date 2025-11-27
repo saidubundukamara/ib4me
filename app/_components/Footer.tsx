@@ -1,3 +1,14 @@
+"use client";
+
+import Ib4meLogo from "@/public/assets/ib4melogowhite.png";
+import Link from "next/link";
+import Image from "next/image";
+import { StaticImageData } from "next/image";
+import { Facebook, X, Instagram, Linkedin } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useCookieConsent } from "@/components/cookie-consent";
+import { useSettings } from "@/lib/settings-provider";
+
 interface MenuItem {
     title: string;
     links: {
@@ -20,12 +31,6 @@ interface FooterProps {
         url: string;
     }[];
 }
-import Ib4meLogo from "@/public/assets/ib4melogowhite.png";
-import Link from "next/link";
-import Image from "next/image";
-import { StaticImageData } from "next/image";
-import { Facebook, X, Instagram, Linkedin } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const Footer = ({
     logo = {
@@ -49,27 +54,22 @@ const Footer = ({
             links: [
                 { text: "Help Center", url: "/" },
                 { text: "FAQs", url: "/faqs" },
-                { text: "Privacy Policy", url: "/" },
-                { text: "Terms of Service", url: "/" },
+                { text: "Privacy Policy", url: "/privacy" },
+                { text: "Terms of Service", url: "/terms" },
                 { text: "Contact Us", url: "/contact" },
-            ],
-        },
-        {
-            title: "Get in Touch",
-            links: [
-                { text: "X", url: "#" },
-                { text: "Instagram", url: "#" },
-                { text: "LinkedIn", url: "#" },
             ],
         },
     ],
     copyright = `© ${new Date().getFullYear()} Copyright. All rights reserved.`,
     bottomLinks = [
-        { text: "Terms and Conditions", url: "#" },
-        { text: "Privacy Policy", url: "#" },
+        { text: "Terms and Conditions", url: "/terms" },
+        { text: "Privacy Policy", url: "/privacy" },
     ],
 }: FooterProps
 ) => {
+    const { config, openSettings } = useCookieConsent();
+    const { social } = useSettings();
+
     return (
         <section data-testid="footer" className="mt-16 pt-10 bg-primary text-white font-Sora">
             <div>
@@ -89,18 +89,34 @@ const Footer = ({
                                 A trusted platform connecting communities to support those in need of life-changing healthcare.
                             </p>
                             <div className="flex gap-3">
-                                <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
-                                    <Facebook className="w-5 h-5" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
-                                    <X className="w-5 h-5" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
-                                    <Instagram className="w-5 h-5" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
-                                    <Linkedin className="w-5 h-5" />
-                                </Button>
+                                {social.facebook && (
+                                    <Link href={social.facebook} target="_blank" rel="noopener noreferrer">
+                                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
+                                            <Facebook className="w-5 h-5" />
+                                        </Button>
+                                    </Link>
+                                )}
+                                {social.twitter && (
+                                    <Link href={social.twitter} target="_blank" rel="noopener noreferrer">
+                                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
+                                            <X className="w-5 h-5" />
+                                        </Button>
+                                    </Link>
+                                )}
+                                {social.instagram && (
+                                    <Link href={social.instagram} target="_blank" rel="noopener noreferrer">
+                                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
+                                            <Instagram className="w-5 h-5" />
+                                        </Button>
+                                    </Link>
+                                )}
+                                {social.linkedin && (
+                                    <Link href={social.linkedin} target="_blank" rel="noopener noreferrer">
+                                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
+                                            <Linkedin className="w-5 h-5" />
+                                        </Button>
+                                    </Link>
+                                )}
                             </div>
                         </div>
                         {menuItems.map((section, sectionIdx) => (
@@ -127,6 +143,16 @@ const Footer = ({
                                     <Link href={link.url}>{link.text}</Link>
                                 </li>
                             ))}
+                            {config?.enabled && (
+                                <li className="underline hover:text-orange-blaze">
+                                    <button
+                                        onClick={openSettings}
+                                        className="hover:text-orange-blaze"
+                                    >
+                                        Cookie Settings
+                                    </button>
+                                </li>
+                            )}
                         </ul>
                     </div>
                 </footer>

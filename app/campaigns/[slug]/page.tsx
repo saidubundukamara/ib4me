@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -15,6 +16,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ShieldAlert } from "lucide-react";
 import { campaignService, mediaAssetService } from "@/services";
 import { CloudinaryService } from "@/lib/cloudinary";
 import {
@@ -24,7 +28,58 @@ import {
 } from "@/repositories";
 import CampaignTabs, { CampaignUpdateItem } from "./Tabs";
 
-type PageParams = { params: { slug: string } };
+type PageParams = { params: Promise<{ slug: string }> };
+
+export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
+  const { slug } = await params;
+  const campaign = await campaignService.getBySlug(slug);
+
+  if (!campaign) {
+    return { title: 'Campaign Not Found' };
+  }
+
+  // Get patient photo URL if available
+  let imageUrl = 'https://ib4me.org/assets/Hero.png';
+  if (campaign.patient?.photoAssetId) {
+    const assets = await mediaAssetService.listByIds([campaign.patient.photoAssetId as mongoose.Types.ObjectId]);
+    const asset = assets[0];
+    if (asset?.storage?.key) {
+      imageUrl = CloudinaryService.generateTransformationUrl(asset.storage.key, {
+        width: 1200,
+        crop: 'fill',
+        gravity: 'auto',
+        aspect_ratio: '1.91:1',
+        fetch_format: 'auto',
+        quality: 'auto',
+      });
+    }
+  }
+
+  const patientName = campaign.patient?.name || 'a patient';
+  const goalAmount = campaign.goal?.amountMinor ? (campaign.goal.amountMinor / 100).toLocaleString() : '0';
+  const raisedAmount = campaign.totals?.raisedMinor ? (campaign.totals.raisedMinor / 100).toLocaleString() : '0';
+  const currency = campaign.goal?.currency || 'SLE';
+
+  const title = `Help ${patientName} - Medical Fundraiser`;
+  const description = `Help ${patientName} raise ${currency} ${goalAmount} for ${campaign.diagnosis || 'medical treatment'}. ${currency} ${raisedAmount} raised so far.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [{ url: imageUrl, width: 1200, height: 630, alt: patientName }],
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [imageUrl],
+    },
+  };
+}
 
 function formatAmount(amount: number, currency: string = "SLE") {
   return new Intl.NumberFormat("en-GB", {
@@ -121,6 +176,9 @@ export default async function CampaignDetailPage({ params }: PageParams) {
   const organizer = campaign.ownerId
     ? await userRepository.findById(String(campaign.ownerId))
     : null;
+
+  // Check if campaign owner is verified
+  const isOwnerVerified = campaign.ownerVerification?.verified ?? false;
 
   const donations = await donationRepository.listByCampaign(
     campaign._id as mongoose.Types.ObjectId,
@@ -278,12 +336,29 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                       </div>
                     </div>
 
-                    <Button
-                      asChild
-                      className="h-11 w-full text-base font-semibold shadow-lg hover:shadow-xl"
-                    >
-                      <Link href={`/campaigns/${campaign.slug}/donate`}>Donate Now</Link>
-                    </Button>
+                    {isOwnerVerified ? (
+                      <Button
+                        asChild
+                        className="h-11 w-full text-base font-semibold shadow-lg hover:shadow-xl"
+                      >
+                        <Link href={`/campaigns/${campaign.slug}/donate`}>Donate Now</Link>
+                      </Button>
+                    ) : (
+                      <div className="space-y-3">
+                        <Button
+                          disabled
+                          className="h-11 w-full text-base font-semibold opacity-60"
+                        >
+                          Donations Paused
+                        </Button>
+                        <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 rounded-xl">
+                          <ShieldAlert className="h-4 w-4 text-amber-500" />
+                          <AlertDescription className="text-amber-700 dark:text-amber-300 text-xs">
+                            Donations are paused while the organizer completes identity verification.
+                          </AlertDescription>
+                        </Alert>
+                      </div>
+                    )}
 
                     <div>
                       <h3 className="text-center text-sm font-semibold text-blaze-orange">
@@ -321,10 +396,21 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                           <AvatarFallback>{organizerInitials}</AvatarFallback>
                         )}
                       </Avatar>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-foreground">
-                          {organizerName}
-                        </p>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {organizerName}
+                          </p>
+                          {!isOwnerVerified && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800"
+                              title="This organizer&apos;s identity verification is pending"
+                            >
+                              Pending Verification
+                            </Badge>
+                          )}
+                        </div>
                         <p className="text-xs text-blaze-orange">
                           Campaign organizer
                           {createdLabel ? ` • Created ${createdLabel}` : ""}

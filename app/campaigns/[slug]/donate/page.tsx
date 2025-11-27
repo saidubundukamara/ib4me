@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { notFound } from "next/navigation";
-import { campaignService, mediaAssetService } from "@/services";
+import { campaignService, mediaAssetService, settingService } from "@/services";
 import { CloudinaryService } from "@/lib/cloudinary";
 import { userRepository } from "@/repositories";
 import DonateClient from "./DonateClient";
@@ -23,6 +23,14 @@ export default async function CampaignDonatePage({ params }: PageParams) {
   const title = campaign.patient?.name || campaign.diagnosis || campaign.slug;
 
   const organizer = campaign.ownerId ? await userRepository.findById(String(campaign.ownerId)) : null;
+
+  // Get fee settings for this campaign type
+  const feeSettings = await settingService.getFeeSettings();
+  const campaignId = String(campaign._id);
+  const campaignType = await campaignService.getCampaignType(campaignId);
+  const processingFeeBps = campaignType === "organization"
+    ? feeSettings.processingFee.organizationBps
+    : feeSettings.processingFee.individualBps;
 
   // Collect asset IDs: patient photo (priority) and first document image (fallback)
   const assetIds: mongoose.Types.ObjectId[] = [];
@@ -92,6 +100,7 @@ export default async function CampaignDonatePage({ params }: PageParams) {
         amountRaised={amountRaised}
         goalAmount={goalAmount}
         imageUrl={imageUrl}
+        processingFeeBps={processingFeeBps}
       />
     </main>
   );

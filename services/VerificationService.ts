@@ -424,14 +424,31 @@ export class VerificationService {
       adminId
     );
 
-    if (updated && auditContext) {
-      await auditLogService.record({
-        actor: { userId: new mongoose.Types.ObjectId(adminId), role: "Admin" },
-        action: "verification.approve",
-        target: { type: "Verification", id: new mongoose.Types.ObjectId(verificationId) },
-        ip: auditContext.ip,
-        userAgent: auditContext.userAgent,
-      });
+    if (updated) {
+      // Update all campaigns owned by this user to reflect verified status
+      // Late import to avoid circular dependency
+      const { campaignService } = await import("./CampaignService");
+      try {
+        const updatedCount = await campaignService.updateCampaignsOwnerVerification(
+          verification.userId,
+          true,
+          "approved"
+        );
+        console.log(`Updated ${updatedCount} campaigns for verified user ${verification.userId}`);
+      } catch (error) {
+        // Log but don't fail the approval if campaign update fails
+        console.error(`Failed to update campaigns for user ${verification.userId}:`, error);
+      }
+
+      if (auditContext) {
+        await auditLogService.record({
+          actor: { userId: new mongoose.Types.ObjectId(adminId), role: "Admin" },
+          action: "verification.approve",
+          target: { type: "Verification", id: new mongoose.Types.ObjectId(verificationId) },
+          ip: auditContext.ip,
+          userAgent: auditContext.userAgent,
+        });
+      }
     }
 
     return updated;
