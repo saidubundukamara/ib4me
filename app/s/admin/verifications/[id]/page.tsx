@@ -149,7 +149,7 @@ export default function VerificationDetailPage() {
       }
 
       const data = await response.json();
-      setVerification(data.data);
+      setVerification(data.verification);
     } catch (err) {
       console.error("Error fetching verification details:", err);
       setError(
