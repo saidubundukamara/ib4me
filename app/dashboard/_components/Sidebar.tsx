@@ -48,6 +48,13 @@ export function Sidebar({ className, onNavigate, variant = "desktop" }: SidebarP
   const avatarUrl = session?.user?.image ?? undefined;
   const initial = name.trim().charAt(0).toUpperCase();
 
+  const filteredMenuItems = menuItems.filter((item) => {
+    if (item.path === "/dashboard/organization") {
+      return session?.user?.roles === "Organization";
+    }
+    return true;
+  });
+
   return (
     <div
       className={cn(
@@ -97,7 +104,7 @@ export function Sidebar({ className, onNavigate, variant = "desktop" }: SidebarP
         )}
         aria-label="Dashboard navigation"
       >
-        {menuItems.map((item) => {
+        {filteredMenuItems.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.path;
 

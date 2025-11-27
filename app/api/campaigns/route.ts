@@ -133,6 +133,7 @@ export async function POST(req: NextRequest) {
   const category = (form.get("category") as string | null) || undefined;
   const patientName = (form.get("patient.name") as string | null) || "";
   const patientAgeRaw = (form.get("patient.age") as string | null) || "";
+  const hospitalId = (form.get("hospital.hospitalId") as string | null) || undefined;
   const hospitalName = (form.get("hospital.name") as string | null) || "";
   const goalCurrency = (form.get("goal.currency") as string | null) || "SLE";
   const goalAmountMinorRaw =
@@ -171,7 +172,12 @@ export async function POST(req: NextRequest) {
         name: patientName,
         age: Number.isFinite(patientAge as number) ? patientAge : undefined,
       },
-      hospital: { name: hospitalName || undefined },
+      hospital: {
+        hospitalId: hospitalId && mongoose.Types.ObjectId.isValid(hospitalId)
+          ? new mongoose.Types.ObjectId(hospitalId)
+          : undefined,
+        name: hospitalName || undefined,
+      },
       goal: { currency: goalCurrency || "SLE", amountMinor: goalAmountMinor },
       story,
     });

@@ -16,6 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import DocumentUpload, { SelectedFile } from "./DocumentUpload";
 import PatientImageUpload, { SelectedImage } from "./PatientImageUpload";
+import HospitalCombobox, { type HospitalValue } from "./HospitalCombobox";
 
 const steps = [
   { number: 1, label: "Details" },
@@ -39,7 +40,7 @@ export type CampaignFormSubmitPayload = {
     photo?: File;
     removePhoto?: boolean;  // Flag to remove existing photo
   };
-  hospital: { name: string };
+  hospital: { hospitalId?: string; name: string };
   goal: { currency: string; amountMajor: number };
   story: string;
   documents?: File[];
@@ -58,7 +59,7 @@ export type CampaignFormInitialValues = Partial<{
     age?: number;
     photo?: SelectedImage;  // Can be existing (with URL) or new
   };
-  hospital: { name: string };
+  hospital: { hospitalId?: string; name: string };
   goal: { currency: string; amountMajor: number };
   story: string;
   documents?: SelectedFile[];  // Can include existing docs
@@ -98,7 +99,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
   const [patientName, setPatientName] = React.useState("");
   const [patientAge, setPatientAge] = React.useState<string>("");
   const [patientPhoto, setPatientPhoto] = React.useState<SelectedImage | null>(null);
-  const [hospitalName, setHospitalName] = React.useState("");
+  const [hospital, setHospital] = React.useState<HospitalValue>({ name: "" });
   const [goalAmount, setGoalAmount] = React.useState<string>("");
   const [story, setStory] = React.useState("");
   const [documents, setDocuments] = React.useState<SelectedFile[]>([]);
@@ -118,7 +119,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
     setPatientName("");
     setPatientAge("");
     setPatientPhoto(null);
-    setHospitalName("");
+    setHospital({ name: "" });
     setGoalAmount("");
     setStory("");
     setDocuments([]);
@@ -164,7 +165,10 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
           : "",
       );
       setPatientPhoto(initialValues.patient?.photo ?? null);
-      setHospitalName(initialValues.hospital?.name ?? "");
+      setHospital({
+        hospitalId: initialValues.hospital?.hospitalId,
+        name: initialValues.hospital?.name ?? "",
+      });
       setGoalAmount(
         initialValues.goal?.amountMajor !== undefined && initialValues.goal?.amountMajor !== null
           ? String(initialValues.goal.amountMajor)
@@ -240,7 +244,10 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
           // Include removePhoto flag if we're removing an existing photo
           ...(removePatientPhoto ? { removePhoto: true } : {}),
         },
-        hospital: { name: hospitalName.trim() },
+        hospital: {
+          ...(hospital.hospitalId ? { hospitalId: hospital.hospitalId } : {}),
+          name: hospital.name.trim(),
+        },
         goal: {
           currency: defaultCurrency,
           amountMajor: Number.isFinite(amountMajor) && amountMajor > 0 ? amountMajor : 0,
@@ -261,7 +268,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
     diagnosis,
     documents,
     goalAmount,
-    hospitalName,
+    hospital,
     mode,
     onSubmit,
     patientAge,
@@ -309,7 +316,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
         : "No photo",
       key: "patientPhoto" as const,
     },
-    { label: "Hospital", value: hospitalName || "—", key: "hospital" as const },
+    { label: "Hospital", value: hospital.name || "—", key: "hospital" as const },
     {
       label: "Goal",
       value: `${defaultCurrency} ${goalAmount || 0}`,
@@ -450,13 +457,11 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
                 />
               </div>
               <div className="sm:col-span-1 md:col-span-2 space-y-2">
-                <Label htmlFor="hospital-name">Hospital Name</Label>
-                <Input
-                  id="hospital-name"
-                  value={hospitalName}
-                  onChange={(e) => setHospitalName(e.target.value)}
-                  placeholder="Hospital"
-                  className="rounded-2xl my-2"
+                <Label>Hospital</Label>
+                <HospitalCombobox
+                  value={hospital}
+                  onChange={setHospital}
+                  className="my-2"
                 />
               </div>
             </div>

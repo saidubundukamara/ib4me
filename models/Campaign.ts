@@ -153,7 +153,7 @@ const campaignSchema = new mongoose.Schema<ICampaign>(
     status: {
       type: String,
       enum: ["draft", "active", "paused", "completed", "archived"],
-      default: "active",
+      default: "draft",
       index: true,
     },
     outcome: {

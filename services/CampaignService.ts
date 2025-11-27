@@ -211,6 +211,7 @@ export class CampaignService {
       }
 
       const previousVerificationStatus = originalCampaign.verification?.status;
+      const previousStatus = originalCampaign.status;
 
       const updateData: Record<string, unknown> = {
         "verification.status": verificationStatus,
@@ -218,6 +219,11 @@ export class CampaignService {
         "verification.verifiedBy": adminId,
         updatedAt: new Date()
       };
+
+      // When approving a campaign, also set its status to "active" so it becomes visible
+      if (verificationStatus === "approved") {
+        updateData.status = "active";
+      }
 
       const updatedCampaign = await campaignRepository.updateById(
         campaignId,
@@ -243,6 +249,8 @@ export class CampaignService {
         diff: {
           previousVerificationStatus,
           newVerificationStatus: verificationStatus,
+          previousStatus,
+          newStatus: verificationStatus === "approved" ? "active" : previousStatus,
           reason,
           campaignId,
           campaignSlug: originalCampaign.slug,
@@ -371,6 +379,11 @@ export class CampaignService {
     };
     let verificationMessage: string | undefined;
 
+    // Determine initial campaign status and verification
+    // Default: draft status, pending verification (requires admin approval)
+    let initialStatus: ICampaign["status"] = "draft";
+    let initialVerificationStatus: "pending" | "under_review" | "approved" | "rejected" = "pending";
+
     if (campaignData.ownerId) {
       const verificationStatus = await verificationService.isUserVerifiedForCampaigns(
         campaignData.ownerId.toString()
@@ -382,14 +395,21 @@ export class CampaignService {
         status: (verificationStatus.status || "not_started") as ICampaignOwnerVerification["status"],
       };
 
+      // Auto-approve for verified organizations
+      // Verified organizations get their campaigns automatically approved and made active
+      if (verificationStatus.verified && verificationStatus.role === "Organization") {
+        initialStatus = "active";
+        initialVerificationStatus = "approved";
+      }
+
       // Set message based on verification status
       if (!verificationStatus.verified) {
         if (verificationStatus.status === "pending" || verificationStatus.status === "under_review") {
-          verificationMessage = "Your verification is being reviewed. You can create campaigns but donations are disabled until approved.";
+          verificationMessage = "Your verification is being reviewed. You can create campaigns but they will be hidden until approved by admin.";
         } else if (verificationStatus.status === "rejected") {
           verificationMessage = "Your verification was rejected. Please resubmit to enable donations.";
         } else {
-          verificationMessage = "Please complete KYC verification to enable donations to your campaign.";
+          verificationMessage = "Please complete KYC verification. Your campaign will be hidden until approved by admin.";
         }
       }
 
@@ -400,9 +420,16 @@ export class CampaignService {
       }
     }
 
-    // Include ownerVerification in campaign data
+    // Include ownerVerification and initial status in campaign data
     const campaignWithVerification = {
       ...campaignData,
+      status: initialStatus,
+      verification: {
+        status: initialVerificationStatus,
+        verifiedAt: initialVerificationStatus === "approved" ? new Date() : null,
+        verifiedBy: null, // null indicates system auto-approved
+        hospitalVerified: false,
+      },
       ownerVerification: ownerVerificationData,
     };
 

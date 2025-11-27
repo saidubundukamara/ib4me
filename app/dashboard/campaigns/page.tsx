@@ -297,6 +297,9 @@ export default function UserCampaignsPage() {
       if (formValues.patient.photo) {
         formData.set("patientPhoto", formValues.patient.photo);
       }
+      if (formValues.hospital.hospitalId) {
+        formData.set("hospital.hospitalId", formValues.hospital.hospitalId);
+      }
       if (formValues.hospital.name) {
         formData.set("hospital.name", formValues.hospital.name);
       }
@@ -385,6 +388,9 @@ export default function UserCampaignsPage() {
       formData.set("patient.name", values.patient.name);
       if (values.patient.age !== undefined) {
         formData.set("patient.age", String(values.patient.age));
+      }
+      if (values.hospital.hospitalId) {
+        formData.set("hospital.hospitalId", values.hospital.hospitalId);
       }
       if (values.hospital.name) {
         formData.set("hospital.name", values.hospital.name);
@@ -501,6 +507,7 @@ export default function UserCampaignsPage() {
             ...(existingPatientPhoto ? { photo: existingPatientPhoto } : {}),
           },
           hospital: {
+            hospitalId: data?.hospital?.hospitalId ?? undefined,
             name: data?.hospital?.name ?? campaign.hospitalName ?? "",
           },
           goal: {
