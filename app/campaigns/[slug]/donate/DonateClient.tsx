@@ -27,6 +27,7 @@ export type DonateClientProps = {
   amountRaised: number;
   goalAmount: number;
   imageUrl: string;
+  processingFeeBps?: number; // Processing fee in basis points (e.g., 260 = 2.6%)
 };
 
 function formatAmount(amount: number, currency: string = "SLE") {
@@ -49,6 +50,7 @@ export default function DonateClient({
   amountRaised,
   goalAmount,
   imageUrl,
+  processingFeeBps = 260, // Default 2.6%
 }: DonateClientProps) {
   const [selectedPreset, setSelectedPreset] = useState<number | "custom">(PRESET_AMOUNTS[1]);
   const [customAmount, setCustomAmount] = useState("");
@@ -69,6 +71,30 @@ export default function DonateClient({
     }
     return selectedPreset;
   }, [selectedPreset, customAmount]);
+
+  // Fee constants
+  const BASE_FEE_BPS = 100; // Monime's 1% fee
+
+  // Calculate base fee (Monime 1%)
+  const baseFee = useMemo(() => {
+    return Math.round(amount * BASE_FEE_BPS / 10000);
+  }, [amount]);
+
+  // Calculate processing fee (platform fee)
+  const processingFee = useMemo(() => {
+    return Math.round(amount * processingFeeBps / 10000);
+  }, [amount, processingFeeBps]);
+
+  // Total fees = base fee + processing fee
+  const totalFee = baseFee + processingFee;
+
+  const totalCharged = useMemo(() => {
+    return amount + totalFee;
+  }, [amount, totalFee]);
+
+  const baseFeePercent = (BASE_FEE_BPS / 100).toFixed(1);
+  const processingFeePercent = (processingFeeBps / 100).toFixed(1);
+  const totalFeePercent = ((BASE_FEE_BPS + processingFeeBps) / 100).toFixed(1);
 
   const donateLabel = amount > 0 ? `Donate ${formatAmount(amount, currency)}` : "Enter amount";
 
@@ -385,22 +411,28 @@ export default function DonateClient({
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>Processing fee</span>
+                  <span>Payment fee ({baseFeePercent}%)</span>
                   <span className="font-medium text-foreground">
-                    {formatAmount(0, currency)}
+                    {formatAmount(baseFee, currency)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Platform fee ({processingFeePercent}%)</span>
+                  <span className="font-medium text-foreground">
+                    {formatAmount(processingFee, currency)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between border-t border-border/40 pt-2">
                   <span className="font-semibold text-foreground">Total</span>
                   <span className="font-semibold text-foreground">
-                    {formatAmount(amount, currency)}
+                    {formatAmount(totalCharged, currency)}
                   </span>
                 </div>
               </div>
 
               <div className="flex items-start gap-3 rounded-2xl bg-primary/10 p-4 text-xs text-primary">
                 <Lock className="mt-0.5 h-4 w-4" />
-                <p>99% of your donation goes directly to this campaign.</p>
+                <p>100% of your {formatAmount(amount, currency)} donation goes directly to this campaign.</p>
               </div>
             </CardContent>
           </Card>

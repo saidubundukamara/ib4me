@@ -30,6 +30,15 @@ export interface IDonationFees {
   platformFeeMinor?: number;
 }
 
+export interface IDonationTransfer {
+  id?: string;              // Monime transfer ID
+  status: "pending" | "completed" | "failed";
+  initiatedAt?: Date;
+  completedAt?: Date;
+  failureReason?: string;
+  retryCount?: number;      // Number of retry attempts
+}
+
 export interface IDonation extends mongoose.Document {
   campaignId: mongoose.Types.ObjectId;
   donorId?: mongoose.Types.ObjectId | null;
@@ -40,8 +49,9 @@ export interface IDonation extends mongoose.Document {
   totalChargedMinor?: number | null;          // Total charged to donor (amount + fees)
   fx?: IDonationFx | null;
   provider: IDonationProvider;
-  status: "pending" | "succeeded" | "failed" | "refunded";
+  status: "pending" | "payment_received" | "succeeded" | "failed" | "refunded";
   fees?: IDonationFees | null;
+  transfer?: IDonationTransfer | null;        // Internal transfer tracking
   netAmountMinor?: number | null;             // For backward compat, equals amount.minor
   receiptUrl?: string | null;
   notifiedAt?: Date | null;
@@ -87,9 +97,20 @@ const donationSchema = new mongoose.Schema<IDonation>(
     },
     status: {
       type: String,
-      enum: ["pending", "succeeded", "failed", "refunded"],
+      enum: ["pending", "payment_received", "succeeded", "failed", "refunded"],
       default: "pending",
       index: true,
+    },
+    transfer: {
+      id: { type: String },
+      status: {
+        type: String,
+        enum: ["pending", "completed", "failed"]
+      },
+      initiatedAt: { type: Date },
+      completedAt: { type: Date },
+      failureReason: { type: String },
+      retryCount: { type: Number, default: 0 },
     },
     fees: {
       // New fee structure

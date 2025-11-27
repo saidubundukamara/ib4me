@@ -143,6 +143,41 @@ export interface MonimePayoutResponse {
   metadata?: Record<string, unknown>;
 }
 
+export interface MonimeInternalTransferRequest {
+  amount: {
+    currency: string;
+    value: number;  // Amount in minor units
+  };
+  sourceFinancialAccount: {
+    id: string;
+  };
+  destinationFinancialAccount: {
+    id: string;
+  };
+  description?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface MonimeInternalTransferResponse {
+  id: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  amount: {
+    currency: string;
+    value: number;
+  };
+  sourceFinancialAccount: {
+    id: string;
+  };
+  destinationFinancialAccount: {
+    id: string;
+  };
+  description?: string;
+  createdAt: string;
+  completedAt?: string;
+  failureReason?: string;
+  metadata?: Record<string, unknown>;
+}
+
 export interface MonimeWebhookEvent {
   id: string;
   name:
@@ -382,6 +417,29 @@ export class MonimeService {
     return this.makeRequest<MonimePayoutResponse>(`/payouts/${payoutId}`);
   }
 
+  async createInternalTransfer(
+    request: MonimeInternalTransferRequest,
+    idempotencyKey?: string
+  ): Promise<MonimeInternalTransferResponse> {
+    const response = await this.makeRequest<
+      MonimeApiResponse<MonimeInternalTransferResponse>
+    >(
+      "/internal-transfers",
+      {
+        method: "POST",
+        body: JSON.stringify(request),
+      },
+      idempotencyKey
+    );
+    return response.result;
+  }
+
+  async getInternalTransfer(transferId: string): Promise<MonimeInternalTransferResponse> {
+    return this.makeRequest<MonimeInternalTransferResponse>(
+      `/internal-transfers/${transferId}`
+    );
+  }
+
   // Note: Webhook signature verification removed - check Monime docs for actual webhook authentication
   verifyWebhookSignature(): boolean {
     console.warn(
@@ -468,7 +526,15 @@ export const monimeService = {
   async getPayout(...args: Parameters<MonimeService['getPayout']>) {
     return this.getInstance().getPayout(...args);
   },
-  
+
+  async createInternalTransfer(...args: Parameters<MonimeService['createInternalTransfer']>) {
+    return this.getInstance().createInternalTransfer(...args);
+  },
+
+  async getInternalTransfer(...args: Parameters<MonimeService['getInternalTransfer']>) {
+    return this.getInstance().getInternalTransfer(...args);
+  },
+
   verifyWebhookSignature(...args: Parameters<MonimeService['verifyWebhookSignature']>) {
     return this.getInstance().verifyWebhookSignature(...args);
   },

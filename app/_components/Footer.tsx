@@ -49,8 +49,8 @@ const Footer = ({
             links: [
                 { text: "Help Center", url: "/" },
                 { text: "FAQs", url: "/faqs" },
-                { text: "Privacy Policy", url: "/" },
-                { text: "Terms of Service", url: "/" },
+                { text: "Privacy Policy", url: "/privacy" },
+                { text: "Terms of Service", url: "/terms" },
                 { text: "Contact Us", url: "/contact" },
             ],
         },
@@ -65,8 +65,8 @@ const Footer = ({
     ],
     copyright = `© ${new Date().getFullYear()} Copyright. All rights reserved.`,
     bottomLinks = [
-        { text: "Terms and Conditions", url: "#" },
-        { text: "Privacy Policy", url: "#" },
+        { text: "Terms and Conditions", url: "/terms" },
+        { text: "Privacy Policy", url: "/privacy" },
     ],
 }: FooterProps
 ) => {

@@ -47,6 +47,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Get platform financial account (payments go here first)
+    const platformAccount = await settingService.getPlatformAccountSettings();
+    if (!platformAccount?.id) {
+      return NextResponse.json(
+        { error: "Platform payment processing not configured. Please contact support." },
+        { status: 500 }
+      );
+    }
+
     // Convert donation amount to minor units
     const donationAmountMinor = toMinorUnits(validatedData.amount, validatedData.currency);
 
@@ -113,11 +122,13 @@ export async function POST(req: NextRequest) {
     }
     const feeDescription = feeDescriptionParts.length > 0 ? ` | Fees: ${feeDescriptionParts.join(', ')}` : '';
 
+    // Create checkout session targeting PLATFORM account (not campaign)
+    // Funds will be transferred to campaign after payment completion
     const checkoutSession = await monimeService.createCheckoutSession({
       name: `Donation for ${campaign.patient?.name || campaign.diagnosis || "medical campaign"}`,
       successUrl,
       cancelUrl,
-      financialAccountId: campaign.financial_account.id,
+      financialAccountId: platformAccount.id, // Target platform account, NOT campaign
       lineItems: [{
         type: 'custom',
         name: `Donation for ${campaign.patient?.name || campaign.diagnosis || "medical campaign"}`,
@@ -135,7 +146,9 @@ export async function POST(req: NextRequest) {
         campaignSlug: validatedData.campaignSlug,
         isAnonymous: validatedData.isAnonymous.toString(),
         donorName: validatedData.donor?.name || 'Anonymous',
-        financialAccountId: campaign.financial_account.id,
+        // Campaign financial account for internal transfer after payment
+        campaignFinancialAccountId: campaign.financial_account.id,
+        platformFinancialAccountId: platformAccount.id,
         // Fee metadata for transparency
         donationAmountMinor: donationAmountMinor.toString(),
         totalFeeMinor: calculatedFees.totalFeeMinor.toString(),

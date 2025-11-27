@@ -6,7 +6,7 @@ import {
   MonimeWebhookCheckoutSessionData,
   MonimePayment,
 } from "@/lib/monime";
-import { donationService, tipService } from "@/services";
+import { donationService, tipService, settingService } from "@/services";
 
 // Simple in-memory cache for webhook event IDs (in production, use Redis or database)
 const processedWebhooks = new Set<string>();
@@ -275,7 +275,7 @@ async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
       return;
     }
 
-    // Handle as donation
+    // Handle as donation - NEW PLATFORM-FIRST FLOW
     const donationIdRaw = checkoutSession.metadata?.donationId;
     if (typeof donationIdRaw !== "string" || !donationIdRaw) {
       console.error("No donationId found in checkout session metadata");
@@ -285,14 +285,108 @@ async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
 
     console.log(`Found donation ID ${donationId} for payment ${payment.id}`);
 
-    await donationService.markSucceededWithPaymentDetails(donationId, {
+    // Step 1: Mark donation as payment_received
+    const donation = await donationService.markPaymentReceived(donationId, {
       paymentId: payment.id,
       paymentMethod: payment.paymentMethod,
       fees: payment.fees,
       completedAt: payment.completedAt,
     });
 
-    console.log(`Successfully processed payment completion for donation ${donationId}`);
+    console.log(`Marked donation ${donationId} as payment_received`);
+
+    // Step 2: Get campaign financial account ID from metadata
+    const campaignFinancialAccountId = checkoutSession.metadata?.campaignFinancialAccountId;
+    if (typeof campaignFinancialAccountId !== "string" || !campaignFinancialAccountId) {
+      console.error(`No campaignFinancialAccountId in metadata for donation ${donationId}`);
+      // Store error and skip transfer - admin will need to handle manually
+      await donationService.updateTransferStatus(donationId, {
+        status: "failed",
+        failureReason: "Missing campaign financial account ID in metadata",
+        initiatedAt: new Date(),
+        retryCount: 0
+      });
+      return;
+    }
+
+    // Step 3: Get platform account
+    const platformAccount = await settingService.getPlatformAccountSettings();
+    if (!platformAccount?.id) {
+      console.error(`Platform account not configured for donation ${donationId}`);
+      await donationService.updateTransferStatus(donationId, {
+        status: "failed",
+        failureReason: "Platform financial account not configured",
+        initiatedAt: new Date(),
+        retryCount: 0
+      });
+      return;
+    }
+
+    // Step 4: Initiate internal transfer from platform to campaign
+    const transferAmount = donation.amount.minor; // Transfer donation amount only, not fees
+    const idempotencyKey = `transfer_${donationId}_${Date.now()}`;
+
+    try {
+      console.log(`Initiating internal transfer of ${transferAmount} from platform to campaign for donation ${donationId}`);
+
+      // Mark transfer as pending
+      await donationService.updateTransferStatus(donationId, {
+        status: "pending",
+        initiatedAt: new Date(),
+        retryCount: 0
+      });
+
+      const transfer = await monimeService.createInternalTransfer({
+        amount: {
+          currency: donation.amount.currency,
+          value: transferAmount,
+        },
+        sourceFinancialAccount: {
+          id: platformAccount.id,
+        },
+        destinationFinancialAccount: {
+          id: campaignFinancialAccountId,
+        },
+        description: `Donation transfer for ${donationId}`,
+        metadata: {
+          donationId,
+          type: "donation_transfer",
+        },
+      }, idempotencyKey);
+
+      console.log(`Internal transfer created: ${transfer.id}, status: ${transfer.status}`);
+
+      // Step 5: If transfer completed (synchronous), complete the donation
+      if (transfer.status === "completed") {
+        await donationService.completeWithTransfer(donationId, transfer.id);
+        console.log(`Successfully completed donation ${donationId} with transfer ${transfer.id}`);
+      } else if (transfer.status === "failed") {
+        // Transfer failed
+        await donationService.updateTransferStatus(donationId, {
+          id: transfer.id,
+          status: "failed",
+          failureReason: transfer.failureReason || "Transfer failed",
+          retryCount: 1
+        });
+        console.error(`Transfer failed for donation ${donationId}: ${transfer.failureReason}`);
+      } else {
+        // Transfer is pending/processing - update status and wait
+        // In practice, internal transfers are usually synchronous
+        await donationService.updateTransferStatus(donationId, {
+          id: transfer.id,
+          status: "pending",
+        });
+        console.log(`Transfer ${transfer.id} is ${transfer.status}, waiting for completion`);
+      }
+    } catch (transferError) {
+      // Transfer API call failed
+      console.error(`Transfer failed for donation ${donationId}:`, transferError);
+      await donationService.updateTransferStatus(donationId, {
+        status: "failed",
+        failureReason: transferError instanceof Error ? transferError.message : "Transfer API error",
+        retryCount: 1
+      });
+    }
   } catch (error) {
     console.error(`Error processing payment completed:`, error);
     throw error;

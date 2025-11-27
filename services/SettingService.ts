@@ -141,7 +141,7 @@ export class SettingService {
           allowEmergencyOverride: true
         },
         fees: {
-          baseFeeMinor: 50,  // Le 0.50
+          baseFeeMinor: 0,  // Set to 0 - Monime deducts 1% automatically
           processingFee: {
             individualBps: 260,    // 2.6%
             organizationBps: 200,  // 2.0%
@@ -430,7 +430,7 @@ export class SettingService {
     const fees = settings.fees || {};
 
     return {
-      baseFeeMinor: fees.baseFeeMinor ?? 50,  // Default Le 0.50
+      baseFeeMinor: fees.baseFeeMinor ?? 0,  // Default 0 - Monime deducts 1% automatically
       processingFee: {
         individualBps: fees.processingFee?.individualBps ?? 260,    // Default 2.6%
         organizationBps: fees.processingFee?.organizationBps ?? 200, // Default 2.0%
@@ -466,13 +466,20 @@ export class SettingService {
   /**
    * Calculate fees for a donation based on campaign type
    * Fees are added ON TOP of the donation amount
+   *
+   * Fee structure:
+   * - Base fee: 1% (100 bps) - Monime payment processor fee (charged to donor, deducted by Monime)
+   * - Processing fee: 2.6% (individual) / 2.0% (organization) - Platform fee
    */
   calculateDonationFees(
     donationAmountMinor: number,
     campaignType: CampaignType,
     feeSettings: FeeSettings
   ): CalculatedFees {
-    const baseFeeMinor = feeSettings.baseFeeMinor;
+    // Base fee is Monime's 1% (100 bps) - always percentage-based
+    const BASE_FEE_BPS = 100; // 1%
+    const baseFeeMinor = Math.round(donationAmountMinor * BASE_FEE_BPS / 10000);
+
     const processingFeeBps = campaignType === "organization"
       ? feeSettings.processingFee.organizationBps
       : feeSettings.processingFee.individualBps;

@@ -14,7 +14,6 @@ export default function FeeSettings() {
   const { fees, updating, updateFeeSettings } = useSettings();
 
   const [formData, setFormData] = useState({
-    baseFeeMinor: fees?.baseFeeMinor || 50,
     individualBps: fees?.processingFee?.individualBps || 260,
     organizationBps: fees?.processingFee?.organizationBps || 200,
   });
@@ -25,7 +24,6 @@ export default function FeeSettings() {
   useEffect(() => {
     if (fees) {
       setFormData({
-        baseFeeMinor: fees.baseFeeMinor || 50,
         individualBps: fees.processingFee?.individualBps || 260,
         organizationBps: fees.processingFee?.organizationBps || 200,
       });
@@ -41,7 +39,7 @@ export default function FeeSettings() {
     e.preventDefault();
 
     const success = await updateFeeSettings({
-      baseFeeMinor: formData.baseFeeMinor,
+      baseFeeMinor: 0, // Always 0 - Monime deducts 1% automatically
       processingFee: {
         individualBps: formData.individualBps,
         organizationBps: formData.organizationBps,
@@ -58,7 +56,6 @@ export default function FeeSettings() {
 
   const handleReset = () => {
     setFormData({
-      baseFeeMinor: fees?.baseFeeMinor || 50,
       individualBps: fees?.processingFee?.individualBps || 260,
       organizationBps: fees?.processingFee?.organizationBps || 200,
     });
@@ -70,45 +67,24 @@ export default function FeeSettings() {
   // Helper to convert bps to percentage
   const bpsToPercent = (bps: number) => (bps / 100).toFixed(2);
 
-  // Calculate example fees
+  // Calculate example fees (base fee + processing fee)
+  const BASE_FEE_BPS = 100; // Monime's 1% fee
   const exampleDonation = 10000; // 100 Le in minor units
-  const individualFee = formData.baseFeeMinor + Math.round(exampleDonation * formData.individualBps / 10000);
-  const organizationFee = formData.baseFeeMinor + Math.round(exampleDonation * formData.organizationBps / 10000);
+  const baseFee = Math.round(exampleDonation * BASE_FEE_BPS / 10000);
+  const individualProcessingFee = Math.round(exampleDonation * formData.individualBps / 10000);
+  const organizationProcessingFee = Math.round(exampleDonation * formData.organizationBps / 10000);
+  const individualTotalFee = baseFee + individualProcessingFee;
+  const organizationTotalFee = baseFee + organizationProcessingFee;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Fees are <strong>added on top</strong> of the donation amount. Donors pay the donation + fees, and campaigns receive the full donation amount.
+          <strong>All fees</strong> are added on top of the donation amount. Donors pay donation + payment fee (1%) + platform fee.
+          Campaigns receive 100% of the donation. Monime&apos;s 1% payment processing fee is automatically deducted by Monime.
         </AlertDescription>
       </Alert>
-
-      {/* Base Fee */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Base Fee (Fixed)</h3>
-        <p className="text-sm text-muted-foreground">
-          A fixed fee charged on every donation transaction, regardless of amount.
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="baseFeeMinor">Base Fee (in minor units)</Label>
-            <Input
-              id="baseFeeMinor"
-              type="number"
-              min="0"
-              max="10000"
-              step="1"
-              value={formData.baseFeeMinor}
-              onChange={(e) => handleChange("baseFeeMinor", parseInt(e.target.value) || 0)}
-            />
-            <p className="text-sm text-muted-foreground">
-              Current: <strong>Le {minorToMajor(formData.baseFeeMinor)}</strong> per transaction
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Processing Fees */}
       <div className="space-y-4">
@@ -168,13 +144,14 @@ export default function FeeSettings() {
             <div className="p-4 bg-muted rounded-lg">
               <p className="text-sm font-medium text-muted-foreground">Individual Campaign</p>
               <div className="mt-2 space-y-1">
-                <p className="text-sm">Base fee: Le {minorToMajor(formData.baseFeeMinor)}</p>
-                <p className="text-sm">Processing ({bpsToPercent(formData.individualBps)}%): Le {minorToMajor(Math.round(exampleDonation * formData.individualBps / 10000))}</p>
+                <p className="text-sm">Payment fee (1%): Le {minorToMajor(baseFee)}</p>
+                <p className="text-sm">Platform fee ({bpsToPercent(formData.individualBps)}%): Le {minorToMajor(individualProcessingFee)}</p>
+                <p className="text-sm text-muted-foreground">Total fees ({bpsToPercent(BASE_FEE_BPS + formData.individualBps)}%): Le {minorToMajor(individualTotalFee)}</p>
                 <p className="text-sm font-medium border-t pt-1 mt-1">
-                  Total fees: Le {minorToMajor(individualFee)}
+                  Donor pays: Le {minorToMajor(exampleDonation + individualTotalFee)}
                 </p>
                 <p className="text-sm text-green-600">
-                  Donor pays: Le {minorToMajor(exampleDonation + individualFee)}
+                  Campaign receives: Le {minorToMajor(exampleDonation)}
                 </p>
               </div>
             </div>
@@ -182,19 +159,20 @@ export default function FeeSettings() {
             <div className="p-4 bg-muted rounded-lg">
               <p className="text-sm font-medium text-muted-foreground">Organization Campaign</p>
               <div className="mt-2 space-y-1">
-                <p className="text-sm">Base fee: Le {minorToMajor(formData.baseFeeMinor)}</p>
-                <p className="text-sm">Processing ({bpsToPercent(formData.organizationBps)}%): Le {minorToMajor(Math.round(exampleDonation * formData.organizationBps / 10000))}</p>
+                <p className="text-sm">Payment fee (1%): Le {minorToMajor(baseFee)}</p>
+                <p className="text-sm">Platform fee ({bpsToPercent(formData.organizationBps)}%): Le {minorToMajor(organizationProcessingFee)}</p>
+                <p className="text-sm text-muted-foreground">Total fees ({bpsToPercent(BASE_FEE_BPS + formData.organizationBps)}%): Le {minorToMajor(organizationTotalFee)}</p>
                 <p className="text-sm font-medium border-t pt-1 mt-1">
-                  Total fees: Le {minorToMajor(organizationFee)}
+                  Donor pays: Le {minorToMajor(exampleDonation + organizationTotalFee)}
                 </p>
                 <p className="text-sm text-green-600">
-                  Donor pays: Le {minorToMajor(exampleDonation + organizationFee)}
+                  Campaign receives: Le {minorToMajor(exampleDonation)}
                 </p>
               </div>
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-3">
-            * Campaign always receives the full Le {minorToMajor(exampleDonation)} donation amount.
+            * Campaign always receives 100% of the donation amount. All fees are collected on top of the donation.
           </p>
         </CardContent>
       </Card>

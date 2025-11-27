@@ -17,9 +17,11 @@ export interface ITieredFeeRate {
 
 export interface IFeeSetting {
   // Base fee - fixed amount per transaction (in minor units)
-  baseFeeMinor?: number;           // e.g., 50 for Le 0.50
+  // Set to 0 by default - Monime's 1% fee is handled separately
+  baseFeeMinor?: number;           // e.g., 0 (not used, Monime deducts 1% automatically)
 
   // Processing fee - percentage-based, tiered by campaign type
+  // This is the platform's fee, charged on top of the donation amount
   processingFee?: ITieredFeeRate;
 
   // Legacy fields (kept for backward compatibility)
@@ -122,7 +124,7 @@ const settingSchema = new mongoose.Schema<ISetting>(
       blockedAt: { type: Date },
     },
     fees: {
-      baseFeeMinor: { type: Number, default: 50 },  // Le 0.50 = 50 minor units
+      baseFeeMinor: { type: Number, default: 0 },  // Set to 0 - Monime deducts 1% automatically
       processingFee: {
         individualBps: { type: Number, default: 260 },     // 2.6%
         organizationBps: { type: Number, default: 200 },   // 2.0%
