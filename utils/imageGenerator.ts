@@ -46,7 +46,7 @@ function wrapText(
   return currentY + lineHeight;
 }
 
-export async function generateCampaignImage(
+export async function generateCampaignImageLegacy(
   campaign: CampaignImageData,
   baseUrl: string
 ): Promise<Blob> {
@@ -234,6 +234,256 @@ export async function generateCampaignImage(
       width / 2,
       height - 40
     );
+
+    // Convert canvas to blob
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error("Failed to generate image"));
+          }
+        },
+        "image/png",
+        0.9
+      );
+    });
+  } catch (error) {
+    console.error("Error generating image:", error);
+    throw error;
+  }
+}
+
+// Helper function to draw decorative curved waves
+function drawDecorativeWaves(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number
+): void {
+  // Right side wave (upper)
+  ctx.beginPath();
+  ctx.moveTo(width, 0);
+  ctx.bezierCurveTo(
+    width - 100, height * 0.15,
+    width - 50, height * 0.25,
+    width, height * 0.35
+  );
+  ctx.lineTo(width, 0);
+  ctx.fillStyle = "rgba(4, 120, 87, 0.08)"; // Light green tint
+  ctx.fill();
+
+  // Right side wave (lower)
+  ctx.beginPath();
+  ctx.moveTo(width, height * 0.4);
+  ctx.bezierCurveTo(
+    width - 150, height * 0.5,
+    width - 80, height * 0.65,
+    width, height * 0.75
+  );
+  ctx.lineTo(width, height * 0.4);
+  ctx.fillStyle = "rgba(4, 120, 87, 0.06)";
+  ctx.fill();
+
+  // Left side wave
+  ctx.beginPath();
+  ctx.moveTo(0, height * 0.6);
+  ctx.bezierCurveTo(
+    100, height * 0.7,
+    50, height * 0.85,
+    0, height
+  );
+  ctx.lineTo(0, height * 0.6);
+  ctx.fillStyle = "rgba(4, 120, 87, 0.05)";
+  ctx.fill();
+}
+
+// Helper function to draw IB4ME logo
+function drawIB4MELogo(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  y: number
+): number {
+  const logoWidth = 200;
+  const logoHeight = 80;
+  const startX = centerX - logoWidth / 2;
+
+  // Draw heart shape (simplified)
+  ctx.save();
+  ctx.translate(startX, y);
+
+  // Heart icon
+  ctx.fillStyle = "#047857";
+  ctx.beginPath();
+  // Left curve of heart
+  ctx.moveTo(25, 15);
+  ctx.bezierCurveTo(25, 10, 20, 5, 12.5, 5);
+  ctx.bezierCurveTo(0, 5, 0, 20, 0, 20);
+  ctx.bezierCurveTo(0, 30, 12.5, 40, 25, 50);
+  // Right curve of heart
+  ctx.bezierCurveTo(37.5, 40, 50, 30, 50, 20);
+  ctx.bezierCurveTo(50, 20, 50, 5, 37.5, 5);
+  ctx.bezierCurveTo(30, 5, 25, 10, 25, 15);
+  ctx.fill();
+
+  // Hands inside heart (simplified curved lines)
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(15, 25);
+  ctx.quadraticCurveTo(25, 20, 35, 25);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(18, 32);
+  ctx.quadraticCurveTo(25, 28, 32, 32);
+  ctx.stroke();
+
+  ctx.restore();
+
+  // Draw "ib4me" text
+  ctx.font = "bold 48px Arial, sans-serif";
+  ctx.fillStyle = "#047857";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText("ib4me", startX + 60, y + 28);
+
+  // Draw tagline "Put Fɔ Wɛlbɔdi"
+  ctx.font = "16px Arial, sans-serif";
+  ctx.fillStyle = "#047857";
+  ctx.fillText("Put Fɔ Wɛlbɔdi", startX + 62, y + 55);
+
+  return y + logoHeight;
+}
+
+export async function generateCampaignImage(
+  campaign: CampaignImageData,
+  baseUrl: string
+): Promise<Blob> {
+  // Ensure we're in the browser environment
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    throw new Error("Image generation only works in browser environment");
+  }
+
+  console.log("Generating campaign image for campaign:", campaign);
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  if (!ctx) {
+    throw new Error("Could not get canvas context");
+  }
+
+  // Set canvas dimensions for mobile-friendly sharing (1080x1080 square)
+  const width = 1080;
+  const height = 1080;
+  canvas.width = width;
+  canvas.height = height;
+
+  try {
+    // White background
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, width, height);
+
+    // Draw decorative waves
+    drawDecorativeWaves(ctx, width, height);
+
+    // Campaign information section (top area)
+    const contentStartY = 100;
+    ctx.textAlign = "center";
+
+    // Name label and value
+    ctx.font = "bold 36px Arial, sans-serif";
+    ctx.fillStyle = "#047857"; // Green
+    ctx.fillText("Name:", width / 2 - 150, contentStartY);
+    ctx.fillStyle = "#1F2937"; // Dark gray
+    const patientName = campaign.patient?.name || "Patient";
+    ctx.fillText(patientName, width / 2 + 50, contentStartY);
+
+    // Diagnosis label and value
+    ctx.fillStyle = "#047857";
+    ctx.fillText("Diagnosis:", width / 2 - 180, contentStartY + 60);
+    ctx.fillStyle = "#1F2937";
+    const diagnosis = campaign.diagnosis || "Medical Treatment";
+    // Handle long diagnosis text
+    if (diagnosis.length > 25) {
+      ctx.font = "bold 32px Arial, sans-serif";
+    }
+    ctx.fillText(diagnosis, width / 2 + 80, contentStartY + 60);
+    ctx.font = "bold 36px Arial, sans-serif";
+
+    // Campaign Goal label and value
+    ctx.fillStyle = "#047857";
+    ctx.fillText("Campaign Goal:", width / 2 - 200, contentStartY + 120);
+    ctx.fillStyle = "#1F2937";
+    const goal = (campaign.goal?.amountMinor ?? 0) / 100;
+    const goalFormatted = `LE ${goal.toLocaleString()}`;
+    ctx.fillText(goalFormatted, width / 2 + 100, contentStartY + 120);
+
+    // Call to action
+    const ctaY = contentStartY + 200;
+    ctx.font = "bold 32px Arial, sans-serif";
+    ctx.fillStyle = "#1F2937";
+    ctx.textAlign = "center";
+    ctx.fillText("Scan To Donate Directly Via", width / 2, ctaY);
+
+    // "Mobile Money" in orange
+    ctx.fillStyle = "#F97316"; // Orange
+    ctx.fillText("Mobile Money", width / 2, ctaY + 45);
+
+    // QR Code section
+    const qrContainerSize = 320;
+    const qrContainer = {
+      x: (width - qrContainerSize) / 2,
+      y: ctaY + 80,
+      width: qrContainerSize,
+      height: qrContainerSize,
+      borderRadius: 24,
+    };
+
+    // Draw green rounded background for QR code
+    ctx.fillStyle = "#047857";
+    ctx.beginPath();
+    ctx.roundRect(
+      qrContainer.x,
+      qrContainer.y,
+      qrContainer.width,
+      qrContainer.height,
+      qrContainer.borderRadius
+    );
+    ctx.fill();
+
+    // Generate and load QR code image - use Monime payment URL if UVAN available
+    const qrCodeUrl = campaign.financial_account?.uvan
+      ? `https://pay.monime.io/${campaign.financial_account.uvan}`
+      : `${baseUrl}/campaigns/${campaign.slug}`;
+
+    // Generate QR with white background
+    const qrSize = 280;
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(qrCodeUrl)}&format=png&bgcolor=ffffff&color=047857&qzone=2`;
+
+    const qrImage = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Failed to load QR code"));
+      img.src = qrImageUrl;
+    });
+
+    // Draw QR code centered in the container
+    const qrX = qrContainer.x + (qrContainer.width - qrSize) / 2;
+    const qrY = qrContainer.y + (qrContainer.height - qrSize) / 2;
+    ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
+
+    // Logo section (bottom)
+    const logoY = qrContainer.y + qrContainer.height + 50;
+    drawIB4MELogo(ctx, width / 2, logoY);
+
+    // Website URL at the very bottom
+    ctx.font = "bold 28px Arial, sans-serif";
+    ctx.fillStyle = "#1F2937";
+    ctx.textAlign = "center";
+    ctx.fillText("www.ib4me.org", width / 2, height - 40);
 
     // Convert canvas to blob
     return new Promise((resolve, reject) => {
