@@ -1,9 +1,15 @@
+import { Metadata } from "next";
 import Link from "next/link";
 import mongoose from "mongoose";
 import { campaignService, mediaAssetService } from "@/services";
 import { CloudinaryService } from "@/lib/cloudinary";
 import CampaignsGrid from "@/app/campaigns/CampaignsGrid";
 import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = {
+  title: 'Medical Fundraising Campaigns',
+  description: 'Browse and donate to verified medical emergency campaigns in Sierra Leone. Help save lives today.',
+};
 
 
 type CampaignListItem = {

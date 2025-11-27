@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -24,7 +25,58 @@ import {
 } from "@/repositories";
 import CampaignTabs, { CampaignUpdateItem } from "./Tabs";
 
-type PageParams = { params: { slug: string } };
+type PageParams = { params: Promise<{ slug: string }> };
+
+export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
+  const { slug } = await params;
+  const campaign = await campaignService.getBySlug(slug);
+
+  if (!campaign) {
+    return { title: 'Campaign Not Found' };
+  }
+
+  // Get patient photo URL if available
+  let imageUrl = 'https://ib4me.org/assets/Hero.png';
+  if (campaign.patient?.photoAssetId) {
+    const assets = await mediaAssetService.listByIds([campaign.patient.photoAssetId as mongoose.Types.ObjectId]);
+    const asset = assets[0];
+    if (asset?.storage?.key) {
+      imageUrl = CloudinaryService.generateTransformationUrl(asset.storage.key, {
+        width: 1200,
+        crop: 'fill',
+        gravity: 'auto',
+        aspect_ratio: '1.91:1',
+        fetch_format: 'auto',
+        quality: 'auto',
+      });
+    }
+  }
+
+  const patientName = campaign.patient?.name || 'a patient';
+  const goalAmount = campaign.goal?.amountMinor ? (campaign.goal.amountMinor / 100).toLocaleString() : '0';
+  const raisedAmount = campaign.totals?.raisedMinor ? (campaign.totals.raisedMinor / 100).toLocaleString() : '0';
+  const currency = campaign.goal?.currency || 'SLE';
+
+  const title = `Help ${patientName} - Medical Fundraiser`;
+  const description = `Help ${patientName} raise ${currency} ${goalAmount} for ${campaign.diagnosis || 'medical treatment'}. ${currency} ${raisedAmount} raised so far.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [{ url: imageUrl, width: 1200, height: 630, alt: patientName }],
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [imageUrl],
+    },
+  };
+}
 
 function formatAmount(amount: number, currency: string = "SLE") {
   return new Intl.NumberFormat("en-GB", {

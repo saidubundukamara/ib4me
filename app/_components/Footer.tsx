@@ -1,3 +1,13 @@
+"use client";
+
+import Ib4meLogo from "@/public/assets/ib4melogowhite.png";
+import Link from "next/link";
+import Image from "next/image";
+import { StaticImageData } from "next/image";
+import { Facebook, X, Instagram, Linkedin } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useCookieConsent } from "@/components/cookie-consent";
+
 interface MenuItem {
     title: string;
     links: {
@@ -20,12 +30,6 @@ interface FooterProps {
         url: string;
     }[];
 }
-import Ib4meLogo from "@/public/assets/ib4melogowhite.png";
-import Link from "next/link";
-import Image from "next/image";
-import { StaticImageData } from "next/image";
-import { Facebook, X, Instagram, Linkedin } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const Footer = ({
     logo = {
@@ -70,6 +74,8 @@ const Footer = ({
     ],
 }: FooterProps
 ) => {
+    const { config, openSettings } = useCookieConsent();
+
     return (
         <section data-testid="footer" className="mt-16 pt-10 bg-primary text-white font-Sora">
             <div>
@@ -127,6 +133,16 @@ const Footer = ({
                                     <Link href={link.url}>{link.text}</Link>
                                 </li>
                             ))}
+                            {config?.enabled && (
+                                <li className="underline hover:text-orange-blaze">
+                                    <button
+                                        onClick={openSettings}
+                                        className="hover:text-orange-blaze"
+                                    >
+                                        Cookie Settings
+                                    </button>
+                                </li>
+                            )}
                         </ul>
                     </div>
                 </footer>

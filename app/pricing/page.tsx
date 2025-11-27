@@ -5,16 +5,31 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { Calculator, CheckCircle, Info } from "lucide-react";
-import { useState } from "react";
+import { Calculator, CheckCircle, Building2, User } from "lucide-react";
+import { useState, useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 const Pricing = () => {
     const [donationAmount, setDonationAmount] = useState(100);
+    const [campaignType, setCampaignType] = useState<"individual" | "organization">("individual");
+
+    // Fee constants (in basis points)
+    const BASE_FEE_BPS = 100; // Monime's 1%
+    const PLATFORM_FEE_INDIVIDUAL_BPS = 260; // 2.6%
+    const PLATFORM_FEE_ORGANIZATION_BPS = 200; // 2.0%
 
     const amount = Math.max(0, Number(donationAmount) || 0);
-    const platformFee = Number((amount * 0.01).toFixed(2));    
-    const netToCampaign = Number((amount - platformFee).toFixed(2)); 
-    const totalAmount = amount;                                   
+
+    const platformFeeBps = campaignType === "individual" ? PLATFORM_FEE_INDIVIDUAL_BPS : PLATFORM_FEE_ORGANIZATION_BPS;
+
+    const paymentFee = useMemo(() => Math.round(amount * BASE_FEE_BPS / 10000 * 100) / 100, [amount]);
+    const platformFee = useMemo(() => Math.round(amount * platformFeeBps / 10000 * 100) / 100, [amount, platformFeeBps]);
+    const totalFee = paymentFee + platformFee;
+    const totalCharged = amount + totalFee;
+
+    const paymentFeePercent = (BASE_FEE_BPS / 100).toFixed(1);
+    const platformFeePercent = (platformFeeBps / 100).toFixed(1);
+    const totalFeePercent = ((BASE_FEE_BPS + platformFeeBps) / 100).toFixed(1);                                   
 
 
     return (
@@ -42,20 +57,44 @@ const Pricing = () => {
                                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                                             <div className="h-6 w-6 font-bold text-primary">SLE</div>
                                         </div>
-                                        <h2 className="text-xl sm:text-2xl font-bold text-foreground">Platform Fee</h2>
+                                        <h2 className="text-xl sm:text-2xl font-bold text-foreground">Fee Structure</h2>
                                     </div>
 
                                     <div className="space-y-5 sm:space-y-6">
                                         <div>
-                                            <div className="mb-1.5 sm:mb-2 text-4xl sm:text-5xl font-bold text-blaze-orange">1%</div>
+                                            <div className="mb-1.5 sm:mb-2 text-4xl sm:text-5xl font-bold text-blaze-orange">
+                                                {totalFeePercent}%
+                                            </div>
                                             <p className="text-sm sm:text-base text-muted-foreground">
-                                                We charge only 1% of each donation to maintain our platform and services.
+                                                Total fee for {campaignType === "individual" ? "individual" : "organization"} campaigns. Donors cover the fees so 100% of the donation goes to the campaign.
                                             </p>
+                                        </div>
+
+                                        <div className="rounded-2xl bg-muted/50 p-5 sm:p-6 space-y-4">
+                                            <h3 className="font-bold text-foreground">Fee breakdown:</h3>
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm text-muted-foreground">Payment processing (Monime)</span>
+                                                    <span className="font-semibold text-foreground">{paymentFeePercent}%</span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm text-muted-foreground">Platform fee</span>
+                                                    <span className="font-semibold text-foreground">{platformFeePercent}%</span>
+                                                </div>
+                                                <div className="border-t border-border pt-3 flex items-center justify-between">
+                                                    <span className="font-semibold text-foreground">Total</span>
+                                                    <span className="font-bold text-blaze-orange">{totalFeePercent}%</span>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <div className="rounded-2xl bg-muted/50 p-5 sm:p-6 space-y-3">
                                             <h3 className="mb-2.5 sm:mb-3 font-bold text-foreground">What the fee covers:</h3>
                                             <div className="space-y-2.5 sm:space-y-3">
+                                                <div className="flex items-start gap-3">
+                                                    <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-success" />
+                                                    <span className="text-sm text-muted-foreground">Secure payment processing via Monime</span>
+                                                </div>
                                                 <div className="flex items-start gap-3">
                                                     <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-success" />
                                                     <span className="text-sm text-muted-foreground">Platform maintenance and development</span>
@@ -70,19 +109,15 @@ const Pricing = () => {
                                                 </div>
                                                 <div className="flex items-start gap-3">
                                                     <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-success" />
-                                                    <span className="text-sm text-muted-foreground">Secure payment processing</span>
-                                                </div>
-                                                <div className="flex items-start gap-3">
-                                                    <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-success" />
                                                     <span className="text-sm text-muted-foreground">Marketing and outreach to help campaigns succeed</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-start gap-3 rounded-xl bg-blaze-orange/5 p-4">
-                                            <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-blaze-orange" />
+                                        <div className="flex items-start gap-3 rounded-xl bg-primary/5 p-4">
+                                            <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" />
                                             <p className="text-sm text-muted-foreground">
-                                                Unlike other platforms, we don&#39;t charge any additional fees for withdrawals or payment processing.
+                                                <strong className="text-foreground">100% of your donation goes to the campaign.</strong> Fees are added on top and covered by donors.
                                             </p>
                                         </div>
                                     </div>
@@ -98,6 +133,42 @@ const Pricing = () => {
                                     </div>
 
                                     <div className="space-y-5 sm:space-y-6">
+                                        {/* Campaign Type Toggle */}
+                                        <div>
+                                            <Label className="text-base mb-3 block">Campaign Type</Label>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCampaignType("individual")}
+                                                    className={cn(
+                                                        "flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all",
+                                                        campaignType === "individual"
+                                                            ? "border-primary bg-primary/10 text-primary"
+                                                            : "border-border hover:border-primary/50"
+                                                    )}
+                                                >
+                                                    <User className="h-4 w-4" />
+                                                    Individual
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCampaignType("organization")}
+                                                    className={cn(
+                                                        "flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all",
+                                                        campaignType === "organization"
+                                                            ? "border-primary bg-primary/10 text-primary"
+                                                            : "border-border hover:border-primary/50"
+                                                    )}
+                                                >
+                                                    <Building2 className="h-4 w-4" />
+                                                    Organization
+                                                </button>
+                                            </div>
+                                            <p className="mt-2 text-xs text-muted-foreground">
+                                                Organizations get a reduced platform fee ({(PLATFORM_FEE_ORGANIZATION_BPS / 100).toFixed(1)}% vs {(PLATFORM_FEE_INDIVIDUAL_BPS / 100).toFixed(1)}%)
+                                            </p>
+                                        </div>
+
                                         <div>
                                             <Label htmlFor="donation-amount" className="text-base">Enter Donation Amount</Label>
                                             <div className="relative mt-2">
@@ -123,31 +194,45 @@ const Pricing = () => {
                                             <div className="flex items-center justify-between border-b border-border pb-3">
                                                 <span className="text-muted-foreground">Donation Amount</span>
                                                 <span className="text-lg sm:text-xl font-bold text-foreground">
-                                                    SLE{donationAmount.toFixed(2)}
+                                                    SLE {amount.toFixed(2)}
                                                 </span>
                                             </div>
 
                                             <div className="flex items-center justify-between border-b border-border pb-3">
-                                                <span className="text-muted-foreground">Platform Fee (1%)</span>
-                                                <span className="text-lg sm:text-xl font-bold text-blaze-orange">
-                                                    SLE{platformFee.toFixed(2)}
+                                                <span className="text-muted-foreground">Payment Fee ({paymentFeePercent}%)</span>
+                                                <span className="font-semibold text-foreground">
+                                                    SLE {paymentFee.toFixed(2)}
                                                 </span>
                                             </div>
 
-                                            <div className="flex items-center justify-between pt-2">
-                                                <span className="font-bold text-foreground">Goes to Campaign</span>
+                                            <div className="flex items-center justify-between border-b border-border pb-3">
+                                                <span className="text-muted-foreground">Platform Fee ({platformFeePercent}%)</span>
+                                                <span className="font-semibold text-foreground">
+                                                    SLE {platformFee.toFixed(2)}
+                                                </span>
+                                            </div>
+
+                                            <div className="flex items-center justify-between border-b border-border pb-3">
+                                                <span className="font-semibold text-foreground">Total Donor Pays</span>
+                                                <span className="text-lg sm:text-xl font-bold text-blaze-orange">
+                                                    SLE {totalCharged.toFixed(2)}
+                                                </span>
+                                            </div>
+
+                                            <div className="flex items-center justify-between pt-2 bg-primary/5 -mx-5 sm:-mx-6 px-5 sm:px-6 py-3 rounded-b-xl">
+                                                <span className="font-bold text-primary">Goes to Campaign</span>
                                                 <span className="text-xl sm:text-2xl font-bold text-primary">
-                                                    SLE{netToCampaign.toFixed(2)}
+                                                    SLE {amount.toFixed(2)}
                                                 </span>
                                             </div>
                                         </div>
 
                                         <div className="space-y-3">
                                             <Button size="lg" className="w-full">
-                                                Donate SLE{totalAmount.toFixed(2)}
+                                                Donate SLE {totalCharged.toFixed(2)}
                                             </Button>
                                             <p className="text-center text-xs text-muted-foreground">
-                                                SLE{netToCampaign.toFixed(2)} goes to the campaign organizer
+                                                100% of your SLE {amount.toFixed(2)} donation goes to the campaign
                                             </p>
                                         </div>
 
@@ -170,7 +255,7 @@ const Pricing = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 items-start gap-8 sm:gap-10 lg:gap-12 mb-10 sm:mb-16">
                         <div>
                             <h3 className="font-Lora text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-6">
-                                What&#39;s a transaction fee?
+                                How do fees work?
                             </h3>
                         </div>
                         <div className="space-y-4 sm:space-y-5 text-base sm:text-lg text-muted-foreground leading-relaxed">
@@ -179,10 +264,12 @@ const Pricing = () => {
                                 payment processors like Monime to accept and deliver your donations.
                             </p>
                             <p>
-                                The transaction fee is automatically deducted from each donation. It covers the costs of credit,
-                                debit, and Local Payments platforms, safely delivering donations, and helps us offer more ways to donate,
-                                through credit, debit, PayPal, or Local payments platforms. <strong>This is the only fee deducted for
-                                    someone starting a fundraiser on ib4me</strong> and helps power all your fundraising needs.
+                                <strong>Donors cover the fees</strong> so that 100% of every donation goes directly to the campaign.
+                                The small fee ({totalFeePercent}% for {campaignType} campaigns) is added on top of the donation amount and covers
+                                payment processing (1%) and platform costs ({platformFeePercent}%).
+                            </p>
+                            <p>
+                                <strong>Campaign organizers pay nothing</strong> — starting a fundraiser on ib4me is completely free.
                             </p>
                         </div>
                     </div>
@@ -190,15 +277,18 @@ const Pricing = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 items-start gap-8 sm:gap-10 lg:gap-12 mb-10 sm:mb-16">
                         <div>
                             <h3 className="font-Lora text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-6">
-                                Donor contributions to ib4me are always optional
+                                Why do organizations pay less?
                             </h3>
                         </div>
                         <div className="space-y-4 sm:space-y-5 text-base sm:text-lg text-muted-foreground leading-relaxed">
                             <p>
-                                It&#39;s important to us that everyone is able to get the help they need, which is why we don&#39;t charge
-                                a fee to start a fundraiser. Instead, we accept optional contributions from donors that are always
-                                appreciated, but never required. Donor contributions help make it possible for us to offer powerful
-                                and trusted fundraising tools, customer support, and a global team of Trust &amp; Safety experts.
+                                Verified organizations benefit from a reduced platform fee of 2.0% (vs 2.6% for individuals),
+                                bringing their total fee to just 3.0%. This helps established healthcare organizations,
+                                hospitals, and NGOs maximize the impact of every donation they receive.
+                            </p>
+                            <p>
+                                <strong>Organizations must complete verification</strong> to unlock the reduced fee rate.
+                                This ensures trust and accountability for larger fundraising campaigns.
                             </p>
                         </div>
                     </div>

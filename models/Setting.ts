@@ -95,6 +95,40 @@ export interface ICampaignLimitsSettings {
   maxActiveCampaignsOrganization?: number; // Default: 8
 }
 
+export interface IAnalyticsService {
+  id: string;           // e.g., 'google_analytics'
+  name: string;         // e.g., 'Google Analytics'
+  enabled: boolean;
+  trackingId?: string;  // e.g., 'G-XXXXXXXXXX'
+  category: 'analytics' | 'marketing' | 'functional';
+}
+
+export interface ICookieConsentBanner {
+  title?: string;
+  message?: string;
+  acceptAllText?: string;
+  rejectAllText?: string;
+  customizeText?: string;
+}
+
+export interface ICookieCategory {
+  name?: string;
+  description?: string;
+}
+
+export interface ICookieConsentSettings {
+  enabled?: boolean;
+  banner?: ICookieConsentBanner;
+  categories?: {
+    essential?: ICookieCategory;
+    analytics?: ICookieCategory;
+    marketing?: ICookieCategory;
+    functional?: ICookieCategory;
+  };
+  services?: IAnalyticsService[];
+  consentExpiryDays?: number;
+}
+
 export interface ISetting extends mongoose.Document {
   _id: string; // "platform"
   withdrawal?: IWithdrawalSetting;
@@ -108,6 +142,7 @@ export interface ISetting extends mongoose.Document {
   platformFinancialAccount?: IPlatformFinancialAccount;  // For receiving platform fees
   tipFinancialAccount?: ITipFinancialAccount;            // For receiving tips
   tipping?: ITippingSettings;
+  cookieConsent?: ICookieConsentSettings;
   updatedAt: Date;
 }
 
@@ -189,6 +224,47 @@ const settingSchema = new mongoose.Schema<ISetting>(
       suggestedAmounts: [{ type: Number }],
       minAmountMinor: { type: Number, default: 100 },
       maxAmountMinor: { type: Number, default: 10000000 },
+    },
+    cookieConsent: {
+      enabled: { type: Boolean, default: false },
+      banner: {
+        title: { type: String },
+        message: { type: String },
+        acceptAllText: { type: String },
+        rejectAllText: { type: String },
+        customizeText: { type: String },
+      },
+      categories: {
+        essential: {
+          name: { type: String },
+          description: { type: String },
+        },
+        analytics: {
+          name: { type: String },
+          description: { type: String },
+        },
+        marketing: {
+          name: { type: String },
+          description: { type: String },
+        },
+        functional: {
+          name: { type: String },
+          description: { type: String },
+        },
+      },
+      services: [
+        {
+          id: { type: String, required: true },
+          name: { type: String, required: true },
+          enabled: { type: Boolean, default: false },
+          trackingId: { type: String },
+          category: {
+            type: String,
+            enum: ["analytics", "marketing", "functional"],
+          },
+        },
+      ],
+      consentExpiryDays: { type: Number, default: 365 },
     },
   },
   { timestamps: { createdAt: false, updatedAt: true }, _id: false }

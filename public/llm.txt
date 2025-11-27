@@ -1,0 +1,36 @@
+# ib4me - Medical Emergency Fundraising Platform
+
+## About
+ib4me is a crowdfunding platform for medical emergencies in Sierra Leone. The name comes from the Krio phrase "Put fɔ wɛlbɔdi" meaning "contribute to wellness/health."
+
+## Purpose
+- Help patients and families raise funds for urgent medical treatments
+- Enable donations via mobile money (Orange Money, AfriMoney) and credit cards
+- Verify campaigns through medical institutions for trust and transparency
+
+## Key Features
+- Medical campaign creation with hospital verification
+- Multiple payment methods optimized for Sierra Leone (mobile money) and diaspora (cards)
+- Transparent fee structure
+- Campaign progress tracking and updates
+- Social sharing for WhatsApp, Facebook, and other platforms
+
+## User Actions
+- Create a fundraiser: /dashboard (requires account)
+- Browse campaigns: /campaigns
+- Donate to a campaign: /campaigns/[campaign-slug]/donate
+- Learn about us: /about
+- View pricing: /pricing
+- Contact support: /contact
+
+## Target Audience
+- Sierra Leoneans facing medical emergencies
+- Family members seeking to help loved ones
+- Diaspora community wanting to support from abroad
+- Local and international donors
+
+## Location
+Sierra Leone, West Africa
+
+## Contact
+Website: https://ib4me.org
