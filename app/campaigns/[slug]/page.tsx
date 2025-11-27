@@ -16,6 +16,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ShieldAlert } from "lucide-react";
 import { campaignService, mediaAssetService } from "@/services";
 import { CloudinaryService } from "@/lib/cloudinary";
 import {
@@ -174,6 +177,9 @@ export default async function CampaignDetailPage({ params }: PageParams) {
     ? await userRepository.findById(String(campaign.ownerId))
     : null;
 
+  // Check if campaign owner is verified
+  const isOwnerVerified = campaign.ownerVerification?.verified ?? false;
+
   const donations = await donationRepository.listByCampaign(
     campaign._id as mongoose.Types.ObjectId,
   );
@@ -330,12 +336,29 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                       </div>
                     </div>
 
-                    <Button
-                      asChild
-                      className="h-11 w-full text-base font-semibold shadow-lg hover:shadow-xl"
-                    >
-                      <Link href={`/campaigns/${campaign.slug}/donate`}>Donate Now</Link>
-                    </Button>
+                    {isOwnerVerified ? (
+                      <Button
+                        asChild
+                        className="h-11 w-full text-base font-semibold shadow-lg hover:shadow-xl"
+                      >
+                        <Link href={`/campaigns/${campaign.slug}/donate`}>Donate Now</Link>
+                      </Button>
+                    ) : (
+                      <div className="space-y-3">
+                        <Button
+                          disabled
+                          className="h-11 w-full text-base font-semibold opacity-60"
+                        >
+                          Donations Paused
+                        </Button>
+                        <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 rounded-xl">
+                          <ShieldAlert className="h-4 w-4 text-amber-500" />
+                          <AlertDescription className="text-amber-700 dark:text-amber-300 text-xs">
+                            Donations are paused while the organizer completes identity verification.
+                          </AlertDescription>
+                        </Alert>
+                      </div>
+                    )}
 
                     <div>
                       <h3 className="text-center text-sm font-semibold text-blaze-orange">
@@ -373,10 +396,21 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                           <AvatarFallback>{organizerInitials}</AvatarFallback>
                         )}
                       </Avatar>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-foreground">
-                          {organizerName}
-                        </p>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {organizerName}
+                          </p>
+                          {!isOwnerVerified && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800"
+                              title="This organizer&apos;s identity verification is pending"
+                            >
+                              Pending Verification
+                            </Badge>
+                          )}
+                        </div>
                         <p className="text-xs text-blaze-orange">
                           Campaign organizer
                           {createdLabel ? ` • Created ${createdLabel}` : ""}

@@ -42,6 +42,21 @@ export class CampaignRepository extends BaseRepository<ICampaign> {
       "verification.status": "approved"
     } as never);
   }
+
+  /**
+   * Update all campaigns owned by a user.
+   * Used to sync ownerVerification when user completes KYC.
+   */
+  async updateManyByOwner(
+    ownerId: mongoose.Types.ObjectId,
+    update: Record<string, unknown>
+  ): Promise<{ modifiedCount: number }> {
+    const result = await this.model.updateMany(
+      { ownerId },
+      { $set: update }
+    );
+    return { modifiedCount: result.modifiedCount };
+  }
 }
 
 export const campaignRepository = new CampaignRepository();

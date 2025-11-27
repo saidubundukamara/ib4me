@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
 
   try {
     // Create campaign using service (includes financial account creation)
-    const created = await campaignService.createCampaign({
+    const result = await campaignService.createCampaign({
       ownerId,
       slug,
       diagnosis: diagnosis || undefined,
@@ -175,6 +175,8 @@ export async function POST(req: NextRequest) {
       goal: { currency: goalCurrency || "SLE", amountMinor: goalAmountMinor },
       story,
     });
+
+    const created = result.campaign;
 
     // Extract document files - form sends them as documents[0], documents[1], etc.
     const files: File[] = [];
@@ -235,7 +237,11 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(
-      { id: String(created._id), slug: created.slug },
+      {
+        id: String(created._id),
+        slug: created.slug,
+        ownerVerification: result.ownerVerification,
+      },
       { status: 201 }
     );
   } catch (error) {

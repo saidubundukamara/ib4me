@@ -3,6 +3,7 @@ import type { Session } from "next-auth";
 import { NextResponse } from "next/server";
 import { authConfig } from "@/app/api/auth/[...nextauth]/route";
 import { campaignService } from "@/services/CampaignService";
+import { verificationService } from "@/services/VerificationService";
 
 export async function GET() {
   try {
@@ -13,7 +14,11 @@ export async function GET() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const status = await campaignService.checkCampaignLimitForUser(userId);
+    // Fetch campaign limits and verification status in parallel
+    const [status, verificationStatus] = await Promise.all([
+      campaignService.checkCampaignLimitForUser(userId),
+      verificationService.isUserVerifiedForCampaigns(userId),
+    ]);
 
     return NextResponse.json({
       success: true,
@@ -23,6 +28,12 @@ export async function GET() {
           status.maxAllowed === Infinity
             ? null
             : status.maxAllowed - status.currentCount,
+        verification: {
+          verified: verificationStatus.verified,
+          status: verificationStatus.status,
+          reason: verificationStatus.reason,
+          type: verificationStatus.role === "Organization" ? "kyb" : "kyc",
+        },
       },
     });
   } catch (error) {

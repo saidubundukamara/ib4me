@@ -3,6 +3,11 @@ import type { Session } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authConfig } from "@/app/api/auth/[...nextauth]/route";
 import { verificationService } from "@/services/VerificationService";
+import { CloudinaryService } from "@/lib/cloudinary";
+import MediaAssetModel from "@/models/MediaAsset";
+import { Types } from "mongoose";
+import { connectDB } from "@/lib/db";
+import type { IKycDocuments, IKybDocuments } from "@/models/Verification";
 
 // GET /api/user/verification - Get current user's verification status
 export async function GET() {
@@ -20,7 +25,7 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json(verificationStatus);
+    return NextResponse.json({ data: verificationStatus });
   } catch (error) {
     console.error("Failed to fetch verification status:", error);
     return NextResponse.json(
@@ -40,21 +45,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { type, documents } = body;
+    // Get user's verification type from their profile (same as PUT handler)
+    const verificationStatus = await verificationService.getVerificationStatus(userId);
+    if (!verificationStatus) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+    const type = verificationStatus.type;
 
-    if (!type || !["kyc", "kyb"].includes(type)) {
-      return NextResponse.json(
-        { error: "Invalid verification type. Must be 'kyc' or 'kyb'" },
-        { status: 400 }
-      );
+    // Optionally parse body for any additional documents
+    let documents = {};
+    try {
+      const body = await request.json();
+      documents = body.documents || {};
+    } catch {
+      // Empty body is OK - type is inferred from profile
     }
 
     let updated;
     if (type === "kyc") {
-      updated = await verificationService.submitKycDocuments(userId, documents || {});
+      updated = await verificationService.submitKycDocuments(userId, documents);
     } else {
-      updated = await verificationService.submitKybDocuments(userId, documents || {});
+      updated = await verificationService.submitKybDocuments(userId, documents);
     }
 
     if (!updated) {
@@ -85,42 +96,77 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { type, documentType, assetId } = body;
+    // Parse FormData (file upload)
+    const form = await request.formData();
+    const documentType = form.get("documentType") as string;
+    const file = form.get("file") as File | null;
 
-    if (!type || !["kyc", "kyb"].includes(type)) {
+    if (!documentType) {
       return NextResponse.json(
-        { error: "Invalid verification type. Must be 'kyc' or 'kyb'" },
+        { error: "documentType is required" },
         { status: 400 }
       );
     }
 
-    if (!documentType || !assetId) {
+    if (!file || file.size === 0) {
       return NextResponse.json(
-        { error: "documentType and assetId are required" },
+        { error: "File is required" },
         { status: 400 }
       );
     }
 
+    // Get user's verification type from their profile
+    const verificationStatus = await verificationService.getVerificationStatus(userId);
+    const type = verificationStatus?.type || "kyc";
+
+    // Validate document type based on verification type
+    const validKycDocs = ["idDocument", "addressProof"];
+    const validKybDocs = ["registrationCertificate", "representativeId", "addressProof", "taxCertificate"];
+    const validDocs = type === "kyc" ? validKycDocs : validKybDocs;
+
+    if (!validDocs.includes(documentType)) {
+      return NextResponse.json(
+        { error: `Invalid document type for ${type.toUpperCase()}. Must be one of: ${validDocs.join(", ")}` },
+        { status: 400 }
+      );
+    }
+
+    // Upload to Cloudinary
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const uploadResult = await CloudinaryService.uploadBuffer(buffer, {
+      folder: `verification/${userId}/${type}`,
+      resource_type: file.type.startsWith("image/") ? "image" : "raw",
+    });
+
+    // Ensure database connection before creating MediaAsset
+    await connectDB();
+
+    // Create MediaAsset record
+    const asset = await MediaAssetModel.create({
+      ownerId: new Types.ObjectId(userId),
+      type: file.type || "file",
+      storage: {
+        provider: "cloudinary",
+        key: uploadResult.public_id,
+      },
+      url: uploadResult.secure_url,
+      size: file.size ?? uploadResult.bytes,
+    });
+
+    // Update verification with the new document
     let updated;
     if (type === "kyc") {
-      const validKycDocs = ["idDocument", "addressProof"];
-      if (!validKycDocs.includes(documentType)) {
-        return NextResponse.json(
-          { error: `Invalid KYC document type. Must be one of: ${validKycDocs.join(", ")}` },
-          { status: 400 }
-        );
-      }
-      updated = await verificationService.uploadKycDocument(userId, documentType, assetId);
+      updated = await verificationService.uploadKycDocument(
+        userId,
+        documentType as keyof IKycDocuments,
+        asset._id.toString()
+      );
     } else {
-      const validKybDocs = ["registrationCertificate", "representativeId", "addressProof", "taxCertificate"];
-      if (!validKybDocs.includes(documentType)) {
-        return NextResponse.json(
-          { error: `Invalid KYB document type. Must be one of: ${validKybDocs.join(", ")}` },
-          { status: 400 }
-        );
-      }
-      updated = await verificationService.uploadKybDocument(userId, documentType, assetId);
+      updated = await verificationService.uploadKybDocument(
+        userId,
+        documentType as keyof IKybDocuments,
+        asset._id.toString()
+      );
     }
 
     if (!updated) {

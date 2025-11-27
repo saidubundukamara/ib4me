@@ -7,6 +7,7 @@ import { StaticImageData } from "next/image";
 import { Facebook, X, Instagram, Linkedin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCookieConsent } from "@/components/cookie-consent";
+import { useSettings } from "@/lib/settings-provider";
 
 interface MenuItem {
     title: string;
@@ -58,14 +59,6 @@ const Footer = ({
                 { text: "Contact Us", url: "/contact" },
             ],
         },
-        {
-            title: "Get in Touch",
-            links: [
-                { text: "X", url: "#" },
-                { text: "Instagram", url: "#" },
-                { text: "LinkedIn", url: "#" },
-            ],
-        },
     ],
     copyright = `© ${new Date().getFullYear()} Copyright. All rights reserved.`,
     bottomLinks = [
@@ -75,6 +68,7 @@ const Footer = ({
 }: FooterProps
 ) => {
     const { config, openSettings } = useCookieConsent();
+    const { social } = useSettings();
 
     return (
         <section data-testid="footer" className="mt-16 pt-10 bg-primary text-white font-Sora">
@@ -95,18 +89,34 @@ const Footer = ({
                                 A trusted platform connecting communities to support those in need of life-changing healthcare.
                             </p>
                             <div className="flex gap-3">
-                                <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
-                                    <Facebook className="w-5 h-5" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
-                                    <X className="w-5 h-5" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
-                                    <Instagram className="w-5 h-5" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
-                                    <Linkedin className="w-5 h-5" />
-                                </Button>
+                                {social.facebook && (
+                                    <Link href={social.facebook} target="_blank" rel="noopener noreferrer">
+                                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
+                                            <Facebook className="w-5 h-5" />
+                                        </Button>
+                                    </Link>
+                                )}
+                                {social.twitter && (
+                                    <Link href={social.twitter} target="_blank" rel="noopener noreferrer">
+                                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
+                                            <X className="w-5 h-5" />
+                                        </Button>
+                                    </Link>
+                                )}
+                                {social.instagram && (
+                                    <Link href={social.instagram} target="_blank" rel="noopener noreferrer">
+                                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
+                                            <Instagram className="w-5 h-5" />
+                                        </Button>
+                                    </Link>
+                                )}
+                                {social.linkedin && (
+                                    <Link href={social.linkedin} target="_blank" rel="noopener noreferrer">
+                                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
+                                            <Linkedin className="w-5 h-5" />
+                                        </Button>
+                                    </Link>
+                                )}
                             </div>
                         </div>
                         {menuItems.map((section, sectionIdx) => (

@@ -153,7 +153,12 @@ const defaultFeatureSettings: FeatureSettings = {
   withdrawalsBlocked: false,
 };
 
-const defaultSocialSettings: SocialSettings = {};
+const defaultSocialSettings: SocialSettings = {
+  facebook: "https://www.facebook.com/share/19jahv3dqp/?mibextid=wwXIfr",
+  instagram: "https://www.instagram.com/ib4me.fundraising?igsh=cDF4ZnV5bTJzbXVr&utm_source=qr",
+  twitter: "https://x.com/ib4mesl?s=11",
+  linkedin: "https://www.linkedin.com/company/ib4me/",
+};
 const defaultSeoSettings: SeoSettings = {};
 const defaultFeeSettings: FeeSettings = {
   baseFeeMinor: 50,

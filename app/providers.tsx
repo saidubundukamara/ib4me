@@ -2,6 +2,7 @@
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/lib/auth-provider";
+import { SettingsProvider } from "@/lib/settings-provider";
 import {
   CookieConsentProvider,
   CookieConsentBanner,
@@ -12,12 +13,14 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
       <AuthProvider>
-        <CookieConsentProvider>
-          {children}
-          <CookieConsentBanner />
-          <AnalyticsScripts />
-          <Toaster richColors position="top-center" />
-        </CookieConsentProvider>
+        <SettingsProvider>
+          <CookieConsentProvider>
+            {children}
+            <CookieConsentBanner />
+            <AnalyticsScripts />
+            <Toaster richColors position="top-center" />
+          </CookieConsentProvider>
+        </SettingsProvider>
       </AuthProvider>
     </SessionProvider>
   );

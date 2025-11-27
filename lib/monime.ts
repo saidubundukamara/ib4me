@@ -287,6 +287,7 @@ export class MonimeService {
       );
     }
 
+
     const headers: Record<string, string> = {
       Authorization: `Bearer ${this.config.accessToken}`,
       "Monime-Space-Id": this.config.spaceId,
@@ -299,6 +300,7 @@ export class MonimeService {
     if (idempotencyKey) {
       headers["Idempotency-Key"] = idempotencyKey;
     }
+    console.log("Headers", headers);
 
     try {
       const response = await fetch(url, {
@@ -310,12 +312,12 @@ export class MonimeService {
 
       if (!response.ok) {
         const error = responseData as MonimeError;
-        // Log the full error response for debugging
-        console.error('Monime API error response:', {
+        // Log the full error response for debugging (with full depth)
+        console.error('Monime API error response:', JSON.stringify({
           status: response.status,
           statusText: response.statusText,
           body: responseData
-        });
+        }, null, 2));
 
         // Try to extract error message from various possible response formats
         const errorMessage = error.message

@@ -18,6 +18,7 @@ const createDonationSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  
   try {
     const body = await req.json();
     const validatedData = createDonationSchema.parse(body);
@@ -31,11 +32,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    
+
     // Check campaign status
     if (campaign.status !== "active") {
       return NextResponse.json(
         { error: "Campaign is not accepting donations" },
         { status: 400 }
+      );
+    }
+
+    // Check if campaign owner is verified
+    if (!campaign.ownerVerification?.verified) {
+      return NextResponse.json(
+        {
+          error: "This campaign cannot receive donations until the organizer completes identity verification.",
+          code: "OWNER_NOT_VERIFIED"
+        },
+        { status: 403 }
       );
     }
 
@@ -46,6 +60,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
 
     // Get platform financial account (payments go here first)
     const platformAccount = await settingService.getPlatformAccountSettings();
@@ -113,14 +128,17 @@ export async function POST(req: NextRequest) {
     // Create Monime checkout session with idempotency key
     // Note: We charge totalChargedMinor (donation + fees) to the donor
     // The campaign's financial account receives this amount, and we track fees separately
-    const feeDescriptionParts = [];
-    if (calculatedFees.baseFeeMinor > 0) {
-      feeDescriptionParts.push(`Base fee: ${fromMinorUnits(calculatedFees.baseFeeMinor, validatedData.currency)} ${validatedData.currency}`);
+    // Build line item description (Monime has 100 char limit)
+    const baseDescription = `Donation for ${campaign.diagnosis || 'medical campaign'}`;
+    let lineItemDescription = baseDescription;
+    if (validatedData.message) {
+      const withMessage = `${baseDescription} - ${validatedData.message}`;
+      lineItemDescription = withMessage.length <= 100 ? withMessage : `${withMessage.substring(0, 97)}...`;
     }
-    if (calculatedFees.processingFeeMinor > 0) {
-      feeDescriptionParts.push(`Processing fee (${calculatedFees.processingFeeBps / 100}%): ${fromMinorUnits(calculatedFees.processingFeeMinor, validatedData.currency)} ${validatedData.currency}`);
+    // Ensure description is within 100 char limit
+    if (lineItemDescription.length > 100) {
+      lineItemDescription = `${lineItemDescription.substring(0, 97)}...`;
     }
-    const feeDescription = feeDescriptionParts.length > 0 ? ` | Fees: ${feeDescriptionParts.join(', ')}` : '';
 
     // Create checkout session targeting PLATFORM account (not campaign)
     // Funds will be transferred to campaign after payment completion
@@ -137,7 +155,7 @@ export async function POST(req: NextRequest) {
           value: totalChargedMinor,  // Charge total amount (donation + fees) to donor
         },
         quantity: 1,
-        description: `Medical donation for ${campaign.diagnosis}${validatedData.message ? ` - ${validatedData.message}` : ''}${feeDescription}`,
+        description: lineItemDescription,
         reference,
       }],
       metadata: {
@@ -156,8 +174,7 @@ export async function POST(req: NextRequest) {
       },
       callbackState: reference,
     }, reference); // Use reference as idempotency key
-
-    console.log("checkoutSession", checkoutSession);
+  
 
     // Update donation with checkout session ID
     await donationService.updateCheckoutSession(donationIdStr, checkoutSession.id);
