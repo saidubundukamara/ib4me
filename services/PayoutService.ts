@@ -36,6 +36,8 @@ export class PayoutService {
    * Threshold is based on:
    * 1. Fixed minimum amount (e.g., 50,000 SLE)
    * 2. Percentage of AMOUNT RAISED (not goal)
+   *
+   * If thresholdEnabled is false, all withdrawals are allowed.
    */
   private async checkMinimumThreshold(
     amountMinor: number,
@@ -44,6 +46,11 @@ export class PayoutService {
   ): Promise<IPayoutPolicyCheck> {
     // Get withdrawal settings from platform settings
     const withdrawalSettings = await settingService.getWithdrawalSettings();
+
+    // If threshold is disabled, always allow withdrawals
+    if (!withdrawalSettings.thresholdEnabled) {
+      return { minThresholdMet: true, overrideBy: null };
+    }
 
     // Use provided settings or fall back to platform settings
     const minThreshold = settings?.minimumWithdrawalAmount ?? withdrawalSettings.minAmountMinor;

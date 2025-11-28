@@ -12,3 +12,5 @@ export * from "./WebhookEventService";
 export * from "./AuthCodeService";
 export * from "./CategoryService";
 export * from "./TipService";
+export * from "./TestimonialService";
+export * from "./PartnerService";

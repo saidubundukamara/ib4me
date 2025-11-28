@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { BaseRepository } from "./BaseRepository";
 import User, { IUser } from "../models/User";
 import { FilterQuery } from "mongoose";
@@ -128,6 +129,40 @@ export class UserRepository extends BaseRepository<IUser> {
       status: "active",
       deletedAt: null,
     } as never);
+  }
+
+  /**
+   * Find a user by ID with only public-safe fields projected.
+   * Excludes sensitive data like email, phone, passwordHash, 2FA secrets, etc.
+   * Only returns active, non-deleted users.
+   */
+  async findPublicProfileById(userId: string): Promise<Partial<IUser> | null> {
+    await this.ensureConnection();
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return null;
+    }
+
+    return this.model.findOne(
+      {
+        _id: new mongoose.Types.ObjectId(userId),
+        status: "active",
+        deletedAt: null,
+      },
+      {
+        _id: 1,
+        name: 1,
+        photoUrl: 1,
+        roles: 1,
+        "organization.name": 1,
+        "organization.type": 1,
+        "organization.description": 1,
+        "organization.website": 1,
+        "address.city": 1,
+        "address.country": 1,
+        createdAt: 1,
+      }
+    ).exec();
   }
 
   async findAdminsWithPagination(filters: AdminUserFilters): Promise<PaginatedUsers> {

@@ -32,6 +32,7 @@ interface FeatureSettings {
   enableWhatsAppSharing?: boolean;
   enableSMSNotifications?: boolean;
   enableEmailNotifications?: boolean;
+  thresholdEnabled?: boolean;
   minimumWithdrawalAmount?: number;
   minimumWithdrawalPercent?: number;
   allowEmergencyOverride?: boolean;
@@ -45,6 +46,7 @@ interface FeatureSettings {
 }
 
 interface WithdrawalSettings {
+  thresholdEnabled: boolean;
   minAmountMinor: number;
   minPercent: number;
   allowEmergencyOverride: boolean;
@@ -311,6 +313,7 @@ export class SettingService {
       enableWhatsAppSharing: true,
       enableSMSNotifications: true,
       enableEmailNotifications: true,
+      thresholdEnabled: withdrawal.thresholdEnabled ?? true,
       minimumWithdrawalAmount: withdrawal.minAmountMinor || 50000,
       minimumWithdrawalPercent: withdrawal.minPercent || 10,
       allowEmergencyOverride: withdrawal.allowEmergencyOverride ?? true,
@@ -329,6 +332,7 @@ export class SettingService {
     const withdrawal = settings.withdrawal || {};
 
     return {
+      thresholdEnabled: withdrawal.thresholdEnabled ?? true,
       minAmountMinor: withdrawal.minAmountMinor || 50000,
       minPercent: withdrawal.minPercent || 10,
       allowEmergencyOverride: withdrawal.allowEmergencyOverride ?? true,
@@ -350,6 +354,7 @@ export class SettingService {
     if (updates.emergencyPoolFund !== undefined) featureUpdates.emergencyPoolFund = updates.emergencyPoolFund;
 
     const withdrawalUpdates: Partial<IWithdrawalSetting> = {};
+    if (updates.thresholdEnabled !== undefined) withdrawalUpdates.thresholdEnabled = updates.thresholdEnabled;
     if (updates.minimumWithdrawalAmount !== undefined) withdrawalUpdates.minAmountMinor = updates.minimumWithdrawalAmount;
     if (updates.minimumWithdrawalPercent !== undefined) withdrawalUpdates.minPercent = updates.minimumWithdrawalPercent;
     if (updates.allowEmergencyOverride !== undefined) withdrawalUpdates.allowEmergencyOverride = updates.allowEmergencyOverride;

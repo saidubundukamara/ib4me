@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 export interface IWithdrawalSetting {
+  thresholdEnabled?: boolean;
   minAmountMinor?: number;
   minPercent?: number;
   allowEmergencyOverride?: boolean;
@@ -150,6 +151,7 @@ const settingSchema = new mongoose.Schema<ISetting>(
   {
     _id: { type: String, required: true },
     withdrawal: {
+      thresholdEnabled: { type: Boolean, default: true },
       minAmountMinor: { type: Number },
       minPercent: { type: Number },
       allowEmergencyOverride: { type: Boolean },

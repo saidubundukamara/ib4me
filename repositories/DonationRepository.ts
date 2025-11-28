@@ -27,6 +27,25 @@ export class DonationRepository extends BaseRepository<IDonation> {
     super(Donation);
   }
 
+  /**
+   * Find donation by ID with populated campaign and donor data
+   * Used for admin views where full related data is needed
+   */
+  async findByIdWithCampaign(id: string): Promise<IDonation | null> {
+    await this.ensureConnection();
+    return this.model
+      .findById(id)
+      .populate({
+        path: 'campaignId',
+        select: '_id slug patient diagnosis status'
+      })
+      .populate({
+        path: 'donorId',
+        select: '_id firstName lastName email'
+      })
+      .exec();
+  }
+
   async listByCampaign(
     campaignId: mongoose.Types.ObjectId
   ): Promise<IDonation[]> {

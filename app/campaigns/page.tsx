@@ -1,15 +1,23 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import mongoose from "mongoose";
-import { campaignService, mediaAssetService } from "@/services";
+import { campaignService, mediaAssetService, categoryService } from "@/services";
 import { CloudinaryService } from "@/lib/cloudinary";
+import { getOGImageFromCampaigns, buildPageMetadata } from "@/lib/metadata";
 import CampaignsGrid from "@/app/campaigns/CampaignsGrid";
 import { Button } from "@/components/ui/button";
 
-export const metadata: Metadata = {
-  title: 'Medical Fundraising Campaigns',
-  description: 'Browse and donate to verified medical emergency campaigns in Sierra Leone. Help save lives today.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const campaigns = await campaignService.listActive();
+  const ogImage = await getOGImageFromCampaigns(campaigns, "Medical fundraising campaigns on ib4me");
+
+  return buildPageMetadata({
+    title: "Medical Fundraising Campaigns",
+    description: "Browse and donate to verified medical emergency campaigns in Sierra Leone. Help save lives today.",
+    image: ogImage,
+    url: "https://ib4me.org/campaigns",
+  });
+}
 
 
 type CampaignListItem = {
@@ -23,6 +31,9 @@ type CampaignListItem = {
   imageUrl: string;
   imageSrcSet?: string;
   imageSizes?: string;
+  category?: string;
+  urgency?: "low" | "medium" | "high";
+  verified?: boolean;
 };
 
 async function getActiveCampaigns(): Promise<CampaignListItem[]> {
@@ -124,12 +135,19 @@ async function getActiveCampaigns(): Promise<CampaignListItem[]> {
       imageUrl,
       imageSrcSet,
       imageSizes,
+      category: c.category,
+      urgency: c.urgency,
+      verified: c.verification?.status === "approved",
     };
   });
 }
 
 export default async function CampaignsListPage() {
-  const items = await getActiveCampaigns();
+  const [items, categories] = await Promise.all([
+    getActiveCampaigns(),
+    categoryService.findActive(),
+  ]);
+  const categoryNames = categories.map((c) => c.name);
 
   return (
     <section className="py-8 md:py-16 font-Sora">
@@ -149,7 +167,7 @@ export default async function CampaignsListPage() {
           </Button>
         </Link>
 
-        <CampaignsGrid items={items} />
+        <CampaignsGrid items={items} categories={categoryNames} />
         <div className="flex flex-col items-center justify-center space-y-3 py-8 md:py-16">
           <h2 className="text-balance my-5 text-3xl font-medium lg:text-4xl">
             Start a fundraiser for yourself or someone else.

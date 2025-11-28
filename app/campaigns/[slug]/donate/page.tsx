@@ -23,6 +23,7 @@ export default async function CampaignDonatePage({ params }: PageParams) {
   const title = campaign.patient?.name || campaign.diagnosis || campaign.slug;
 
   const organizer = campaign.ownerId ? await userRepository.findById(String(campaign.ownerId)) : null;
+  const isVerified = campaign.verification?.status === "approved";
 
   // Get fee settings for this campaign type
   const feeSettings = await settingService.getFeeSettings();
@@ -101,6 +102,7 @@ export default async function CampaignDonatePage({ params }: PageParams) {
         goalAmount={goalAmount}
         imageUrl={imageUrl}
         processingFeeBps={processingFeeBps}
+        isVerified={isVerified}
       />
     </main>
   );

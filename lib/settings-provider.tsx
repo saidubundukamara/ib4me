@@ -31,6 +31,7 @@ interface FeatureSettings {
   enableWhatsAppSharing?: boolean;
   enableSMSNotifications?: boolean;
   enableEmailNotifications?: boolean;
+  thresholdEnabled?: boolean;
   minimumWithdrawalAmount?: number;
   minimumWithdrawalPercent?: number;
   allowEmergencyOverride?: boolean;
@@ -147,6 +148,7 @@ const defaultFeatureSettings: FeatureSettings = {
   enableWhatsAppSharing: true,
   enableSMSNotifications: true,
   enableEmailNotifications: true,
+  thresholdEnabled: true,
   minimumWithdrawalAmount: 50000, // 50,000 SLE
   minimumWithdrawalPercent: 10,
   allowEmergencyOverride: true,

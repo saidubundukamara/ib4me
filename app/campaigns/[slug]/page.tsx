@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import mongoose from "mongoose";
-import { Heart, Clock } from "lucide-react";
+import { Heart, Info, CheckCircle } from "lucide-react";
 import {
   FaFacebookF,
   FaXTwitter,
@@ -44,14 +44,18 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     const assets = await mediaAssetService.listByIds([campaign.patient.photoAssetId as mongoose.Types.ObjectId]);
     const asset = assets[0];
     if (asset?.storage?.key) {
+      // Use Cloudinary transformation for optimal OG image
       imageUrl = CloudinaryService.generateTransformationUrl(asset.storage.key, {
         width: 1200,
         crop: 'fill',
         gravity: 'auto',
         aspect_ratio: '1.91:1',
-        fetch_format: 'auto',
+        fetch_format: 'jpg',  // Use jpg for better crawler compatibility
         quality: 'auto',
       });
+    } else if (asset?.url) {
+      // Fallback to stored URL if no storage key
+      imageUrl = asset.url;
     }
   }
 
@@ -62,6 +66,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
 
   const title = `Help ${patientName} - Medical Fundraiser`;
   const description = `Help ${patientName} raise ${currency} ${goalAmount} for ${campaign.diagnosis || 'medical treatment'}. ${currency} ${raisedAmount} raised so far.`;
+  const pageUrl = `https://ib4me.org/campaigns/${slug}`;
 
   return {
     title,
@@ -69,8 +74,10 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     openGraph: {
       title,
       description,
+      url: pageUrl,
       images: [{ url: imageUrl, width: 1200, height: 630, alt: patientName }],
       type: 'website',
+      siteName: 'ib4me',
     },
     twitter: {
       card: 'summary_large_image',
@@ -179,6 +186,8 @@ export default async function CampaignDetailPage({ params }: PageParams) {
 
   // Check if campaign owner is verified
   const isOwnerVerified = campaign.ownerVerification?.verified ?? false;
+  // Check if campaign content is verified by admin
+  const isCampaignVerified = campaign.verification?.status === "approved";
 
   const donations = await donationRepository.listByCampaign(
     campaign._id as mongoose.Types.ObjectId,
@@ -197,17 +206,6 @@ export default async function CampaignDetailPage({ params }: PageParams) {
   }));
 
   const supporters = campaign.totals?.donationCount ?? recentDonations.length ?? 0;
-
-  const goalDeadline =
-    (campaign.goal as { deadline?: string | Date } | null)?.deadline ?? null;
-  const deadlineDate = goalDeadline ? new Date(goalDeadline) : null;
-  const daysLeft =
-    deadlineDate && !Number.isNaN(deadlineDate.getTime())
-      ? Math.max(
-          0,
-          Math.ceil((deadlineDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-        )
-      : null;
 
   const organizerName = organizer?.name ?? "Campaign organizer";
   const organizerInitials = organizerName
@@ -284,12 +282,27 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-500 hover:opacity-100" />
               </div>
 
+              {!isCampaignVerified && (
+                <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 rounded-xl">
+                  <Info className="h-4 w-4 text-blue-500" />
+                  <AlertDescription className="text-blue-700 dark:text-blue-300 text-sm">
+                    This campaign is pending verification. Donations are still accepted, but please review carefully before contributing.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <Card className="rounded-3xl border border-border/50 bg-card/70 shadow-xl backdrop-blur">
                 <CardContent className="space-y-6 p-6 sm:p-8">
                   <div className="space-y-4">
-                    <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                      Medical Campaign
-                    </span>
+                    {isCampaignVerified ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                        <CheckCircle className="h-3 w-3" /> Verified Campaign
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                        Medical Campaign
+                      </span>
+                    )}
                     <h1 className="text-3xl font-bold leading-tight text-foreground sm:text-4xl">
                       {title}
                     </h1>
@@ -297,7 +310,6 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                       <span>
                         {supporters} supporter{supporters === 1 ? "" : "s"}
                       </span>
-                      {daysLeft !== null ? <span>• {daysLeft} days left</span> : null}
                       {createdLabel ? <span>• Created {createdLabel}</span> : null}
                     </div>
                   </div>
@@ -327,12 +339,6 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                           <Heart className="h-4 w-4 text-primary" />
                           {supporters} supporter{supporters === 1 ? "" : "s"}
                         </span>
-                        {daysLeft !== null ? (
-                          <span className="inline-flex items-center gap-2">
-                            <Clock className="h-4 w-4" />
-                            {daysLeft} days left
-                          </span>
-                        ) : null}
                       </div>
                     </div>
 
@@ -388,35 +394,37 @@ export default async function CampaignDetailPage({ params }: PageParams) {
 
                     <Separator />
 
-                    <div className="flex items-center gap-3 rounded-2xl bg-muted/40 p-3">
-                      <Avatar className="h-12 w-12">
-                        {organizerPhoto ? (
-                          <AvatarImage src={organizerPhoto} alt={organizerName} />
-                        ) : (
-                          <AvatarFallback>{organizerInitials}</AvatarFallback>
-                        )}
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="truncate text-sm font-semibold text-foreground">
-                            {organizerName}
-                          </p>
-                          {!isOwnerVerified && (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800"
-                              title="This organizer&apos;s identity verification is pending"
-                            >
-                              Pending Verification
-                            </Badge>
+                    <Link href={`/creators/${String(campaign.ownerId)}`}>
+                      <div className="flex items-center gap-3 rounded-2xl bg-muted/40 p-3 hover:bg-muted/60 transition-colors cursor-pointer">
+                        <Avatar className="h-12 w-12">
+                          {organizerPhoto ? (
+                            <AvatarImage src={organizerPhoto} alt={organizerName} />
+                          ) : (
+                            <AvatarFallback>{organizerInitials}</AvatarFallback>
                           )}
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="truncate text-sm font-semibold text-foreground hover:text-primary transition-colors">
+                              {organizerName}
+                            </p>
+                            {!isOwnerVerified && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800"
+                                title="This organizer&apos;s identity verification is pending"
+                              >
+                                Pending Verification
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-blaze-orange">
+                            Campaign organizer
+                            {createdLabel ? ` • Created ${createdLabel}` : ""}
+                          </p>
                         </div>
-                        <p className="text-xs text-blaze-orange">
-                          Campaign organizer
-                          {createdLabel ? ` • Created ${createdLabel}` : ""}
-                        </p>
                       </div>
-                    </div>
+                    </Link>
 
                     <Separator />
 

@@ -8,6 +8,7 @@ export interface CampaignImageData {
   story?: string;
   urgency?: string;
   financial_account?: { uvan?: string };
+  isVerified?: boolean; // Whether campaign content is admin-verified
 }
 
 // Simple QR code generation using a service (fallback approach)
@@ -381,6 +382,33 @@ export async function generateCampaignImage(
     const qrX = qrContainer.x + (qrContainer.width - qrSize) / 2;
     const qrY = qrContainer.y + (qrContainer.height - qrSize) / 2;
     ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
+
+    // Draw verification status badge
+    if (campaign.isVerified) {
+      // Green verified badge - keep at top-right (positive branding)
+      ctx.fillStyle = "#047857";
+      ctx.beginPath();
+      ctx.roundRect(width - 240, 30, 210, 50, 12);
+      ctx.fill();
+
+      ctx.fillStyle = "white";
+      ctx.font = "bold 22px Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("✓ Verified Campaign", width - 135, 62);
+    } else {
+      // Amber unverified badge - centered below QR code (security: can't crop out)
+      const badgeY = qrContainer.y + qrContainer.height + 20;
+      const badgeWidth = 230;
+      ctx.fillStyle = "#F59E0B";
+      ctx.beginPath();
+      ctx.roundRect((width - badgeWidth) / 2, badgeY, badgeWidth, 50, 12);
+      ctx.fill();
+
+      ctx.fillStyle = "white";
+      ctx.font = "bold 20px Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("⚠ Unverified Campaign", width / 2, badgeY + 32);
+    }
 
     // Convert canvas to blob
     return new Promise((resolve, reject) => {

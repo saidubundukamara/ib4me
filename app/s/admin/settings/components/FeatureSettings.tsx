@@ -24,6 +24,7 @@ export default function FeatureSettings() {
     enableWhatsAppSharing: features.enableWhatsAppSharing ?? true,
     enableSMSNotifications: features.enableSMSNotifications ?? true,
     enableEmailNotifications: features.enableEmailNotifications ?? true,
+    thresholdEnabled: features.thresholdEnabled ?? true,
     minimumWithdrawalAmount: features.minimumWithdrawalAmount || 50000,
     minimumWithdrawalPercent: features.minimumWithdrawalPercent || 10,
     allowEmergencyOverride: features.allowEmergencyOverride ?? true,
@@ -98,6 +99,7 @@ export default function FeatureSettings() {
       enableWhatsAppSharing: features.enableWhatsAppSharing ?? true,
       enableSMSNotifications: features.enableSMSNotifications ?? true,
       enableEmailNotifications: features.enableEmailNotifications ?? true,
+      thresholdEnabled: features.thresholdEnabled ?? true,
       minimumWithdrawalAmount: features.minimumWithdrawalAmount || 50000,
       minimumWithdrawalPercent: features.minimumWithdrawalPercent || 10,
       allowEmergencyOverride: features.allowEmergencyOverride ?? true,
@@ -349,54 +351,71 @@ export default function FeatureSettings() {
           </div>
         </div>
 
-        {/* Withdrawal Thresholds */}
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="minimumWithdrawalAmount">Minimum Withdrawal Amount (SLE)</Label>
-              <Input
-                id="minimumWithdrawalAmount"
-                type="number"
-                min="0"
-                step="1000"
-                value={formData.minimumWithdrawalAmount}
-                onChange={(e) => handleChange("minimumWithdrawalAmount", parseInt(e.target.value) || 0)}
-              />
-              <p className="text-sm text-muted-foreground">
-                Fixed minimum amount required for withdrawal requests.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="minimumWithdrawalPercent">Minimum Percentage of Raised Amount (%)</Label>
-              <Input
-                id="minimumWithdrawalPercent"
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                value={formData.minimumWithdrawalPercent}
-                onChange={(e) => handleChange("minimumWithdrawalPercent", parseInt(e.target.value) || 0)}
-              />
-              <p className="text-sm text-muted-foreground">
-                Withdrawal must be at least this % of total donations raised.
-              </p>
-            </div>
+        {/* Withdrawal Threshold Toggle */}
+        <div className="flex items-center justify-between p-4 border rounded-lg">
+          <div className="space-y-1">
+            <Label className="font-medium">Enable Withdrawal Threshold</Label>
+            <p className="text-sm text-muted-foreground">
+              When enabled, campaigns must meet minimum requirements before withdrawing.
+              When disabled, campaigns can withdraw any amount at any time.
+            </p>
           </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label className="font-medium">Allow Emergency Override</Label>
-              <p className="text-sm text-muted-foreground">
-                Allow admins to bypass withdrawal thresholds for urgent cases.
-              </p>
-            </div>
-            <Switch
-              checked={formData.allowEmergencyOverride}
-              onCheckedChange={(checked) => handleChange("allowEmergencyOverride", checked)}
-            />
-          </div>
+          <Switch
+            checked={formData.thresholdEnabled}
+            onCheckedChange={(checked) => handleChange("thresholdEnabled", checked)}
+          />
         </div>
+
+        {/* Withdrawal Thresholds - Only shown when threshold is enabled */}
+        {formData.thresholdEnabled && (
+          <div className="space-y-4 pl-4 border-l-2 border-muted">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="minimumWithdrawalAmount">Minimum Withdrawal Amount (SLE)</Label>
+                <Input
+                  id="minimumWithdrawalAmount"
+                  type="number"
+                  min="0"
+                  step="1000"
+                  value={formData.minimumWithdrawalAmount}
+                  onChange={(e) => handleChange("minimumWithdrawalAmount", parseInt(e.target.value) || 0)}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Fixed minimum amount required for withdrawal requests.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="minimumWithdrawalPercent">Minimum Percentage of Raised Amount (%)</Label>
+                <Input
+                  id="minimumWithdrawalPercent"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={formData.minimumWithdrawalPercent}
+                  onChange={(e) => handleChange("minimumWithdrawalPercent", parseInt(e.target.value) || 0)}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Withdrawal must be at least this % of total donations raised.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label className="font-medium">Allow Emergency Override</Label>
+                <p className="text-sm text-muted-foreground">
+                  Allow admins to bypass withdrawal thresholds for urgent cases.
+                </p>
+              </div>
+              <Switch
+                checked={formData.allowEmergencyOverride}
+                onCheckedChange={(checked) => handleChange("allowEmergencyOverride", checked)}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Financial Features */}

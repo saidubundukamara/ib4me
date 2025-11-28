@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AuthLayout } from "../_components/AuthLayout";
 import { RegisterAside } from "../_components/AuthSidePanels";
 import { ContinueDivider } from "../_components/ContinueDivider";
-import { SOCIAL_PROVIDERS, type SocialProvider } from "../_components/social-providers";
+import { SOCIAL_PROVIDERS } from "../_components/social-providers";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -120,13 +120,8 @@ export default function RegisterPage() {
     }
   };
 
-  const handleSocialLogin = async (provider: SocialProvider["id"]) => {
-    try {
-      await signIn(provider, { callbackUrl: "/" });
-    } catch (submitError) {
-      console.error(submitError);
-      toast.error("Social login failed. Please try again.");
-    }
+  const handleSocialLogin = () => {
+    toast.info("Coming soon! Social login will be available shortly.");
   };
 
   return (
@@ -148,7 +143,7 @@ export default function RegisterPage() {
                 type="button"
                 variant="outline"
                 className={`h-12 border-border/50 transition-all ${hover}`}
-                onClick={() => handleSocialLogin(id)}
+                onClick={handleSocialLogin}
                 disabled={isLoading}
               >
                 <Icon className={`h-5 w-5 ${iconColor ?? ""}`} />
