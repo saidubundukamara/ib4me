@@ -41,7 +41,7 @@ function formatAmount(amount: number, currency: string = "SLE") {
   }).format(amount);
 }
 
-const PRESET_AMOUNTS = [100, 250, 500];
+const PRESET_AMOUNTS = [50, 250, 500];
 
 export default function DonateClient({
   slug,
