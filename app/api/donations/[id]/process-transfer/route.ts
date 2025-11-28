@@ -14,6 +14,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  console.log("Processing transfer for donation");
   try {
     const { id: donationId } = await params;
 
@@ -78,8 +79,8 @@ export async function POST(
       donation.provider.checkoutSessionId
     );
 
-    // Get campaign financial account ID from metadata
-    const campaignFinancialAccountId = checkoutSession.metadata?.campaignFinancialAccountId;
+    // Get campaign financial account ID from metadata (inside result object)
+    const campaignFinancialAccountId = checkoutSession.result.metadata?.campaignFinancialAccountId;
     if (typeof campaignFinancialAccountId !== "string" || !campaignFinancialAccountId) {
       console.error(`No campaignFinancialAccountId in metadata for donation ${donationId}`);
       await donationService.updateTransferStatus(donationId, {
