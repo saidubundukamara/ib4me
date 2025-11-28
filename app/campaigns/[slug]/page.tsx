@@ -44,14 +44,18 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     const assets = await mediaAssetService.listByIds([campaign.patient.photoAssetId as mongoose.Types.ObjectId]);
     const asset = assets[0];
     if (asset?.storage?.key) {
+      // Use Cloudinary transformation for optimal OG image
       imageUrl = CloudinaryService.generateTransformationUrl(asset.storage.key, {
         width: 1200,
         crop: 'fill',
         gravity: 'auto',
         aspect_ratio: '1.91:1',
-        fetch_format: 'auto',
+        fetch_format: 'jpg',  // Use jpg for better crawler compatibility
         quality: 'auto',
       });
+    } else if (asset?.url) {
+      // Fallback to stored URL if no storage key
+      imageUrl = asset.url;
     }
   }
 
@@ -62,6 +66,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
 
   const title = `Help ${patientName} - Medical Fundraiser`;
   const description = `Help ${patientName} raise ${currency} ${goalAmount} for ${campaign.diagnosis || 'medical treatment'}. ${currency} ${raisedAmount} raised so far.`;
+  const pageUrl = `https://ib4me.org/campaigns/${slug}`;
 
   return {
     title,
@@ -69,8 +74,10 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     openGraph: {
       title,
       description,
+      url: pageUrl,
       images: [{ url: imageUrl, width: 1200, height: 630, alt: patientName }],
       type: 'website',
+      siteName: 'ib4me',
     },
     twitter: {
       card: 'summary_large_image',

@@ -3,13 +3,21 @@ import Link from "next/link";
 import mongoose from "mongoose";
 import { campaignService, mediaAssetService, categoryService } from "@/services";
 import { CloudinaryService } from "@/lib/cloudinary";
+import { getOGImageFromCampaigns, buildPageMetadata } from "@/lib/metadata";
 import CampaignsGrid from "@/app/campaigns/CampaignsGrid";
 import { Button } from "@/components/ui/button";
 
-export const metadata: Metadata = {
-  title: 'Medical Fundraising Campaigns',
-  description: 'Browse and donate to verified medical emergency campaigns in Sierra Leone. Help save lives today.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const campaigns = await campaignService.listActive();
+  const ogImage = await getOGImageFromCampaigns(campaigns, "Medical fundraising campaigns on ib4me");
+
+  return buildPageMetadata({
+    title: "Medical Fundraising Campaigns",
+    description: "Browse and donate to verified medical emergency campaigns in Sierra Leone. Help save lives today.",
+    image: ogImage,
+    url: "https://ib4me.org/campaigns",
+  });
+}
 
 
 type CampaignListItem = {

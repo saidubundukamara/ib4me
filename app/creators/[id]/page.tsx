@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { userService, campaignService, mediaAssetService } from "@/services";
 import { CloudinaryService } from "@/lib/cloudinary";
+import { getOGImageFromCampaigns, buildPageMetadata } from "@/lib/metadata";
 import CreatorCampaignsGrid from "./CreatorCampaignsGrid";
 
 type PageParams = { params: Promise<{ id: string }> };
@@ -19,7 +20,11 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     return { title: "Creator Not Found" };
   }
 
-  const profile = await userService.getPublicProfile(id);
+  // Fetch profile AND campaigns in parallel
+  const [profile, campaignsData] = await Promise.all([
+    userService.getPublicProfile(id),
+    campaignService.listPublicByOwner(id, { limit: 5 }),
+  ]);
 
   if (!profile) {
     return { title: "Creator Not Found" };
@@ -34,15 +39,19 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     ? profile.organization.description
     : `View campaigns by ${displayName} on IB4ME.`;
 
-  return {
+  // Get OG image from creator's campaigns
+  const ogImage = await getOGImageFromCampaigns(
+    campaignsData.campaigns,
+    `Campaigns by ${displayName}`
+  );
+
+  return buildPageMetadata({
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      type: "profile",
-    },
-  };
+    image: ogImage,
+    type: "profile",
+    url: `https://ib4me.org/creators/${id}`,
+  });
 }
 
 function formatDate(date: Date) {

@@ -111,7 +111,31 @@ export default async function middleware(req: NextRequest) {
     
     return NextResponse.next();
   }
-  
+
+  // Auth pages that should redirect authenticated users to dashboard
+  const authPagesToRedirect = ["/auth/signin", "/auth/register"];
+
+  // Handle auth pages - redirect authenticated users away
+  if (authPagesToRedirect.some(page => pathname === page || pathname.startsWith(page + "/"))) {
+    try {
+      const token = await getToken({
+        req,
+        secret: process.env.NEXTAUTH_SECRET,
+        cookieName: process.env.NODE_ENV === "production"
+          ? "__Secure-next-auth.session-token"
+          : "next-auth.session-token"
+      });
+
+      // If user has a valid, active token, redirect them to dashboard
+      if (token && token.status === "active") {
+        return NextResponse.redirect(new URL("/dashboard", req.url));
+      }
+    } catch (error) {
+      console.error("Auth page middleware token check failed:", error);
+      // On error, allow access to auth page (fail open)
+    }
+  }
+
   // Handle user/dashboard routes with NextAuth session checking
   if (pathname.startsWith("/user") || pathname.startsWith("/dashboard")) {
     try {
