@@ -316,6 +316,7 @@ export default function UserCampaignDetailPage() {
         story: campaign.story,
         urgency: campaign.urgency,
         financial_account: campaign.financial_account,
+        isVerified: campaign.verification?.status === "approved",
       };
 
       const baseUrl = window.location.origin;

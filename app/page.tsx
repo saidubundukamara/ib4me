@@ -346,7 +346,6 @@ function formatAmount(amount: number, currency = "SLE") {
                   raised={c.amountRaised}
                   goal={c.goalAmount}
                   donors={c.donationsCount}
-                  daysLeft={30}
                   verified={false}
                   urgent={false}
                   href={`/campaigns/${c.slug}`}

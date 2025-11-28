@@ -9,21 +9,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface FilterSectionProps {
+    categories: string[];
     selectedCategory: string;
     setSelectedCategory: (category: string) => void;
     selectedUrgency: string;
     setSelectedUrgency: (urgency: string) => void;
 }
 
-const categories = ['All', 'Treatments & Procedures', 'Research & Innovation', 'Mental Health & Therapy', 'Equipment & Devices', 'Patient & Caregiver Support', 'Community Health Initiatives'];
 const urgencyLevels = ['All', 'high', 'medium', 'low'];
 
 const FilterCampaign: React.FC<FilterSectionProps> = ({
+    categories,
     selectedCategory,
     setSelectedCategory,
     selectedUrgency,
     setSelectedUrgency
 }) => {
+  const categoryOptions = ['All', ...categories];
   return (
     <div className="flex flex-wrap gap-4 mb-8">
       {/* Category Filter */}
@@ -35,9 +37,9 @@ const FilterCampaign: React.FC<FilterSectionProps> = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
-          {categories.map((category) => (
+          {categoryOptions.map((category) => (
             <DropdownMenuItem
-              key={category} 
+              key={category}
               onSelect={() => setSelectedCategory(category)}
             >
               {category}

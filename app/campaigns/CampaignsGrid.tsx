@@ -14,12 +14,13 @@ export type CampaignGridItem = {
   amountRaised: number;
   goalAmount: number;
   donationsCount: number;
-  daysLeft?: number; // Add this if available in your data source (e.g., calculate from end date)
   verified?: boolean; // Add this if available
   urgent?: boolean; // Add this if available
   imageUrl: string;
   imageSrcSet?: string;
   imageSizes?: string;
+  category?: string;
+  urgency?: "low" | "medium" | "high";
 };
 
 function formatAmount(amount: number, currency: string = "SLE") {
@@ -31,9 +32,9 @@ function formatAmount(amount: number, currency: string = "SLE") {
   }).format(amount);
 }
 
-type Props = { items: CampaignGridItem[] };
+type Props = { items: CampaignGridItem[]; categories: string[] };
 
-export default function CampaignsGrid({ items }: Props) {
+export default function CampaignsGrid({ items, categories }: Props) {
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedUrgency, setSelectedUrgency] = useState("All");
@@ -45,10 +46,20 @@ export default function CampaignsGrid({ items }: Props) {
   }, [query, selectedCategory, selectedUrgency, items]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((c) => c.title.toLowerCase().includes(q));
-  }, [items, query]);
+    return items.filter((c) => {
+      // Search filter
+      const q = query.trim().toLowerCase();
+      if (q && !c.title.toLowerCase().includes(q)) return false;
+
+      // Category filter
+      if (selectedCategory !== "All" && c.category !== selectedCategory) return false;
+
+      // Urgency filter
+      if (selectedUrgency !== "All" && c.urgency !== selectedUrgency) return false;
+
+      return true;
+    });
+  }, [items, query, selectedCategory, selectedUrgency]);
 
   const displayed = filtered.slice(0, visibleCount);
   const canLoadMore = visibleCount < filtered.length;
@@ -71,6 +82,7 @@ export default function CampaignsGrid({ items }: Props) {
           />
         </div>
         <FilterCampaign
+          categories={categories}
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
           selectedUrgency={selectedUrgency}
@@ -126,9 +138,9 @@ export default function CampaignsGrid({ items }: Props) {
               raised={c.amountRaised}
               goal={c.goalAmount}
               donors={c.donationsCount}
-              daysLeft={c.daysLeft || 30}
               verified={c.verified || false}
               urgent={c.urgent || false}
+              category={c.category}
               href={`/campaigns/${c.slug}`}
               onShare={handleShare}
               currency={c.currency || "SLE"}

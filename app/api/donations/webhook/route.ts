@@ -285,15 +285,41 @@ async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
 
     console.log(`Found donation ID ${donationId} for payment ${payment.id}`);
 
-    // Step 1: Mark donation as payment_received
-    const donation = await donationService.markPaymentReceived(donationId, {
-      paymentId: payment.id,
-      paymentMethod: payment.paymentMethod,
-      fees: payment.fees,
-      completedAt: payment.completedAt,
-    });
+    // Check current donation status first
+    const existingDonation = await donationService.getById(donationId);
+    if (!existingDonation) {
+      console.error(`Donation ${donationId} not found`);
+      return;
+    }
 
-    console.log(`Marked donation ${donationId} as payment_received`);
+    // Idempotency check: If donation already succeeded, skip processing
+    if (existingDonation.status === "succeeded") {
+      console.log(`[webhook] Donation ${donationId} already succeeded, skipping`);
+      return;
+    }
+
+    // Idempotency check: If transfer already completed, skip transfer initiation
+    if (existingDonation.transfer?.status === "completed") {
+      console.log(`[webhook] Transfer already completed for donation ${donationId}, completing donation`);
+      if (existingDonation.transfer.id) {
+        await donationService.completeWithTransfer(donationId, existingDonation.transfer.id);
+      }
+      return;
+    }
+
+    // Step 1: Mark donation as payment_received (if not already)
+    let donation = existingDonation;
+    if (existingDonation.status === "pending") {
+      donation = await donationService.markPaymentReceived(donationId, {
+        paymentId: payment.id,
+        paymentMethod: payment.paymentMethod,
+        fees: payment.fees,
+        completedAt: payment.completedAt,
+      });
+      console.log(`[webhook] Marked donation ${donationId} as payment_received`);
+    } else {
+      console.log(`[webhook] Donation ${donationId} already in status: ${existingDonation.status}`);
+    }
 
     // Step 2: Get campaign financial account ID from metadata
     const campaignFinancialAccountId = checkoutSession.metadata?.campaignFinancialAccountId;
@@ -322,12 +348,28 @@ async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
       return;
     }
 
-    // Step 4: Initiate internal transfer from platform to campaign
+    // Step 4: Check if transfer is already in progress or completed
+    // (Success page may have already triggered the transfer)
+    const freshDonation = await donationService.getById(donationId);
+    if (freshDonation?.transfer?.status === "completed") {
+      console.log(`[webhook] Transfer already completed for donation ${donationId}, completing donation`);
+      if (freshDonation.transfer.id) {
+        await donationService.completeWithTransfer(donationId, freshDonation.transfer.id);
+      }
+      return;
+    }
+
+    if (freshDonation?.status === "succeeded") {
+      console.log(`[webhook] Donation ${donationId} already succeeded, skipping transfer`);
+      return;
+    }
+
+    // Step 5: Initiate internal transfer from platform to campaign
     const transferAmount = donation.amount.minor; // Transfer donation amount only, not fees
     const idempotencyKey = `transfer_${donationId}_${Date.now()}`;
 
     try {
-      console.log(`Initiating internal transfer of ${transferAmount} from platform to campaign for donation ${donationId}`);
+      console.log(`[webhook] Initiating internal transfer of ${transferAmount} from platform to campaign for donation ${donationId}`);
 
       // Mark transfer as pending
       await donationService.updateTransferStatus(donationId, {
@@ -351,15 +393,16 @@ async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
         metadata: {
           donationId,
           type: "donation_transfer",
+          source: "webhook" // Track that this was triggered from webhook
         },
       }, idempotencyKey);
 
-      console.log(`Internal transfer created: ${transfer.id}, status: ${transfer.status}`);
+      console.log(`[webhook] Internal transfer created: ${transfer.id}, status: ${transfer.status}`);
 
-      // Step 5: If transfer completed (synchronous), complete the donation
+      // Step 6: If transfer completed (synchronous), complete the donation
       if (transfer.status === "completed") {
         await donationService.completeWithTransfer(donationId, transfer.id);
-        console.log(`Successfully completed donation ${donationId} with transfer ${transfer.id}`);
+        console.log(`[webhook] Successfully completed donation ${donationId} with transfer ${transfer.id}`);
       } else if (transfer.status === "failed") {
         // Transfer failed
         await donationService.updateTransferStatus(donationId, {

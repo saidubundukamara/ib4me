@@ -16,7 +16,7 @@ export async function GET(
       );
     }
 
-    const donation = await donationService.getById(id);
+    const donation = await donationService.getByIdWithRelations(id);
     
     if (!donation) {
       return NextResponse.json(

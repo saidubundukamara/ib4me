@@ -125,6 +125,14 @@ export class DonationService {
     return donationRepository.findById(donationId);
   }
 
+  /**
+   * Get donation with populated campaign and donor data
+   * Used for admin views where full related data is needed
+   */
+  async getByIdWithRelations(donationId: string): Promise<IDonation | null> {
+    return donationRepository.findByIdWithCampaign(donationId);
+  }
+
   async updateCheckoutSession(
     donationId: string, 
     checkoutSessionId: string

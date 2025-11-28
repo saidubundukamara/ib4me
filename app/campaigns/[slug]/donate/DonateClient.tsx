@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
-import { Heart, Lock } from "lucide-react";
+import { Heart, Lock, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 
 export type DonateClientProps = {
@@ -28,6 +29,7 @@ export type DonateClientProps = {
   goalAmount: number;
   imageUrl: string;
   processingFeeBps?: number; // Processing fee in basis points (e.g., 260 = 2.6%)
+  isVerified?: boolean; // Whether campaign content is admin-verified
 };
 
 function formatAmount(amount: number, currency: string = "SLE") {
@@ -51,6 +53,7 @@ export default function DonateClient({
   goalAmount,
   imageUrl,
   processingFeeBps = 260, // Default 2.6%
+  isVerified = false,
 }: DonateClientProps) {
   const [selectedPreset, setSelectedPreset] = useState<number | "custom">(PRESET_AMOUNTS[1]);
   const [customAmount, setCustomAmount] = useState("");
@@ -183,6 +186,14 @@ export default function DonateClient({
               <CardTitle className="text-3xl font-bold text-foreground sm:text-4xl">
                 {title}
               </CardTitle>
+              {!isVerified && (
+                <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 rounded-xl">
+                  <Info className="h-4 w-4 text-blue-500" />
+                  <AlertDescription className="text-blue-700 dark:text-blue-300 text-sm">
+                    This campaign is pending verification. Please review carefully before donating.
+                  </AlertDescription>
+                </Alert>
+              )}
               <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                 <span>{organizerName ? `Organized by ${organizerName}` : "Campaign organizer"}</span>
                 <span className="inline-flex items-center gap-2">
@@ -354,9 +365,6 @@ export default function DonateClient({
                     donateLabel
                   )}
                 </Button>
-                <p className="text-xs text-blaze-orange">
-                  Secured by Monime • Encrypted checkout
-                </p>
               </div>
             </CardContent>
           </Card>
