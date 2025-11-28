@@ -70,6 +70,8 @@ export default function SuccessClient({ donationId, campaign, slug }: SuccessCli
         // Step 1: Check current donation status
         const donationData = await checkDonationStatus();
 
+        console.log("donationData from success client", donationData);
+
         if (!isMounted) return;
 
         if (donationData.status === "succeeded") {

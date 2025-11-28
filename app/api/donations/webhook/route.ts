@@ -254,9 +254,9 @@ async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
     // Get checkout session to determine type (donation or tip)
     const checkoutSession = await monimeService.getCheckoutSession(payment.checkoutSessionId);
 
-    // Check if this is a platform tip
-    if (checkoutSession.metadata?.type === "platform_tip") {
-      const tipId = checkoutSession.metadata?.tipId;
+    // Check if this is a platform tip (metadata is inside result object)
+    if (checkoutSession.result.metadata?.type === "platform_tip") {
+      const tipId = checkoutSession.result.metadata?.tipId;
       if (typeof tipId !== "string" || !tipId) {
         console.error("No tipId found in checkout session metadata for platform tip");
         return;
@@ -276,7 +276,7 @@ async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
     }
 
     // Handle as donation - NEW PLATFORM-FIRST FLOW
-    const donationIdRaw = checkoutSession.metadata?.donationId;
+    const donationIdRaw = checkoutSession.result.metadata?.donationId;
     if (typeof donationIdRaw !== "string" || !donationIdRaw) {
       console.error("No donationId found in checkout session metadata");
       return;
@@ -321,8 +321,8 @@ async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
       console.log(`[webhook] Donation ${donationId} already in status: ${existingDonation.status}`);
     }
 
-    // Step 2: Get campaign financial account ID from metadata
-    const campaignFinancialAccountId = checkoutSession.metadata?.campaignFinancialAccountId;
+    // Step 2: Get campaign financial account ID from metadata (inside result object)
+    const campaignFinancialAccountId = checkoutSession.result.metadata?.campaignFinancialAccountId;
     if (typeof campaignFinancialAccountId !== "string" || !campaignFinancialAccountId) {
       console.error(`No campaignFinancialAccountId in metadata for donation ${donationId}`);
       // Store error and skip transfer - admin will need to handle manually
@@ -453,9 +453,9 @@ async function handlePaymentFailed(payload: MonimeWebhookPayload) {
     const checkoutSession = await monimeService.getCheckoutSession(payment.checkoutSessionId);
     const failureReason = payment.failureReason || "Payment processing failed";
 
-    // Check if this is a platform tip
-    if (checkoutSession.metadata?.type === "platform_tip") {
-      const tipId = checkoutSession.metadata?.tipId;
+    // Check if this is a platform tip (metadata is inside result object)
+    if (checkoutSession.result.metadata?.type === "platform_tip") {
+      const tipId = checkoutSession.result.metadata?.tipId;
       if (typeof tipId !== "string" || !tipId) {
         console.error("No tipId found in checkout session metadata for platform tip");
         return;
@@ -467,8 +467,8 @@ async function handlePaymentFailed(payload: MonimeWebhookPayload) {
       return;
     }
 
-    // Handle as donation
-    const donationIdRaw = checkoutSession.metadata?.donationId;
+    // Handle as donation (metadata is inside result object)
+    const donationIdRaw = checkoutSession.result.metadata?.donationId;
     if (typeof donationIdRaw !== "string" || !donationIdRaw) {
       console.error("No donationId found in checkout session metadata");
       return;

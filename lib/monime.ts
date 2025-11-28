@@ -28,7 +28,27 @@ export interface MonimeCheckoutSessionRequest {
   callbackState?: string;
 }
 
+export interface MonimeCheckoutSessionResult {
+  id: string;
+  status: "pending" | "completed" | "failed" | "cancelled";
+  name?: string;
+  orderNumber?: string;
+  reference?: string;
+  description?: string;
+  redirectUrl: string;
+  cancelUrl?: string;
+  successUrl?: string;
+  financialAccountId?: string;
+  expireTime?: string;
+  createTime?: string;
+  metadata?: Record<string, string>;
+  lineItems?: {
+    data: MonimeLineItem[];
+  };
+}
+
 export interface MonimeCheckoutSessionResponse {
+  result: MonimeCheckoutSessionResult;
   id: string;
   status: "pending" | "completed" | "failed" | "cancelled";
   redirectUrl: string;
@@ -146,7 +166,7 @@ export interface MonimePayoutResponse {
 export interface MonimeInternalTransferRequest {
   amount: {
     currency: string;
-    value: number;  // Amount in minor units
+    value: number; // Amount in minor units
   };
   sourceFinancialAccount: {
     id: string;
@@ -287,7 +307,6 @@ export class MonimeService {
       );
     }
 
-
     const headers: Record<string, string> = {
       Authorization: `Bearer ${this.config.accessToken}`,
       "Monime-Space-Id": this.config.spaceId,
@@ -300,7 +319,6 @@ export class MonimeService {
     if (idempotencyKey) {
       headers["Idempotency-Key"] = idempotencyKey;
     }
-    console.log("Headers", headers);
 
     try {
       const response = await fetch(url, {
@@ -313,17 +331,25 @@ export class MonimeService {
       if (!response.ok) {
         const error = responseData as MonimeError;
         // Log the full error response for debugging (with full depth)
-        console.error('Monime API error response:', JSON.stringify({
-          status: response.status,
-          statusText: response.statusText,
-          body: responseData
-        }, null, 2));
+        console.error(
+          "Monime API error response:",
+          JSON.stringify(
+            {
+              status: response.status,
+              statusText: response.statusText,
+              body: responseData,
+            },
+            null,
+            2
+          )
+        );
 
         // Try to extract error message from various possible response formats
-        const errorMessage = error.message
-          || (responseData as { error?: string }).error
-          || (responseData as { detail?: string }).detail
-          || JSON.stringify(responseData);
+        const errorMessage =
+          error.message ||
+          (responseData as { error?: string }).error ||
+          (responseData as { detail?: string }).detail ||
+          JSON.stringify(responseData);
 
         throw new MonimeApiError(
           error.code || "API_ERROR",
@@ -411,7 +437,7 @@ export class MonimeService {
       },
       idempotencyKey
     );
-    
+
     return response.result;
   }
 
@@ -436,7 +462,9 @@ export class MonimeService {
     return response.result;
   }
 
-  async getInternalTransfer(transferId: string): Promise<MonimeInternalTransferResponse> {
+  async getInternalTransfer(
+    transferId: string
+  ): Promise<MonimeInternalTransferResponse> {
     return this.makeRequest<MonimeInternalTransferResponse>(
       `/internal-transfers/${transferId}`
     );
@@ -503,47 +531,61 @@ export const monimeService = {
     }
     return _monimeService;
   },
-  
+
   // Delegate methods to the singleton instance
-  async createCheckoutSession(...args: Parameters<MonimeService['createCheckoutSession']>) {
+  async createCheckoutSession(
+    ...args: Parameters<MonimeService["createCheckoutSession"]>
+  ) {
     return this.getInstance().createCheckoutSession(...args);
   },
-  
-  async getCheckoutSession(...args: Parameters<MonimeService['getCheckoutSession']>) {
+
+  async getCheckoutSession(
+    ...args: Parameters<MonimeService["getCheckoutSession"]>
+  ) {
     return this.getInstance().getCheckoutSession(...args);
   },
-  
-  async getPayment(...args: Parameters<MonimeService['getPayment']>) {
+
+  async getPayment(...args: Parameters<MonimeService["getPayment"]>) {
     return this.getInstance().getPayment(...args);
   },
-  
-  async createFinancialAccount(...args: Parameters<MonimeService['createFinancialAccount']>) {
+
+  async createFinancialAccount(
+    ...args: Parameters<MonimeService["createFinancialAccount"]>
+  ) {
     return this.getInstance().createFinancialAccount(...args);
   },
-  
-  async createPayout(...args: Parameters<MonimeService['createPayout']>) {
+
+  async createPayout(...args: Parameters<MonimeService["createPayout"]>) {
     return this.getInstance().createPayout(...args);
   },
-  
-  async getPayout(...args: Parameters<MonimeService['getPayout']>) {
+
+  async getPayout(...args: Parameters<MonimeService["getPayout"]>) {
     return this.getInstance().getPayout(...args);
   },
 
-  async createInternalTransfer(...args: Parameters<MonimeService['createInternalTransfer']>) {
+  async createInternalTransfer(
+    ...args: Parameters<MonimeService["createInternalTransfer"]>
+  ) {
     return this.getInstance().createInternalTransfer(...args);
   },
 
-  async getInternalTransfer(...args: Parameters<MonimeService['getInternalTransfer']>) {
+  async getInternalTransfer(
+    ...args: Parameters<MonimeService["getInternalTransfer"]>
+  ) {
     return this.getInstance().getInternalTransfer(...args);
   },
 
-  verifyWebhookSignature(...args: Parameters<MonimeService['verifyWebhookSignature']>) {
+  verifyWebhookSignature(
+    ...args: Parameters<MonimeService["verifyWebhookSignature"]>
+  ) {
     return this.getInstance().verifyWebhookSignature(...args);
   },
-  
-  parseWebhookPayload(...args: Parameters<MonimeService['parseWebhookPayload']>) {
+
+  parseWebhookPayload(
+    ...args: Parameters<MonimeService["parseWebhookPayload"]>
+  ) {
     return this.getInstance().parseWebhookPayload(...args);
-  }
+  },
 };
 
 // Helper function to convert major currency units to minor units
