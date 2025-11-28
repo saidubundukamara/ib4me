@@ -537,26 +537,82 @@ function FundraiseSection() {
 
 
 const Testimonials = () => {
-  const testimonials = [
-    {
-      name: "Sarah Johnson",
-      role: "Heart Surgery Patient",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-      quote: "Thanks to this platform, I received the heart surgery I desperately needed. The support from donors has given me a second chance at life."
-    },
-    {
-      name: "Michael Chen",
-      role: "Cancer Survivor",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Michael",
-      quote: "The community here is incredible. Not only did they help fund my treatment, but their encouragement kept me fighting through the hardest days."
-    },
-    {
-      name: "Emma Rodriguez",
-      role: "Grateful Mother",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emma",
-      quote: "My daughter can see clearly now thanks to everyone who donated. This platform connected us with people who truly care. Forever grateful."
-    }
-  ];
+  type TestimonialItem = {
+    id: string;
+    authorName: string;
+    authorRole: string;
+    quote: string;
+  };
+
+  const [testimonials, setTestimonials] = useState<TestimonialItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/testimonials?limit=6")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) {
+          setTestimonials(data.testimonials || []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTestimonials([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const getAvatarUrl = (name: string) =>
+    `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
+
+  if (loading) {
+    return (
+      <section className="bg-background py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="text-center mb-10 sm:mb-14 space-y-3 sm:space-y-4">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground">
+              Stories of <span className="text-fun-green">Hope</span>
+            </h2>
+            <p className="mx-auto max-w-2xl text-base sm:text-lg text-muted-foreground">
+              Hear from the people whose lives have been transformed by your generosity
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 auto-rows-fr gap-6 sm:gap-8">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="flex h-full flex-col rounded-3xl border-0 p-6 sm:p-8 animate-pulse">
+                <div className="h-10 w-10 bg-gray-200 rounded mb-4" />
+                <div className="space-y-2 mb-6">
+                  <div className="h-4 bg-gray-200 rounded w-full" />
+                  <div className="h-4 bg-gray-200 rounded w-5/6" />
+                  <div className="h-4 bg-gray-200 rounded w-4/6" />
+                </div>
+                <div className="mt-auto flex items-center gap-3">
+                  <div className="h-12 w-12 bg-gray-200 rounded-full" />
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-24" />
+                    <div className="h-3 bg-gray-200 rounded w-20" />
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (testimonials.length === 0) {
+    return null;
+  }
 
   return (
     <section className="bg-background py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
@@ -573,7 +629,7 @@ const Testimonials = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 auto-rows-fr gap-6 sm:gap-8">
           {testimonials.map((testimonial, index) => (
             <Card
-              key={index}
+              key={testimonial.id}
               className="flex h-full flex-col rounded-3xl border-0 p-6 sm:p-8 shadow-[var(--shadow-soft)] transition-all hover:shadow-[var(--shadow-lift)] animate-scale-in motion-reduce:animate-none"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
@@ -584,12 +640,12 @@ const Testimonials = () => {
 
               <div className="mt-auto flex items-center gap-3 sm:gap-4">
                 <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
-                  <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
-                  <AvatarFallback>{testimonial.name[0]}</AvatarFallback>
+                  <AvatarImage src={getAvatarUrl(testimonial.authorName)} alt={testimonial.authorName} />
+                  <AvatarFallback>{testimonial.authorName[0]}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <div className="text-sm sm:text-base font-bold text-foreground">{testimonial.name}</div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">{testimonial.role}</div>
+                  <div className="text-sm sm:text-base font-bold text-foreground">{testimonial.authorName}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">{testimonial.authorRole}</div>
                 </div>
               </div>
             </Card>

@@ -4,6 +4,21 @@ import { IUser } from "../models/User";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
+export interface PublicUserProfile {
+  id: string;
+  name: string;
+  photoUrl: string | null;
+  isOrganization: boolean;
+  organization?: {
+    name: string | null;
+    type: "ngo" | "charity" | null;
+    description: string | null;
+    website: string | null;
+  };
+  location: string | null;
+  memberSince: Date;
+}
+
 export interface AdminUserCreateData {
   name: string;
   email: string;
@@ -506,6 +521,41 @@ export class UserService {
         passwordChangedAt: new Date(),
       },
     } as never);
+  }
+
+  /**
+   * Get public profile data for a user.
+   * Returns only public-safe fields, excluding sensitive information.
+   */
+  async getPublicProfile(userId: string): Promise<PublicUserProfile | null> {
+    const user = await userRepository.findPublicProfileById(userId);
+
+    if (!user) {
+      return null;
+    }
+
+    const isOrganization = user.roles === "Organization";
+
+    // Build location string from city and country
+    const buildLocation = (city?: string | null, country?: string | null): string | null => {
+      const parts = [city, country].filter(Boolean);
+      return parts.length > 0 ? parts.join(", ") : null;
+    };
+
+    return {
+      id: String(user._id),
+      name: user.name || "Anonymous",
+      photoUrl: user.photoUrl || null,
+      isOrganization,
+      organization: isOrganization && user.organization ? {
+        name: user.organization.name || null,
+        type: user.organization.type || null,
+        description: user.organization.description || null,
+        website: user.organization.website || null,
+      } : undefined,
+      location: buildLocation(user.address?.city, user.address?.country),
+      memberSince: user.createdAt || new Date(),
+    };
   }
 
   async getUserStats(): Promise<{

@@ -387,35 +387,37 @@ export default async function CampaignDetailPage({ params }: PageParams) {
 
                     <Separator />
 
-                    <div className="flex items-center gap-3 rounded-2xl bg-muted/40 p-3">
-                      <Avatar className="h-12 w-12">
-                        {organizerPhoto ? (
-                          <AvatarImage src={organizerPhoto} alt={organizerName} />
-                        ) : (
-                          <AvatarFallback>{organizerInitials}</AvatarFallback>
-                        )}
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="truncate text-sm font-semibold text-foreground">
-                            {organizerName}
-                          </p>
-                          {!isOwnerVerified && (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800"
-                              title="This organizer&apos;s identity verification is pending"
-                            >
-                              Pending Verification
-                            </Badge>
+                    <Link href={`/creators/${String(campaign.ownerId)}`}>
+                      <div className="flex items-center gap-3 rounded-2xl bg-muted/40 p-3 hover:bg-muted/60 transition-colors cursor-pointer">
+                        <Avatar className="h-12 w-12">
+                          {organizerPhoto ? (
+                            <AvatarImage src={organizerPhoto} alt={organizerName} />
+                          ) : (
+                            <AvatarFallback>{organizerInitials}</AvatarFallback>
                           )}
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="truncate text-sm font-semibold text-foreground hover:text-primary transition-colors">
+                              {organizerName}
+                            </p>
+                            {!isOwnerVerified && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800"
+                                title="This organizer&apos;s identity verification is pending"
+                              >
+                                Pending Verification
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-blaze-orange">
+                            Campaign organizer
+                            {createdLabel ? ` • Created ${createdLabel}` : ""}
+                          </p>
                         </div>
-                        <p className="text-xs text-blaze-orange">
-                          Campaign organizer
-                          {createdLabel ? ` • Created ${createdLabel}` : ""}
-                        </p>
                       </div>
-                    </div>
+                    </Link>
 
                     <Separator />
 

@@ -57,6 +57,39 @@ export class CampaignRepository extends BaseRepository<ICampaign> {
     );
     return { modifiedCount: result.modifiedCount };
   }
+
+  /**
+   * List public campaigns by owner ID.
+   * Only returns active, approved campaigns visible to the public.
+   */
+  async listPublicByOwner(
+    ownerId: mongoose.Types.ObjectId,
+    options?: { limit?: number; page?: number }
+  ): Promise<{ campaigns: ICampaign[]; total: number }> {
+    await this.ensureConnection();
+
+    const limit = options?.limit || 12;
+    const page = options?.page || 1;
+    const skip = (page - 1) * limit;
+
+    const query = {
+      ownerId,
+      status: "active",
+      "verification.status": "approved",
+    };
+
+    const [campaigns, total] = await Promise.all([
+      this.model
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.model.countDocuments(query).exec(),
+    ]);
+
+    return { campaigns, total };
+  }
 }
 
 export const campaignRepository = new CampaignRepository();

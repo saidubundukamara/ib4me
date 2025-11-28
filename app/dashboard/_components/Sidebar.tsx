@@ -15,6 +15,7 @@ import {
   HelpCircle,
   ShieldCheck,
   Building,
+  MessageSquareQuote,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Ib4meLogo from "@/public/assets/ib4melogo.png";
@@ -31,6 +32,7 @@ const menuItems = [
   { icon: FolderOpen, label: "My Campaigns", path: "/dashboard/campaigns" },
   { icon: ShieldCheck, label: "Verification", path: "/dashboard/verification" },
   { icon: Building, label: "Organization", path: "/dashboard/organization" },
+  { icon: MessageSquareQuote, label: "Testimonials", path: "/dashboard/testimonials" },
   { icon: Heart, label: "My Donations", path: "/dashboard/donations" },
   { icon: CreditCard, label: "Withdrawals", path: "/dashboard/withdrawals" },
   { icon: Bell, label: "Notifications", path: "/dashboard/notifications" },

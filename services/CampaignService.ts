@@ -78,6 +78,25 @@ export class CampaignService {
     return campaignRepository.listByOwner(ownerId);
   }
 
+  /**
+   * List public campaigns by owner ID.
+   * Only returns active, approved campaigns visible to the public.
+   */
+  async listPublicByOwner(
+    ownerId: string,
+    options?: { limit?: number; page?: number }
+  ): Promise<{ campaigns: ICampaign[]; total: number; totalPages: number }> {
+    const { campaigns, total } = await campaignRepository.listPublicByOwner(
+      new mongoose.Types.ObjectId(ownerId),
+      options
+    );
+
+    const limit = options?.limit || 12;
+    const totalPages = Math.ceil(total / limit);
+
+    return { campaigns, total, totalPages };
+  }
+
   async listActive(): Promise<ICampaign[]> {
     return campaignRepository.listByStatus("active");
   }
