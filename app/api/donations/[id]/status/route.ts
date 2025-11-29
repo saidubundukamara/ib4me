@@ -69,6 +69,39 @@ export async function GET(
       }
     }
 
+    // If donation is payment_received with a pending transfer, check transfer status with Monime
+    if (currentDonation.status === "payment_received" && currentDonation.transfer?.id) {
+      try {
+        const transfer = await monimeService.getInternalTransfer(currentDonation.transfer.id);
+        console.log(`[status] Transfer ${currentDonation.transfer.id} status: ${transfer.status}`);
+
+        if (transfer.status === "completed") {
+          // Complete the donation now
+          await donationService.completeWithTransfer(donationId, transfer.id);
+          const updatedDonation = await donationService.getById(donationId);
+          if (updatedDonation) {
+            currentDonation = updatedDonation;
+          }
+          console.log(`[status] Auto-completed donation ${donationId} after transfer completed`);
+        } else if (transfer.status === "failed") {
+          // Mark transfer as failed
+          await donationService.updateTransferStatus(donationId, {
+            status: "failed",
+            failureReason: transfer.failureReason || "Transfer failed",
+          });
+          const updatedDonation = await donationService.getById(donationId);
+          if (updatedDonation) {
+            currentDonation = updatedDonation;
+          }
+          console.log(`[status] Transfer failed for donation ${donationId}: ${transfer.failureReason}`);
+        }
+        // If still pending/processing, do nothing - client will poll again
+      } catch (error) {
+        console.error("Error checking transfer status:", error);
+        // Continue without failing the status check
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: {

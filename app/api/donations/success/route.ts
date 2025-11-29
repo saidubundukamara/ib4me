@@ -130,33 +130,47 @@ async function handleSuccessRedirect(req: NextRequest) {
         status: transfer.status,
       });
 
-      // 9. Update donation based on transfer result
-      if (transfer.status === "completed") {
-        await donationService.completeWithTransfer(donationId, transfer.id);
+      // 9. Poll transfer status until completed or failed (transfers are async)
+      let transferStatus = transfer.status;
+      let transferResult = transfer;
+      const maxAttempts = 10;
+      const pollInterval = 1000; // 1 second
+
+      // Poll if status is pending or processing
+      for (let i = 0; i < maxAttempts && (transferStatus === "processing" || transferStatus === "pending"); i++) {
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        transferResult = await monimeService.getInternalTransfer(transfer.id);
+        transferStatus = transferResult.status;
+        console.log(`[api/donations/success] Transfer poll ${i + 1}/${maxAttempts}: ${transferStatus}`);
+      }
+
+      // 10. Update donation based on final transfer result
+      if (transferResult.status === "completed") {
+        await donationService.completeWithTransfer(donationId, transferResult.id);
         console.log("[api/donations/success] Donation completed:", donationId);
         return redirectToUI({ donation_id: donationId, status: "succeeded" });
-      } else if (transfer.status === "failed") {
+      } else if (transferResult.status === "failed") {
         await donationService.updateTransferStatus(donationId, {
-          id: transfer.id,
+          id: transferResult.id,
           status: "failed",
-          failureReason: transfer.failureReason || "Transfer failed",
+          failureReason: transferResult.failureReason || "Transfer failed",
           initiatedAt: new Date(),
         });
-        console.error("[api/donations/success] Transfer failed:", donationId, transfer.failureReason);
+        console.error("[api/donations/success] Transfer failed:", donationId, transferResult.failureReason);
         return redirectToUI({ donation_id: donationId, status: "error", message: "transfer_failed" });
       } else {
-        // Transfer pending - webhook will complete it
+        // Transfer still processing after max attempts - client polling will continue
         await donationService.updateTransferStatus(donationId, {
-          id: transfer.id,
+          id: transferResult.id,
           status: "pending",
           initiatedAt: new Date(),
         });
-        console.log("[api/donations/success] Transfer pending, webhook will complete:", donationId);
+        console.log("[api/donations/success] Transfer still processing after polling, client will continue:", donationId);
         return redirectToUI({ donation_id: donationId, status: "transferring" });
       }
     } catch (transferError) {
       console.error("[api/donations/success] Transfer error:", transferError);
-      // Still redirect to UI, webhook can retry
+      // Still redirect to UI, client polling can retry
       return redirectToUI({ donation_id: donationId, status: "transferring" });
     }
   } catch (error) {

@@ -43,6 +43,15 @@ export default function SuccessClient({
   initialStatus = "",
   errorMessage = "",
 }: SuccessClientProps) {
+  // Track window.location.origin safely for SSR
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setOrigin(window.location.origin);
+    }
+  }, []);
+
   const [status, setStatus] = useState<DonationStatus>(() => {
     // If we have an initial status from the API redirect, use it
     if (initialStatus) {
@@ -341,22 +350,26 @@ export default function SuccessClient({
         <div className="pt-6 border-t">
           <p className="text-sm text-gray-600 mb-4">Help spread the word about this campaign:</p>
           <div className="flex gap-4 justify-center">
-            <a
-              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}/campaigns/${slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white text-sm hover:bg-blue-700 transition-colors"
-            >
-              Share on Facebook
-            </a>
-            <a
-              href={`https://wa.me/?text=${encodeURIComponent(`Help support ${campaignName}! ${typeof window !== "undefined" ? window.location.origin : ""}/campaigns/${slug}`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-white text-sm hover:bg-green-700 transition-colors"
-            >
-              Share on WhatsApp
-            </a>
+            {origin && (
+              <>
+                <a
+                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${origin}/campaigns/${slug}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white text-sm hover:bg-blue-700 transition-colors"
+                >
+                  Share on Facebook
+                </a>
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`Help support ${campaignName}! ${origin}/campaigns/${slug}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-white text-sm hover:bg-green-700 transition-colors"
+                >
+                  Share on WhatsApp
+                </a>
+              </>
+            )}
           </div>
         </div>
       </div>
