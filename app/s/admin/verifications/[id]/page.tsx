@@ -12,6 +12,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -34,41 +36,34 @@ import {
   Building,
   Mail,
   Phone,
-  Calendar,
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
-interface UserInfo {
-  _id: string;
-  name?: string;
-  email?: string;
-  phone?: string;
-  roles?: string;
-  createdAt?: string;
-  organization?: {
-    name?: string;
-    type?: string;
-    registrationNumber?: string;
-    description?: string;
-  };
-}
-
 interface DocumentAsset {
   _id: string;
-  url?: string;
-  publicId?: string;
-  fileName?: string;
-  fileType?: string;
+  url?: string | null;
+  type?: string | null;
+}
+
+interface UserOrganization {
+  name?: string;
+  type?: string;
+  registrationNumber?: string;
+  description?: string;
 }
 
 interface Verification {
   _id: string;
-  userId: UserInfo;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userPhone: string;
+  userOrganization?: UserOrganization | null;
   type: "kyc" | "kyb";
   status: "not_started" | "pending" | "under_review" | "approved" | "rejected";
   submittedAt?: string;
-  reviewedBy?: { _id: string; name?: string; email?: string };
+  reviewedBy?: string | null;
   reviewedAt?: string;
   rejectionReason?: string;
   kycDocuments?: {
@@ -135,6 +130,40 @@ export default function VerificationDetailPage() {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showStartReviewDialog, setShowStartReviewDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [selectedIssues, setSelectedIssues] = useState<string[]>([]);
+
+  // Common rejection reasons
+  const commonIssues = [
+    { id: "blurry", label: "Document is blurry or hard to read" },
+    { id: "dark", label: "Document is too dark" },
+    { id: "cropped", label: "Document is cropped or incomplete" },
+    { id: "expired", label: "Document has expired" },
+    { id: "mismatch", label: "Name on document doesn't match account" },
+    { id: "wrong_doc", label: "Wrong type of document uploaded" },
+  ];
+
+  const toggleIssue = (issueId: string) => {
+    setSelectedIssues(prev =>
+      prev.includes(issueId)
+        ? prev.filter(id => id !== issueId)
+        : [...prev, issueId]
+    );
+  };
+
+  const buildRejectionReason = () => {
+    const issueLabels = selectedIssues.map(
+      id => commonIssues.find(i => i.id === id)?.label
+    ).filter(Boolean);
+
+    let reason = "";
+    if (issueLabels.length > 0) {
+      reason = "Issues found:\n- " + issueLabels.join("\n- ");
+    }
+    if (rejectReason.trim()) {
+      reason += (reason ? "\n\nAdditional notes:\n" : "") + rejectReason.trim();
+    }
+    return reason;
+  };
 
   const fetchVerificationDetails = useCallback(async () => {
     try {
@@ -169,8 +198,10 @@ export default function VerificationDetailPage() {
   const handleAction = async (action: "start_review" | "approve" | "reject") => {
     if (!verification) return;
 
-    if (action === "reject" && !rejectReason.trim()) {
-      toast.error("Rejection reason is required");
+    const fullRejectionReason = buildRejectionReason();
+
+    if (action === "reject" && !fullRejectionReason.trim()) {
+      toast.error("Please select at least one issue or provide a rejection reason");
       return;
     }
 
@@ -189,7 +220,7 @@ export default function VerificationDetailPage() {
           break;
         case "reject":
           endpoint = `/api/admin/verifications/${verificationId}/reject`;
-          body = { reason: rejectReason };
+          body = { reason: fullRejectionReason };
           break;
       }
 
@@ -221,6 +252,7 @@ export default function VerificationDetailPage() {
       setShowRejectDialog(false);
       setShowStartReviewDialog(false);
       setRejectReason("");
+      setSelectedIssues([]);
     } catch (err) {
       console.error(`Error ${action}ing verification:`, err);
       toast.error(err instanceof Error ? err.message : `Failed to ${action} verification`);
@@ -262,7 +294,9 @@ export default function VerificationDetailPage() {
     }
 
     const docData = typeof document === "string" ? null : document;
-    const isImage = docData?.fileType?.startsWith("image/");
+    // Check if it's an image based on the type field or URL extension
+    const isImage = docData?.type?.startsWith("image/") ||
+      docData?.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
 
     return (
       <Card>
@@ -288,7 +322,7 @@ export default function VerificationDetailPage() {
               )}
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-500 truncate">
-                  {docData.fileName || "Document"}
+                  {docData.type || "Document"}
                 </span>
                 <a
                   href={docData.url}
@@ -354,7 +388,7 @@ export default function VerificationDetailPage() {
             <h1 className="text-2xl font-bold">Verification Details</h1>
             <p className="text-gray-600">
               {verification.type.toUpperCase()} Verification for{" "}
-              {verification.userId?.name || "Unknown User"}
+              {verification.userName || "Unknown User"}
             </p>
           </div>
         </div>
@@ -448,28 +482,60 @@ export default function VerificationDetailPage() {
               )}
 
               {canReject && (
-                <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+                <Dialog
+                  open={showRejectDialog}
+                  onOpenChange={(open) => {
+                    setShowRejectDialog(open);
+                    if (!open) {
+                      setRejectReason("");
+                      setSelectedIssues([]);
+                    }
+                  }}
+                >
                   <DialogTrigger asChild>
                     <Button variant="destructive">
                       <XCircle className="w-4 h-4 mr-2" />
                       Reject
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-w-md">
                     <DialogHeader>
                       <DialogTitle>Reject Verification</DialogTitle>
                       <DialogDescription>
-                        Please provide a reason for rejection. The user will be
-                        notified and can resubmit with updated documents.
+                        Select the issues found with the documents. The user will be
+                        notified and can resubmit with corrected documents.
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="py-4">
-                      <Textarea
-                        placeholder="Enter rejection reason..."
-                        value={rejectReason}
-                        onChange={(e) => setRejectReason(e.target.value)}
-                        rows={3}
-                      />
+                    <div className="py-4 space-y-4">
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium">Common Issues</Label>
+                        <div className="space-y-2">
+                          {commonIssues.map((issue) => (
+                            <div key={issue.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={issue.id}
+                                checked={selectedIssues.includes(issue.id)}
+                                onCheckedChange={() => toggleIssue(issue.id)}
+                              />
+                              <Label
+                                htmlFor={issue.id}
+                                className="text-sm font-normal cursor-pointer"
+                              >
+                                {issue.label}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Additional Notes (Optional)</Label>
+                        <Textarea
+                          placeholder="Add any additional details about the rejection..."
+                          value={rejectReason}
+                          onChange={(e) => setRejectReason(e.target.value)}
+                          rows={3}
+                        />
+                      </div>
                     </div>
                     <DialogFooter>
                       <Button
@@ -481,7 +547,10 @@ export default function VerificationDetailPage() {
                       <Button
                         variant="destructive"
                         onClick={() => handleAction("reject")}
-                        disabled={!rejectReason.trim() || actionLoading === "reject"}
+                        disabled={
+                          (selectedIssues.length === 0 && !rejectReason.trim()) ||
+                          actionLoading === "reject"
+                        }
                       >
                         {actionLoading === "reject" ? "Rejecting..." : "Reject"}
                       </Button>
@@ -511,48 +580,33 @@ export default function VerificationDetailPage() {
                 <div>
                   <label className="text-sm font-medium text-gray-500">Name</label>
                   <p className="font-medium">
-                    {verification.userId?.name || "Not provided"}
+                    {verification.userName || "Not provided"}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Role</label>
-                  <p>
-                    <Badge variant="secondary">
-                      {verification.userId?.roles || "User"}
-                    </Badge>
+                  <label className="text-sm font-medium text-gray-500">User ID</label>
+                  <p className="text-xs text-gray-400 truncate">
+                    {verification.userId || "Unknown"}
                   </p>
                 </div>
                 <div className="flex items-start space-x-2">
                   <Mail className="w-4 h-4 text-gray-400 mt-1" />
                   <div>
                     <label className="text-sm font-medium text-gray-500">Email</label>
-                    <p>{verification.userId?.email || "Not provided"}</p>
+                    <p>{verification.userEmail || "Not provided"}</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-2">
                   <Phone className="w-4 h-4 text-gray-400 mt-1" />
                   <div>
                     <label className="text-sm font-medium text-gray-500">Phone</label>
-                    <p>{verification.userId?.phone || "Not provided"}</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <Calendar className="w-4 h-4 text-gray-400 mt-1" />
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">
-                      Account Created
-                    </label>
-                    <p>
-                      {verification.userId?.createdAt
-                        ? new Date(verification.userId.createdAt).toLocaleDateString()
-                        : "Unknown"}
-                    </p>
+                    <p>{verification.userPhone || "Not provided"}</p>
                   </div>
                 </div>
               </div>
 
               {/* Organization Info (for KYB) */}
-              {verification.type === "kyb" && verification.userId?.organization && (
+              {verification.type === "kyb" && verification.userOrganization && (
                 <div className="border-t pt-4 mt-4">
                   <div className="flex items-center mb-3">
                     <Building className="w-4 h-4 mr-2 text-gray-500" />
@@ -563,12 +617,12 @@ export default function VerificationDetailPage() {
                       <label className="text-sm font-medium text-gray-500">
                         Organization Name
                       </label>
-                      <p>{verification.userId.organization.name || "Not provided"}</p>
+                      <p>{verification.userOrganization.name || "Not provided"}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-500">Type</label>
                       <p className="capitalize">
-                        {verification.userId.organization.type || "Not provided"}
+                        {verification.userOrganization.type || "Not provided"}
                       </p>
                     </div>
                     <div>
@@ -576,16 +630,16 @@ export default function VerificationDetailPage() {
                         Registration Number
                       </label>
                       <p>
-                        {verification.userId.organization.registrationNumber ||
+                        {verification.userOrganization.registrationNumber ||
                           "Not provided"}
                       </p>
                     </div>
-                    {verification.userId.organization.description && (
+                    {verification.userOrganization.description && (
                       <div className="col-span-2">
                         <label className="text-sm font-medium text-gray-500">
                           Description
                         </label>
-                        <p>{verification.userId.organization.description}</p>
+                        <p>{verification.userOrganization.description}</p>
                       </div>
                     )}
                   </div>
@@ -688,8 +742,8 @@ export default function VerificationDetailPage() {
                   <label className="text-sm font-medium text-gray-500">
                     Reviewed By
                   </label>
-                  <p>
-                    {verification.reviewedBy.name || verification.reviewedBy.email}
+                  <p className="text-xs text-gray-400 truncate">
+                    {verification.reviewedBy}
                   </p>
                 </div>
               )}

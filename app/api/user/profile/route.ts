@@ -1,46 +1,50 @@
-import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import type { Session } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authConfig } from "@/app/api/auth/[...nextauth]/route";
 import { connectDB } from "@/lib/db";
-import { campaignService } from "@/services/CampaignService";
-import { payoutRepository } from "@/repositories/PayoutRepository";
 import { userRepository } from "@/repositories/UserRepository";
 
+// GET /api/user/profile - Get current user's profile
 export async function GET() {
   try {
-    await connectDB();
     const session: Session | null = await getServerSession(authConfig);
-    const userId = session?.user?.id
-      ? new mongoose.Types.ObjectId(session.user.id)
-      : null;
-    
+    const userId = session?.user?.id;
+
     if (!userId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const campaigns = await campaignService.listByOwner(userId);
-    const campaignIds = campaigns.map((c) => c._id as mongoose.Types.ObjectId);
-    
-    const payouts = campaignIds.length
-      ? await payoutRepository.listRecentByCampaignIds(campaignIds, 20)
-      : [];
+    await connectDB();
+    const user = await userRepository.findById(userId);
 
-    return NextResponse.json(payouts);
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
-  } catch (error) {
-    console.error("Failed to fetch user payouts:", error);
+    // Return safe user fields (exclude passwordHash, 2FA secrets, etc.)
     return NextResponse.json({
-      error: "Failed to fetch payouts"
-    }, { status: 500 });
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      photoUrl: user.photoUrl,
+      whatsappOptIn: user.whatsappOptIn,
+      address: user.address,
+      payoutPreferences: user.payoutPreferences,
+    });
+  } catch (error) {
+    console.error("Failed to fetch user profile:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch user profile" },
+      { status: 500 }
+    );
   }
 }
 
-// PUT /api/user/payouts - Update user payout preferences
+// PUT /api/user/profile - Update user profile
 export async function PUT(request: NextRequest) {
   try {
-    await connectDB();
     const session: Session | null = await getServerSession(authConfig);
     const userId = session?.user?.id;
 
@@ -49,13 +53,20 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { mobileMoney, bank } = body;
+    const { name, email, phone, photoUrl, whatsappOptIn } = body;
+
+    await connectDB();
+
+    // Build update object with only provided fields
+    const updateData: Record<string, unknown> = {};
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email || null;
+    if (phone !== undefined) updateData.phone = phone || null;
+    if (photoUrl !== undefined) updateData.photoUrl = photoUrl || null;
+    if (whatsappOptIn !== undefined) updateData.whatsappOptIn = Boolean(whatsappOptIn);
 
     const updatedUser = await userRepository.updateById(userId, {
-      $set: {
-        "payoutPreferences.mobileMoney": mobileMoney || null,
-        "payoutPreferences.bank": bank || null,
-      },
+      $set: updateData,
     } as never);
 
     if (!updatedUser) {
@@ -74,9 +85,9 @@ export async function PUT(request: NextRequest) {
       payoutPreferences: updatedUser.payoutPreferences,
     });
   } catch (error) {
-    console.error("Failed to update payout preferences:", error);
+    console.error("Failed to update user profile:", error);
     return NextResponse.json(
-      { error: "Failed to update payout details" },
+      { error: "Failed to update profile" },
       { status: 500 }
     );
   }

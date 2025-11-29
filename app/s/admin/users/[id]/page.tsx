@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-provider";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,18 +11,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Save, User, Crown, Shield } from "lucide-react";
+import { ArrowLeft, Save, User, Building2 } from "lucide-react";
+
+interface Organization {
+  name?: string | null;
+  type?: "ngo" | "charity" | null;
+  registrationNumber?: string | null;
+  taxId?: string | null;
+  description?: string | null;
+  website?: string | null;
+  address?: {
+    street?: string | null;
+    city?: string | null;
+    country?: string | null;
+  } | null;
+}
 
 interface UserData {
   _id: string;
   email: string;
   firstName: string;
   lastName: string;
-  role: "SuperAdmin" | "Admin" | "User";
+  role: "SuperAdmin" | "Admin" | "User" | "Organization";
   isActive: boolean;
   phone?: string;
   createdAt: string;
   updatedAt: string;
+  organization?: Organization;
 }
 
 export default function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
@@ -38,13 +53,15 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     name: "",
     email: "",
     phone: "",
-    role: "User",
     isActive: true,
   });
-  
+
   const [hasChanges, setHasChanges] = useState(false);
 
+  // Check if current user can edit (Admin or SuperAdmin)
+  const canEdit = currentUser?.role === "SuperAdmin" || currentUser?.role === "Admin";
   const isSuperAdmin = currentUser?.role === "SuperAdmin";
+  const isOrganization = user?.role === "Organization";
   const { id: userId } = React.use(params);
 
   const fetchUser = useCallback(async () => {
@@ -61,13 +78,12 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
 
       const userData = data.user;
       setUser(userData);
-      
+
       // Initialize form data
       setFormData({
         name: `${userData.firstName} ${userData.lastName}`.trim(),
         email: userData.email,
         phone: userData.phone || "",
-        role: userData.role,
         isActive: userData.isActive,
       });
 
@@ -82,22 +98,21 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
-      
+
       // Check if there are changes
       const originalData = {
         name: `${user?.firstName} ${user?.lastName}`.trim(),
         email: user?.email || "",
         phone: user?.phone || "",
-        role: user?.role || "User",
         isActive: user?.isActive || false,
       };
-      
+
       const hasChanges = JSON.stringify(newData) !== JSON.stringify(originalData);
       setHasChanges(hasChanges);
-      
+
       return newData;
     });
-    
+
     if (error) setError(""); // Clear error when user starts typing
   };
 
@@ -148,7 +163,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           name: formData.name.trim(),
           email: formData.email.trim(),
           phone: formData.phone.trim() || undefined,
-          role: formData.role,
           isActive: formData.isActive,
         }),
       });
@@ -183,29 +197,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       const confirmed = window.confirm("You have unsaved changes. Are you sure you want to leave?");
       if (!confirmed) return;
     }
-    router.push('/users');
-  };
-
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case "SuperAdmin":
-        return <Crown className="h-4 w-4" />;
-      case "Admin":
-        return <Shield className="h-4 w-4" />;
-      default:
-        return <User className="h-4 w-4" />;
-    }
-  };
-
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case "SuperAdmin":
-        return "destructive";
-      case "Admin":
-        return "default";
-      default:
-        return "secondary";
-    }
+    router.push('/s/admin/users');
   };
 
   useEffect(() => {
@@ -214,8 +206,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     }
   }, [userId, fetchUser]);
 
-  // Redirect if not super admin
-  if (!isSuperAdmin) {
+  // Redirect if not admin or super admin
+  if (!canEdit) {
     return (
       <div className="p-6">
         <Card>
@@ -223,8 +215,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
             <div className="text-center">
               <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h2 className="text-lg font-medium text-gray-900 mb-2">Access Restricted</h2>
-              <p className="text-gray-600 mb-4">Only Super Administrators can edit users.</p>
-              <Button onClick={() => router.push('/users')} variant="outline">
+              <p className="text-gray-600 mb-4">You do not have permission to edit users.</p>
+              <Button onClick={() => router.push('/s/admin/users')} variant="outline">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Users
               </Button>
@@ -255,7 +247,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
               <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h2 className="text-lg font-medium text-gray-900 mb-2">User Not Found</h2>
               <p className="text-gray-600 mb-4">The requested user could not be found.</p>
-              <Button onClick={() => router.push('/users')} variant="outline">
+              <Button onClick={() => router.push('/s/admin/users')} variant="outline">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Users
               </Button>
@@ -270,11 +262,22 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     <div className="p-6">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Edit User</h1>
-            <p className="text-muted-foreground">
-              Update user information and permissions
-            </p>
+          <div className="flex items-center gap-3">
+            {isOrganization ? (
+              <Building2 className="h-8 w-8 text-gray-400" />
+            ) : (
+              <User className="h-8 w-8 text-gray-400" />
+            )}
+            <div>
+              <h1 className="text-3xl font-bold">
+                {isOrganization ? "Edit Organisation" : "Edit User"}
+              </h1>
+              <p className="text-muted-foreground">
+                {isOrganization
+                  ? "Update organisation account information"
+                  : "Update user account information"}
+              </p>
+            </div>
           </div>
           <Button
             onClick={handleCancel}
@@ -293,20 +296,30 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Contact Information */}
             <Card>
               <CardHeader>
-                <CardTitle>User Information</CardTitle>
+                <CardTitle>
+                  {isOrganization ? "Contact Information" : "User Information"}
+                </CardTitle>
+                <CardDescription>
+                  {isOrganization
+                    ? "Primary contact details for this organisation"
+                    : "Basic account details"}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Full Name *</Label>
+                      <Label htmlFor="name">
+                        {isOrganization ? "Contact Name *" : "Full Name *"}
+                      </Label>
                       <Input
                         id="name"
                         type="text"
-                        placeholder="Enter full name"
+                        placeholder={isOrganization ? "Enter contact name" : "Enter full name"}
                         value={formData.name}
                         onChange={(e) => handleInputChange('name', e.target.value)}
                         disabled={saving}
@@ -337,24 +350,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                         onChange={(e) => handleInputChange('phone', e.target.value)}
                         disabled={saving}
                       />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="role">User Role</Label>
-                      <Select
-                        value={formData.role}
-                        onValueChange={(value) => handleInputChange('role', value)}
-                        disabled={saving}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="User">User</SelectItem>
-                          <SelectItem value="Admin">Admin</SelectItem>
-                          <SelectItem value="SuperAdmin">Super Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
 
                     <div className="space-y-2">
@@ -405,21 +400,102 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 </form>
               </CardContent>
             </Card>
+
+            {/* Organisation Details (only for Organisation accounts) */}
+            {isOrganization && user.organization && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Organisation Details</CardTitle>
+                  <CardDescription>
+                    Registered organisation information (read-only)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {user.organization.name && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground text-xs">Organisation Name</Label>
+                        <p className="font-medium">{user.organization.name}</p>
+                      </div>
+                    )}
+                    {user.organization.type && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground text-xs">Type</Label>
+                        <p className="font-medium capitalize">{user.organization.type}</p>
+                      </div>
+                    )}
+                    {user.organization.registrationNumber && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground text-xs">Registration Number</Label>
+                        <p className="font-medium">{user.organization.registrationNumber}</p>
+                      </div>
+                    )}
+                    {user.organization.taxId && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground text-xs">Tax ID</Label>
+                        <p className="font-medium">{user.organization.taxId}</p>
+                      </div>
+                    )}
+                    {user.organization.website && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground text-xs">Website</Label>
+                        <p className="font-medium">
+                          <a
+                            href={user.organization.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                          >
+                            {user.organization.website}
+                          </a>
+                        </p>
+                      </div>
+                    )}
+                    {user.organization.description && (
+                      <div className="space-y-1 md:col-span-2">
+                        <Label className="text-muted-foreground text-xs">Description</Label>
+                        <p className="text-sm">{user.organization.description}</p>
+                      </div>
+                    )}
+                    {user.organization.address && (
+                      <div className="space-y-1 md:col-span-2">
+                        <Label className="text-muted-foreground text-xs">Address</Label>
+                        <p className="font-medium">
+                          {[
+                            user.organization.address.street,
+                            user.organization.address.city,
+                            user.organization.address.country,
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Current Status</CardTitle>
+                <CardTitle>Account Status</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <Badge 
-                    variant={getRoleBadgeVariant(user.role)}
-                    className="flex items-center gap-1"
-                  >
-                    {getRoleIcon(user.role)}
-                    {user.role}
+                  <Badge variant={isOrganization ? "outline" : "secondary"} className="flex items-center gap-1">
+                    {isOrganization ? (
+                      <>
+                        <Building2 className="h-3 w-3" />
+                        Organisation
+                      </>
+                    ) : (
+                      <>
+                        <User className="h-3 w-3" />
+                        Individual
+                      </>
+                    )}
                   </Badge>
                 </div>
                 <div>
@@ -437,7 +513,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
               <CardContent className="space-y-3 text-sm">
                 <div>
                   <span className="text-muted-foreground">User ID:</span>
-                  <p className="font-mono">{user._id}</p>
+                  <p className="font-mono text-xs break-all">{user._id}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Created:</span>

@@ -121,8 +121,8 @@ export async function POST(req: NextRequest) {
     const baseUrl = process.env.APP_BASE_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
     const donationIdStr = String(donation._id);
     const campaignIdStr = String(campaign._id);
-    const successUrl = `${baseUrl}/campaigns/${validatedData.campaignSlug}/donate/success?donation_id=${donationIdStr}&session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `${baseUrl}/campaigns/${validatedData.campaignSlug}/donate/cancel?donation_id=${donationIdStr}`;
+    const successUrl = `${baseUrl}/api/donations/success?donation_id=${donationIdStr}&campaign_slug=${encodeURIComponent(validatedData.campaignSlug)}&session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${baseUrl}/api/donations/cancel?donation_id=${donationIdStr}&campaign_slug=${encodeURIComponent(validatedData.campaignSlug)}`;
     // const webhookUrl = `${baseUrl}/api/donations/webhook`;
 
     // Create Monime checkout session with idempotency key

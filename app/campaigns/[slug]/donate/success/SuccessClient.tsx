@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 
-type DonationStatus = "loading" | "pending" | "payment_received" | "transferring" | "succeeded" | "failed";
+type DonationStatus = "loading" | "pending" | "transferring" | "succeeded" | "failed";
 
 interface Campaign {
   patient?: { name?: string };
@@ -14,23 +14,63 @@ interface SuccessClientProps {
   donationId: string;
   campaign: Campaign;
   slug: string;
+  initialStatus?: string;
+  errorMessage?: string;
 }
 
-export default function SuccessClient({ donationId, campaign, slug }: SuccessClientProps) {
-  const [status, setStatus] = useState<DonationStatus>("loading");
-  const [error, setError] = useState<string | null>(null);
+// Map API status to display status
+function mapStatus(apiStatus: string): DonationStatus {
+  switch (apiStatus) {
+    case "succeeded":
+      return "succeeded";
+    case "failed":
+    case "error":
+      return "failed";
+    case "transferring":
+    case "payment_received":
+      return "transferring";
+    case "pending":
+      return "pending";
+    default:
+      return "loading";
+  }
+}
+
+export default function SuccessClient({
+  donationId,
+  campaign,
+  slug,
+  initialStatus = "",
+  errorMessage = "",
+}: SuccessClientProps) {
+  // Track window.location.origin safely for SSR
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setOrigin(window.location.origin);
+    }
+  }, []);
+
+  const [status, setStatus] = useState<DonationStatus>(() => {
+    // If we have an initial status from the API redirect, use it
+    if (initialStatus) {
+      return mapStatus(initialStatus);
+    }
+    // Otherwise, show loading until we check
+    return donationId ? "loading" : "succeeded";
+  });
+  const [error, setError] = useState<string | null>(errorMessage || null);
   const [pollingCount, setPollingCount] = useState(0);
-  const MAX_POLLING_ATTEMPTS = 30; // 60 seconds max polling (2s intervals)
+  const MAX_POLLING_ATTEMPTS = 30; // 60 seconds max polling
 
   const checkDonationStatus = useCallback(async () => {
     try {
       const res = await fetch(`/api/donations/${donationId}/status`);
       const data = await res.json();
-
       if (!res.ok) {
         throw new Error(data.error || "Failed to check donation status");
       }
-
       return data.data;
     } catch (err) {
       console.error("Error checking donation status:", err);
@@ -38,149 +78,80 @@ export default function SuccessClient({ donationId, campaign, slug }: SuccessCli
     }
   }, [donationId]);
 
-  const processTransfer = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/donations/${donationId}/process-transfer`, {
-        method: "POST",
-      });
-      const data = await res.json();
-
-      if (!res.ok && res.status >= 500) {
-        throw new Error(data.error || "Failed to process transfer");
-      }
-
-      return data;
-    } catch (err) {
-      console.error("Error processing transfer:", err);
-      throw err;
-    }
-  }, [donationId]);
-
   useEffect(() => {
+    // If we already have a terminal status from the API, don't poll
+    if (initialStatus === "succeeded" || initialStatus === "failed" || initialStatus === "error") {
+      return;
+    }
+
+    // If no donation ID, show success
+    if (!donationId) {
+      setStatus("succeeded");
+      return;
+    }
+
     let isMounted = true;
     let pollInterval: NodeJS.Timeout | null = null;
 
-    async function handleDonation() {
-      if (!donationId) {
-        setStatus("succeeded"); // No donation ID, show generic success
-        return;
-      }
+    // Only poll if status is pending or transferring (non-terminal)
+    const shouldPoll = status === "loading" || status === "pending" || status === "transferring";
+
+    if (!shouldPoll) {
+      return;
+    }
+
+    async function checkAndUpdateStatus() {
+      if (!isMounted) return;
 
       try {
-        // Step 1: Check current donation status
         const donationData = await checkDonationStatus();
-
-        console.log("donationData from success client", donationData);
 
         if (!isMounted) return;
 
         if (donationData.status === "succeeded") {
           setStatus("succeeded");
+          if (pollInterval) clearInterval(pollInterval);
           return;
         }
 
         if (donationData.status === "failed") {
           setStatus("failed");
           setError(donationData.failureReason || "Payment failed");
+          if (pollInterval) clearInterval(pollInterval);
           return;
         }
 
         if (donationData.status === "payment_received") {
-          // Step 2: Payment confirmed, trigger transfer
           setStatus("transferring");
-
-          const transferResult = await processTransfer();
-
-          if (!isMounted) return;
-
-          if (transferResult.success || transferResult.status === "succeeded") {
-            setStatus("succeeded");
-            return;
-          }
-
-          if (transferResult.error) {
-            // Transfer failed, but might be retryable
-            setError(transferResult.error);
-            // Still show as transferring and let webhook handle it
-            return;
-          }
-
-          // Transfer in progress, will be handled by webhook
-          return;
+        } else if (donationData.status === "pending") {
+          setStatus("pending");
         }
 
-        // Status is pending - payment not yet confirmed by Monime
-        setStatus("pending");
-
-        // Start polling for status updates
-        const startPolling = () => {
-          pollInterval = setInterval(async () => {
-            if (!isMounted) {
-              if (pollInterval) clearInterval(pollInterval);
-              return;
-            }
-
-            setPollingCount(prev => {
-              if (prev >= MAX_POLLING_ATTEMPTS) {
-                if (pollInterval) clearInterval(pollInterval);
-                return prev;
-              }
-              return prev + 1;
-            });
-
-            try {
-              const updatedData = await checkDonationStatus();
-
-              if (!isMounted) return;
-
-              if (updatedData.status === "succeeded") {
-                setStatus("succeeded");
-                if (pollInterval) clearInterval(pollInterval);
-                return;
-              }
-
-              if (updatedData.status === "failed") {
-                setStatus("failed");
-                setError(updatedData.failureReason || "Payment failed");
-                if (pollInterval) clearInterval(pollInterval);
-                return;
-              }
-
-              if (updatedData.status === "payment_received") {
-                // Payment confirmed! Trigger transfer
-                setStatus("transferring");
-                if (pollInterval) clearInterval(pollInterval);
-
-                const transferResult = await processTransfer();
-
-                if (!isMounted) return;
-
-                if (transferResult.success || transferResult.status === "succeeded") {
-                  setStatus("succeeded");
-                }
-              }
-            } catch (err) {
-              console.error("Polling error:", err);
-              // Continue polling on error
-            }
-          }, 2000); // Poll every 2 seconds
-        };
-
-        startPolling();
+        // Continue polling if not terminal
+        setPollingCount((prev) => {
+          if (prev >= MAX_POLLING_ATTEMPTS) {
+            if (pollInterval) clearInterval(pollInterval);
+            return prev;
+          }
+          return prev + 1;
+        });
       } catch (err) {
-        if (!isMounted) return;
-        setStatus("failed");
-        setError(err instanceof Error ? err.message : "An error occurred");
+        console.error("Polling error:", err);
+        // Continue polling on transient errors
       }
     }
 
-    handleDonation();
+    // Initial check
+    checkAndUpdateStatus();
+
+    // Start polling
+    pollInterval = setInterval(checkAndUpdateStatus, 2000);
 
     return () => {
       isMounted = false;
       if (pollInterval) clearInterval(pollInterval);
     };
-  }, [donationId, checkDonationStatus, processTransfer]);
+  }, [donationId, initialStatus, status, checkDonationStatus]);
 
   const campaignName = campaign?.patient?.name || campaign?.diagnosis || "this medical campaign";
 
@@ -201,7 +172,7 @@ export default function SuccessClient({ donationId, campaign, slug }: SuccessCli
     );
   }
 
-  // Pending/Processing state - waiting for payment confirmation
+  // Pending state - waiting for payment confirmation
   if (status === "pending") {
     return (
       <main className="container mx-auto max-w-2xl px-4 py-8">
@@ -270,9 +241,7 @@ export default function SuccessClient({ donationId, campaign, slug }: SuccessCli
           </div>
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">Payment Failed</h1>
-            <p className="text-gray-600 mt-2">
-              Unfortunately, your payment could not be processed.
-            </p>
+            <p className="text-gray-600 mt-2">Unfortunately, your payment could not be processed.</p>
           </div>
           {error && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-left">
@@ -381,22 +350,26 @@ export default function SuccessClient({ donationId, campaign, slug }: SuccessCli
         <div className="pt-6 border-t">
           <p className="text-sm text-gray-600 mb-4">Help spread the word about this campaign:</p>
           <div className="flex gap-4 justify-center">
-            <a
-              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}/campaigns/${slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white text-sm hover:bg-blue-700 transition-colors"
-            >
-              Share on Facebook
-            </a>
-            <a
-              href={`https://wa.me/?text=${encodeURIComponent(`Help support ${campaignName}! ${typeof window !== "undefined" ? window.location.origin : ""}/campaigns/${slug}`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-white text-sm hover:bg-green-700 transition-colors"
-            >
-              Share on WhatsApp
-            </a>
+            {origin && (
+              <>
+                <a
+                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${origin}/campaigns/${slug}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white text-sm hover:bg-blue-700 transition-colors"
+                >
+                  Share on Facebook
+                </a>
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`Help support ${campaignName}! ${origin}/campaigns/${slug}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-white text-sm hover:bg-green-700 transition-colors"
+                >
+                  Share on WhatsApp
+                </a>
+              </>
+            )}
           </div>
         </div>
       </div>

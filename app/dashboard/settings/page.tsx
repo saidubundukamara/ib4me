@@ -35,7 +35,7 @@ type User = {
   name?: string;
   email?: string;
   phone?: string;
-  avatarUrl?: string;
+  photoUrl?: string;
   whatsappOptIn?: boolean;
   address?: {
     country?: string;
@@ -58,7 +58,7 @@ type User = {
 const SETTINGS_TABS = [
   { value: "profile", label: "Profile", icon: UserRound },
   { value: "security", label: "Password & Security", icon: KeyRound },
-  { value: "payouts", label: "Payouts", icon: Wallet },
+  // { value: "payouts", label: "Payouts", icon: Wallet },
   { value: "address", label: "Address", icon: MapPin },
   { value: "support", label: "Support", icon: Phone },
 ] as const satisfies ReadonlyArray<{
@@ -136,9 +136,9 @@ export default function UserSettingsPage() {
 
   useEffect(() => {
     if (!avatarFile) {
-      setAvatarPreview(user?.avatarUrl ?? null);
+      setAvatarPreview(user?.photoUrl ?? null);
     }
-  }, [avatarFile, user?.avatarUrl]);
+  }, [avatarFile, user?.photoUrl]);
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -165,7 +165,7 @@ export default function UserSettingsPage() {
 
   const handleRemoveAvatar = () => {
     setAvatarFile(null);
-    setAvatarPreview(user?.avatarUrl ?? null);
+    setAvatarPreview(user?.photoUrl ?? null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -195,7 +195,7 @@ export default function UserSettingsPage() {
     const formData = new FormData(event.currentTarget);
 
     try {
-      let avatarUrl = user?.avatarUrl as string | undefined;
+      let photoUrl = user?.photoUrl as string | undefined;
 
       if (avatarFile) {
         setAvatarUploading(true);
@@ -214,7 +214,7 @@ export default function UserSettingsPage() {
         }
 
         if (uploadPayload?.url) {
-          avatarUrl = String(uploadPayload.url);
+          photoUrl = String(uploadPayload.url);
         }
       }
 
@@ -228,7 +228,7 @@ export default function UserSettingsPage() {
           email: formData.get("email"),
           phone: formData.get("phone"),
           whatsappOptIn,
-          avatarUrl,
+          photoUrl,
         }),
       });
 
@@ -242,7 +242,7 @@ export default function UserSettingsPage() {
       setUser(updatedUser);
       setWhatsappOptIn(Boolean(updatedUser?.whatsappOptIn));
       setAvatarFile(null);
-      setAvatarPreview(updatedUser?.avatarUrl ?? avatarUrl ?? null);
+      setAvatarPreview(updatedUser?.photoUrl ?? photoUrl ?? null);
       toast.success("Profile updated successfully.");
     } catch (error) {
       if (error instanceof Error && error.message === "avatar_upload_failed") {
@@ -403,7 +403,7 @@ export default function UserSettingsPage() {
       .slice(0, 2) || "U";
   }, [heroName]);
 
-  const heroAvatar = avatarPreview ?? user?.avatarUrl ?? null;
+  const heroAvatar = avatarPreview ?? user?.photoUrl ?? null;
   const isProfileBusy = loading || profileLoading || avatarUploading;
 
   const primaryEmail = user?.email || session?.user?.email || "Add an email address";
@@ -578,9 +578,12 @@ export default function UserSettingsPage() {
                         placeholder="you@example.com"
                         autoComplete="email"
                         defaultValue={user?.email ?? ""}
-                        disabled={isProfileBusy}
-                        className="rounded-2xl"
+                        disabled
+                        className="rounded-2xl bg-gray-50 cursor-not-allowed"
                       />
+                      <p className="text-xs text-gray-500">
+                        Contact support to change your email address
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="phone">Phone number</Label>
@@ -717,6 +720,7 @@ export default function UserSettingsPage() {
             </Card>
           </TabsContent>
 
+{/* Payouts tab commented out for now
           <TabsContent value="payouts" className="focus-visible:outline-none">
             <Card className="border border-border/40 bg-card shadow-lg">
               <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
@@ -817,6 +821,7 @@ export default function UserSettingsPage() {
               </CardContent>
             </Card>
           </TabsContent>
+*/}
 
           <TabsContent value="address" className="focus-visible:outline-none">
             <Card className="border border-border/40 bg-card shadow-lg">

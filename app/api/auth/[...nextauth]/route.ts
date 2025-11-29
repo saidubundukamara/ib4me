@@ -111,6 +111,8 @@ export const authConfig: NextAuthOptions = {
         if (dbUser) {
           token.roles = dbUser.roles ?? "User";
           token.status = dbUser.status ?? "active";
+          token.name = dbUser.name ?? token.name;
+          token.picture = dbUser.photoUrl ?? null;
         }
       }
       return token;
@@ -120,6 +122,8 @@ export const authConfig: NextAuthOptions = {
         session.user.id = String(token.userId ?? "");
         session.user.roles = token.roles ?? "User";
         session.user.status = token.status ?? "active";
+        session.user.name = token.name as string | undefined;
+        session.user.image = token.picture as string | undefined;
       }
       return session;
     },

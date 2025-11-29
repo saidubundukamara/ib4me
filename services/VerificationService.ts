@@ -355,7 +355,17 @@ export class VerificationService {
    */
   async getById(verificationId: string): Promise<IVerification | null> {
     return verificationRepository.findById(verificationId, {
-      query: { populate: "userId" },
+      query: {
+        populate: [
+          { path: "userId" },
+          { path: "kycDocuments.idDocument" },
+          { path: "kycDocuments.addressProof" },
+          { path: "kybDocuments.registrationCertificate" },
+          { path: "kybDocuments.representativeId" },
+          { path: "kybDocuments.addressProof" },
+          { path: "kybDocuments.taxCertificate" },
+        ]
+      },
     } as never);
   }
 

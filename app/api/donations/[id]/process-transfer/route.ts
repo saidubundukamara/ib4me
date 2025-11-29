@@ -115,7 +115,8 @@ export async function POST(
 
     // Initiate internal transfer from platform to campaign
     const transferAmount = donation.amount.minor; // Transfer donation amount only, not fees
-    const idempotencyKey = `transfer_${donationId}_${Date.now()}`;
+    // Use deterministic idempotency key to prevent duplicate transfers
+    const idempotencyKey = `donation_transfer_${donationId}`;
 
     try {
       console.log(`[process-transfer] Initiating internal transfer of ${transferAmount} for donation ${donationId}`);

@@ -4,13 +4,15 @@ import SuccessClient from "./SuccessClient";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ donation_id?: string; session_id?: string }>;
+  searchParams: Promise<{ donation_id?: string; session_id?: string; status?: string; message?: string }>;
 };
 
 async function DonationSuccessContent({ params, searchParams }: PageProps) {
   const { slug } = await params;
   const resolvedSearchParams = await searchParams;
   const donationId = resolvedSearchParams.donation_id || "";
+  const initialStatus = resolvedSearchParams.status || "";
+  const errorMessage = resolvedSearchParams.message || "";
 
   // Try to fetch campaign data
   let campaign = null;
@@ -37,6 +39,8 @@ async function DonationSuccessContent({ params, searchParams }: PageProps) {
       donationId={donationId}
       campaign={campaignData}
       slug={slug}
+      initialStatus={initialStatus}
+      errorMessage={errorMessage}
     />
   );
 }

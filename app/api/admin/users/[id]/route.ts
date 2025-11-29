@@ -4,7 +4,21 @@ import { validateAdminAuth, extractAuditContext, AdminAuthError } from "@/lib/ad
 import mongoose from "mongoose";
 
 // Helper to transform user data for frontend
-function transformUser(user: { _id?: unknown; name?: string; email?: string | null; phone?: string | null; roles?: string; status?: string; createdAt?: Date; updatedAt?: Date }) {
+interface UserOrganization {
+  name?: string | null;
+  type?: "ngo" | "charity" | null;
+  registrationNumber?: string | null;
+  taxId?: string | null;
+  description?: string | null;
+  website?: string | null;
+  address?: {
+    street?: string | null;
+    city?: string | null;
+    country?: string | null;
+  } | null;
+}
+
+function transformUser(user: { _id?: unknown; name?: string; email?: string | null; phone?: string | null; roles?: string; status?: string; createdAt?: Date; updatedAt?: Date; organization?: UserOrganization | null }) {
   return {
     _id: user._id?.toString() || '',
     email: user.email || '',
@@ -15,6 +29,16 @@ function transformUser(user: { _id?: unknown; name?: string; email?: string | nu
     phone: user.phone || undefined,
     createdAt: user.createdAt?.toISOString() || '',
     updatedAt: user.updatedAt?.toISOString() || '',
+    // Include organization data for Organization accounts
+    organization: user.roles === 'Organization' ? {
+      name: user.organization?.name || null,
+      type: user.organization?.type || null,
+      registrationNumber: user.organization?.registrationNumber || null,
+      taxId: user.organization?.taxId || null,
+      description: user.organization?.description || null,
+      website: user.organization?.website || null,
+      address: user.organization?.address || null,
+    } : undefined,
   };
 }
 
@@ -116,10 +140,10 @@ export async function PUT(
       }
     }
 
-    // Validate role if provided
-    if (role !== undefined && !['User', 'Admin', 'SuperAdmin'].includes(role)) {
+    // Validate role if provided (User and Organization only - admins should be managed through /admin/admins)
+    if (role !== undefined && !['User', 'Organization'].includes(role)) {
       return NextResponse.json(
-        { success: false, message: "Invalid role specified" },
+        { success: false, message: "Invalid role specified. Use /admin/admins to manage admin accounts." },
         { status: 400 }
       );
     }
@@ -131,7 +155,7 @@ export async function PUT(
         name: name?.trim(),
         email: email?.trim(),
         phone: phone?.trim() || undefined,
-        role: role as "User" | "Admin" | "SuperAdmin" | undefined,
+        role: role as "User" | "Organization" | undefined,
         isActive,
       },
       adminContext,

@@ -3,7 +3,21 @@ import { userService } from "@/services";
 import { validateAdminAuth, extractAuditContext, AdminAuthError } from "@/lib/admin-auth";
 
 // Helper to transform user data for frontend
-function transformUser(user: { _id?: unknown; name?: string; email?: string | null; phone?: string | null; roles?: string; status?: string; createdAt?: Date; updatedAt?: Date }) {
+interface UserOrganization {
+  name?: string | null;
+  type?: "ngo" | "charity" | null;
+  registrationNumber?: string | null;
+  taxId?: string | null;
+  description?: string | null;
+  website?: string | null;
+  address?: {
+    street?: string | null;
+    city?: string | null;
+    country?: string | null;
+  } | null;
+}
+
+function transformUser(user: { _id?: unknown; name?: string; email?: string | null; phone?: string | null; roles?: string; status?: string; createdAt?: Date; updatedAt?: Date; organization?: UserOrganization | null }) {
   return {
     _id: user._id?.toString() || '',
     email: user.email || '',
@@ -14,6 +28,16 @@ function transformUser(user: { _id?: unknown; name?: string; email?: string | nu
     phone: user.phone || undefined,
     createdAt: user.createdAt?.toISOString() || '',
     updatedAt: user.updatedAt?.toISOString() || '',
+    // Include organization data for Organization accounts
+    organization: user.roles === 'Organization' ? {
+      name: user.organization?.name || null,
+      type: user.organization?.type || null,
+      registrationNumber: user.organization?.registrationNumber || null,
+      taxId: user.organization?.taxId || null,
+      description: user.organization?.description || null,
+      website: user.organization?.website || null,
+      address: user.organization?.address || null,
+    } : undefined,
   };
 }
 
@@ -25,9 +49,21 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
 
     // Extract query parameters
+    const accountType = searchParams.get('accountType') || 'all'; // individual, organization, or all
+
+    // Map accountType to role filter
+    let roleFilter: string;
+    if (accountType === 'individual') {
+      roleFilter = 'User';
+    } else if (accountType === 'organization') {
+      roleFilter = 'Organization';
+    } else {
+      roleFilter = 'all'; // Fetch both User and Organization (excludes Admin/SuperAdmin)
+    }
+
     const filters = {
       search: searchParams.get('search') || undefined,
-      role: searchParams.get('role') || 'User', // Default to regular users
+      role: roleFilter,
       isActive: searchParams.get('isActive') || undefined,
       page: parseInt(searchParams.get('page') || '1', 10),
       limit: Math.min(parseInt(searchParams.get('limit') || '20', 10), 100), // Cap at 100
