@@ -31,7 +31,7 @@ export interface AdminUserUpdateData {
   name?: string;
   email?: string;
   phone?: string;
-  role?: "User" | "Admin" | "SuperAdmin";
+  role?: "User" | "Organization" | "Admin" | "SuperAdmin";
   isActive?: boolean;
 }
 

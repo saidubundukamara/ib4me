@@ -58,7 +58,7 @@ type User = {
 const SETTINGS_TABS = [
   { value: "profile", label: "Profile", icon: UserRound },
   { value: "security", label: "Password & Security", icon: KeyRound },
-  { value: "payouts", label: "Payouts", icon: Wallet },
+  // { value: "payouts", label: "Payouts", icon: Wallet },
   { value: "address", label: "Address", icon: MapPin },
   { value: "support", label: "Support", icon: Phone },
 ] as const satisfies ReadonlyArray<{
@@ -720,6 +720,7 @@ export default function UserSettingsPage() {
             </Card>
           </TabsContent>
 
+{/* Payouts tab commented out for now
           <TabsContent value="payouts" className="focus-visible:outline-none">
             <Card className="border border-border/40 bg-card shadow-lg">
               <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
@@ -820,6 +821,7 @@ export default function UserSettingsPage() {
               </CardContent>
             </Card>
           </TabsContent>
+*/}
 
           <TabsContent value="address" className="focus-visible:outline-none">
             <Card className="border border-border/40 bg-card shadow-lg">

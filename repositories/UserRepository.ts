@@ -57,14 +57,15 @@ export class UserRepository extends BaseRepository<IUser> {
     };
 
     // Filter by role - exclude Admin and SuperAdmin users
-    if (role === "User") {
-      // Find users that are NOT admin/superadmin (handle both string and array formats)
-      query.$and = [
-        { roles: { $not: /^admin$/i } },
-        { roles: { $not: /^superadmin$/i } },
-        { roles: { $ne: "Admin" } },
-        { roles: { $ne: "SuperAdmin" } },
-      ];
+    if (role === "all") {
+      // Fetch both User and Organization, but exclude Admin/SuperAdmin
+      query.roles = { $in: ["User", "Organization"] };
+    } else if (role === "User") {
+      // Only individuals (User role)
+      query.roles = "User";
+    } else if (role === "Organization") {
+      // Only organisations
+      query.roles = "Organization";
     } else if (role) {
       // For other specific role searches, use case-insensitive match
       query.$or = [

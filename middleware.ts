@@ -58,7 +58,8 @@ export default async function middleware(req: NextRequest) {
   // Handle admin subdomain routing
   if (subdomain === "admin") {
     // Block access to /admin routes on admin subdomain (they should be rewritten)
-    if (pathname.startsWith("/admin")) {
+    // Use specific check to avoid matching /admins which starts with /admin
+    if (pathname === "/admin" || pathname.startsWith("/admin/")) {
       return NextResponse.redirect(new URL("/", req.url));
     }
     
@@ -170,6 +171,6 @@ export const config = {
     "/user/:path*",
     "/dashboard/:path*",
     // Root paths for subdomain handling
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api|_next|favicon.ico).*)",
   ],
 };

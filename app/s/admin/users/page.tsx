@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,28 +21,41 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { 
-  Search, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  UserCheck, 
+import {
+  Search,
+  Edit,
+  Trash2,
+  UserCheck,
   UserX,
-  Crown,
-  Shield,
-  User
+  User,
+  Building2
 } from "lucide-react";
 
-interface User {
+interface Organization {
+  name?: string | null;
+  type?: "ngo" | "charity" | null;
+  registrationNumber?: string | null;
+  taxId?: string | null;
+  description?: string | null;
+  website?: string | null;
+  address?: {
+    street?: string | null;
+    city?: string | null;
+    country?: string | null;
+  } | null;
+}
+
+interface UserData {
   _id: string;
   email: string;
   firstName: string;
   lastName: string;
-  role: "SuperAdmin" | "Admin" | "User";
+  role: "SuperAdmin" | "Admin" | "User" | "Organization";
   isActive: boolean;
   phone?: string;
   createdAt: string;
   updatedAt: string;
+  organization?: Organization;
 }
 
 interface Pagination {
@@ -55,7 +69,7 @@ interface Pagination {
 export default function AdminUsersPage() {
   const router = useRouter();
   const { user: currentUser } = useAuth();
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserData[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
     totalPages: 1,
@@ -67,7 +81,10 @@ export default function AdminUsersPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const [deletingUser, setDeletingUser] = useState<UserData | null>(null);
+
+  // Tab state: "individual" or "organization"
+  const [activeTab, setActiveTab] = useState<"individual" | "organization">("individual");
 
   // Filters
   const [search, setSearch] = useState("");
@@ -85,7 +102,7 @@ export default function AdminUsersPage() {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: "20",
-        role: "User", // Only fetch users with "User" role (customers)
+        accountType: activeTab, // "individual" or "organization"
       });
 
       if (search) params.append("search", search);
@@ -111,9 +128,9 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, search, statusFilter]);
+  }, [currentPage, search, statusFilter, activeTab]);
 
-  const handleDeleteClick = (user: User) => {
+  const handleDeleteClick = (user: UserData) => {
     setDeletingUser(user);
     setDeleteDialogOpen(true);
   };
@@ -171,16 +188,15 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleCreateUser = () => {
-    if (isSuperAdmin) {
-      router.push("/users/create");
-    }
+  const handleEditUser = (userId: string) => {
+    router.push(`/s/admin/users/${userId}`);
   };
 
-  const handleEditUser = (userId: string) => {
-    if (isSuperAdmin) {
-      router.push(`/users/${userId}`);
-    }
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as "individual" | "organization");
+    setCurrentPage(1);
+    setSearch("");
+    setStatusFilter("all");
   };
 
   const handleSearch = () => {
@@ -192,31 +208,9 @@ export default function AdminUsersPage() {
     setCurrentPage(newPage);
   };
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case "SuperAdmin":
-        return <Crown className="h-4 w-4" />;
-      case "Admin":
-        return <Shield className="h-4 w-4" />;
-      default:
-        return <User className="h-4 w-4" />;
-    }
-  };
-
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case "SuperAdmin":
-        return "destructive";
-      case "Admin":
-        return "default";
-      default:
-        return "secondary";
-    }
-  };
-
   useEffect(() => {
     fetchUsers();
-  }, [currentPage, fetchUsers]);
+  }, [currentPage, activeTab, fetchUsers]);
 
   useEffect(() => {
     if (success) {
@@ -239,16 +233,26 @@ export default function AdminUsersPage() {
           <div>
             <h1 className="text-3xl font-bold">User Management</h1>
             <p className="text-muted-foreground">
-              Manage platform users and their access
+              {activeTab === "individual"
+                ? "Manage individual user accounts"
+                : "Manage organisation accounts"}
             </p>
           </div>
-          {isSuperAdmin && (
-            <Button onClick={handleCreateUser} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Create User
-            </Button>
-          )}
         </div>
+
+        {/* Tabs for Individuals and Organisations */}
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="individual" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Individuals
+            </TabsTrigger>
+            <TabsTrigger value="organization" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Organisations
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
       {error && (
         <Alert variant="destructive">
@@ -303,15 +307,15 @@ export default function AdminUsersPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Users ({pagination.total})
+              {activeTab === "individual" ? "Individuals" : "Organisations"} ({pagination.total})
             </CardTitle>
           </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8">Loading users...</div>
+            <div className="text-center py-8">Loading {activeTab === "individual" ? "users" : "organisations"}...</div>
           ) : users.length === 0 ? (
             <div className="text-center py-8">
-              <p>No users found.</p>
+              <p>No {activeTab === "individual" ? "users" : "organisations"} found.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -321,28 +325,47 @@ export default function AdminUsersPage() {
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
                 >
                   <div className="flex items-center space-x-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium">
-                          {user.firstName} {user.lastName}
-                        </h3>
-                        <Badge 
-                          variant={getRoleBadgeVariant(user.role)}
-                          className="flex items-center gap-1"
-                        >
-                          {getRoleIcon(user.role)}
-                          {user.role}
-                        </Badge>
+                    <div className="flex-shrink-0">
+                      {activeTab === "individual" ? (
+                        <User className="h-10 w-10 text-gray-400" />
+                      ) : (
+                        <Building2 className="h-10 w-10 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {activeTab === "organization" && user.organization?.name ? (
+                          <h3 className="font-medium truncate">{user.organization.name}</h3>
+                        ) : (
+                          <h3 className="font-medium truncate">
+                            {user.firstName} {user.lastName}
+                          </h3>
+                        )}
                         <Badge variant={user.isActive ? "default" : "secondary"}>
                           {user.isActive ? "Active" : "Inactive"}
                         </Badge>
+                        {activeTab === "organization" && user.organization?.type && (
+                          <Badge variant="outline" className="capitalize">
+                            {user.organization.type}
+                          </Badge>
+                        )}
                       </div>
-                      <p className="text-sm text-muted-foreground">
+                      {activeTab === "organization" && user.organization?.name && (
+                        <p className="text-sm text-muted-foreground">
+                          Contact: {user.firstName} {user.lastName}
+                        </p>
+                      )}
+                      <p className="text-sm text-muted-foreground truncate">
                         {user.email}
                       </p>
                       {user.phone && (
                         <p className="text-sm text-muted-foreground">
                           {user.phone}
+                        </p>
+                      )}
+                      {activeTab === "organization" && user.organization?.registrationNumber && (
+                        <p className="text-xs text-muted-foreground">
+                          Reg: {user.organization.registrationNumber}
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground">
@@ -351,48 +374,43 @@ export default function AdminUsersPage() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleToggleStatus(user._id, user.isActive)}
+                      className="flex items-center gap-1"
+                    >
+                      {user.isActive ? (
+                        <>
+                          <UserX className="h-4 w-4" />
+                          Deactivate
+                        </>
+                      ) : (
+                        <>
+                          <UserCheck className="h-4 w-4" />
+                          Activate
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditUser(user._id)}
+                      className="flex items-center gap-1"
+                    >
+                      <Edit className="h-4 w-4" />
+                      Edit
+                    </Button>
                     {isSuperAdmin && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleToggleStatus(user._id, user.isActive)}
-                          className="flex items-center gap-1"
-                        >
-                          {user.isActive ? (
-                            <>
-                              <UserX className="h-4 w-4" />
-                              Deactivate
-                            </>
-                          ) : (
-                            <>
-                              <UserCheck className="h-4 w-4" />
-                              Activate
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditUser(user._id)}
-                          className="flex items-center gap-1"
-                        >
-                          <Edit className="h-4 w-4" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteClick(user)}
-                          className="flex items-center gap-1 text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          Delete
-                        </Button>
-                      </>
-                    )}
-                    {!isSuperAdmin && (
-                      <span className="text-sm text-muted-foreground">View Only</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteClick(user)}
+                        className="flex items-center gap-1 text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </Button>
                     )}
                   </div>
                 </div>
