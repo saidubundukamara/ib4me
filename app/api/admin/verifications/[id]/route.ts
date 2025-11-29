@@ -2,9 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { verificationService } from "@/services/VerificationService";
 import { validateAdminAuth, AdminAuthError } from "@/lib/admin-auth";
 import { IUser } from "@/models/User";
+import { IMediaAsset } from "@/models/MediaAsset";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
+}
+
+// Helper to transform a document (MediaAsset) for frontend
+function transformDocument(doc: unknown): { _id: string; url: string | null; type: string | null } | null {
+  if (!doc) return null;
+
+  // If it's just an ObjectId string, return minimal info
+  if (typeof doc === "string") {
+    return { _id: doc, url: null, type: null };
+  }
+
+  // If it's a populated MediaAsset document
+  const asset = doc as IMediaAsset;
+  if (asset._id) {
+    return {
+      _id: asset._id.toString(),
+      url: asset.url || null,
+      type: asset.type || null,
+    };
+  }
+
+  return null;
 }
 
 // Helper to transform verification data for frontend
@@ -17,8 +40,16 @@ function transformVerification(verification: {
   reviewedBy?: unknown;
   reviewedAt?: Date | null;
   rejectionReason?: string | null;
-  kycDocuments?: unknown;
-  kybDocuments?: unknown;
+  kycDocuments?: {
+    idDocument?: unknown;
+    addressProof?: unknown;
+  } | null;
+  kybDocuments?: {
+    registrationCertificate?: unknown;
+    representativeId?: unknown;
+    addressProof?: unknown;
+    taxCertificate?: unknown;
+  } | null;
   createdAt?: Date;
   updatedAt?: Date;
 }) {
@@ -37,8 +68,16 @@ function transformVerification(verification: {
     reviewedBy: verification.reviewedBy?.toString() || null,
     reviewedAt: verification.reviewedAt?.toISOString() || null,
     rejectionReason: verification.rejectionReason || null,
-    kycDocuments: verification.kycDocuments || null,
-    kybDocuments: verification.kybDocuments || null,
+    kycDocuments: verification.kycDocuments ? {
+      idDocument: transformDocument(verification.kycDocuments.idDocument),
+      addressProof: transformDocument(verification.kycDocuments.addressProof),
+    } : null,
+    kybDocuments: verification.kybDocuments ? {
+      registrationCertificate: transformDocument(verification.kybDocuments.registrationCertificate),
+      representativeId: transformDocument(verification.kybDocuments.representativeId),
+      addressProof: transformDocument(verification.kybDocuments.addressProof),
+      taxCertificate: transformDocument(verification.kybDocuments.taxCertificate),
+    } : null,
     createdAt: verification.createdAt?.toISOString() || "",
     updatedAt: verification.updatedAt?.toISOString() || "",
   };

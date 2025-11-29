@@ -70,6 +70,14 @@ export async function POST(req: NextRequest) {
         await handleCheckoutSessionFailed(webhookPayload);
         break;
 
+      case "checkout_session.cancelled":
+        await handleCheckoutSessionCancelled(webhookPayload);
+        break;
+
+      case "checkout_session.expired":
+        await handleCheckoutSessionExpired(webhookPayload);
+        break;
+
       case "payment.completed":
         await handlePaymentCompleted(webhookPayload);
         break;
@@ -238,6 +246,78 @@ async function handleCheckoutSessionFailed(payload: MonimeWebhookPayload) {
   }
 }
 
+async function handleCheckoutSessionCancelled(payload: MonimeWebhookPayload) {
+  const checkoutSessionData = payload.data as MonimeWebhookCheckoutSessionData;
+
+  // Check if this is a platform tip
+  if (checkoutSessionData?.metadata?.type === "platform_tip") {
+    const tipId = checkoutSessionData.metadata?.tipId;
+    if (typeof tipId === "string" && tipId) {
+      try {
+        await tipService.markFailed(tipId, "Checkout session cancelled by user");
+        console.log(`Marked tip ${tipId} as cancelled`);
+      } catch (error) {
+        console.error(`Error processing checkout session cancelled for tip ${tipId}:`, error);
+        throw error;
+      }
+    }
+    return;
+  }
+
+  // Handle as donation
+  if (!checkoutSessionData?.metadata?.donationId) {
+    console.error("No donationId found in checkout session metadata");
+    return;
+  }
+
+  const donationId = checkoutSessionData.metadata.donationId;
+
+  try {
+    console.log(`Processing checkout session cancelled for donation ${donationId}`);
+    await donationService.markFailed(donationId, "Checkout session cancelled by user");
+    console.log(`Marked donation ${donationId} as cancelled`);
+  } catch (error) {
+    console.error(`Error processing checkout session cancelled for donation ${donationId}:`, error);
+    throw error;
+  }
+}
+
+async function handleCheckoutSessionExpired(payload: MonimeWebhookPayload) {
+  const checkoutSessionData = payload.data as MonimeWebhookCheckoutSessionData;
+
+  // Check if this is a platform tip
+  if (checkoutSessionData?.metadata?.type === "platform_tip") {
+    const tipId = checkoutSessionData.metadata?.tipId;
+    if (typeof tipId === "string" && tipId) {
+      try {
+        await tipService.markFailed(tipId, "Checkout session expired");
+        console.log(`Marked tip ${tipId} as expired`);
+      } catch (error) {
+        console.error(`Error processing checkout session expired for tip ${tipId}:`, error);
+        throw error;
+      }
+    }
+    return;
+  }
+
+  // Handle as donation
+  if (!checkoutSessionData?.metadata?.donationId) {
+    console.error("No donationId found in checkout session metadata");
+    return;
+  }
+
+  const donationId = checkoutSessionData.metadata.donationId;
+
+  try {
+    console.log(`Processing checkout session expired for donation ${donationId}`);
+    await donationService.markFailed(donationId, "Checkout session expired");
+    console.log(`Marked donation ${donationId} as expired`);
+  } catch (error) {
+    console.error(`Error processing checkout session expired for donation ${donationId}:`, error);
+    throw error;
+  }
+}
+
 async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
   console.log("Handling payment completed event:", JSON.stringify(payload, null, 2));
 
@@ -366,7 +446,8 @@ async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
 
     // Step 5: Initiate internal transfer from platform to campaign
     const transferAmount = donation.amount.minor; // Transfer donation amount only, not fees
-    const idempotencyKey = `transfer_${donationId}_${Date.now()}`;
+    // Use deterministic idempotency key to prevent duplicate transfers
+    const idempotencyKey = `donation_transfer_${donationId}`;
 
     try {
       console.log(`[webhook] Initiating internal transfer of ${transferAmount} from platform to campaign for donation ${donationId}`);

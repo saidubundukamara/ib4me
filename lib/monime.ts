@@ -203,6 +203,8 @@ export interface MonimeWebhookEvent {
   name:
     | "checkout_session.completed"
     | "checkout_session.failed"
+    | "checkout_session.cancelled"
+    | "checkout_session.expired"
     | "payment.completed"
     | "payment.failed"
     | "payout.completed"

@@ -27,17 +27,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { ShieldCheck, ShieldAlert, Clock, CheckCircle, XCircle, Eye } from "lucide-react";
 import { toast } from "sonner";
 
-interface User {
-  _id: string;
-  name?: string;
-  email?: string;
-  phone?: string;
-  roles?: string;
-}
-
 interface Verification {
   _id: string;
-  userId: User;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userPhone: string;
   type: "kyc" | "kyb";
   status: "not_started" | "pending" | "under_review" | "approved" | "rejected";
   submittedAt?: string;
@@ -387,10 +382,10 @@ export default function AdminVerificationsPage() {
                       <div className="flex items-center space-x-4">
                         <div>
                           <div className="font-medium">
-                            {verification.userId?.name || "Unknown User"}
+                            {verification.userName || "Unknown User"}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {verification.userId?.email || verification.userId?.phone}
+                            {verification.userEmail || verification.userPhone}
                           </div>
                         </div>
 
