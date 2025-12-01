@@ -3,11 +3,19 @@ import { getToken } from "next-auth/jwt";
 import { connectDB } from "@/lib/db";
 import { authCodeService, userService } from "@/services";
 import type { IAuthCode } from "@/models/AuthCode";
+import { authRateLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   const token = await getToken({ req });
   if (!token?.userId)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Rate limiting: 5 verification attempts per 15 minutes per user
+  const rateLimitResponse = await checkRateLimit(
+    authRateLimiter,
+    `verify:${token.userId}`
+  );
+  if (rateLimitResponse) return rateLimitResponse;
 
   const body = await req.json().catch(() => null);
   if (!body)

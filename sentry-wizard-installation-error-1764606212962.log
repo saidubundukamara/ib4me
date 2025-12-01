@@ -1,0 +1,21 @@
+npm warn ERESOLVE overriding peer dependency
+npm warn While resolving: @sentry/node-core@10.27.0
+npm warn Found: @opentelemetry/instrumentation@undefined
+npm warn node_modules/@opentelemetry/instrumentation
+npm warn
+npm warn Could not resolve dependency:
+npm warn peer @opentelemetry/instrumentation@">=0.57.1 <1" from @sentry/node-core@10.27.0
+npm warn node_modules/@sentry/node-core
+npm warn   @sentry/node-core@"10.27.0" from @sentry/node@10.27.0
+npm warn   node_modules/@sentry/node
+npm error code EACCES
+npm error syscall open
+npm error path /Users/local_server/.npm/_cacache/index-v5/57/56/cc1fcd534e6c54b609c39628684a3348aae40eb37dcc8f344d664bc3b219
+npm error errno EACCES
+npm error
+npm error Your cache folder contains root-owned files, due to a bug in
+npm error previous versions of npm which has since been addressed.
+npm error
+npm error To permanently fix this problem, please run:
+npm error   sudo chown -R 506:20 "/Users/local_server/.npm"
+npm error A complete log of this run can be found in: /Users/local_server/.npm/_logs/2025-12-01T16_23_09_773Z-debug-0.log

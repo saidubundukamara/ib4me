@@ -1,0 +1,4 @@
+npm error code EADDRNOTAVAIL
+npm error errno EADDRNOTAVAIL
+npm error request to https://registry.npmjs.org/postgres-array/-/postgres-array-2.0.0.tgz failed, reason: 
+npm error A complete log of this run can be found in: /Users/local_server/.npm/_logs/2025-12-01T16_26_48_002Z-debug-0.log

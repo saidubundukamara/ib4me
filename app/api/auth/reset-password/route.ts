@@ -3,6 +3,11 @@ import { connectDB } from "@/lib/db";
 import bcrypt from "bcrypt";
 import { authCodeService, userService } from "@/services";
 import type { IAuthCode } from "@/models/AuthCode";
+import {
+  authRateLimiter,
+  getClientIp,
+  checkRateLimit,
+} from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -17,6 +22,14 @@ export async function POST(req: NextRequest) {
   if (!identifier || !code || !newPassword) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
+
+  // Rate limiting: 5 reset attempts per 15 minutes per IP + identifier
+  const ip = getClientIp(req);
+  const rateLimitResponse = await checkRateLimit(
+    authRateLimiter,
+    `reset-pwd:${ip}:${identifier.toLowerCase()}`
+  );
+  if (rateLimitResponse) return rateLimitResponse;
 
   await connectDB();
 

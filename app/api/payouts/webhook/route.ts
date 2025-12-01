@@ -115,10 +115,12 @@ export async function POST(req: NextRequest) {
 }
 
 async function handlePayoutCompleted(payload: MonimeWebhookPayload) {
-  console.log(
-    "Handling payout completed event:",
-    JSON.stringify(payload, null, 2)
-  );
+  // Log only non-sensitive event metadata
+  console.log("Handling payout completed event:", {
+    eventId: payload.event.id,
+    eventName: payload.event.name,
+    timestamp: new Date().toISOString(),
+  });
 
   const payout = payload.data as MonimePayoutResponse;
 
@@ -150,10 +152,12 @@ async function handlePayoutCompleted(payload: MonimeWebhookPayload) {
 }
 
 async function handlePayoutFailed(payload: MonimeWebhookPayload) {
-  console.log(
-    "Handling payout failed event:",
-    JSON.stringify(payload, null, 2)
-  );
+  // Log only non-sensitive event metadata
+  console.log("Handling payout failed event:", {
+    eventId: payload.event.id,
+    eventName: payload.event.name,
+    timestamp: new Date().toISOString(),
+  });
 
   const payout = payload.data as MonimePayoutResponse;
 

@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import UserModel from "@/models/User";
 import bcrypt from "bcrypt";
+import {
+  registrationRateLimiter,
+  getClientIp,
+  checkRateLimit,
+} from "@/lib/rate-limit";
 
 interface OrganizationData {
   name?: string;
@@ -20,6 +25,11 @@ interface RegisterBody {
 }
 
 export async function POST(req: NextRequest) {
+  // Rate limiting: 5 registrations per hour per IP
+  const ip = getClientIp(req);
+  const rateLimitResponse = await checkRateLimit(registrationRateLimiter, ip);
+  if (rateLimitResponse) return rateLimitResponse;
+
   const body = await req.json().catch(() => null);
   if (!body)
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });

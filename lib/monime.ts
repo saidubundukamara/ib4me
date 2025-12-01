@@ -333,19 +333,13 @@ export class MonimeService {
 
       if (!response.ok) {
         const error = responseData as MonimeError;
-        // Log the full error response for debugging (with full depth)
-        console.error(
-          "Monime API error response:",
-          JSON.stringify(
-            {
-              status: response.status,
-              statusText: response.statusText,
-              body: responseData,
-            },
-            null,
-            2
-          )
-        );
+        // Log only non-sensitive error metadata (avoid logging full response body)
+        console.error("Monime API error:", {
+          status: response.status,
+          statusText: response.statusText,
+          code: error.code || "UNKNOWN",
+          endpoint: endpoint.split("?")[0], // Log endpoint without query params
+        });
 
         // Try to extract error message from various possible response formats
         const errorMessage =

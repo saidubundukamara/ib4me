@@ -319,7 +319,12 @@ async function handleCheckoutSessionExpired(payload: MonimeWebhookPayload) {
 }
 
 async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
-  console.log("Handling payment completed event:", JSON.stringify(payload, null, 2));
+  // Log only non-sensitive event metadata
+  console.log("Handling payment completed event:", {
+    eventId: payload.event.id,
+    eventName: payload.event.name,
+    timestamp: new Date().toISOString(),
+  });
 
   const payment = payload.data as MonimePayment;
 
@@ -518,7 +523,12 @@ async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
 }
 
 async function handlePaymentFailed(payload: MonimeWebhookPayload) {
-  console.log("Handling payment failed event:", JSON.stringify(payload, null, 2));
+  // Log only non-sensitive event metadata
+  console.log("Handling payment failed event:", {
+    eventId: payload.event.id,
+    eventName: payload.event.name,
+    timestamp: new Date().toISOString(),
+  });
 
   const payment = payload.data as MonimePayment;
 
