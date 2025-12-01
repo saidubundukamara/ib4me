@@ -21,7 +21,6 @@ async function handleSuccessRedirect(req: NextRequest) {
 
   const baseUrl = process.env.APP_BASE_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
 
-  console.log("1" )
 
   // Build redirect URL helper
   const redirectToUI = (params: Record<string, string>) => {
@@ -49,8 +48,6 @@ async function handleSuccessRedirect(req: NextRequest) {
       return redirectToUI({ status: "error", message: "not_found" });
     }
 
-    console.log("2", donation)
-
     // 2. If already succeeded, just redirect to success
     if (donation.status === "succeeded") {
       console.log("[api/donations/success] Donation already succeeded:", donationId);
@@ -63,8 +60,6 @@ async function handleSuccessRedirect(req: NextRequest) {
       console.error("[api/donations/success] No checkout session ID:", donationId);
       return redirectToUI({ donation_id: donationId, status: "pending" });
     }
-
-    console.log("3", checkoutSessionId)
 
     // 4. Verify checkout session with Monime
     const session = await monimeService.getCheckoutSession(checkoutSessionId);
@@ -86,8 +81,6 @@ async function handleSuccessRedirect(req: NextRequest) {
       });
     }
 
-    console.log("4", session.result.metadata)
-
     // 6. Get campaign financial account from metadata
     const campaignFinancialAccountId = session.result.metadata?.campaignFinancialAccountId;
     if (!campaignFinancialAccountId) {
@@ -101,8 +94,6 @@ async function handleSuccessRedirect(req: NextRequest) {
       console.error("[api/donations/success] Platform account not configured:", donationId);
       return redirectToUI({ donation_id: donationId, status: "error", message: "platform_error" });
     }
-
-    console.log("5", campaignFinancialAccountId)
 
     // 8. Initiate internal transfer with deterministic idempotency key
     const idempotencyKey = `donation_transfer_${donationId}`;

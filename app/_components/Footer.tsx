@@ -9,6 +9,11 @@ import { Button } from "@/components/ui/button";
 import { useCookieConsent } from "@/components/cookie-consent";
 import { useSettings } from "@/lib/settings-provider";
 
+// Helper to validate URL - checks for valid non-empty string that isn't "null"
+const isValidUrl = (url: unknown): url is string => {
+  return typeof url === 'string' && url.length > 0 && url !== 'null' && url !== 'undefined';
+};
+
 interface MenuItem {
     title: string;
     links: {
@@ -89,28 +94,28 @@ const Footer = ({
                                 A trusted platform connecting communities to support those in need of life-changing healthcare.
                             </p>
                             <div className="flex gap-3">
-                                {social.facebook && (
+                                {isValidUrl(social.facebook) && (
                                     <Link href={social.facebook} target="_blank" rel="noopener noreferrer">
                                         <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
                                             <Facebook className="w-5 h-5" />
                                         </Button>
                                     </Link>
                                 )}
-                                {social.twitter && (
+                                {isValidUrl(social.twitter) && (
                                     <Link href={social.twitter} target="_blank" rel="noopener noreferrer">
                                         <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
                                             <X className="w-5 h-5" />
                                         </Button>
                                     </Link>
                                 )}
-                                {social.instagram && (
+                                {isValidUrl(social.instagram) && (
                                     <Link href={social.instagram} target="_blank" rel="noopener noreferrer">
                                         <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
                                             <Instagram className="w-5 h-5" />
                                         </Button>
                                     </Link>
                                 )}
-                                {social.linkedin && (
+                                {isValidUrl(social.linkedin) && (
                                     <Link href={social.linkedin} target="_blank" rel="noopener noreferrer">
                                         <Button variant="ghost" size="icon" className="rounded-full hover:bg-blaze-orange hover:text-white">
                                             <Linkedin className="w-5 h-5" />
