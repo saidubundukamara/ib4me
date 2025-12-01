@@ -178,8 +178,29 @@ export interface MonimeInternalTransferRequest {
   metadata?: Record<string, unknown>;
 }
 
+export interface MonimeInternalTransferResult {
+  id: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  amount: {
+    currency: string;
+    value: number;
+  };
+  sourceFinancialAccount: {
+    id: string;
+  };
+  destinationFinancialAccount: {
+    id: string;
+  };
+  description?: string;
+  createdAt: string;
+  completedAt?: string;
+  failureReason?: string;
+  failureDetails?: string;
+  metadata?: Record<string, unknown>;
+}
+
 export interface MonimeInternalTransferResponse {
-  result: any;
+  result: MonimeInternalTransferResult;
   id: string;
   status: "pending" | "processing" | "completed" | "failed";
   amount: {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
-import { authConfig } from "@/app/api/auth/[...nextauth]/route";
+import { authConfig } from "@/lib/auth-config";
 import { connectDB } from "@/lib/db";
 import CampaignModel from "@/models/Campaign";
 import MediaAssetModel from "@/models/MediaAsset";

@@ -26,7 +26,6 @@ import {
   Phone,
   ShieldCheck,
   UserRound,
-  Wallet,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -91,7 +90,6 @@ export default function UserSettingsPage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [addressLoading, setAddressLoading] = useState(false);
-  const [payoutsLoading, setPayoutsLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
 
   const [whatsappOptIn, setWhatsappOptIn] = useState(false);
@@ -292,47 +290,7 @@ export default function UserSettingsPage() {
     }
   }
 
-  async function updatePayouts(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (payoutsLoading) return;
 
-    setPayoutsLoading(true);
-    const formData = new FormData(event.currentTarget);
-
-    try {
-      const res = await fetch("/api/user/payouts", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          mobileMoney: {
-            provider: formData.get("mm_provider"),
-            msisdn: formData.get("mm_msisdn"),
-            accountName: formData.get("mm_name"),
-          },
-          bank: {
-            bankName: formData.get("bank_name"),
-            accountNumber: formData.get("bank_number"),
-            accountName: formData.get("bank_acc_name"),
-          },
-        }),
-      });
-
-      const payoutPayload = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        toast.error(payoutPayload.error || "Failed to update payout details.");
-      } else {
-        setUser(payoutPayload as User);
-        toast.success("Payout details saved.");
-      }
-    } catch {
-      toast.error("Network error updating payout details.");
-    } finally {
-      setPayoutsLoading(false);
-    }
-  }
 
   async function updatePassword(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

@@ -60,7 +60,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
 
   // Check if current user can edit (Admin or SuperAdmin)
   const canEdit = currentUser?.role === "SuperAdmin" || currentUser?.role === "Admin";
-  const isSuperAdmin = currentUser?.role === "SuperAdmin";
   const isOrganization = user?.role === "Organization";
   const { id: userId } = React.use(params);
 

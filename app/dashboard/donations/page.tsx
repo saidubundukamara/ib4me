@@ -1,7 +1,7 @@
 ﻿import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import type { Session } from "next-auth";
-import { authConfig } from "@/app/api/auth/[...nextauth]/route";
+import { authConfig } from "@/lib/auth-config";
 import { connectDB } from "@/lib/db";
 import { donationRepository } from "@/repositories/DonationRepository";
 import { campaignRepository } from "@/repositories/CampaignRepository";

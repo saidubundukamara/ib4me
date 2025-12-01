@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import type { Session } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { authConfig } from "@/app/api/auth/[...nextauth]/route";
+import { authConfig } from "@/lib/auth-config";
 import { testimonialService } from "@/services/TestimonialService";
 
 type RouteParams = {

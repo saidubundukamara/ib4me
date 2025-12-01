@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,11 +66,14 @@ interface Payout {
 }
 
 type PageParams = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 export default function AdminCampaignDetailPage({ params }: PageParams) {
   const router = useRouter();
+  const resolvedParams = React.use(params);
+  const id = resolvedParams.id;
+  
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [donations, setDonations] = useState<Donation[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
@@ -86,16 +89,6 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
     value: string;
     reason: string;
   } | null>(null);
-
-  const [id, setId] = useState<string>("");
-
-  useEffect(() => {
-    const getId = async () => {
-      const resolvedParams = await params;
-      setId(resolvedParams.id);
-    };
-    getId();
-  }, [params]);
 
   // Fetch campaign details
   const fetchCampaignDetails = useCallback(async () => {
