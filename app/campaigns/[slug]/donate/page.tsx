@@ -6,7 +6,7 @@ import { userRepository } from "@/repositories";
 import DonateClient from "./DonateClient";
 
 type PageParams = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
 export default async function CampaignDonatePage({ params }: PageParams) {

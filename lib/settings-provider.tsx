@@ -161,6 +161,27 @@ const defaultSocialSettings: SocialSettings = {
   twitter: "https://x.com/ib4mesl?s=11",
   linkedin: "https://www.linkedin.com/company/ib4me/",
 };
+
+// Sanitize social settings to convert null/"null" values to undefined
+const sanitizeSocialSettings = (settings: SocialSettings | null | undefined): SocialSettings => {
+  if (!settings) return defaultSocialSettings;
+
+  const isValidUrl = (url: unknown): string | undefined => {
+    if (typeof url === 'string' && url.length > 0 && url !== 'null' && url !== 'undefined') {
+      return url;
+    }
+    return undefined;
+  };
+
+  return {
+    facebook: isValidUrl(settings.facebook),
+    twitter: isValidUrl(settings.twitter),
+    instagram: isValidUrl(settings.instagram),
+    linkedin: isValidUrl(settings.linkedin),
+    whatsapp: isValidUrl(settings.whatsapp),
+  };
+};
+
 const defaultSeoSettings: SeoSettings = {};
 const defaultFeeSettings: FeeSettings = {
   baseFeeMinor: 50,
@@ -242,7 +263,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
       if (socialRes.ok) {
         const socialData = await socialRes.json();
-        setSocial(socialData.settings || defaultSocialSettings);
+        setSocial(sanitizeSocialSettings(socialData.settings));
       }
 
       if (seoRes.ok) {

@@ -97,7 +97,6 @@ export default function DonateClient({
 
   const baseFeePercent = (BASE_FEE_BPS / 100).toFixed(1);
   const processingFeePercent = (processingFeeBps / 100).toFixed(1);
-  const totalFeePercent = ((BASE_FEE_BPS + processingFeeBps) / 100).toFixed(1);
 
   const donateLabel = amount > 0 ? `Donate ${formatAmount(amount, currency)}` : "Enter amount";
 

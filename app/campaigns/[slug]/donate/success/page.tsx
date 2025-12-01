@@ -50,13 +50,15 @@ export default function DonationSuccessPage({ params, searchParams }: PageProps)
     <Suspense
       fallback={
         <div className="container mx-auto max-w-2xl px-4 py-8">
-          <div className="text-center space-y-6">
-            <div className="mx-auto h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-gray-600" />
-            </div>
-            <div className="space-y-3">
-              <div className="h-8 bg-gray-200 rounded w-3/4 mx-auto animate-pulse" />
-              <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto animate-pulse" />
+          <div className="rounded-3xl border border-border/40 bg-card/80 shadow-2xl backdrop-blur p-8">
+            <div className="text-center space-y-6">
+              <div className="mx-auto h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-border border-t-muted-foreground" />
+              </div>
+              <div className="space-y-3">
+                <div className="h-8 bg-muted rounded-xl w-3/4 mx-auto animate-pulse" />
+                <div className="h-4 bg-muted/60 rounded-xl w-1/2 mx-auto animate-pulse" />
+              </div>
             </div>
           </div>
         </div>
