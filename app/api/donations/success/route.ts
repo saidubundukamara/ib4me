@@ -21,6 +21,8 @@ async function handleSuccessRedirect(req: NextRequest) {
 
   const baseUrl = process.env.APP_BASE_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
 
+  console.log("1" )
+
   // Build redirect URL helper
   const redirectToUI = (params: Record<string, string>) => {
     const searchParams = new URLSearchParams(params);
@@ -47,6 +49,8 @@ async function handleSuccessRedirect(req: NextRequest) {
       return redirectToUI({ status: "error", message: "not_found" });
     }
 
+    console.log("2", donation)
+
     // 2. If already succeeded, just redirect to success
     if (donation.status === "succeeded") {
       console.log("[api/donations/success] Donation already succeeded:", donationId);
@@ -59,6 +63,8 @@ async function handleSuccessRedirect(req: NextRequest) {
       console.error("[api/donations/success] No checkout session ID:", donationId);
       return redirectToUI({ donation_id: donationId, status: "pending" });
     }
+
+    console.log("3", checkoutSessionId)
 
     // 4. Verify checkout session with Monime
     const session = await monimeService.getCheckoutSession(checkoutSessionId);
@@ -80,6 +86,8 @@ async function handleSuccessRedirect(req: NextRequest) {
       });
     }
 
+    console.log("4", session.result.metadata)
+
     // 6. Get campaign financial account from metadata
     const campaignFinancialAccountId = session.result.metadata?.campaignFinancialAccountId;
     if (!campaignFinancialAccountId) {
@@ -93,6 +101,8 @@ async function handleSuccessRedirect(req: NextRequest) {
       console.error("[api/donations/success] Platform account not configured:", donationId);
       return redirectToUI({ donation_id: donationId, status: "error", message: "platform_error" });
     }
+
+    console.log("5", campaignFinancialAccountId)
 
     // 8. Initiate internal transfer with deterministic idempotency key
     const idempotencyKey = `donation_transfer_${donationId}`;
@@ -140,28 +150,29 @@ async function handleSuccessRedirect(req: NextRequest) {
       for (let i = 0; i < maxAttempts && (transferStatus === "processing" || transferStatus === "pending"); i++) {
         await new Promise(resolve => setTimeout(resolve, pollInterval));
         transferResult = await monimeService.getInternalTransfer(transfer.id);
-        transferStatus = transferResult.status;
+        console.log("6", transferResult)
+        transferStatus = transferResult.result.status;
         console.log(`[api/donations/success] Transfer poll ${i + 1}/${maxAttempts}: ${transferStatus}`);
       }
 
       // 10. Update donation based on final transfer result
-      if (transferResult.status === "completed") {
-        await donationService.completeWithTransfer(donationId, transferResult.id);
+      if (transferResult.result.status === "completed") {
+        await donationService.completeWithTransfer(donationId, transferResult.result.id);
         console.log("[api/donations/success] Donation completed:", donationId);
         return redirectToUI({ donation_id: donationId, status: "succeeded" });
-      } else if (transferResult.status === "failed") {
+      } else if (transferResult.result.status === "failed") {
         await donationService.updateTransferStatus(donationId, {
-          id: transferResult.id,
+          id: transferResult.result.id,
           status: "failed",
-          failureReason: transferResult.failureReason || "Transfer failed",
+          failureReason: transferResult.result.failureDetails || "Transfer failed",
           initiatedAt: new Date(),
         });
-        console.error("[api/donations/success] Transfer failed:", donationId, transferResult.failureReason);
+        console.error("[api/donations/success] Transfer failed:", donationId, transferResult.result.failureDetails);
         return redirectToUI({ donation_id: donationId, status: "error", message: "transfer_failed" });
       } else {
         // Transfer still processing after max attempts - client polling will continue
         await donationService.updateTransferStatus(donationId, {
-          id: transferResult.id,
+          id: transferResult.result.id,
           status: "pending",
           initiatedAt: new Date(),
         });

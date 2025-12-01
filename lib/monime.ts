@@ -179,6 +179,7 @@ export interface MonimeInternalTransferRequest {
 }
 
 export interface MonimeInternalTransferResponse {
+  result: any;
   id: string;
   status: "pending" | "processing" | "completed" | "failed";
   amount: {
