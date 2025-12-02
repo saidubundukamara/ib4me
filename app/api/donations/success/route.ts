@@ -25,7 +25,7 @@ async function handleSuccessRedirect(req: NextRequest) {
   // Build redirect URL helper
   const redirectToUI = (params: Record<string, string>) => {
     const searchParams = new URLSearchParams(params);
-    return NextResponse.redirect(`${baseUrl}/campaigns/${campaignSlug}/donate/success?${searchParams.toString()}`);
+    return NextResponse.redirect(`${baseUrl}/campaigns/${campaignSlug}/donate/success?${searchParams.toString()}`, { status: 302 });
   };
 
   // Validate required params

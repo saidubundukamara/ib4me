@@ -62,10 +62,10 @@ async function handleCancelRedirect(req: NextRequest) {
       });
     }
 
-    return redirectToUI(campaignSlug, { donation_id: donationId });
+    return redirectToUI(campaignSlug, { donation_id: donationId, status: "302" });
   } catch (error) {
     console.error("[api/donations/cancel] Error:", error);
-    return redirectToUI(campaignSlug);
+    return redirectToUI(campaignSlug, { status: "302" });
   }
 }
 
