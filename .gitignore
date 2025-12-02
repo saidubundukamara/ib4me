@@ -47,3 +47,5 @@ next-env.d.ts
 # project legacy UI
 old_ui/
 CLAUDE.md
+# Sentry Config File
+.env.sentry-build-plugin
