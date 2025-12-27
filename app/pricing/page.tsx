@@ -8,15 +8,19 @@ import Link from "next/link";
 import { Calculator, CheckCircle, Building2, User } from "lucide-react";
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { useSettings } from "@/lib/settings-provider";
 
 const Pricing = () => {
     const [donationAmount, setDonationAmount] = useState(100);
     const [campaignType, setCampaignType] = useState<"individual" | "organization">("individual");
 
-    // Fee constants (in basis points)
-    const BASE_FEE_BPS = 100; // Monime's 1%
-    const PLATFORM_FEE_INDIVIDUAL_BPS = 260; // 2.6%
-    const PLATFORM_FEE_ORGANIZATION_BPS = 200; // 2.0%
+    // Get fee settings from context (fetched from API)
+    const { fees, loading } = useSettings();
+
+    // Fee constants (in basis points) - use API values with fallbacks
+    const BASE_FEE_BPS = 100; // Monime's 1% - always fixed
+    const PLATFORM_FEE_INDIVIDUAL_BPS = fees?.processingFee?.individualBps ?? 260;
+    const PLATFORM_FEE_ORGANIZATION_BPS = fees?.processingFee?.organizationBps ?? 200;
 
     const amount = Math.max(0, Number(donationAmount) || 0);
 

@@ -31,6 +31,7 @@ export default function FeatureSettings() {
     whatsAppAutoPost: features.whatsAppAutoPost ?? false,
     paypalEnabled: features.paypalEnabled ?? false,
     emergencyPoolFund: features.emergencyPoolFund ?? false,
+    donorFeeChoiceEnabled: features.donorFeeChoiceEnabled ?? false,
   });
 
   const [withdrawalBlockData, setWithdrawalBlockData] = useState({
@@ -106,6 +107,7 @@ export default function FeatureSettings() {
       whatsAppAutoPost: features.whatsAppAutoPost ?? false,
       paypalEnabled: features.paypalEnabled ?? false,
       emergencyPoolFund: features.emergencyPoolFund ?? false,
+      donorFeeChoiceEnabled: features.donorFeeChoiceEnabled ?? false,
     });
     setHasChanges(false);
   };
@@ -449,6 +451,20 @@ export default function FeatureSettings() {
             <Switch
               checked={formData.emergencyPoolFund}
               onCheckedChange={(checked) => handleChange("emergencyPoolFund", checked)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label className="font-medium">Donor Fee Choice</Label>
+              <p className="text-sm text-muted-foreground">
+                Allow donors to choose whether to cover transaction fees. When disabled,
+                fees are always deducted from the donation amount.
+              </p>
+            </div>
+            <Switch
+              checked={formData.donorFeeChoiceEnabled}
+              onCheckedChange={(checked) => handleChange("donorFeeChoiceEnabled", checked)}
             />
           </div>
         </div>

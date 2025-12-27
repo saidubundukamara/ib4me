@@ -15,6 +15,7 @@ const createDonationSchema = z.object({
   isAnonymous: z.boolean().default(false),
   message: z.string().optional(),
   paymentMethods: z.array(z.string()).optional(), // ['mobile_money', 'card']
+  donorCoversFee: z.boolean().optional(), // Whether donor wants to cover the fee
 });
 
 export async function POST(req: NextRequest) {
@@ -79,14 +80,23 @@ export async function POST(req: NextRequest) {
     const campaignId = String(campaign._id);
     const campaignType = await campaignService.getCampaignType(campaignId);
 
-    // Calculate fees (fees are added ON TOP of donation)
+    // Determine fee choice based on feature flag and user preference
+    // If feature is disabled, always use donor covers fee (current behavior preserved)
+    // If feature is enabled and user didn't specify, default to NOT covering fee (fees from donation)
+    const donorFeeChoiceEnabled = await settingService.isDonorFeeChoiceEnabled();
+    const donorCoversFee = donorFeeChoiceEnabled
+      ? (validatedData.donorCoversFee ?? false) // If feature enabled, use submitted value (default false)
+      : true; // If feature disabled, always donor covers fee (backward compat)
+
+    // Calculate fees based on fee choice
     const calculatedFees = settingService.calculateDonationFees(
       donationAmountMinor,
       campaignType,
-      feeSettings
+      feeSettings,
+      donorCoversFee
     );
 
-    // Total amount to charge donor = donation + fees
+    // Total amount to charge donor depends on fee choice
     const totalChargedMinor = calculatedFees.totalChargedMinor;
 
     // Generate unique reference for this donation
@@ -99,8 +109,10 @@ export async function POST(req: NextRequest) {
       donorSnapshot: validatedData.donor || null,
       isAnonymous: validatedData.isAnonymous,
       message: validatedData.message || null,
-      amountMinor: donationAmountMinor,        // What campaign receives
-      totalChargedMinor,                        // What donor pays
+      amountMinor: donationAmountMinor,                           // What donor entered
+      totalChargedMinor,                                           // What donor pays
+      campaignReceivesMinor: calculatedFees.campaignReceivesMinor, // What campaign gets
+      donorCoversFee,                                              // Whether donor covers fee
       currency: validatedData.currency,
       provider: {
         name: "MONIME",
@@ -189,6 +201,7 @@ export async function POST(req: NextRequest) {
         // Fee breakdown for display
         fees: {
           donationAmount: fromMinorUnits(donationAmountMinor, validatedData.currency),
+          campaignReceives: fromMinorUnits(calculatedFees.campaignReceivesMinor, validatedData.currency),
           baseFee: fromMinorUnits(calculatedFees.baseFeeMinor, validatedData.currency),
           processingFee: fromMinorUnits(calculatedFees.processingFeeMinor, validatedData.currency),
           processingFeeRate: calculatedFees.processingFeeBps / 100, // As percentage
@@ -196,6 +209,7 @@ export async function POST(req: NextRequest) {
           totalCharged: fromMinorUnits(totalChargedMinor, validatedData.currency),
           currency: validatedData.currency,
           campaignType: calculatedFees.campaignType,
+          donorCoversFee,
         }
       }
     });

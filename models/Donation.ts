@@ -45,8 +45,10 @@ export interface IDonation extends mongoose.Document {
   donorSnapshot?: { name?: string; email?: string } | null;
   isAnonymous: boolean;
   message?: string | null;
-  amount: IDonationAmount;                    // Donation amount (what campaign receives)
-  totalChargedMinor?: number | null;          // Total charged to donor (amount + fees)
+  amount: IDonationAmount;                    // Donation amount (what donor entered)
+  totalChargedMinor?: number | null;          // Total charged to donor
+  campaignReceivesMinor?: number | null;      // What campaign actually receives after fees
+  donorCoversFee?: boolean;                   // Whether donor chose to cover fees
   fx?: IDonationFx | null;
   provider: IDonationProvider;
   status: "pending" | "payment_received" | "succeeded" | "failed" | "refunded";
@@ -127,6 +129,8 @@ const donationSchema = new mongoose.Schema<IDonation>(
       platformFeeMinor: { type: Number, default: 0 },
     },
     totalChargedMinor: { type: Number, default: null },
+    campaignReceivesMinor: { type: Number, default: null },
+    donorCoversFee: { type: Boolean, default: false },
     netAmountMinor: { type: Number, default: null },
     receiptUrl: { type: String, default: null },
     notifiedAt: { type: Date, default: null },

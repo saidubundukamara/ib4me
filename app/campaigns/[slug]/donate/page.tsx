@@ -33,6 +33,9 @@ export default async function CampaignDonatePage({ params }: PageParams) {
     ? feeSettings.processingFee.organizationBps
     : feeSettings.processingFee.individualBps;
 
+  // Get feature settings to check if donor fee choice is enabled
+  const donorFeeChoiceEnabled = await settingService.isDonorFeeChoiceEnabled();
+
   // Collect asset IDs: patient photo (priority) and first document image (fallback)
   const assetIds: mongoose.Types.ObjectId[] = [];
   if (campaign.patient?.photoAssetId) {
@@ -103,6 +106,7 @@ export default async function CampaignDonatePage({ params }: PageParams) {
         imageUrl={imageUrl}
         processingFeeBps={processingFeeBps}
         isVerified={isVerified}
+        donorFeeChoiceEnabled={donorFeeChoiceEnabled}
       />
     </main>
   );

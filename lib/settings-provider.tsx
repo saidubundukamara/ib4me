@@ -42,6 +42,7 @@ interface FeatureSettings {
   whatsAppAutoPost?: boolean;
   paypalEnabled?: boolean;
   emergencyPoolFund?: boolean;
+  donorFeeChoiceEnabled?: boolean;
 }
 
 interface ContactSettings {
@@ -153,6 +154,7 @@ const defaultFeatureSettings: FeatureSettings = {
   minimumWithdrawalPercent: 10,
   allowEmergencyOverride: true,
   withdrawalsBlocked: false,
+  donorFeeChoiceEnabled: false,
 };
 
 const defaultSocialSettings: SocialSettings = {
