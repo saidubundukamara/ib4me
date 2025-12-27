@@ -30,6 +30,7 @@ export type DonateClientProps = {
   imageUrl: string;
   processingFeeBps?: number; // Processing fee in basis points (e.g., 260 = 2.6%)
   isVerified?: boolean; // Whether campaign content is admin-verified
+  donorFeeChoiceEnabled?: boolean; // Whether donor can choose to cover fees
 };
 
 function formatAmount(amount: number, currency: string = "SLE") {
@@ -54,6 +55,7 @@ export default function DonateClient({
   imageUrl,
   processingFeeBps = 260, // Default 2.6%
   isVerified = false,
+  donorFeeChoiceEnabled = false,
 }: DonateClientProps) {
   const [selectedPreset, setSelectedPreset] = useState<number | "custom">(PRESET_AMOUNTS[1]);
   const [customAmount, setCustomAmount] = useState("");
@@ -63,6 +65,7 @@ export default function DonateClient({
   const [email, setEmail] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState("");
+  const [coverFee, setCoverFee] = useState(false); // Default: fees from donation
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,9 +94,24 @@ export default function DonateClient({
   // Total fees = base fee + processing fee
   const totalFee = baseFee + processingFee;
 
+  // Calculate amounts based on fee choice
+  const campaignReceives = useMemo(() => {
+    if (coverFee || !donorFeeChoiceEnabled) {
+      // Donor covers fee OR feature disabled: campaign gets full amount
+      return amount;
+    }
+    // Fees from donation: campaign gets amount minus fees
+    return Math.max(0, amount - totalFee);
+  }, [amount, totalFee, coverFee, donorFeeChoiceEnabled]);
+
   const totalCharged = useMemo(() => {
-    return amount + totalFee;
-  }, [amount, totalFee]);
+    if (coverFee || !donorFeeChoiceEnabled) {
+      // Donor covers fee OR feature disabled: donor pays amount + fees
+      return amount + totalFee;
+    }
+    // Fees from donation: donor pays just the amount
+    return amount;
+  }, [amount, totalFee, coverFee, donorFeeChoiceEnabled]);
 
   const baseFeePercent = (BASE_FEE_BPS / 100).toFixed(1);
   const processingFeePercent = (processingFeeBps / 100).toFixed(1);
@@ -133,6 +151,7 @@ export default function DonateClient({
             },
         isAnonymous: anonymous,
         message: message.trim() || undefined,
+        donorCoversFee: donorFeeChoiceEnabled ? coverFee : undefined,
       };
 
       const response = await fetch("/api/donations/create", {
@@ -328,6 +347,32 @@ export default function DonateClient({
                 </div>
               </section>
 
+              {donorFeeChoiceEnabled && (
+                <>
+                  <Separator />
+                  <section className="space-y-2">
+                    <div className="flex items-center justify-between rounded-2xl border border-border/50 bg-muted/30 px-4 py-3">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          Cover the transaction fee
+                        </p>
+                        <p className="text-xs text-blaze-orange">
+                          {coverFee
+                            ? `Your generosity means ${formatAmount(amount, currency)} goes directly to this campaign.`
+                            : `The campaign will receive ${formatAmount(campaignReceives, currency)} after fees.`
+                          }
+                        </p>
+                      </div>
+                      <Switch
+                        checked={coverFee}
+                        onCheckedChange={setCoverFee}
+                        aria-label="Toggle cover transaction fee"
+                      />
+                    </div>
+                  </section>
+                </>
+              )}
+
               <Separator />
 
               <section className="space-y-2">
@@ -429,8 +474,21 @@ export default function DonateClient({
                     {formatAmount(processingFee, currency)}
                   </span>
                 </div>
+                {donorFeeChoiceEnabled && !coverFee && (
+                  <div className="flex items-center justify-between text-amber-600 dark:text-amber-400">
+                    <span>Fee from donation</span>
+                    <span className="font-medium">-{formatAmount(totalFee, currency)}</span>
+                  </div>
+                )}
+                <Separator className="my-1" />
+                <div className="flex items-center justify-between">
+                  <span>Campaign receives</span>
+                  <span className="font-medium text-foreground">
+                    {formatAmount(campaignReceives, currency)}
+                  </span>
+                </div>
                 <div className="flex items-center justify-between border-t border-border/40 pt-2">
-                  <span className="font-semibold text-foreground">Total</span>
+                  <span className="font-semibold text-foreground">You pay</span>
                   <span className="font-semibold text-foreground">
                     {formatAmount(totalCharged, currency)}
                   </span>
@@ -439,7 +497,12 @@ export default function DonateClient({
 
               <div className="flex items-start gap-3 rounded-2xl bg-primary/10 p-4 text-xs text-primary">
                 <Lock className="mt-0.5 h-4 w-4" />
-                <p>100% of your {formatAmount(amount, currency)} donation goes directly to this campaign.</p>
+                <p>
+                  {coverFee || !donorFeeChoiceEnabled
+                    ? `100% of your ${formatAmount(amount, currency)} donation goes directly to this campaign.`
+                    : `${formatAmount(campaignReceives, currency)} of your donation goes to this campaign after fees.`
+                  }
+                </p>
               </div>
             </CardContent>
           </Card>

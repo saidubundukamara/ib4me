@@ -43,6 +43,7 @@ interface FeatureSettings {
   whatsAppAutoPost?: boolean;
   paypalEnabled?: boolean;
   emergencyPoolFund?: boolean;
+  donorFeeChoiceEnabled?: boolean;
 }
 
 interface WithdrawalSettings {
@@ -108,6 +109,8 @@ export interface CalculatedFees {
   campaignType: CampaignType;
   totalFeeMinor: number;
   totalChargedMinor: number;
+  campaignReceivesMinor: number;
+  donorCoversFee: boolean;
 }
 
 export interface PlatformAccountSettings {
@@ -323,7 +326,8 @@ export class SettingService {
       blockedAt: withdrawal.blockedAt?.toISOString(),
       whatsAppAutoPost: features.whatsAppAutoPost || false,
       paypalEnabled: features.paypalEnabled || false,
-      emergencyPoolFund: features.emergencyPoolFund || false
+      emergencyPoolFund: features.emergencyPoolFund || false,
+      donorFeeChoiceEnabled: features.donorFeeChoiceEnabled || false
     };
   }
 
@@ -352,6 +356,7 @@ export class SettingService {
     if (updates.whatsAppAutoPost !== undefined) featureUpdates.whatsAppAutoPost = updates.whatsAppAutoPost;
     if (updates.paypalEnabled !== undefined) featureUpdates.paypalEnabled = updates.paypalEnabled;
     if (updates.emergencyPoolFund !== undefined) featureUpdates.emergencyPoolFund = updates.emergencyPoolFund;
+    if (updates.donorFeeChoiceEnabled !== undefined) featureUpdates.donorFeeChoiceEnabled = updates.donorFeeChoiceEnabled;
 
     const withdrawalUpdates: Partial<IWithdrawalSetting> = {};
     if (updates.thresholdEnabled !== undefined) withdrawalUpdates.thresholdEnabled = updates.thresholdEnabled;
@@ -519,17 +524,29 @@ export class SettingService {
   }
 
   /**
-   * Calculate fees for a donation based on campaign type
-   * Fees are added ON TOP of the donation amount
+   * Check if the donor fee choice feature is enabled
+   */
+  async isDonorFeeChoiceEnabled(): Promise<boolean> {
+    const settings = await this.getOrCreatePlatform();
+    return settings.features?.donorFeeChoiceEnabled ?? false;
+  }
+
+  /**
+   * Calculate fees for a donation based on campaign type and donor's fee choice
    *
    * Fee structure:
-   * - Base fee: 1% (100 bps) - Monime payment processor fee (charged to donor, deducted by Monime)
+   * - Base fee: 1% (100 bps) - Monime payment processor fee
    * - Processing fee: 2.6% (individual) / 2.0% (organization) - Platform fee
+   *
+   * Fee modes:
+   * - donorCoversFee = true: Donor pays donation + fees, campaign receives full donation
+   * - donorCoversFee = false: Fees deducted from donation, campaign receives donation - fees
    */
   calculateDonationFees(
     donationAmountMinor: number,
     campaignType: CampaignType,
-    feeSettings: FeeSettings
+    feeSettings: FeeSettings,
+    donorCoversFee: boolean = true
   ): CalculatedFees {
     // Base fee is Monime's 1% (100 bps) - always percentage-based
     const BASE_FEE_BPS = 100; // 1%
@@ -542,7 +559,20 @@ export class SettingService {
     // Calculate processing fee: amount * (bps / 10000)
     const processingFeeMinor = Math.round(donationAmountMinor * processingFeeBps / 10000);
     const totalFeeMinor = baseFeeMinor + processingFeeMinor;
-    const totalChargedMinor = donationAmountMinor + totalFeeMinor;
+
+    // Calculate amounts based on fee choice
+    let totalChargedMinor: number;
+    let campaignReceivesMinor: number;
+
+    if (donorCoversFee) {
+      // Donor covers fee: charge donation + fees, campaign gets full donation
+      totalChargedMinor = donationAmountMinor + totalFeeMinor;
+      campaignReceivesMinor = donationAmountMinor;
+    } else {
+      // Fee from donation: charge donation only, campaign gets donation - fees
+      totalChargedMinor = donationAmountMinor;
+      campaignReceivesMinor = Math.max(0, donationAmountMinor - totalFeeMinor);
+    }
 
     return {
       baseFeeMinor,
@@ -550,7 +580,9 @@ export class SettingService {
       processingFeeBps,
       campaignType,
       totalFeeMinor,
-      totalChargedMinor
+      totalChargedMinor,
+      campaignReceivesMinor,
+      donorCoversFee
     };
   }
 

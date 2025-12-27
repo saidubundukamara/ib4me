@@ -51,6 +51,7 @@ export interface IFeatureFlags {
   whatsAppAutoPost?: boolean;
   paypalEnabled?: boolean;
   emergencyPoolFund?: boolean;
+  donorFeeChoiceEnabled?: boolean; // Allow donors to choose whether to cover fees
 }
 
 export interface IWebsiteSettings {
@@ -174,6 +175,7 @@ const settingSchema = new mongoose.Schema<ISetting>(
       whatsAppAutoPost: { type: Boolean },
       paypalEnabled: { type: Boolean },
       emergencyPoolFund: { type: Boolean },
+      donorFeeChoiceEnabled: { type: Boolean, default: false },
     },
     website: {
       siteName: { type: String },

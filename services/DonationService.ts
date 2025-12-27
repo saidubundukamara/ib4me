@@ -25,8 +25,10 @@ export interface CreateDonationInput {
   donorSnapshot?: { name?: string; email?: string } | null;
   isAnonymous?: boolean;
   message?: string | null;
-  amountMinor: number;              // Donation amount (what campaign receives)
-  totalChargedMinor?: number;       // Total charged to donor (amount + fees)
+  amountMinor: number;              // Donation amount (what donor entered)
+  totalChargedMinor?: number;       // Total charged to donor
+  campaignReceivesMinor?: number;   // What campaign actually receives after fees
+  donorCoversFee?: boolean;         // Whether donor chose to cover fees
   currency: string;
   provider: { name: string; paymentId?: string; checkoutSessionId?: string };
   fees?: DonationFeeInput;          // Fee breakdown
@@ -52,6 +54,10 @@ export class DonationService {
       platformFeeMinor: input.fees.totalFeeMinor, // For backward compat
     } : undefined;
 
+    // Calculate campaign receives amount
+    const donorCoversFee = input.donorCoversFee ?? true; // Default to donor covers fee for backward compat
+    const campaignReceivesMinor = input.campaignReceivesMinor ?? input.amountMinor;
+
     return donationRepository.create({
       campaignId: input.campaignId,
       donorId: input.donorId ?? null,
@@ -60,8 +66,10 @@ export class DonationService {
       message: input.message ?? null,
       amount: { currency: input.currency, minor: input.amountMinor },
       totalChargedMinor: input.totalChargedMinor ?? input.amountMinor,
+      campaignReceivesMinor,
+      donorCoversFee,
       fees,
-      netAmountMinor: input.amountMinor, // Campaign gets full donation amount
+      netAmountMinor: campaignReceivesMinor, // For backward compat, use what campaign receives
       provider: input.provider,
       status: "pending",
       idempotencyKey: input.idempotencyKey ?? null,
@@ -265,6 +273,10 @@ export class DonationService {
         throw new Error(`Cannot complete donation from status: ${donation.status}`);
       }
 
+      // Calculate what campaign actually receives
+      // For backward compat with old donations, use donation.amount.minor if campaignReceivesMinor not set
+      const campaignReceivesAmount = donation.campaignReceivesMinor ?? donation.amount.minor;
+
       // Update donation to succeeded
       const updated = await donationRepository.updateById(
         donationId,
@@ -319,7 +331,7 @@ export class DonationService {
         refType: "platform_transfer_out",
         refId: donation._id,
         direction: "out",
-        amountMinor: donation.amount.minor,
+        amountMinor: campaignReceivesAmount,
         currency: donation.amount.currency,
         transferId,
         description: `Transfer to campaign for donation ${donationId}`,
@@ -332,15 +344,15 @@ export class DonationService {
         refType: "campaign_transfer_in",
         refId: donation._id,
         direction: "in",
-        amountMinor: donation.amount.minor,
+        amountMinor: campaignReceivesAmount,
         currency: donation.amount.currency,
         transferId,
         description: `Donation received from transfer ${transferId}`,
       } as unknown as Partial<ILedgerEntry>, txn);
 
-      // Update campaign totals
+      // Update campaign totals with what campaign actually receives
       const incUpdate: Record<string, number> = {
-        "totals.raisedMinor": donation.amount.minor,
+        "totals.raisedMinor": campaignReceivesAmount,
         "totals.donationCount": 1,
       };
       const setUpdate: Record<string, unknown> = {
