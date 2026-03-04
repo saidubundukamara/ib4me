@@ -174,12 +174,12 @@ export default function AdminCampaignsPage() {
 
   if (loading && !analytics) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 font-Sora">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-8 bg-muted rounded w-1/4"></div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              <div key={i} className="h-24 bg-muted rounded-xl"></div>
             ))}
           </div>
         </div>
@@ -188,53 +188,29 @@ export default function AdminCampaignsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-Sora">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Campaigns</h2>
-        <p className="text-sm text-gray-600 mt-1">Review, approve, and manage campaigns</p>
+        <h2 className="text-2xl font-bold text-foreground">Campaigns</h2>
+        <p className="text-sm text-muted-foreground mt-1">Review, approve, and manage campaigns</p>
       </div>
 
       {/* Analytics Cards */}
       {analytics && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Campaigns</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{analytics.totalCampaigns}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Active Campaigns</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{analytics.activeCampaigns}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Pending Approvals</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600">{analytics.pendingApprovals}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Raised</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {formatAmount(analytics.totalRaised)}
-              </div>
-            </CardContent>
-          </Card>
+          {[
+            { label: "Total Campaigns", value: analytics.totalCampaigns, color: "#00712D" },
+            { label: "Active Campaigns", value: analytics.activeCampaigns, color: "#00712D" },
+            { label: "Pending Approvals", value: analytics.pendingApprovals, color: "#FF6000" },
+            { label: "Total Raised", value: formatAmount(analytics.totalRaised), color: "#FBB03B" },
+          ].map((card) => (
+            <Card key={card.label} className="rounded-2xl">
+              <CardContent className="pt-5">
+                <p className="text-sm font-medium text-muted-foreground">{card.label}</p>
+                <p className="mt-1 text-2xl font-bold" style={{ color: card.color }}>{card.value}</p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
 
@@ -314,28 +290,28 @@ export default function AdminCampaignsPage() {
           {loading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="animate-pulse h-16 bg-gray-200 rounded"></div>
+                <div key={i} className="animate-pulse h-16 bg-muted rounded-xl"></div>
               ))}
             </div>
           ) : campaigns.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               No campaigns found
             </div>
           ) : (
             <div className="space-y-4">
               {campaigns.map((campaign) => (
-                <div key={campaign._id} className="border rounded-lg p-4 hover:bg-gray-50">
+                <div key={campaign._id} className="border rounded-lg p-4 hover:bg-muted/50">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-4">
                         <div>
                           <Link 
                             href={`/campaigns/${campaign._id}`}
-                            className="font-medium text-blue-600 hover:text-blue-800"
+                            className="font-medium hover:underline" style={{ color: "#00712D" }}
                           >
                             {campaign.patient?.name || campaign.diagnosis || campaign.slug}
                           </Link>
-                          <div className="text-sm text-gray-500 mt-1">
+                          <div className="text-sm text-muted-foreground mt-1">
                             Owner: {campaign.ownerId?.firstName} {campaign.ownerId?.lastName} ({campaign.ownerId?.email})
                           </div>
                         </div>
@@ -347,7 +323,7 @@ export default function AdminCampaignsPage() {
                         </div>
                       </div>
                       
-                      <div className="mt-2 flex items-center space-x-6 text-sm text-gray-500">
+                      <div className="mt-2 flex items-center space-x-6 text-sm text-muted-foreground">
                         <span>
                           Raised: {formatAmount(campaign.totals?.raisedMinor || 0, campaign.goal?.currency)} / 
                           {formatAmount(campaign.goal?.amountMinor || 0, campaign.goal?.currency)}
@@ -408,7 +384,7 @@ export default function AdminCampaignsPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Showing page {currentPage} of {totalPages}
           </p>
           <div className="space-x-2">

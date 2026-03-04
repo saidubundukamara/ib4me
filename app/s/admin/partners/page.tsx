@@ -352,12 +352,12 @@ export default function AdminPartnersPage() {
 
   if (loading && !analytics) {
     return (
-      <div className="space-y-6">
+      <div className="font-Sora space-y-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-8 bg-muted rounded w-1/4"></div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              <div key={i} className="h-24 bg-muted rounded"></div>
             ))}
           </div>
         </div>
@@ -366,12 +366,12 @@ export default function AdminPartnersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="font-Sora space-y-6">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Partners</h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <h2 className="text-2xl font-bold text-foreground">Partners</h2>
+          <p className="text-sm text-muted-foreground mt-1">
             Manage platform partners and sponsors
           </p>
         </div>
@@ -387,7 +387,7 @@ export default function AdminPartnersPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Total Partners
               </CardTitle>
             </CardHeader>
@@ -398,12 +398,12 @@ export default function AdminPartnersPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Active
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-2xl font-bold" style={{ color: "#00712D" }}>
                 {analytics.active}
               </div>
             </CardContent>
@@ -411,12 +411,12 @@ export default function AdminPartnersPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Inactive
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">
+              <div className="text-2xl font-bold" style={{ color: "#FF6000" }}>
                 {analytics.inactive}
               </div>
             </CardContent>
@@ -424,12 +424,12 @@ export default function AdminPartnersPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Added This Month
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold" style={{ color: "#00712D" }}>
                 {analytics.recentlyAdded}
               </div>
             </CardContent>
@@ -496,12 +496,12 @@ export default function AdminPartnersPage() {
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="animate-pulse h-16 bg-gray-200 rounded"
+                  className="animate-pulse h-16 bg-muted rounded"
                 ></div>
               ))}
             </div>
           ) : partners.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               No partners found
             </div>
           ) : (
@@ -509,12 +509,12 @@ export default function AdminPartnersPage() {
               {partners.map((partner) => (
                 <div
                   key={partner._id}
-                  className="border rounded-lg p-4 hover:bg-gray-50"
+                  className="border rounded-lg p-4 hover:bg-muted/50"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4 flex-1">
                       {/* Logo */}
-                      <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
                         {partner.logoUrl ? (
                           <Image
                             src={partner.logoUrl}
@@ -524,26 +524,27 @@ export default function AdminPartnersPage() {
                             className="w-full h-full object-contain"
                           />
                         ) : (
-                          <Building className="w-6 h-6 text-gray-400" />
+                          <Building className="w-6 h-6 text-muted-foreground" />
                         )}
                       </div>
 
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="font-medium text-gray-900">
+                          <h3 className="font-medium text-foreground">
                             {partner.name}
                           </h3>
                           {getTypeBadge(partner.partnerType)}
                           {getStatusBadge(partner.status)}
                         </div>
 
-                        <div className="flex items-center space-x-4 text-sm text-gray-600">
+                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                           {partner.website && (
                             <a
                               href={partner.website}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center text-blue-600 hover:underline"
+                              className="flex items-center hover:underline"
+                              style={{ color: "#00712D" }}
                             >
                               <Globe className="w-4 h-4 mr-1" />
                               Website
@@ -603,7 +604,7 @@ export default function AdminPartnersPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Showing page {currentPage} of {totalPages}
           </p>
           <div className="space-x-2">
@@ -629,20 +630,20 @@ export default function AdminPartnersPage() {
 
       {/* Form Dialog */}
       {formOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-background rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto border border-border">
+            <h3 className="text-lg font-semibold mb-4 text-foreground">
               {editingPartner ? "Edit Partner" : "Add Partner"}
             </h3>
 
             <form onSubmit={handleFormSubmit} className="space-y-4">
               {/* Logo Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Logo
                 </label>
                 <div className="flex items-center space-x-4">
-                  <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300">
+                  <div className="w-20 h-20 bg-muted rounded-lg flex items-center justify-center overflow-hidden border-2 border-dashed border-border">
                     {logoPreview && !removeLogo ? (
                       <Image
                         src={logoPreview}
@@ -652,7 +653,7 @@ export default function AdminPartnersPage() {
                         className="w-full h-full object-contain"
                       />
                     ) : (
-                      <Upload className="w-8 h-8 text-gray-400" />
+                      <Upload className="w-8 h-8 text-muted-foreground" />
                     )}
                   </div>
                   <div className="flex-1 space-y-2">
@@ -695,7 +696,7 @@ export default function AdminPartnersPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Partner Name *
                 </label>
                 <Input
@@ -709,7 +710,7 @@ export default function AdminPartnersPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Website
                 </label>
                 <Input
@@ -723,7 +724,7 @@ export default function AdminPartnersPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Partner Type *
                 </label>
                 <Select
@@ -744,7 +745,7 @@ export default function AdminPartnersPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Status *
                 </label>
                 <Select
@@ -803,7 +804,7 @@ export default function AdminPartnersPage() {
                 Are you sure you want to delete &ldquo;{deleteDialog.partner.name}
                 &rdquo;? This action cannot be undone.
                 {deleteDialog.partner.status === "active" && (
-                  <p className="text-orange-600 mt-2 font-medium">
+                  <p className="mt-2 font-medium" style={{ color: "#FF6000" }}>
                     Warning: This is an active partner. Removing it will remove
                     them from the public partners display.
                   </p>

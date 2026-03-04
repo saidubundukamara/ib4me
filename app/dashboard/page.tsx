@@ -95,7 +95,7 @@ export default async function UserDashboardPage() {
       </div>
 
       {/* Stats Grid (responsive, wraps cleanly) */}
-      <div className="grid gap-4 sm:gap-6 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 sm:w-14 sm:h-14 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
@@ -253,7 +253,21 @@ export default async function UserDashboardPage() {
         </div>
         <div className="space-y-4">
           {recentDonations.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No recent donations yet.</div>
+            <div className="flex flex-col items-center py-8 text-center">
+              <div className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-4">
+                <Heart className="w-7 h-7 text-muted-foreground/40" />
+              </div>
+              <p className="text-sm font-medium text-foreground mb-1">No recent donations yet</p>
+              <p className="text-xs text-muted-foreground mb-4">
+                Share your campaigns to start receiving donations.
+              </p>
+              <Link
+                href="/dashboard/campaigns"
+                className="inline-flex items-center rounded-full bg-primary px-4 py-2 text-xs font-medium text-white hover:bg-primary/90 transition-colors"
+              >
+                View Campaigns
+              </Link>
+            </div>
           ) : (
             recentDonations.map((d) => (
               <div key={String(d._id)} className="flex justify-between items-center p-4 bg-muted/30 rounded-2xl">

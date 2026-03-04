@@ -537,9 +537,9 @@ export default function UserSettingsPage() {
                         autoComplete="email"
                         defaultValue={user?.email ?? ""}
                         disabled
-                        className="rounded-2xl bg-gray-50 cursor-not-allowed"
+                        className="rounded-2xl bg-muted/50 cursor-not-allowed"
                       />
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-muted-foreground">
                         Contact support to change your email address
                       </p>
                     </div>

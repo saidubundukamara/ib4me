@@ -227,32 +227,31 @@ export default function AdminUsersPage() {
   }, [error]);
 
   return (
-    <div className="p-6">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">User Management</h1>
-            <p className="text-muted-foreground">
-              {activeTab === "individual"
-                ? "Manage individual user accounts"
-                : "Manage organisation accounts"}
-            </p>
-          </div>
+    <div className="font-Sora space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">User Management</h1>
+          <p className="text-muted-foreground">
+            {activeTab === "individual"
+              ? "Manage individual user accounts"
+              : "Manage organisation accounts"}
+          </p>
         </div>
+      </div>
 
-        {/* Tabs for Individuals and Organisations */}
-        <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="individual" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Individuals
-            </TabsTrigger>
-            <TabsTrigger value="organization" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              Organisations
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+      {/* Tabs for Individuals and Organisations */}
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="individual" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Individuals
+          </TabsTrigger>
+          <TabsTrigger value="organization" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            Organisations
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {error && (
         <Alert variant="destructive">
@@ -266,50 +265,50 @@ export default function AdminUsersPage() {
         </Alert>
       )}
 
-        {/* Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Filters</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Search by name or email..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-10"
-                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                  />
-                </div>
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search by name or email..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10"
+                  onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                />
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="true">Active</SelectItem>
-                  <SelectItem value="false">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button onClick={handleSearch} className="flex items-center gap-2">
-                <Search className="h-4 w-4" />
-                Search
-              </Button>
             </div>
-          </CardContent>
-        </Card>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="true">Active</SelectItem>
+                <SelectItem value="false">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={handleSearch} className="flex items-center gap-2">
+              <Search className="h-4 w-4" />
+              Search
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Users List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {activeTab === "individual" ? "Individuals" : "Organisations"} ({pagination.total})
-            </CardTitle>
-          </CardHeader>
+      {/* Users List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            {activeTab === "individual" ? "Individuals" : "Organisations"} ({pagination.total})
+          </CardTitle>
+        </CardHeader>
         <CardContent>
           {loading ? (
             <div className="text-center py-8">Loading {activeTab === "individual" ? "users" : "organisations"}...</div>
@@ -322,14 +321,14 @@ export default function AdminUsersPage() {
               {users.map((user) => (
                 <div
                   key={user._id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50"
                 >
                   <div className="flex items-center space-x-4">
                     <div className="flex-shrink-0">
                       {activeTab === "individual" ? (
-                        <User className="h-10 w-10 text-gray-400" />
+                        <User className="h-10 w-10 text-muted-foreground" />
                       ) : (
-                        <Building2 className="h-10 w-10 text-gray-400" />
+                        <Building2 className="h-10 w-10 text-muted-foreground" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -445,38 +444,35 @@ export default function AdminUsersPage() {
             </div>
           )}
         </CardContent>
-        </Card>
+      </Card>
 
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete User</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete user &quot;{deletingUser?.firstName} {deletingUser?.lastName}&quot;?
-                <br /><br />
-                This will permanently remove their account and all associated data. This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => {
-                setDeleteDialogOpen(false);
-                setDeletingUser(null);
-              }}>
-                Cancel
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteConfirm}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                Delete User
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete user &quot;{deletingUser?.firstName} {deletingUser?.lastName}&quot;?
+              <br /><br />
+              This will permanently remove their account and all associated data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setDeleteDialogOpen(false);
+              setDeletingUser(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
-
-

@@ -260,7 +260,7 @@ export default function UserWithdrawalsPage() {
                       ? "text-rose-600"
                       : p.status === "processing" || p.status === "approved"
                       ? "text-amber-600"
-                      : "text-gray-500";
+                      : "text-muted-foreground";
 
                   const displayStatus = p.status === "paid" ? "completed" : p.status;
                   return (
@@ -285,7 +285,7 @@ export default function UserWithdrawalsPage() {
                         <Badge variant="outline" className={statusColor}>
                           <span className="sr-only">{displayStatus.replace("_", " ")}</span>
                         </Badge>
-                        <span className="text-gray-700">{formatCurrency(p.amountMinor, currency)}</span>
+                        <span className="text-foreground">{formatCurrency(p.amountMinor, currency)}</span>
                       </div>
                     </div>
                   );

@@ -224,9 +224,9 @@ export default function SocialSettings() {
       </div>
 
       {/* Usage Information */}
-      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h4 className="font-medium text-blue-900 mb-2">How Social Links Are Used</h4>
-        <ul className="text-sm text-blue-800 space-y-1">
+      <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+        <h4 className="font-medium text-blue-700 mb-2">How Social Links Are Used</h4>
+        <ul className="text-sm text-blue-700 space-y-1">
           <li>• Social media icons appear in the website footer</li>
           <li>• Links are used for social sharing of campaigns</li>
           <li>• WhatsApp contact enables direct support messaging</li>

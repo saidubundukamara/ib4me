@@ -152,19 +152,23 @@ export default function AdminDonationsPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="text-center py-8">Loading donation analytics...</div>
+      <div className="space-y-6 font-Sora">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded w-1/4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => <div key={i} className="h-28 bg-muted rounded-xl"></div>)}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="space-y-6">
+    <div className="space-y-6 font-Sora">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Donation Analytics</h1>
+            <h1 className="text-2xl font-bold text-foreground">Donation Analytics</h1>
             <p className="text-muted-foreground">
               Monitor donation activity and financial performance
             </p>
@@ -228,7 +232,7 @@ export default function AdminDonationsPage() {
                     <p className="text-sm font-medium text-muted-foreground">Total Donations</p>
                     <p className="text-2xl font-bold">{analytics.totalDonations.toLocaleString()}</p>
                   </div>
-                  <Activity className="h-8 w-8 text-blue-600" />
+                  <Activity className="h-8 w-8" style={{ color: "#00712D" }} />
                 </div>
               </CardContent>
             </Card>
@@ -242,7 +246,7 @@ export default function AdminDonationsPage() {
                       {formatCurrency(fromMinorUnits(analytics.totalAmount))}
                     </p>
                   </div>
-                  <DollarSign className="h-8 w-8 text-green-600" />
+                  <DollarSign className="h-8 w-8" style={{ color: "#FF6000" }} />
                 </div>
               </CardContent>
             </Card>
@@ -254,7 +258,7 @@ export default function AdminDonationsPage() {
                     <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
                     <p className="text-2xl font-bold">{analytics.successRate.toFixed(1)}%</p>
                   </div>
-                  <TrendingUp className="h-8 w-8 text-emerald-600" />
+                  <TrendingUp className="h-8 w-8" style={{ color: "#80E10A" }} />
                 </div>
               </CardContent>
             </Card>
@@ -268,7 +272,7 @@ export default function AdminDonationsPage() {
                       {formatCurrency(fromMinorUnits(analytics.averageDonation))}
                     </p>
                   </div>
-                  <Users className="h-8 w-8 text-purple-600" />
+                  <Users className="h-8 w-8" style={{ color: "#FBB03B" }} />
                 </div>
               </CardContent>
             </Card>
@@ -280,7 +284,7 @@ export default function AdminDonationsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-green-600">Successful</CardTitle>
+                <CardTitle style={{ color: "#00712D" }}>Successful</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -300,7 +304,7 @@ export default function AdminDonationsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-yellow-600">Pending</CardTitle>
+                <CardTitle style={{ color: "#FBB03B" }}>Pending</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -347,19 +351,19 @@ export default function AdminDonationsPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Total Revenue</p>
-                  <p className="text-xl font-bold text-green-600">
+                  <p className="text-xl font-bold" style={{ color: "#00712D" }}>
                     {formatCurrency(fromMinorUnits(revenue.totalRevenue))}
                   </p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Platform Fees</p>
-                  <p className="text-xl font-bold text-blue-600">
+                  <p className="text-xl font-bold" style={{ color: "#FF6000" }}>
                     {formatCurrency(fromMinorUnits(revenue.platformFees))}
                   </p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Payment Fees</p>
-                  <p className="text-xl font-bold text-orange-600">
+                  <p className="text-xl font-bold" style={{ color: "#FBB03B" }}>
                     {formatCurrency(fromMinorUnits(revenue.paymentFees))}
                   </p>
                 </div>
@@ -371,7 +375,7 @@ export default function AdminDonationsPage() {
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Net Revenue</p>
-                  <p className="text-xl font-bold text-emerald-600">
+                  <p className="text-xl font-bold" style={{ color: "#80E10A" }}>
                     {formatCurrency(fromMinorUnits(revenue.netRevenue))}
                   </p>
                 </div>
@@ -482,7 +486,6 @@ export default function AdminDonationsPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 }

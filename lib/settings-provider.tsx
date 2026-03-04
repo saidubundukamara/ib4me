@@ -137,7 +137,7 @@ interface SettingsContextType {
 
 const defaultWebsiteSettings: WebsiteSettings = {
   siteName: "IB4ME",
-  siteDescription: "Medical Emergency Crowdfunding Platform for Sierra Leone",
+  siteDescription: "Crowdfunding Platform for Social Good in Sierra Leone",
   primaryColor: "#007bff",
   secondaryColor: "#6c757d",
 };
@@ -164,23 +164,23 @@ const defaultSocialSettings: SocialSettings = {
   linkedin: "https://www.linkedin.com/company/ib4me/",
 };
 
-// Sanitize social settings to convert null/"null" values to undefined
+// Sanitize social settings — fall back to defaults when API returns null/empty values
 const sanitizeSocialSettings = (settings: SocialSettings | null | undefined): SocialSettings => {
   if (!settings) return defaultSocialSettings;
 
-  const isValidUrl = (url: unknown): string | undefined => {
+  const validUrlOrDefault = (url: unknown, fallback: string | undefined): string | undefined => {
     if (typeof url === 'string' && url.length > 0 && url !== 'null' && url !== 'undefined') {
       return url;
     }
-    return undefined;
+    return fallback;
   };
 
   return {
-    facebook: isValidUrl(settings.facebook),
-    twitter: isValidUrl(settings.twitter),
-    instagram: isValidUrl(settings.instagram),
-    linkedin: isValidUrl(settings.linkedin),
-    whatsapp: isValidUrl(settings.whatsapp),
+    facebook: validUrlOrDefault(settings.facebook, defaultSocialSettings.facebook),
+    twitter: validUrlOrDefault(settings.twitter, defaultSocialSettings.twitter),
+    instagram: validUrlOrDefault(settings.instagram, defaultSocialSettings.instagram),
+    linkedin: validUrlOrDefault(settings.linkedin, defaultSocialSettings.linkedin),
+    whatsapp: validUrlOrDefault(settings.whatsapp, defaultSocialSettings.whatsapp),
   };
 };
 

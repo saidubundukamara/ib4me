@@ -43,14 +43,14 @@ export default function AdminHospitalsPage() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
-  
+
   // Filters and pagination
   const [search, setSearch] = useState("");
   const [verifiedFilter, setVerifiedFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  
+
   // Form state
   const [formOpen, setFormOpen] = useState(false);
   const [editingHospital, setEditingHospital] = useState<Hospital | null>(null);
@@ -63,7 +63,7 @@ export default function AdminHospitalsPage() {
     verified: false,
   });
   const [formLoading, setFormLoading] = useState(false);
-  
+
   // Delete dialog
   const [deleteDialog, setDeleteDialog] = useState<{
     isOpen: boolean;
@@ -114,10 +114,10 @@ export default function AdminHospitalsPage() {
     setFormLoading(true);
 
     try {
-      const url = editingHospital 
+      const url = editingHospital
         ? `/api/admin/hospitals/${editingHospital._id}`
         : "/api/admin/hospitals";
-      
+
       const response = await fetch(url, {
         method: editingHospital ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -149,7 +149,7 @@ export default function AdminHospitalsPage() {
 
     try {
       setUpdating(deleteDialog.hospital._id);
-      
+
       const response = await fetch(`/api/admin/hospitals/${deleteDialog.hospital._id}`, {
         method: "DELETE",
       });
@@ -175,7 +175,7 @@ export default function AdminHospitalsPage() {
   const handleToggleVerification = async (hospital: Hospital) => {
     try {
       setUpdating(hospital._id);
-      
+
       const response = await fetch(`/api/admin/hospitals/${hospital._id}/toggle-verification`, {
         method: "PUT",
       });
@@ -254,12 +254,12 @@ export default function AdminHospitalsPage() {
 
   if (loading && !analytics) {
     return (
-      <div className="space-y-6">
+      <div className="font-Sora space-y-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-8 bg-muted rounded w-1/4"></div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              <div key={i} className="h-24 bg-muted rounded"></div>
             ))}
           </div>
         </div>
@@ -268,14 +268,14 @@ export default function AdminHospitalsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="font-Sora space-y-6">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Hospitals</h2>
-          <p className="text-sm text-gray-600 mt-1">Manage partner hospitals and verification status</p>
+          <h2 className="text-2xl font-bold text-foreground">Hospitals</h2>
+          <p className="text-sm text-muted-foreground mt-1">Manage partner hospitals and verification status</p>
         </div>
-        
+
         <Button onClick={openCreateForm}>
           <Plus className="w-4 h-4 mr-2" />
           Add Hospital
@@ -287,37 +287,37 @@ export default function AdminHospitalsPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Hospitals</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Hospitals</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{analytics.total}</div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Verified</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Verified</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{analytics.verified}</div>
+              <div className="text-2xl font-bold" style={{ color: "#00712D" }}>{analytics.verified}</div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Unverified</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Unverified</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">{analytics.unverified}</div>
+              <div className="text-2xl font-bold" style={{ color: "#FF6000" }}>{analytics.unverified}</div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Added This Month</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Added This Month</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{analytics.recentlyAdded}</div>
+              <div className="text-2xl font-bold" style={{ color: "#00712D" }}>{analytics.recentlyAdded}</div>
             </CardContent>
           </Card>
         </div>
@@ -332,7 +332,7 @@ export default function AdminHospitalsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            
+
             <Select value={verifiedFilter} onValueChange={setVerifiedFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="All Statuses" />
@@ -343,9 +343,9 @@ export default function AdminHospitalsPage() {
                 <SelectItem value="false">Unverified</SelectItem>
               </SelectContent>
             </Select>
-            
-            <Button 
-              variant="outline" 
+
+            <Button
+              variant="outline"
               onClick={() => {
                 setSearch("");
                 setVerifiedFilter("all");
@@ -369,28 +369,28 @@ export default function AdminHospitalsPage() {
           {loading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="animate-pulse h-16 bg-gray-200 rounded"></div>
+                <div key={i} className="animate-pulse h-16 bg-muted rounded"></div>
               ))}
             </div>
           ) : hospitals.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               No hospitals found
             </div>
           ) : (
             <div className="space-y-4">
               {hospitals.map((hospital) => (
-                <div key={hospital._id} className="border rounded-lg p-4 hover:bg-gray-50">
+                <div key={hospital._id} className="border rounded-lg p-4 hover:bg-muted/50">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-4 mb-2">
                         <div className="flex items-center">
-                          <Building2 className="w-5 h-5 text-gray-400 mr-2" />
-                          <h3 className="font-medium text-gray-900">{hospital.name}</h3>
+                          <Building2 className="w-5 h-5 text-muted-foreground mr-2" />
+                          <h3 className="font-medium text-foreground">{hospital.name}</h3>
                         </div>
                         {getVerificationBadge(hospital.verified)}
                       </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
                         <div>
                           <p>{hospital.address || "No address provided"}</p>
                         </div>
@@ -403,12 +403,12 @@ export default function AdminHospitalsPage() {
                           <p>{hospital.contactEmail || "No email provided"}</p>
                         </div>
                       </div>
-                      
-                      <div className="mt-2 text-xs text-gray-500">
+
+                      <div className="mt-2 text-xs text-muted-foreground">
                         Created: {new Date(hospital.createdAt).toLocaleDateString()}
                       </div>
                     </div>
-                    
+
                     <div className="flex space-x-2 ml-4">
                       <Button
                         size="sm"
@@ -418,7 +418,7 @@ export default function AdminHospitalsPage() {
                       >
                         {updating === hospital._id ? "..." : hospital.verified ? "Unverify" : "Verify"}
                       </Button>
-                      
+
                       <Button
                         size="sm"
                         variant="outline"
@@ -426,7 +426,7 @@ export default function AdminHospitalsPage() {
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
-                      
+
                       <Button
                         size="sm"
                         variant="outline"
@@ -447,20 +447,20 @@ export default function AdminHospitalsPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Showing page {currentPage} of {totalPages}
           </p>
           <div className="space-x-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               disabled={currentPage <= 1}
               onClick={() => setCurrentPage(currentPage - 1)}
             >
               Previous
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               disabled={currentPage >= totalPages}
               onClick={() => setCurrentPage(currentPage + 1)}
@@ -473,15 +473,15 @@ export default function AdminHospitalsPage() {
 
       {/* Form Dialog */}
       {formOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-background rounded-lg p-6 w-full max-w-md border border-border">
+            <h3 className="text-lg font-semibold mb-4 text-foreground">
               {editingHospital ? "Edit Hospital" : "Add Hospital"}
             </h3>
-            
+
             <form onSubmit={handleFormSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Hospital Name *
                 </label>
                 <Input
@@ -491,9 +491,9 @@ export default function AdminHospitalsPage() {
                   placeholder="Enter hospital name"
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Address
                 </label>
                 <Input
@@ -502,9 +502,9 @@ export default function AdminHospitalsPage() {
                   placeholder="Enter address"
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Contact Phone
                 </label>
                 <Input
@@ -514,9 +514,9 @@ export default function AdminHospitalsPage() {
                   placeholder="Enter phone number"
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Contact Email
                 </label>
                 <Input
@@ -526,33 +526,34 @@ export default function AdminHospitalsPage() {
                   placeholder="Enter email address"
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Notes
                 </label>
                 <textarea
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-all"
+                  style={{ "--tw-ring-color": "#00712D" } as React.CSSProperties}
                   rows={3}
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   placeholder="Enter any notes"
                 />
               </div>
-              
+
               <div className="flex items-center">
                 <input
                   type="checkbox"
                   id="verified"
                   checked={formData.verified}
                   onChange={(e) => setFormData({ ...formData, verified: e.target.checked })}
-                  className="mr-2"
+                  className="mr-2 accent-[#00712D]"
                 />
-                <label htmlFor="verified" className="text-sm font-medium text-gray-700">
+                <label htmlFor="verified" className="text-sm font-medium text-foreground">
                   Mark as verified
                 </label>
               </div>
-              
+
               <div className="flex justify-end space-x-2 pt-4">
                 <Button
                   type="button"
@@ -583,7 +584,7 @@ export default function AdminHospitalsPage() {
               <AlertDialogDescription>
                 Are you sure you want to delete &ldquo;{deleteDialog.hospital.name}&rdquo;? This action cannot be undone.
                 {deleteDialog.hospital.verified && (
-                  <p className="text-orange-600 mt-2 font-medium">
+                  <p className="mt-2 font-medium" style={{ color: "#FF6000" }}>
                     Warning: This is a verified hospital. Deleting it may affect existing campaigns.
                   </p>
                 )}
@@ -591,7 +592,7 @@ export default function AdminHospitalsPage() {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction 
+              <AlertDialogAction
                 onClick={handleDelete}
                 className="bg-red-600 hover:bg-red-700"
               >
@@ -604,5 +605,3 @@ export default function AdminHospitalsPage() {
     </div>
   );
 }
-
-

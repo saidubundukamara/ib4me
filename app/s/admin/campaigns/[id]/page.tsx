@@ -198,15 +198,15 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
     return (
       <div className="space-y-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-8 bg-muted rounded w-1/2"></div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              <div className="h-64 bg-gray-200 rounded"></div>
-              <div className="h-48 bg-gray-200 rounded"></div>
+              <div className="h-64 bg-muted rounded"></div>
+              <div className="h-48 bg-muted rounded"></div>
             </div>
             <div className="space-y-6">
-              <div className="h-32 bg-gray-200 rounded"></div>
-              <div className="h-48 bg-gray-200 rounded"></div>
+              <div className="h-32 bg-muted rounded"></div>
+              <div className="h-48 bg-muted rounded"></div>
             </div>
           </div>
         </div>
@@ -217,7 +217,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
   if (!campaign) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">Campaign not found</p>
+        <p className="text-muted-foreground">Campaign not found</p>
         <Button 
           variant="outline" 
           onClick={() => router.push("/campaigns")}
@@ -242,10 +242,10 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
               ← Back to Campaigns
             </Link>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-foreground">
             {campaign.patient?.name || campaign.diagnosis || campaign.slug}
           </h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Campaign ID: {campaign._id}
           </p>
         </div>
@@ -267,30 +267,30 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
             <CardContent className="space-y-6">
               {/* Patient Information */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Patient Information</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-3">Patient Information</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Name</label>
-                    <p className="text-gray-900">{campaign.patient?.name || "Not provided"}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Name</label>
+                    <p className="text-foreground">{campaign.patient?.name || "Not provided"}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Age</label>
-                    <p className="text-gray-900">{campaign.patient?.age || "Not provided"}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Age</label>
+                    <p className="text-foreground">{campaign.patient?.age || "Not provided"}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Diagnosis</label>
-                    <p className="text-gray-900">{campaign.diagnosis || "Not provided"}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Diagnosis</label>
+                    <p className="text-foreground">{campaign.diagnosis || "Not provided"}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Emergency Type</label>
-                    <p className="text-gray-900">{campaign.typeOfEmergency || "Not provided"}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Emergency Type</label>
+                    <p className="text-foreground">{campaign.typeOfEmergency || "Not provided"}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Hospital</label>
-                    <p className="text-gray-900">{campaign.hospital?.name || "Not provided"}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Hospital</label>
+                    <p className="text-foreground">{campaign.hospital?.name || "Not provided"}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Urgency</label>
+                    <label className="text-sm font-medium text-muted-foreground">Urgency</label>
                     <div className="mt-1">
                       <Badge variant={
                         campaign.urgency === "high" ? "destructive" : 
@@ -306,30 +306,30 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
               {/* Campaign Story */}
               {campaign.story && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Campaign Story</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-gray-700 whitespace-pre-wrap">{campaign.story}</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-3">Campaign Story</h3>
+                  <div className="bg-muted/50 p-4 rounded-lg">
+                    <p className="text-foreground/80 whitespace-pre-wrap">{campaign.story}</p>
                   </div>
                 </div>
               )}
 
               {/* Campaign Owner */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Campaign Owner</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-3">Campaign Owner</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Name</label>
-                    <p className="text-gray-900">
+                    <label className="text-sm font-medium text-muted-foreground">Name</label>
+                    <p className="text-foreground">
                       {campaign.ownerId?.firstName} {campaign.ownerId?.lastName}
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Email</label>
-                    <p className="text-gray-900">{campaign.ownerId?.email}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Email</label>
+                    <p className="text-foreground">{campaign.ownerId?.email}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Phone</label>
-                    <p className="text-gray-900">{campaign.ownerId?.phoneNumber || "Not provided"}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Phone</label>
+                    <p className="text-foreground">{campaign.ownerId?.phoneNumber || "Not provided"}</p>
                   </div>
                 </div>
               </div>
@@ -345,20 +345,20 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
               {/* Progress Bar */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-600">Fundraising Progress</span>
-                  <span className="text-sm text-gray-500">{getProgressPercentage().toFixed(1)}%</span>
+                  <span className="text-sm font-medium text-muted-foreground">Fundraising Progress</span>
+                  <span className="text-sm text-muted-foreground">{getProgressPercentage().toFixed(1)}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
+                <div className="w-full bg-muted rounded-full h-3">
                   <div
                     className="bg-blue-600 h-3 rounded-full transition-all"
                     style={{ width: `${getProgressPercentage()}%` }}
                   ></div>
                 </div>
                 <div className="flex justify-between items-center mt-2">
-                  <span className="text-lg font-semibold text-gray-900">
+                  <span className="text-lg font-semibold text-foreground">
                     {formatAmount(campaign.totals?.raisedMinor || 0, campaign.goal?.currency)}
                   </span>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-muted-foreground">
                     Goal: {formatAmount(campaign.goal?.amountMinor || 0, campaign.goal?.currency)}
                   </span>
                 </div>
@@ -370,27 +370,27 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
                   <p className="text-2xl font-bold text-blue-600">
                     {campaign.totals?.donationCount || 0}
                   </p>
-                  <p className="text-sm text-gray-600">Total Donations</p>
+                  <p className="text-sm text-muted-foreground">Total Donations</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-green-600">
                     {campaign.totals?.uniqueDonorCount || 0}
                   </p>
-                  <p className="text-sm text-gray-600">Unique Donors</p>
+                  <p className="text-sm text-muted-foreground">Unique Donors</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-purple-600">
                     {formatAmount(campaign.withdrawals?.totalPaidMinor || 0, campaign.goal?.currency)}
                   </p>
-                  <p className="text-sm text-gray-600">Withdrawn</p>
+                  <p className="text-sm text-muted-foreground">Withdrawn</p>
                 </div>
               </div>
 
               {/* Financial Account */}
               {campaign.financial_account && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Financial Account</h4>
-                  <div className="bg-gray-50 p-3 rounded text-sm">
+                  <h4 className="font-medium text-foreground mb-2">Financial Account</h4>
+                  <div className="bg-muted/50 p-3 rounded text-sm">
                     <p><span className="font-medium">Account ID:</span> {campaign.financial_account.id}</p>
                     <p><span className="font-medium">UVAN:</span> {campaign.financial_account.uvan}</p>
                   </div>
@@ -406,7 +406,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
             </CardHeader>
             <CardContent>
               {donations.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">No donations found</p>
+                <p className="text-muted-foreground text-center py-4">No donations found</p>
               ) : (
                 <div className="space-y-3">
                   {donations.slice(0, 5).map((donation) => (
@@ -415,7 +415,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
                         <p className="font-medium">
                           {donation.isAnonymous ? "Anonymous" : donation.donorSnapshot?.name || "Unknown"}
                         </p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                           {new Date(donation.createdAt).toLocaleDateString()} • {donation.provider.name}
                         </p>
                       </div>
@@ -444,7 +444,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-600 block mb-2">Campaign Status</label>
+                <label className="text-sm font-medium text-muted-foreground block mb-2">Campaign Status</label>
                 <Select
                   value={campaign.status}
                   onValueChange={(value) => setActionDialog({
@@ -471,7 +471,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-600 block mb-2">Verification Status</label>
+                <label className="text-sm font-medium text-muted-foreground block mb-2">Verification Status</label>
                 <Select
                   value={campaign.verification?.status || "pending"}
                   onValueChange={(value) => setActionDialog({
@@ -505,24 +505,24 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
-                <label className="text-sm font-medium text-gray-600">Slug</label>
-                <p className="text-gray-900 break-all">{campaign.slug}</p>
+                <label className="text-sm font-medium text-muted-foreground">Slug</label>
+                <p className="text-foreground break-all">{campaign.slug}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Created</label>
-                <p className="text-gray-900">{new Date(campaign.createdAt).toLocaleString()}</p>
+                <label className="text-sm font-medium text-muted-foreground">Created</label>
+                <p className="text-foreground">{new Date(campaign.createdAt).toLocaleString()}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Last Updated</label>
-                <p className="text-gray-900">{new Date(campaign.updatedAt).toLocaleString()}</p>
+                <label className="text-sm font-medium text-muted-foreground">Last Updated</label>
+                <p className="text-foreground">{new Date(campaign.updatedAt).toLocaleString()}</p>
               </div>
               {campaign.verification?.verifiedBy && (
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Verified By</label>
-                  <p className="text-gray-900">
+                  <label className="text-sm font-medium text-muted-foreground">Verified By</label>
+                  <p className="text-foreground">
                     {campaign.verification.verifiedBy.firstName} {campaign.verification.verifiedBy.lastName}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     {campaign.verification.verifiedAt ? 
                       new Date(campaign.verification.verifiedAt).toLocaleString() : ""
                     }
@@ -539,7 +539,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
             </CardHeader>
             <CardContent>
               {payouts.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">No payouts found</p>
+                <p className="text-muted-foreground text-center py-4">No payouts found</p>
               ) : (
                 <div className="space-y-3">
                   {payouts.slice(0, 3).map((payout) => (
@@ -549,7 +549,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
                           <p className="font-medium">
                             {formatAmount(payout.amountMinor, campaign.goal?.currency)}
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-muted-foreground">
                             {new Date(payout.createdAt).toLocaleDateString()}
                           </p>
                         </div>
@@ -560,7 +560,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
                           {payout.status}
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-muted-foreground mt-1">
                         {payout.method.type}: {payout.method.accountName || payout.method.msisdn}
                       </p>
                     </div>
@@ -583,7 +583,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="py-4">
-              <label className="text-sm font-medium text-gray-600 block mb-2">
+              <label className="text-sm font-medium text-muted-foreground block mb-2">
                 Reason (optional)
               </label>
               <Input

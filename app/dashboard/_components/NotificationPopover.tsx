@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bell, Check, Trash2 } from "lucide-react";
-import {toast} from "sonner"
+import { Bell, Check, Trash2, ArrowRight } from "lucide-react";
+import { toast } from "sonner";
+import Link from "next/link";
 
 interface Notification {
   id: string;
@@ -19,13 +20,15 @@ interface NotificationPopoverProps {
   onMarkAsRead: (id: string) => void;
   onMarkAllAsRead: () => void;
   onDelete: (id: string) => void;
+  onViewAll?: () => void;
 }
 
-const NotificationPopover = ({ 
-  notifications, 
-  onMarkAsRead, 
+const NotificationPopover = ({
+  notifications,
+  onMarkAsRead,
   onMarkAllAsRead,
-  onDelete 
+  onDelete,
+  onViewAll,
 }: NotificationPopoverProps) => {
   const [open, setOpen] = useState(false);
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -142,11 +145,28 @@ const NotificationPopover = ({
             </div>
           ) : (
             <div className="p-8 text-center">
-              <Bell className="w-12 h-12 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">No notifications yet</p>
+              <div className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+                <Bell className="w-7 h-7 text-muted-foreground/40" />
+              </div>
+              <p className="text-sm font-medium text-foreground mb-1">No notifications yet</p>
+              <p className="text-xs text-muted-foreground">
+                You&apos;ll be notified about donations, milestones, and updates here.
+              </p>
             </div>
           )}
         </ScrollArea>
+
+        {/* View all footer */}
+        <div className="border-t border-border p-3">
+          <Link
+            href="/dashboard/notifications"
+            onClick={() => { setOpen(false); onViewAll?.(); }}
+            className="flex items-center justify-center gap-1.5 w-full rounded-xl py-2 text-xs font-semibold text-primary hover:bg-primary/8 transition-colors"
+          >
+            View all notifications
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
       </PopoverContent>
     </Popover>
   );

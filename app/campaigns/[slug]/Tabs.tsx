@@ -1,16 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { MessageCircle } from "lucide-react";
 
 export type CampaignUpdateItem = {
   id: string;
@@ -49,7 +46,7 @@ export default function CampaignTabs({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-2 rounded-full bg-muted/40 p-1">
+      <div className="flex gap-1 rounded-full bg-muted/60 p-1">
         {tabItems.map((tab) => {
           const count =
             tab.key === "updates"
@@ -63,10 +60,10 @@ export default function CampaignTabs({
               key={tab.key}
               type="button"
               onClick={() => setActive(tab.key)}
-              className={`flex-1 min-w-[120px] rounded-full px-4 py-2 text-sm font-medium transition-all ${
+              className={`flex-1 min-w-[100px] rounded-full px-4 py-2.5 text-sm font-medium transition-all ${
                 isActive
-                  ? "bg-background text-foreground shadow-sm"
-                  : "bg-transparent text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-white shadow-sm"
+                  : "bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
               {tab.label}
@@ -77,7 +74,7 @@ export default function CampaignTabs({
       </div>
 
       {active === "story" && (
-        <div className="rounded-2xl border border-border/50 bg-background/80 p-4 text-sm text-muted-foreground md:text-base">
+        <div className="rounded-2xl border border-border/50 bg-background/80 p-5 text-sm leading-relaxed text-muted-foreground whitespace-pre-line md:text-base">
           {story ? story : "This campaign has not added a story yet."}
         </div>
       )}
@@ -85,7 +82,7 @@ export default function CampaignTabs({
       {active === "updates" && (
         <div className="space-y-4">
           {updates.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border/60 bg-muted/30 p-6 text-sm text-muted-foreground">
+            <div className="rounded-2xl border border-dashed border-border/60 bg-muted/30 p-6 text-center text-sm text-muted-foreground">
               No updates yet. Check back later for progress.
             </div>
           ) : (
@@ -122,8 +119,12 @@ export default function CampaignTabs({
       {active === "comments" && (
         <div className="space-y-6">
           {comments.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border/60 bg-muted/30 p-6 text-sm text-muted-foreground">
-              No comments yet. Be the first to leave a message of support.
+            <div className="rounded-2xl border border-dashed border-border/60 bg-muted/30 p-8 text-center">
+              <MessageCircle className="mx-auto h-8 w-8 text-muted-foreground/40" />
+              <p className="mt-3 text-sm font-medium text-foreground">No comments yet</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Comments will appear here once supporters share their messages.
+              </p>
             </div>
           ) : (
             comments.map((comment) => (
@@ -136,7 +137,11 @@ export default function CampaignTabs({
                     {comment.author || "Anonymous"}
                   </p>
                   <span className="text-xs text-muted-foreground">
-                    {new Date(comment.createdAt).toLocaleDateString()}
+                    {new Date(comment.createdAt).toLocaleDateString(undefined, {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
                   </span>
                 </div>
                 <p className="mt-3 text-sm text-muted-foreground whitespace-pre-line">
@@ -145,33 +150,6 @@ export default function CampaignTabs({
               </div>
             ))
           )}
-
-          <Card className="rounded-2xl border border-border/60 bg-muted/30">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold text-foreground">
-                Leave a Comment
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="comment-name">Name</Label>
-                  <Input id="comment-name" placeholder="Your name" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="comment-message">Comment</Label>
-                  <Textarea
-                    id="comment-message"
-                    placeholder="Write your message of support..."
-                    rows={4}
-                  />
-                </div>
-                <Button type="button"className="w-full sm:w-auto">
-                  Post Comment
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
         </div>
       )}
     </div>

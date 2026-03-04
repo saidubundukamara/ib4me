@@ -14,6 +14,8 @@ interface CampaignCardProps {
   donors: number;
   verified?: boolean;
   urgent?: boolean;
+  urgency?: "low" | "medium" | "high";
+  daysLeft?: number;
   href?: string;
   onShare?: () => void;
   currency?: string;
@@ -29,6 +31,8 @@ const CampaignCard = ({
   donors,
   verified = false,
   urgent = false,
+  urgency,
+  daysLeft,
   href,
   onShare,
   currency = "SLE",
@@ -53,28 +57,43 @@ const CampaignCard = ({
   const raisedLabel = formatCurrency(raised);
   const goalLabel = formatCurrency(goal);
 
+  const isUrgent = urgent || urgency === "high";
+  const isEndingSoon = !isUrgent && urgency === "medium";
+  const showDaysLeft = typeof daysLeft === "number" && daysLeft >= 0;
+
   const cardContent = (
-    <Card className="overflow-hidden rounded-3xl bg-card hover:shadow-[var(--shadow-lift)] transition-all duration-300 hover:-translate-y-2 border-0 cursor-pointer">
+    <Card className="overflow-hidden rounded-3xl bg-card hover:shadow-[var(--shadow-lift)] transition-all duration-300 hover:-translate-y-1 border-0 cursor-pointer group">
       {/* Image */}
-      <div className="relative h-56 overflow-hidden">
+      <div className="relative aspect-video overflow-hidden">
         <Image
           src={imageUrl}
           alt={title}
           width={800}
-          height={600}
+          height={450}
           unoptimized
-          className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        {urgent && (
-          <div className="absolute top-4 left-4 bg-accent text-accent-foreground px-4 py-2 rounded-full text-xs font-bold uppercase shadow-lg animate-pulse">
+        {/* Urgency / days-left badge */}
+        {showDaysLeft ? (
+          <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold shadow-lg ${daysLeft! <= 3 ? "bg-red-500 text-white animate-pulse" : daysLeft! <= 7 ? "bg-red-500 text-white" : "bg-amber-500 text-white"}`}>
+            {daysLeft === 0 ? "Last day!" : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`}
+          </div>
+        ) : isUrgent ? (
+          <div className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold uppercase shadow-lg animate-pulse">
             Urgent
           </div>
-        )}
+        ) : isEndingSoon ? (
+          <div className="absolute top-3 left-3 bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+            Ending Soon
+          </div>
+        ) : null}
         {verified && (
-          <div className="absolute top-4 right-4 bg-fun-green backdrop-blur-sm text-white p-2 rounded-full shadow-lg">
-            <CheckCircle className="w-5 h-5" />
+          <div className="absolute top-3 right-3 bg-fun-green backdrop-blur-sm text-white p-1.5 rounded-full shadow-lg">
+            <CheckCircle className="w-4 h-4" />
           </div>
         )}
+        {/* Gradient overlay */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/30 to-transparent" />
       </div>
 
       {/* Content */}
@@ -115,10 +134,18 @@ const CampaignCard = ({
 
         {/* Stats */}
         <div className="flex items-center justify-between pt-4 border-t border-border">
-          <div className="text-sm">
-            <span className="font-bold text-card-foreground">{donors}</span>
-            <span className="text-muted-foreground"> donors</span>
+          <div className="flex items-center gap-1.5 text-sm">
+            <div className="flex -space-x-1">
+              {[0,1,2].map(i => (
+                <div key={i} className="h-5 w-5 rounded-full bg-primary/20 border-2 border-card flex items-center justify-center">
+                  <span className="text-[8px] text-primary font-bold">♥</span>
+                </div>
+              ))}
+            </div>
+            <span className="font-bold text-card-foreground">{donors.toLocaleString()}</span>
+            <span className="text-muted-foreground">donor{donors !== 1 ? "s" : ""}</span>
           </div>
+          <span className="text-xs text-muted-foreground font-medium">{Math.round(percentage)}% funded</span>
         </div>
 
         {/* Actions */}

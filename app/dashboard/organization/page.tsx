@@ -120,11 +120,11 @@ export default function OrganizationProfilePage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center py-12">
-              <Building className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <Building className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">
                 Not an Organization Account
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 This page is only available for organization accounts.
                 <br />
                 If you represent an NGO or charity, please register a new account
@@ -141,8 +141,8 @@ export default function OrganizationProfilePage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Organization Profile</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-2xl font-bold text-foreground">Organization Profile</h1>
+        <p className="text-muted-foreground mt-1">
           Manage your organization&apos;s information and details
         </p>
       </div>

@@ -1,813 +1,538 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
-import { FileText } from "lucide-react";
+import {
+    FileText, Info, BookOpen, UserCheck, Target, Heart,
+    CreditCard, Wallet, ShieldAlert, Ban, Copyright,
+    Handshake, Settings, Mail, CheckCircle, X, ArrowRight, Building2, Globe,
+} from "lucide-react";
 import Link from "next/link";
+import BackToTop from "@/app/_components/BackToTop";
 
-const tableOfContents = [
-    { id: "introduction", title: "1. Introduction" },
-    { id: "definitions", title: "2. Definitions" },
-    { id: "eligibility", title: "3. Eligibility and Account Registration" },
-    { id: "campaigns", title: "4. Campaign Creation and Management" },
-    { id: "donations", title: "5. Donations" },
-    { id: "payments", title: "6. Payments and Fees" },
-    { id: "withdrawals", title: "7. Withdrawals and Payouts" },
-    { id: "liability", title: "8. Platform Liability Limitations" },
-    { id: "prohibited", title: "9. Prohibited Conduct" },
-    { id: "intellectual-property", title: "10. Intellectual Property" },
-    { id: "disputes", title: "11. Dispute Resolution" },
-    { id: "modifications", title: "12. Modifications and Termination" },
-    { id: "general", title: "13. General Provisions" },
-    { id: "contact", title: "14. Contact Information" },
-];
+/* ─── Primitives (same pattern as Privacy page) ──────────────── */
 
-const TermsAndConditions = () => {
+function SectionCard({
+    id, number, title, icon: Icon, accent, bg, children,
+}: {
+    id: string; number: string; title: string;
+    icon: React.ComponentType<{ className?: string }>;
+    accent: string; bg: string; children: React.ReactNode;
+}) {
     return (
-        <div className="font-Sora">
-            <main>
-                {/* Hero Section */}
-                <section className="py-12 sm:py-16 md:py-24 lg:py-28 px-4 sm:px-6 lg:px-8 bg-fun-green">
-                    <div className="mx-auto max-w-4xl text-center">
-                        <div className="inline-flex items-center gap-2 bg-white/10 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full mb-4 sm:mb-6">
-                            <FileText className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
-                            <span className="font-semibold text-sm sm:text-base">Legal</span>
-                        </div>
-                        <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold tracking-tight text-white mb-4 sm:mb-6">
-                            Terms and <span className="text-blaze-orange">Conditions</span>
-                        </h1>
-                        <p className="text-base sm:text-lg lg:text-xl text-white/80 leading-relaxed max-w-2xl mx-auto">
-                            Please read these terms carefully before using our platform.
-                        </p>
-                        <p className="text-sm text-white/60 mt-4">
-                            Last Updated: November 2024
-                        </p>
-                    </div>
-                </section>
-
-                {/* Table of Contents */}
-                <section className="py-8 sm:py-12 px-4 sm:px-6 lg:px-8 bg-muted/30">
-                    <div className="mx-auto max-w-4xl">
-                        <Card className="p-6 sm:p-8 rounded-3xl border-0 shadow-[var(--shadow-soft)]">
-                            <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4">
-                                Table of Contents
-                            </h2>
-                            <nav className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                {tableOfContents.map((item) => (
-                                    <Link
-                                        key={item.id}
-                                        href={`#${item.id}`}
-                                        className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors py-1"
-                                    >
-                                        {item.title}
-                                    </Link>
-                                ))}
-                            </nav>
-                        </Card>
-                    </div>
-                </section>
-
-                {/* Content Section */}
-                <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
-                    <div className="mx-auto max-w-4xl space-y-12 sm:space-y-16">
-
-                        {/* Introduction */}
-                        <div id="introduction" className="scroll-mt-24">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-                                1. Introduction
-                            </h2>
-                            <div className="space-y-4 text-base sm:text-lg text-muted-foreground leading-relaxed">
-                                <p>
-                                    Welcome to IB4ME. These Terms and Conditions (&quot;Terms&quot;) govern your access to and use of the IB4ME platform, website, and services (collectively, the &quot;Platform&quot;). By accessing or using the Platform, you agree to be bound by these Terms. If you do not agree, please do not use the Platform.
-                                </p>
-                                <p>
-                                    IB4ME is a medical emergency crowdfunding platform operated by <strong>IB4ME Ltd</strong>, a company registered in Sierra Leone. The Platform enables individuals and organizations to create fundraising campaigns for medical emergencies and allows donors to contribute to these campaigns.
-                                </p>
-                                <p>
-                                    The Platform facilitates connections between those in medical need and those willing to help. IB4ME does not provide medical advice, guarantee campaign success, or guarantee that funds will be used as intended by campaign creators.
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Definitions */}
-                        <div id="definitions" className="scroll-mt-24">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-                                2. Definitions
-                            </h2>
-                            <ul className="space-y-3 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside">
-                                <li><strong>&quot;Platform&quot;</strong> refers to the IB4ME website, mobile applications, and all related services.</li>
-                                <li><strong>&quot;User&quot;</strong> refers to any person who accesses or uses the Platform, including Campaign Creators and Donors.</li>
-                                <li><strong>&quot;Campaign Creator&quot;</strong> refers to a User who creates a fundraising campaign on the Platform.</li>
-                                <li><strong>&quot;Donor&quot;</strong> refers to a User who makes a donation to a campaign.</li>
-                                <li><strong>&quot;Campaign&quot;</strong> refers to a fundraising page created on the Platform for a specific medical need.</li>
-                                <li><strong>&quot;Donation&quot;</strong> refers to a monetary contribution made by a Donor to a Campaign.</li>
-                                <li><strong>&quot;Individual Account&quot;</strong> refers to a personal user account for individuals.</li>
-                                <li><strong>&quot;Organization Account&quot;</strong> refers to an account for registered non-governmental organizations (NGOs), charities, or other legal entities.</li>
-                            </ul>
-                        </div>
-
-                        {/* Eligibility and Account Registration */}
-                        <div id="eligibility" className="scroll-mt-24">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-                                3. Eligibility and Account Registration
-                            </h2>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                3.1 Age Requirement
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-4">
-                                You must be at least <strong>18 years old</strong> to create an account, make donations, or use any features of the Platform. By using the Platform, you represent and warrant that you meet this age requirement.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                3.2 Account Types
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                The Platform offers two types of accounts:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li><strong>Individual Accounts</strong>: For personal use by individuals raising funds for themselves, family members, or others.</li>
-                                <li><strong>Organization Accounts</strong>: For registered NGOs, charities, hospitals, and other legal entities. Organization accounts require additional verification.</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                3.3 Registration Requirements
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                To create an account, you must provide accurate, current, and complete information, including:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Full legal name</li>
-                                <li>Valid email address or phone number</li>
-                                <li>Password (kept confidential)</li>
-                            </ul>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                For Organization Accounts, additional information is required:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Organization name and type</li>
-                                <li>Registration number</li>
-                                <li>Tax identification number (if applicable)</li>
-                                <li>Registered address</li>
-                                <li>Authorized representative details</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                3.4 Identity Verification (KYC/KYB)
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                To create campaigns or receive payouts, Users must complete identity verification:
-                            </p>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                <strong>For Individuals (KYC - Know Your Customer):</strong>
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Valid government-issued identification document</li>
-                                <li>Proof of address</li>
-                            </ul>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                <strong>For Organizations (KYB - Know Your Business):</strong>
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Organization registration certificate</li>
-                                <li>Representative identification</li>
-                                <li>Proof of registered address</li>
-                                <li>Tax certificate (if applicable)</li>
-                            </ul>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                                IB4ME reserves the right to request additional documentation as needed.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                3.5 Account Security
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                You are responsible for:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Maintaining the confidentiality of your login credentials</li>
-                                <li>All activities that occur under your account</li>
-                                <li>Notifying IB4ME immediately of any unauthorized access</li>
-                            </ul>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                                IB4ME is not liable for losses resulting from unauthorized use of your account.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                3.6 Account Suspension and Termination
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                IB4ME may suspend or terminate your account if:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside">
-                                <li>You violate these Terms</li>
-                                <li>We suspect fraudulent activity</li>
-                                <li>Required by law or regulatory authority</li>
-                                <li>You provide false or misleading information</li>
-                            </ul>
-                        </div>
-
-                        {/* Campaign Creation and Management */}
-                        <div id="campaigns" className="scroll-mt-24">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-                                4. Campaign Creation and Management
-                            </h2>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                4.1 Campaign Creator Obligations
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                By creating a campaign, you agree to:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Provide truthful, accurate, and complete information about the patient and medical condition</li>
-                                <li>Use funds <strong>exclusively</strong> for the stated medical purpose</li>
-                                <li>Provide updates on the patient&apos;s condition and fund usage</li>
-                                <li>Respond to reasonable verification requests from IB4ME</li>
-                                <li>Obtain consent from the patient (or legal guardian) to share their medical information</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                4.2 Required Documentation
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                Campaign Creators must submit supporting documentation, which may include:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Medical diagnosis or hospital admission letter</li>
-                                <li>Cost estimates from the treating hospital</li>
-                                <li>Patient identification</li>
-                                <li>Proof of relationship to the patient (if applicable)</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                4.3 Verification Process
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                All campaigns undergo a verification process before becoming publicly visible:
-                            </p>
-                            <ol className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-decimal list-inside mb-4">
-                                <li>Campaign submission and documentation upload</li>
-                                <li>Review by IB4ME verification team</li>
-                                <li>Hospital and medical information verification</li>
-                                <li>Approval, rejection, or request for additional information</li>
-                            </ol>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                                IB4ME aims to complete verification promptly but does not guarantee specific timeframes.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                4.4 Campaign Limits
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                The Platform may impose limits on the number of active campaigns per user:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Individual accounts may be limited in the number of concurrent campaigns</li>
-                                <li>Organization accounts may have different limits based on verification status</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                4.5 Prohibited Campaigns
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                The following campaign types are prohibited:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Campaigns based on false or misleading medical information</li>
-                                <li>Campaigns for non-medical purposes disguised as medical needs</li>
-                                <li>Campaigns for cosmetic procedures (unless medically necessary)</li>
-                                <li>Campaigns promoting illegal activities</li>
-                                <li>Campaigns that violate the rights of others</li>
-                                <li>Duplicate campaigns for the same medical need</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                4.6 Fund Usage
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                Campaign Creators must use all funds received for the stated medical purpose. Misuse of funds may result in:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Account termination</li>
-                                <li>Legal action</li>
-                                <li>Reporting to relevant authorities</li>
-                                <li>Requirement to refund donors</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                4.7 Campaign Updates
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                Campaign Creators are encouraged to provide regular updates on:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside">
-                                <li>Patient&apos;s medical progress</li>
-                                <li>How funds are being used</li>
-                                <li>Medical receipts and documentation</li>
-                            </ul>
-                        </div>
-
-                        {/* Donations */}
-                        <div id="donations" className="scroll-mt-24">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-                                5. Donations
-                            </h2>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                5.1 Nature of Donations
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                Donations made through the Platform are <strong>voluntary gifts</strong>. By making a donation, you acknowledge that:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>You are making a gift with no expectation of goods, services, or financial return</li>
-                                <li>You have no ownership, equity, or creditor rights in the campaign or to the patient</li>
-                                <li>You are not entitled to a refund except as described in Section 5.3</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                5.2 Anonymous Donations
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-4">
-                                Donors may choose to donate anonymously. Anonymous donations will not display the donor&apos;s name publicly, though IB4ME retains donor information for record-keeping and compliance purposes.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                5.3 Refund Policy
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                Donations are generally <strong>non-refundable</strong>. Refunds may be issued in the following circumstances:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Campaign is cancelled by IB4ME due to fraud or policy violation</li>
-                                <li>Duplicate or erroneous transactions (verified by IB4ME)</li>
-                                <li>As required by law</li>
-                            </ul>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                                Refund requests must be submitted to IB4ME support within 30 days of the donation.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                5.4 Tax Implications
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-4">
-                                IB4ME does not provide tax advice. Donors should consult with qualified tax professionals regarding the tax implications of their donations. Donations to IB4ME campaigns may or may not be tax-deductible depending on your jurisdiction and the campaign&apos;s status.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                5.5 Donor Rights
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                Donors have no right to:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside">
-                                <li>Direct how funds are specifically used beyond the stated campaign purpose</li>
-                                <li>Receive detailed accounting of expenditures</li>
-                                <li>Make claims against the patient or Campaign Creator</li>
-                                <li>Demand repayment of donations</li>
-                            </ul>
-                        </div>
-
-                        {/* Payments and Fees */}
-                        <div id="payments" className="scroll-mt-24">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-                                6. Payments and Fees
-                            </h2>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                6.1 Payment Methods
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                The Platform accepts payments through:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li><strong>Mobile Money</strong>: Orange Money, AfriMoney</li>
-                                <li><strong>Debit/Credit Cards</strong>: Visa, Mastercard</li>
-                                <li><strong>Bank Transfers</strong> (where available)</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                6.2 Fees
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                IB4ME charges fees to sustain platform operations and provide services. Fees include:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li><strong>Platform Fee</strong>: A percentage or fixed amount retained by IB4ME</li>
-                                <li><strong>Payment Processing Fee</strong>: Fees charged by payment processors</li>
-                            </ul>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                                <strong>Fee amounts are clearly displayed during the checkout process before you confirm your donation.</strong> Fees are charged in addition to the donation amount and are non-refundable.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                6.3 Currency
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-4">
-                                The primary currency of the Platform is the <strong>Sierra Leonean Leone (SLE)</strong>. International donations may be subject to currency conversion, and exchange rates are determined by payment processors.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                6.4 Processing Times
-                            </h3>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside">
-                                <li><strong>Donations</strong>: Typically processed within 1-3 business days</li>
-                                <li><strong>Mobile Money</strong>: Usually instant to a few hours</li>
-                                <li><strong>Card Payments</strong>: May take 2-5 business days to settle</li>
-                            </ul>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mt-4">
-                                Processing times may vary based on payment provider and external factors.
-                            </p>
-                        </div>
-
-                        {/* Withdrawals and Payouts */}
-                        <div id="withdrawals" className="scroll-mt-24">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-                                7. Withdrawals and Payouts
-                            </h2>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                7.1 Eligibility
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                To withdraw funds, Campaign Creators must:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Complete identity verification (KYC/KYB)</li>
-                                <li>Have their campaign verified and approved</li>
-                                <li>Meet minimum withdrawal thresholds</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                7.2 Minimum Withdrawal Thresholds
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-4">
-                                The Platform enforces minimum withdrawal amounts to ensure efficient fund distribution. Threshold amounts are displayed in your campaign dashboard.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                7.3 Payout Methods
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                Funds can be withdrawn via:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li><strong>Mobile Money</strong>: Orange Money, AfriMoney</li>
-                                <li><strong>Bank Transfer</strong>: To verified bank accounts</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                7.4 Payout Approval
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                Withdrawal requests are subject to review and approval by IB4ME. This process ensures:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Compliance with platform policies</li>
-                                <li>Verification of fund usage intentions</li>
-                                <li>Fraud prevention</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                7.5 Processing Times
-                            </h3>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside">
-                                <li><strong>Mobile Money Payouts</strong>: Typically 1-3 business days</li>
-                                <li><strong>Bank Transfers</strong>: Typically 3-7 business days</li>
-                            </ul>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mt-4">
-                                Times may vary based on payment provider availability and verification requirements.
-                            </p>
-                        </div>
-
-                        {/* Platform Liability Limitations */}
-                        <div id="liability" className="scroll-mt-24">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-                                8. Platform Liability Limitations
-                            </h2>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                8.1 No Medical Advice
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                IB4ME is <strong>not a medical provider</strong> and does not:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Provide medical advice or recommendations</li>
-                                <li>Verify the accuracy of medical diagnoses</li>
-                                <li>Guarantee medical treatment outcomes</li>
-                                <li>Recommend specific hospitals or treatments</li>
-                            </ul>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                                Users should consult qualified medical professionals for medical advice.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                8.2 No Guarantee of Success
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                IB4ME does not guarantee that:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Any campaign will reach its funding goal</li>
-                                <li>Donations will be received</li>
-                                <li>Medical treatment will be successful</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                8.3 No Responsibility for Fund Misuse
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                While IB4ME takes measures to verify campaigns and monitor fund usage, we are <strong>not responsible</strong> for:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>How Campaign Creators use funds after disbursement</li>
-                                <li>Fraudulent activities by Campaign Creators</li>
-                                <li>Misrepresentation of medical conditions</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                8.4 Payment Processor Liability
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                IB4ME is not liable for:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Failures, delays, or errors by payment processors</li>
-                                <li>Currency conversion discrepancies</li>
-                                <li>Transaction disputes with payment providers</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                8.5 Limitation of Liability
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                To the maximum extent permitted by law:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>IB4ME&apos;s total liability shall not exceed the amount of fees paid by you to IB4ME in the 12 months preceding the claim</li>
-                                <li>IB4ME is not liable for indirect, incidental, consequential, or punitive damages</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                8.6 Indemnification
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                You agree to indemnify and hold harmless IB4ME, its officers, directors, employees, and agents from any claims, damages, losses, or expenses arising from:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside">
-                                <li>Your violation of these Terms</li>
-                                <li>Your use of the Platform</li>
-                                <li>Content you submit to the Platform</li>
-                                <li>Your campaign or donation activities</li>
-                            </ul>
-                        </div>
-
-                        {/* Prohibited Conduct */}
-                        <div id="prohibited" className="scroll-mt-24">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-                                9. Prohibited Conduct
-                            </h2>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-4">
-                                Users are prohibited from:
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                9.1 Fraudulent Activities
-                            </h3>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Creating campaigns with false medical information</li>
-                                <li>Misusing donated funds</li>
-                                <li>Providing false identity information</li>
-                                <li>Impersonating others</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                9.2 Financial Crimes
-                            </h3>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Money laundering</li>
-                                <li>Terrorist financing</li>
-                                <li>Tax evasion</li>
-                                <li>Circumventing financial regulations</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                9.3 Platform Abuse
-                            </h3>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Creating multiple accounts to circumvent limits</li>
-                                <li>Manipulating campaign statistics</li>
-                                <li>Automated or bot-driven activities</li>
-                                <li>Interfering with Platform operations</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                9.4 Harmful Behavior
-                            </h3>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Harassment of other Users</li>
-                                <li>Discriminatory content or behavior</li>
-                                <li>Sharing others&apos; personal information without consent</li>
-                                <li>Uploading malicious content or code</li>
-                            </ul>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                                Violations may result in account termination, legal action, and reporting to authorities.
-                            </p>
-                        </div>
-
-                        {/* Intellectual Property */}
-                        <div id="intellectual-property" className="scroll-mt-24">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-                                10. Intellectual Property
-                            </h2>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                10.1 User Content
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                You retain ownership of content you submit to the Platform (photos, text, videos). By submitting content, you grant IB4ME a non-exclusive, worldwide, royalty-free license to:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Display content on the Platform</li>
-                                <li>Use content for platform promotion and marketing</li>
-                                <li>Adapt content for technical purposes</li>
-                            </ul>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                10.2 Platform Content
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-4">
-                                All Platform content, including logos, designs, text, and software, is owned by IB4ME or its licensors and protected by intellectual property laws. You may not copy, modify, or distribute Platform content without permission.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                10.3 Trademarks
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                                &quot;IB4ME&quot; and associated logos are trademarks of IB4ME Ltd. Unauthorized use is prohibited.
-                            </p>
-                        </div>
-
-                        {/* Dispute Resolution */}
-                        <div id="disputes" className="scroll-mt-24">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-                                11. Dispute Resolution
-                            </h2>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                11.1 Internal Resolution
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                For disputes related to Platform use:
-                            </p>
-                            <ol className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-decimal list-inside mb-4">
-                                <li>Contact IB4ME support with your complaint</li>
-                                <li>IB4ME will investigate and respond within 30 days</li>
-                                <li>Appeals may be submitted within 14 days of the initial decision</li>
-                            </ol>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                11.2 Governing Law
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-4">
-                                These Terms are governed by and construed in accordance with the <strong>laws of Sierra Leone</strong>.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                11.3 Jurisdiction
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-4">
-                                Any disputes arising from these Terms shall be subject to the exclusive jurisdiction of the <strong>courts in Freetown, Sierra Leone</strong>.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                11.4 Donor-Campaign Creator Disputes
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                                IB4ME may facilitate communication between Donors and Campaign Creators but is not obligated to resolve disputes between them. Users are encouraged to resolve disputes directly.
-                            </p>
-                        </div>
-
-                        {/* Modifications and Termination */}
-                        <div id="modifications" className="scroll-mt-24">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-                                12. Modifications and Termination
-                            </h2>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                12.1 Modifications to Terms
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                IB4ME may modify these Terms at any time. Changes will be communicated through:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Email notification to registered Users</li>
-                                <li>Notice on the Platform</li>
-                                <li>Updated &quot;Last Updated&quot; date</li>
-                            </ul>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                                Continued use of the Platform after modifications constitutes acceptance of the updated Terms.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                12.2 Account Termination by User
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                You may terminate your account at any time by:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside mb-4">
-                                <li>Contacting IB4ME support</li>
-                                <li>Following the account deletion process in your settings</li>
-                            </ul>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                                Active campaigns must be resolved (completed or cancelled) before account deletion.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                12.3 Account Termination by IB4ME
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-2">
-                                IB4ME may terminate accounts:
-                            </p>
-                            <ul className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed list-disc list-inside">
-                                <li>For violation of these Terms</li>
-                                <li>For suspected fraud or illegal activity</li>
-                                <li>If required by law</li>
-                                <li>For extended inactivity</li>
-                            </ul>
-                        </div>
-
-                        {/* General Provisions */}
-                        <div id="general" className="scroll-mt-24">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-                                13. General Provisions
-                            </h2>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                13.1 Entire Agreement
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-4">
-                                These Terms, together with our Privacy Policy, constitute the entire agreement between you and IB4ME regarding Platform use.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                13.2 Severability
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-4">
-                                If any provision of these Terms is found unenforceable, the remaining provisions continue in full force.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                13.3 Waiver
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-4">
-                                Failure by IB4ME to enforce any right or provision does not constitute a waiver of that right or provision.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                13.4 Assignment
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-4">
-                                You may not assign your rights under these Terms. IB4ME may assign its rights and obligations to any successor or affiliate.
-                            </p>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 mt-6">
-                                13.5 Force Majeure
-                            </h3>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                                IB4ME is not liable for delays or failures due to circumstances beyond reasonable control, including natural disasters, war, pandemic, government action, or infrastructure failures.
-                            </p>
-                        </div>
-
-                        {/* Contact Information */}
-                        <div id="contact" className="scroll-mt-24">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-                                14. Contact Information
-                            </h2>
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-4">
-                                For questions, concerns, or support:
-                            </p>
-                            <div className="space-y-2 text-base sm:text-lg text-muted-foreground leading-relaxed">
-                                <p><strong>IB4ME Ltd</strong></p>
-                                <p><strong>Email</strong>: support@ib4me.org</p>
-                                <p><strong>Address</strong>: Freetown, Sierra Leone</p>
-                                <p><strong>Website</strong>: www.ib4me.org</p>
-                            </div>
-                        </div>
-
-                        {/* Closing */}
-                        <div className="pt-8 border-t border-muted">
-                            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed text-center">
-                                By using IB4ME, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions.
-                            </p>
-                        </div>
-
-                    </div>
-                </section>
-            </main>
+        <div id={id} className="scroll-mt-24 rounded-3xl border border-border bg-card shadow-sm overflow-hidden">
+            <div className={`flex items-center gap-3 sm:gap-4 px-5 sm:px-7 py-4 border-b border-border ${bg}`}>
+                <div className="p-2 rounded-xl bg-white/60 dark:bg-white/10 shrink-0">
+                    <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${accent}`} />
+                </div>
+                <div>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Section {number}</p>
+                    <h2 className="text-base sm:text-lg font-bold text-foreground">{title}</h2>
+                </div>
+            </div>
+            <div className="px-5 sm:px-7 py-5 sm:py-7 space-y-5">{children}</div>
         </div>
     );
-};
+}
 
-export default TermsAndConditions;
+function Check({ items }: { items: (string | React.ReactNode)[] }) {
+    return (
+        <ul className="space-y-2.5">
+            {items.map((item, i) => (
+                <li key={i} className="flex items-start gap-3">
+                    <CheckCircle className="h-4 w-4 mt-0.5 text-fun-green shrink-0" />
+                    <span className="text-sm sm:text-base text-muted-foreground leading-relaxed">{item}</span>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
+function XList({ items }: { items: string[] }) {
+    return (
+        <ul className="space-y-2.5">
+            {items.map((item, i) => (
+                <li key={i} className="flex items-start gap-3">
+                    <X className="h-4 w-4 mt-0.5 text-blaze-orange shrink-0" />
+                    <span className="text-sm sm:text-base text-muted-foreground leading-relaxed">{item}</span>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
+function Sub({ title, children }: { title: string; children: React.ReactNode }) {
+    return (
+        <div className="rounded-2xl border border-border/50 bg-muted/20 p-4 sm:p-5 space-y-3">
+            <h3 className="text-sm sm:text-base font-semibold text-foreground">{title}</h3>
+            {children}
+        </div>
+    );
+}
+
+function Callout({ color, children }: { color?: "green" | "orange" | "blue"; children: React.ReactNode }) {
+    const styles = {
+        green: "bg-fun-green/5 border-fun-green/30 text-fun-green",
+        orange: "bg-blaze-orange/5 border-blaze-orange/30 text-blaze-orange",
+        blue: "bg-primary/5 border-primary/20 text-primary",
+    }[color ?? "blue"];
+    return (
+        <div className={`rounded-2xl border px-4 py-3 ${styles}`}>
+            <p className="text-sm font-medium leading-relaxed">{children}</p>
+        </div>
+    );
+}
+
+function OrderedList({ items }: { items: string[] }) {
+    return (
+        <ol className="space-y-2.5">
+            {items.map((item, i) => (
+                <li key={i} className="flex items-start gap-3">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold mt-0.5">{i + 1}</span>
+                    <span className="text-sm sm:text-base text-muted-foreground leading-relaxed">{item}</span>
+                </li>
+            ))}
+        </ol>
+    );
+}
+
+/* ─── Nav items ───────────────────────────────────────────────── */
+const navItems = [
+    { id: "introduction", label: "Introduction", icon: Info },
+    { id: "definitions", label: "Definitions", icon: BookOpen },
+    { id: "eligibility", label: "Eligibility", icon: UserCheck },
+    { id: "campaigns", label: "Campaigns", icon: Target },
+    { id: "donations", label: "Donations", icon: Heart },
+    { id: "payments", label: "Payments & Fees", icon: CreditCard },
+    { id: "withdrawals", label: "Withdrawals", icon: Wallet },
+    { id: "liability", label: "Liability", icon: ShieldAlert },
+    { id: "prohibited", label: "Prohibited Conduct", icon: Ban },
+    { id: "intellectual-property", label: "IP Rights", icon: Copyright },
+    { id: "disputes", label: "Disputes", icon: Handshake },
+    { id: "modifications", label: "Modifications", icon: Settings },
+    { id: "general", label: "General", icon: FileText },
+    { id: "contact", label: "Contact", icon: Mail },
+];
+
+/* ─── Page ────────────────────────────────────────────────────── */
+
+export default function TermsAndConditions() {
+    return (
+        <>
+        <div className="min-h-screen bg-background font-Sora">
+            {/* ── Hero ── */}
+            <section className="relative py-16 sm:py-20 md:py-28 lg:py-32 px-4 sm:px-6 lg:px-8 bg-fun-green overflow-hidden">
+                <div className="absolute top-0 right-0 w-72 h-72 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-blaze-orange/10 translate-y-1/2 -translate-x-1/4 pointer-events-none" />
+
+                <div className="relative mx-auto max-w-3xl text-center">
+                    <div className="inline-flex items-center gap-2 bg-white/15 text-white px-4 py-2 rounded-full mb-5 text-sm font-semibold">
+                        <FileText className="w-4 h-4" />
+                        Legal Agreement
+                    </div>
+                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tight mb-5">
+                        Terms &amp; <span className="text-blaze-orange">Conditions</span>
+                    </h1>
+                    <p className="text-lg text-white/80 leading-relaxed max-w-xl mx-auto">
+                        Please read these terms carefully before using our platform. They govern your rights and responsibilities as an ib4me user.
+                    </p>
+                    <p className="text-sm text-white/50 mt-4">Last Updated: November 2024</p>
+                </div>
+
+                <div className="absolute -bottom-px left-0 right-0">
+                    <svg viewBox="0 0 1440 56" fill="none" xmlns="http://www.w3.org/2000/svg" className="block w-full" preserveAspectRatio="none">
+                        <path d="M0 56h1440V28c-240-28-480-28-720 0S240 56 0 28v28Z" className="fill-background" />
+                    </svg>
+                </div>
+            </section>
+
+            {/* ── Quick nav ── */}
+            <section className="pt-10 sm:pt-14 pb-6 px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-4xl">
+                    <div className="rounded-3xl border border-border bg-card shadow-sm overflow-hidden">
+                        <div className="px-5 sm:px-7 py-4 border-b border-border bg-muted/30">
+                            <h2 className="font-bold text-foreground text-base sm:text-lg">Jump to Section</h2>
+                        </div>
+                        <div className="p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                            {navItems.map(({ id, label, icon: Icon }) => (
+                                <Link
+                                    key={id}
+                                    href={`#${id}`}
+                                    className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-muted-foreground hover:bg-primary/5 hover:text-primary transition-colors"
+                                >
+                                    <Icon className="h-3.5 w-3.5 shrink-0" />
+                                    {label}
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ── Intro callout ── */}
+            <section className="pb-2 px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-4xl">
+                    <div className="rounded-3xl border border-primary/20 bg-primary/5 px-5 sm:px-7 py-5 sm:py-6">
+                        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                            Welcome to <strong className="text-foreground">ib4me</strong>. These Terms &amp; Conditions (&quot;Terms&quot;) govern your access to and use of the ib4me platform, website, and services. By accessing or using the Platform, you agree to be bound by these Terms. If you do not agree, please do not use the Platform.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            {/* ── All sections ── */}
+            <section className="py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-4xl space-y-6 sm:space-y-8">
+
+                    {/* 1. Introduction */}
+                    <SectionCard id="introduction" number="01" title="Introduction" icon={Info} accent="text-primary" bg="bg-primary/5">
+                        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                            <strong className="text-foreground">ib4me</strong> is a crowdfunding platform for social good, operated by <strong className="text-foreground">ib4me Ltd</strong> — a company registered in Sierra Leone. The Platform enables individuals and organisations to create fundraising campaigns for causes that matter, and allows donors to contribute to those campaigns.
+                        </p>
+                        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                            The Platform facilitates connections between those in need and those willing to help. ib4me does not guarantee campaign success or guarantee that funds will be used as intended by campaign creators.
+                        </p>
+                        <Callout color="blue">By creating an account or making a donation, you confirm that you have read and agree to these Terms in full.</Callout>
+                    </SectionCard>
+
+                    {/* 2. Definitions */}
+                    <SectionCard id="definitions" number="02" title="Definitions" icon={BookOpen} accent="text-blaze-orange" bg="bg-blaze-orange/5">
+                        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">Key terms used throughout these Terms:</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {[
+                                { term: "Platform", def: "The ib4me website, mobile applications, and all related services." },
+                                { term: "User", def: "Any person who accesses or uses the Platform, including Campaign Creators and Donors." },
+                                { term: "Campaign Creator", def: "A User who creates a fundraising campaign on the Platform." },
+                                { term: "Donor", def: "A User who makes a monetary contribution to a campaign." },
+                                { term: "Campaign", def: "A fundraising page created on the Platform for a specific cause or need." },
+                                { term: "Donation", def: "A monetary contribution made by a Donor to a Campaign." },
+                                { term: "Individual Account", def: "A personal user account for individuals." },
+                                { term: "Organisation Account", def: "An account for registered NGOs, charities, or other legal entities." },
+                            ].map(({ term, def }, i) => (
+                                <div key={i} className="rounded-2xl border border-border/50 bg-muted/20 px-4 py-3">
+                                    <p className="text-sm font-bold text-foreground mb-0.5">&quot;{term}&quot;</p>
+                                    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{def}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </SectionCard>
+
+                    {/* 3. Eligibility */}
+                    <SectionCard id="eligibility" number="03" title="Eligibility & Account Registration" icon={UserCheck} accent="text-fun-green" bg="bg-fun-green/5">
+                        <Callout color="green">You must be at least <strong>18 years old</strong> to create an account, make donations, or use any features of the Platform.</Callout>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Sub title="Individual Accounts">
+                                <p className="text-sm text-muted-foreground leading-relaxed">For personal use — raising funds for yourself, family, or others. Requires:</p>
+                                <Check items={["Full legal name", "Valid email address or phone number", "Government-issued ID (for campaigns)", "Proof of address"]} />
+                            </Sub>
+                            <Sub title="Organisation Accounts">
+                                <p className="text-sm text-muted-foreground leading-relaxed">For registered NGOs, charities, hospitals, and legal entities. Additional requirements:</p>
+                                <Check items={["Organisation name and type", "Registration number", "Tax ID (if applicable)", "Registered address", "Authorised representative details"]} />
+                            </Sub>
+                        </div>
+
+                        <Sub title="Account Security">
+                            <p className="text-sm text-muted-foreground mb-3">You are responsible for:</p>
+                            <Check items={["Keeping your login credentials confidential", "All activity that occurs under your account", "Notifying ib4me immediately of any unauthorised access"]} />
+                            <Callout color="orange">ib4me is not liable for losses resulting from unauthorised use of your account.</Callout>
+                        </Sub>
+
+                        <Sub title="Account Suspension or Termination">
+                            <p className="text-sm text-muted-foreground mb-3">ib4me may suspend or terminate your account if you:</p>
+                            <XList items={["Violate these Terms", "Are suspected of fraudulent activity", "Provide false or misleading information", "Are required by law or regulatory authority"]} />
+                        </Sub>
+                    </SectionCard>
+
+                    {/* 4. Campaigns */}
+                    <SectionCard id="campaigns" number="04" title="Campaign Creation & Management" icon={Target} accent="text-orange-blaze" bg="bg-orange-blaze/5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Sub title="Campaign Creator Obligations">
+                                <p className="text-sm text-muted-foreground mb-3">By creating a campaign, you agree to:</p>
+                                <Check items={["Provide truthful, accurate, and complete information", "Use funds exclusively for the stated purpose", "Provide regular updates on progress and fund usage", "Respond to verification requests from ib4me", "Obtain consent from beneficiaries to share their information"]} />
+                            </Sub>
+                            <Sub title="Required Documentation">
+                                <p className="text-sm text-muted-foreground mb-3">Campaign Creators must submit supporting documentation, which may include:</p>
+                                <Check items={["Relevant supporting documents for the cause", "Cost estimates or financial projections", "Beneficiary identification", "Proof of relationship (if applicable)"]} />
+                            </Sub>
+                        </div>
+
+                        <Sub title="Verification Process">
+                            <p className="text-sm text-muted-foreground mb-3">All campaigns go through verification before going live:</p>
+                            <OrderedList items={["Campaign submission and documentation upload", "Review by the ib4me verification team", "Verification of submitted information", "Approval, rejection, or request for additional information"]} />
+                            <Callout color="blue">ib4me aims to complete verification promptly but does not guarantee specific timeframes.</Callout>
+                        </Sub>
+
+                        <div className="rounded-2xl bg-blaze-orange/5 border border-blaze-orange/30 p-4 sm:p-5">
+                            <p className="text-sm font-bold text-foreground mb-3">Prohibited Campaign Types</p>
+                            <XList items={[
+                                "Campaigns based on false or misleading information",
+                                "Campaigns for purposes not aligned with the stated cause",
+                                "Campaigns promoting illegal activities",
+                                "Campaigns that violate the rights of others",
+                                "Duplicate campaigns for the same need",
+                            ]} />
+                        </div>
+
+                        <Sub title="Fund Usage">
+                            <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                                Campaign Creators must use all funds received for the stated purpose. Misuse of funds may result in:
+                            </p>
+                            <XList items={["Account termination", "Legal action", "Reporting to relevant authorities", "Requirement to refund donors"]} />
+                        </Sub>
+                    </SectionCard>
+
+                    {/* 5. Donations */}
+                    <SectionCard id="donations" number="05" title="Donations" icon={Heart} accent="text-blaze-orange" bg="bg-blaze-orange/5">
+                        <Callout color="orange">Donations made through the Platform are <strong>voluntary gifts</strong>. You are not entitled to goods, services, or any financial return.</Callout>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Sub title="Anonymous Donations">
+                                <p className="text-sm text-muted-foreground leading-relaxed">You may donate anonymously. Your name will not be displayed publicly, though ib4me retains donor information for compliance purposes.</p>
+                            </Sub>
+                            <Sub title="Tax Implications">
+                                <p className="text-sm text-muted-foreground leading-relaxed">ib4me does not provide tax advice. Consult a qualified tax professional. Donations may or may not be tax-deductible depending on your jurisdiction.</p>
+                            </Sub>
+                        </div>
+
+                        <Sub title="Refund Policy">
+                            <p className="text-sm text-muted-foreground mb-3">Donations are generally <strong className="text-foreground">non-refundable</strong>. Refunds may be issued only if:</p>
+                            <Check items={["A campaign is cancelled by ib4me due to fraud or policy violation", "A duplicate or erroneous transaction is verified by ib4me", "Required by applicable law"]} />
+                            <Callout color="blue">Refund requests must be submitted within 30 days of the donation.</Callout>
+                        </Sub>
+
+                        <Sub title="Donor Rights">
+                            <p className="text-sm text-muted-foreground mb-3">As a donor, you have <strong className="text-foreground">no right</strong> to:</p>
+                            <XList items={["Direct how funds are used beyond the campaign's stated purpose", "Receive a detailed accounting of expenditures", "Make claims against the beneficiary or Campaign Creator", "Demand repayment of donations"]} />
+                        </Sub>
+                    </SectionCard>
+
+                    {/* 6. Payments & Fees */}
+                    <SectionCard id="payments" number="06" title="Payments & Fees" icon={CreditCard} accent="text-fun-green" bg="bg-fun-green/5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Sub title="Accepted Payment Methods">
+                                <Check items={["Orange Money & AfriMoney (mobile money)", "Visa & Mastercard (debit/credit cards)", "Bank transfers (where available)"]} />
+                            </Sub>
+                            <Sub title="Currency">
+                                <p className="text-sm text-muted-foreground leading-relaxed">The primary currency is the <strong className="text-foreground">Sierra Leonean Leone (SLE)</strong>. International donations may be subject to currency conversion by the payment processor.</p>
+                            </Sub>
+                        </div>
+
+                        <Sub title="Platform Fees">
+                            <p className="text-sm text-muted-foreground leading-relaxed mb-3">ib4me charges fees to sustain platform operations. Fees are displayed clearly before you confirm your donation.</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="rounded-xl bg-background border border-border/40 p-3">
+                                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Individual Campaigns</p>
+                                    <p className="text-2xl font-bold text-foreground">3.6%</p>
+                                    <p className="text-xs text-muted-foreground mt-1">1% payment processing + 2.6% platform fee</p>
+                                </div>
+                                <div className="rounded-xl bg-background border border-border/40 p-3">
+                                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Organisation Campaigns</p>
+                                    <p className="text-2xl font-bold text-foreground">3.0%</p>
+                                    <p className="text-xs text-muted-foreground mt-1">1% payment processing + 2.0% platform fee</p>
+                                </div>
+                            </div>
+                            <Callout color="green">Fees are added on top of the donation amount — 100% of what you donate goes directly to the campaign.</Callout>
+                        </Sub>
+
+                        <Sub title="Processing Times">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                {[
+                                    { method: "Mobile Money", time: "Usually instant – a few hours" },
+                                    { method: "Card Payments", time: "2 – 5 business days" },
+                                    { method: "Bank Transfers", time: "1 – 3 business days" },
+                                ].map(({ method, time }, i) => (
+                                    <div key={i} className="rounded-xl bg-background border border-border/40 px-3 py-3">
+                                        <p className="text-xs font-bold text-foreground mb-0.5">{method}</p>
+                                        <p className="text-xs text-muted-foreground">{time}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </Sub>
+                    </SectionCard>
+
+                    {/* 7. Withdrawals */}
+                    <SectionCard id="withdrawals" number="07" title="Withdrawals & Payouts" icon={Wallet} accent="text-chartereuse" bg="bg-chartereuse/10">
+                        <Sub title="Eligibility to Withdraw">
+                            <p className="text-sm text-muted-foreground mb-3">To withdraw funds, Campaign Creators must:</p>
+                            <Check items={["Complete identity verification (KYC/KYB)", "Have their campaign verified and approved", "Meet the minimum withdrawal threshold"]} />
+                        </Sub>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Sub title="Payout Methods">
+                                <Check items={["Orange Money & AfriMoney (mobile money)", "Bank transfer to a verified bank account"]} />
+                            </Sub>
+                            <Sub title="Payout Processing Times">
+                                <Check items={["Mobile Money: typically 1 – 3 business days", "Bank Transfers: typically 3 – 7 business days"]} />
+                            </Sub>
+                        </div>
+
+                        <Sub title="Approval Process">
+                            <p className="text-sm text-muted-foreground leading-relaxed mb-3">Withdrawal requests are reviewed by ib4me to ensure:</p>
+                            <Check items={["Compliance with platform policies", "Verification of fund-usage intentions", "Fraud prevention"]} />
+                        </Sub>
+                    </SectionCard>
+
+                    {/* 8. Liability */}
+                    <SectionCard id="liability" number="08" title="Platform Liability Limitations" icon={ShieldAlert} accent="text-orange-blaze" bg="bg-orange-blaze/5">
+                        <Callout color="orange">ib4me is a technology platform connecting campaign creators with donors — we are not a financial institution, charity, or guarantor of any campaign outcome.</Callout>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Sub title="No Guarantee of Success">
+                                <p className="text-sm text-muted-foreground leading-relaxed mb-3">ib4me does not guarantee that:</p>
+                                <XList items={["Any campaign will reach its funding goal", "Donations will be received", "Campaigns represent accurate information"]} />
+                            </Sub>
+                            <Sub title="No Responsibility for Fund Misuse">
+                                <p className="text-sm text-muted-foreground leading-relaxed mb-3">While ib4me takes measures to verify campaigns, we are not responsible for:</p>
+                                <XList items={["How creators use funds after disbursement", "Fraudulent activities by campaign creators", "Misrepresentation of circumstances"]} />
+                            </Sub>
+                            <Sub title="Payment Processor Liability">
+                                <p className="text-sm text-muted-foreground leading-relaxed mb-3">ib4me is not liable for:</p>
+                                <XList items={["Failures or delays by payment processors", "Currency conversion discrepancies", "Transaction disputes with payment providers"]} />
+                            </Sub>
+                            <Sub title="Limitation of Liability">
+                                <p className="text-sm text-muted-foreground leading-relaxed mb-3">To the maximum extent permitted by law:</p>
+                                <Check items={["ib4me's total liability shall not exceed fees paid by you in the preceding 12 months", "ib4me is not liable for indirect, incidental, or consequential damages"]} />
+                            </Sub>
+                        </div>
+
+                        <Sub title="Indemnification">
+                            <p className="text-sm text-muted-foreground leading-relaxed mb-3">You agree to indemnify ib4me, its officers, directors, and employees from any claims arising from:</p>
+                            <Check items={["Your violation of these Terms", "Your use of the Platform", "Content you submit to the Platform", "Your campaign or donation activities"]} />
+                        </Sub>
+                    </SectionCard>
+
+                    {/* 9. Prohibited Conduct */}
+                    <SectionCard id="prohibited" number="09" title="Prohibited Conduct" icon={Ban} accent="text-blaze-orange" bg="bg-blaze-orange/5">
+                        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">The following activities are strictly prohibited on the Platform:</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="rounded-2xl border border-border/50 bg-muted/20 p-4 sm:p-5 space-y-3">
+                                <h3 className="text-sm font-semibold text-foreground">Fraudulent Activities</h3>
+                                <XList items={["Creating campaigns with false information", "Misusing donated funds", "Providing false identity information", "Impersonating others"]} />
+                            </div>
+                            <div className="rounded-2xl border border-border/50 bg-muted/20 p-4 sm:p-5 space-y-3">
+                                <h3 className="text-sm font-semibold text-foreground">Financial Crimes</h3>
+                                <XList items={["Money laundering", "Terrorist financing", "Tax evasion", "Circumventing financial regulations"]} />
+                            </div>
+                            <div className="rounded-2xl border border-border/50 bg-muted/20 p-4 sm:p-5 space-y-3">
+                                <h3 className="text-sm font-semibold text-foreground">Platform Abuse</h3>
+                                <XList items={["Multiple accounts to circumvent limits", "Manipulating campaign statistics", "Automated or bot-driven activities", "Interfering with platform operations"]} />
+                            </div>
+                            <div className="rounded-2xl border border-border/50 bg-muted/20 p-4 sm:p-5 space-y-3">
+                                <h3 className="text-sm font-semibold text-foreground">Harmful Behaviour</h3>
+                                <XList items={["Harassment of other users", "Discriminatory content or behaviour", "Sharing others' personal data without consent", "Uploading malicious content or code"]} />
+                            </div>
+                        </div>
+                        <Callout color="orange">Violations may result in immediate account termination, legal action, and reporting to relevant authorities.</Callout>
+                    </SectionCard>
+
+                    {/* 10. Intellectual Property */}
+                    <SectionCard id="intellectual-property" number="10" title="Intellectual Property" icon={Copyright} accent="text-primary" bg="bg-primary/5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Sub title="Your Content">
+                                <p className="text-sm text-muted-foreground leading-relaxed mb-3">You retain ownership of content you submit (photos, text, videos). By submitting, you grant ib4me a non-exclusive, worldwide, royalty-free licence to:</p>
+                                <Check items={["Display content on the Platform", "Use content for platform promotion and marketing", "Adapt content for technical purposes"]} />
+                            </Sub>
+                            <Sub title="Platform Content">
+                                <p className="text-sm text-muted-foreground leading-relaxed">All platform content — logos, designs, text, and software — is owned by ib4me or its licensors and protected by intellectual property laws. You may not copy, modify, or distribute it without permission.</p>
+                            </Sub>
+                        </div>
+                        <Callout color="blue">&quot;ib4me&quot; and associated logos are trademarks of ib4me Ltd. Unauthorised use is prohibited.</Callout>
+                    </SectionCard>
+
+                    {/* 11. Dispute Resolution */}
+                    <SectionCard id="disputes" number="11" title="Dispute Resolution" icon={Handshake} accent="text-fun-green" bg="bg-fun-green/5">
+                        <Sub title="Internal Resolution Process">
+                            <p className="text-sm text-muted-foreground mb-3">For disputes related to platform use:</p>
+                            <OrderedList items={["Contact ib4me support with your complaint", "ib4me will investigate and respond within 30 days", "Appeals may be submitted within 14 days of the initial decision"]} />
+                        </Sub>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Sub title="Governing Law">
+                                <p className="text-sm text-muted-foreground leading-relaxed">These Terms are governed by and construed in accordance with the <strong className="text-foreground">laws of Sierra Leone</strong>.</p>
+                            </Sub>
+                            <Sub title="Jurisdiction">
+                                <p className="text-sm text-muted-foreground leading-relaxed">Any disputes arising from these Terms shall be subject to the exclusive jurisdiction of the <strong className="text-foreground">courts in Freetown, Sierra Leone</strong>.</p>
+                            </Sub>
+                        </div>
+                        <Callout color="green">ib4me may facilitate communication between donors and campaign creators but is not obligated to resolve disputes between them.</Callout>
+                    </SectionCard>
+
+                    {/* 12. Modifications */}
+                    <SectionCard id="modifications" number="12" title="Modifications & Termination" icon={Settings} accent="text-orange-blaze" bg="bg-orange-blaze/5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Sub title="Changes to These Terms">
+                                <p className="text-sm text-muted-foreground mb-3">ib4me may modify these Terms at any time. You will be notified via:</p>
+                                <Check items={["Email notification to registered users", "A prominent notice on the Platform", 'An updated "Last Updated" date']} />
+                                <Callout color="blue">Continued use after modifications constitutes acceptance of the updated Terms.</Callout>
+                            </Sub>
+                            <Sub title="Account Termination">
+                                <p className="text-sm text-muted-foreground mb-3">You may close your account at any time by contacting support. Active campaigns must be resolved first.</p>
+                                <p className="text-sm text-muted-foreground mb-3">ib4me may terminate accounts for:</p>
+                                <XList items={["Violation of these Terms", "Suspected fraud or illegal activity", "If required by law", "Extended inactivity"]} />
+                            </Sub>
+                        </div>
+                    </SectionCard>
+
+                    {/* 13. General Provisions */}
+                    <SectionCard id="general" number="13" title="General Provisions" icon={FileText} accent="text-chartereuse" bg="bg-chartereuse/10">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {[
+                                { title: "Entire Agreement", desc: "These Terms, together with our Privacy Policy, constitute the entire agreement between you and ib4me regarding platform use." },
+                                { title: "Severability", desc: "If any provision is found unenforceable, the remaining provisions continue in full force." },
+                                { title: "Waiver", desc: "Failure by ib4me to enforce any right or provision does not constitute a waiver of that right or provision." },
+                                { title: "Assignment", desc: "You may not assign your rights under these Terms. ib4me may assign its rights to any successor or affiliate." },
+                                { title: "Force Majeure", desc: "ib4me is not liable for delays or failures due to circumstances beyond reasonable control — natural disasters, war, pandemic, government action, or infrastructure failures." },
+                            ].map(({ title, desc }, i) => (
+                                <div key={i} className="rounded-2xl border border-border/50 bg-muted/20 p-4">
+                                    <p className="text-sm font-bold text-foreground mb-1">{title}</p>
+                                    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </SectionCard>
+
+                    {/* 14. Contact */}
+                    <SectionCard id="contact" number="14" title="Contact Information" icon={Mail} accent="text-blaze-orange" bg="bg-blaze-orange/5">
+                        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">For questions, concerns, or support regarding these Terms:</p>
+                        <div className="rounded-2xl border border-border/50 bg-muted/30 p-5 sm:p-6">
+                            <p className="text-base font-bold text-foreground mb-4">ib4me Ltd</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {[
+                                    { icon: Mail, label: "Support", value: "support@ib4me.org" },
+                                    { icon: Mail, label: "Legal", value: "legal@ib4me.org" },
+                                    { icon: Building2, label: "Address", value: "Freetown, Sierra Leone" },
+                                    { icon: Globe, label: "Website", value: "www.ib4me.org" },
+                                ].map(({ icon: Icon, label, value }, i) => (
+                                    <div key={i} className="flex items-center gap-3 rounded-xl bg-background border border-border/40 px-3 py-2.5">
+                                        <Icon className="h-4 w-4 text-primary shrink-0" />
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">{label}</p>
+                                            <p className="text-sm font-semibold text-foreground">{value}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </SectionCard>
+
+                    {/* Closing */}
+                    <div className="rounded-3xl bg-fun-green/5 border border-fun-green/30 px-6 sm:px-8 py-6 sm:py-8 text-center">
+                        <FileText className="h-8 w-8 text-fun-green mx-auto mb-3" />
+                        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                            By using ib4me, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions.
+                        </p>
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-5">
+                            <Link href="/privacy" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
+                                Read our Privacy Policy <ArrowRight className="h-4 w-4" />
+                            </Link>
+                            <Link href="/contact" className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground hover:underline">
+                                Have questions? Contact us <ArrowRight className="h-4 w-4" />
+                            </Link>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </div>
+        <BackToTop />
+        </>
+    );
+}
