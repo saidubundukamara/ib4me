@@ -15,12 +15,12 @@ const Pricing = () => {
     const [campaignType, setCampaignType] = useState<"individual" | "organization">("individual");
 
     // Get fee settings from context (fetched from API)
-    const { fees, loading } = useSettings();
+    const { fees } = useSettings();
 
     // Fee constants (in basis points) - use API values with fallbacks
     const BASE_FEE_BPS = 100; // Monime's 1% - always fixed
-    const PLATFORM_FEE_INDIVIDUAL_BPS = fees?.processingFee?.individualBps ?? 260;
-    const PLATFORM_FEE_ORGANIZATION_BPS = fees?.processingFee?.organizationBps ?? 200;
+    const PLATFORM_FEE_INDIVIDUAL_BPS = fees?.processingFee?.individualBps ?? 800;
+    const PLATFORM_FEE_ORGANIZATION_BPS = fees?.processingFee?.organizationBps ?? 600;
 
     const amount = Math.max(0, Number(donationAmount) || 0);
 
@@ -33,7 +33,7 @@ const Pricing = () => {
 
     const paymentFeePercent = (BASE_FEE_BPS / 100).toFixed(1);
     const platformFeePercent = (platformFeeBps / 100).toFixed(1);
-    const totalFeePercent = ((BASE_FEE_BPS + platformFeeBps) / 100).toFixed(1);                                   
+    const totalFeePercent = ((BASE_FEE_BPS + platformFeeBps) / 100).toFixed(1);
 
 
     return (
@@ -49,7 +49,6 @@ const Pricing = () => {
                             We charge a small platform fee to keep our services running and help more people in need.
                         </p>
                     </div>
-
 
                     {/* Fee Structure */}
                     <section className="py-12 sm:py-16 lg:py-20">
@@ -286,8 +285,8 @@ const Pricing = () => {
                         </div>
                         <div className="space-y-4 sm:space-y-5 text-base sm:text-lg text-muted-foreground leading-relaxed">
                             <p>
-                                Verified organizations benefit from a reduced platform fee of 2.0% (vs 2.6% for individuals),
-                                bringing their total fee to just 3.0%. This helps established healthcare organizations,
+                                Verified organizations benefit from a reduced platform fee of 6% (vs 8% for individuals),
+                                bringing their total fee to just 7%. This helps established healthcare organizations,
                                 hospitals, and NGOs maximize the impact of every donation they receive.
                             </p>
                             <p>
@@ -318,8 +317,8 @@ const Pricing = () => {
                         </div>
                     </div>
                 </div>
-            </main >
-        </div >
+            </main>
+        </div>
     );
 };
 

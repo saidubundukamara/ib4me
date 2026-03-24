@@ -94,7 +94,7 @@ export function Sidebar({ className, onNavigate, variant = "desktop" }: SidebarP
               isMobileVariant && "text-[11px]",
             )}
           >
-            Put Fo Welbod
+            <span className="italic font-Sora">Help Start Ya</span>
           </p>
         </div>
       </div>
