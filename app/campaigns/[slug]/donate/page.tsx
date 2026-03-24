@@ -36,7 +36,7 @@ export default async function CampaignDonatePage({ params }: PageParams) {
   // Get feature settings to check if donor fee choice is enabled
   const donorFeeChoiceEnabled = await settingService.isDonorFeeChoiceEnabled();
 
-  // Collect asset IDs: patient photo (priority) and first document image (fallback)
+  // Collect asset IDs: beneficiary photo (priority) and first document image (fallback)
   const assetIds: mongoose.Types.ObjectId[] = [];
   if (campaign.patient?.photoAssetId) {
     assetIds.push(campaign.patient.photoAssetId as mongoose.Types.ObjectId);
@@ -51,7 +51,7 @@ export default async function CampaignDonatePage({ params }: PageParams) {
     const assets = await mediaAssetService.listByIds(assetIds);
     const assetMap = new Map(assets.map((a) => [String(a._id), a]));
 
-    // Try patient photo first
+    // Try beneficiary photo first
     let resolvedUrl: string | null = null;
     if (campaign.patient?.photoAssetId) {
       const photoAsset = assetMap.get(String(campaign.patient.photoAssetId));

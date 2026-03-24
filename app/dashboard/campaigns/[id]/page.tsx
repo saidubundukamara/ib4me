@@ -53,7 +53,7 @@ type CampaignResponse = {
   slug: string;
   urgency: string;
   diagnosis?: string;
-  patient?: { name?: string; age?: number };
+  patient?: { name?: string; age?: number; photoUrl?: string | null };
   hospital?: { name?: string };
   goal?: { currency?: string; amountMinor?: number };
   story?: string;
@@ -64,6 +64,7 @@ type CampaignResponse = {
     hospitalVerified?: boolean;
   };
   financial_account?: { uvan?: string };
+  imageUrl?: string | null;
 };
 
 const ALLOWED_STATUSES = ["draft", "active", "paused", "completed", "archived"] as const;
@@ -71,15 +72,15 @@ type AllowedStatus = (typeof ALLOWED_STATUSES)[number];
 
 // helpers
 function compactCurrency(value?: number, currency = "SLL") {
-    if (value == null) return `${currency} 0`;
-    const n = Math.trunc(value); // assume major units
-    const abs = Math.abs(n);
+  if (value == null) return `${currency} 0`;
+  const n = Math.trunc(value); // assume major units
+  const abs = Math.abs(n);
 
-    if (abs >= 1_000_000_000) return `${currency} ${Math.round(n / 1_000_000_000)}B`;
-    if (abs >= 1_000_000) return `${currency} ${Math.round(n / 1_000_000)}M`;
-    if (abs >= 1_000) return `${currency} ${Math.round(n / 1_000)}K`;
-    return `${currency} ${n.toLocaleString()}`;
-  }
+  if (abs >= 1_000_000_000) return `${currency} ${Math.round(n / 1_000_000_000)}B`;
+  if (abs >= 1_000_000) return `${currency} ${Math.round(n / 1_000_000)}M`;
+  if (abs >= 1_000) return `${currency} ${Math.round(n / 1_000)}K`;
+  return `${currency} ${n.toLocaleString()}`;
+}
 
 function compactNumber(value?: number) {
   if (value == null) return "0";
@@ -317,6 +318,7 @@ export default function UserCampaignDetailPage() {
         urgency: campaign.urgency,
         financial_account: campaign.financial_account,
         isVerified: campaign.verification?.status === "approved",
+        imageUrl: campaign.imageUrl ?? campaign.patient?.photoUrl ?? undefined,
       };
 
       const baseUrl = window.location.origin;

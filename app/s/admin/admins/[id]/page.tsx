@@ -221,9 +221,9 @@ export default function EditAdminPage({ params }: { params: Promise<{ id: string
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-lg font-medium text-gray-900 mb-2">Access Restricted</h2>
-              <p className="text-gray-600 mb-4">Only Super Administrators can edit admin users.</p>
+              <Shield className="h-12 w-12 text-muted-foreground/60 mx-auto mb-4" />
+              <h2 className="text-lg font-medium text-foreground mb-2">Access Restricted</h2>
+              <p className="text-muted-foreground mb-4">Only Super Administrators can edit admin users.</p>
               <Button onClick={() => router.push('/admins')} variant="outline">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Admin Users
@@ -252,9 +252,9 @@ export default function EditAdminPage({ params }: { params: Promise<{ id: string
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-lg font-medium text-gray-900 mb-2">Admin User Not Found</h2>
-              <p className="text-gray-600 mb-4">The requested admin user could not be found.</p>
+              <Shield className="h-12 w-12 text-muted-foreground/60 mx-auto mb-4" />
+              <h2 className="text-lg font-medium text-foreground mb-2">Admin User Not Found</h2>
+              <p className="text-muted-foreground mb-4">The requested admin user could not be found.</p>
               <Button onClick={() => router.push('/admins')} variant="outline">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Admin Users

@@ -12,10 +12,55 @@ export async function GET(req: NextRequest) {
   const limitRaw = searchParams.get("limit");
   const limit = Math.max(1, Math.min(24, Number.parseInt(limitRaw || "6", 10) || 6));
 
-  const campaigns = await CampaignModel.find({ status: "active" })
-    .sort({ createdAt: -1 })
-    .limit(limit)
+  const filter = searchParams.get("filter") || "";
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const query: Record<string, any> = { status: "active" };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let sort: Record<string, any> = { createdAt: -1 };
+
+  if (filter === "just_started") {
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    query.createdAt = { $gte: twoDaysAgo };
+  } else if (filter === "close_to_goal") {
+    // Fetch more to filter in-memory by progress
+    sort = { createdAt: -1 };
+  } else if (filter === "needs_momentum") {
+    sort = { "totals.donationCount": 1, createdAt: -1 };
+  }
+
+  const fetchLimit = (filter === "close_to_goal" || filter === "needs_momentum") ? 50 : limit;
+
+  let campaigns = await CampaignModel.find(query)
+    .sort(sort)
+    .limit(fetchLimit)
     .lean();
+
+  if (filter === "close_to_goal") {
+    campaigns = campaigns
+      .filter((c) => {
+        const raised = (c.totals as unknown as { raisedMinor?: number })?.raisedMinor ?? 0;
+        const goal = (c.goal as unknown as { amountMinor?: number })?.amountMinor ?? 1;
+        return goal > 0 && raised / goal >= 0.75;
+      })
+      .sort((a, b) => {
+        const pctA = ((a.totals as unknown as { raisedMinor?: number })?.raisedMinor ?? 0) / ((a.goal as unknown as { amountMinor?: number })?.amountMinor ?? 1);
+        const pctB = ((b.totals as unknown as { raisedMinor?: number })?.raisedMinor ?? 0) / ((b.goal as unknown as { amountMinor?: number })?.amountMinor ?? 1);
+        return pctB - pctA;
+      })
+      .slice(0, limit);
+  } else if (filter === "needs_momentum") {
+    campaigns = campaigns
+      .filter((c) => {
+        const raised = (c.totals as unknown as { raisedMinor?: number })?.raisedMinor ?? 0;
+        const goal = (c.goal as unknown as { amountMinor?: number })?.amountMinor ?? 1;
+        return goal > 0 && raised / goal < 0.25;
+      })
+      .slice(0, limit);
+  } else {
+    campaigns = campaigns.slice(0, limit);
+  }
 
   const campaignIdToFirstImageAssetId = new Map<string, string>();
   for (const c of campaigns) {
@@ -65,6 +110,10 @@ export async function GET(req: NextRequest) {
       goalAmount: Math.max(0, Math.floor(goalMinor) / 100),
       donationsCount: donationCount,
       imageUrl,
+      urgency: (c as { urgency?: string }).urgency ?? null,
+      description: (c as { story?: string }).story
+        ? ((c as { story?: string }).story!).replace(/<[^>]+>/g, "").slice(0, 160).trim() || null
+        : null,
     };
   });
 

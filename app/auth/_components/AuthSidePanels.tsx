@@ -21,7 +21,7 @@ export function RegisterAside() {
           Join the ib4me community
         </h1>
         <p className="mt-4 max-w-sm text-base text-primary-foreground/70">
-          Create an account to support medical emergencies, track your impact, and connect with a caring community.
+          Create an account to support causes that matter, track your impact, and connect with a caring community.
         </p>
       </div>
 
@@ -33,7 +33,7 @@ export function RegisterAside() {
               Your generosity matters
             </p>
             <p className="text-sm text-primary-foreground/60">
-              Every contribution goes directly to urgent medical needs in Sierra Leone.
+              Every contribution goes directly to verified causes in Sierra Leone.
             </p>
           </div>
         </div>
@@ -132,7 +132,7 @@ export function ResetPasswordAside() {
           Finish resetting your password
         </h1>
         <p className="mt-4 max-w-sm text-base text-primary-foreground/70">
-          Enter the six digit code we sent you along with a new password to get back to supporting medical campaigns.
+          Enter the six digit code we sent you along with a new password to get back to supporting campaigns.
         </p>
       </div>
 

@@ -215,12 +215,12 @@ export default function AdminTestimonialsPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="font-Sora space-y-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-8 bg-muted rounded w-1/4"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              <div key={i} className="h-24 bg-muted rounded"></div>
             ))}
           </div>
         </div>
@@ -229,11 +229,11 @@ export default function AdminTestimonialsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="font-Sora space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Testimonials</h2>
-        <p className="text-sm text-gray-600 mt-1">
+        <h2 className="text-2xl font-bold text-foreground">Testimonials</h2>
+        <p className="text-sm text-muted-foreground mt-1">
           Review and approve user testimonials for the homepage
         </p>
       </div>
@@ -242,13 +242,13 @@ export default function AdminTestimonialsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
-              <Clock className="w-4 h-4 mr-2 text-orange-500" />
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+              <Clock className="w-4 h-4 mr-2" style={{ color: "#FF6000" }} />
               Pending
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-2xl font-bold" style={{ color: "#FF6000" }}>
               {stats.pending}
             </div>
           </CardContent>
@@ -256,13 +256,13 @@ export default function AdminTestimonialsPage() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
-              <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+              <CheckCircle className="w-4 h-4 mr-2" style={{ color: "#00712D" }} />
               Approved
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold" style={{ color: "#00712D" }}>
               {stats.approved}
             </div>
           </CardContent>
@@ -270,7 +270,7 @@ export default function AdminTestimonialsPage() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
               <XCircle className="w-4 h-4 mr-2 text-red-500" />
               Rejected
             </CardTitle>
@@ -329,8 +329,8 @@ export default function AdminTestimonialsPage() {
         </CardHeader>
         <CardContent>
           {testimonials.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <MessageSquareQuote className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <div className="text-center py-8 text-muted-foreground">
+              <MessageSquareQuote className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
               <p>No testimonials found</p>
             </div>
           ) : (
@@ -338,7 +338,7 @@ export default function AdminTestimonialsPage() {
               {testimonials.map((testimonial) => (
                 <div
                   key={testimonial._id}
-                  className="border rounded-lg p-4 hover:bg-gray-50"
+                  className="border rounded-lg p-4 hover:bg-muted/50"
                 >
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                     {/* Author info and quote */}
@@ -358,19 +358,19 @@ export default function AdminTestimonialsPage() {
                             <span className="font-medium">
                               {testimonial.authorName}
                             </span>
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-muted-foreground">
                               ({testimonial.authorRole})
                             </span>
                             {getStatusBadge(testimonial.status)}
                           </div>
-                          <div className="text-sm text-gray-500 mt-0.5">
+                          <div className="text-sm text-muted-foreground mt-0.5">
                             Submitted by: {testimonial.userName} ({testimonial.userEmail})
                           </div>
 
                           {/* Quote */}
                           <div className="mt-3 flex items-start gap-2">
-                            <Quote className="w-4 h-4 text-gray-400 flex-shrink-0 mt-1" />
-                            <p className="text-gray-700 italic">
+                            <Quote className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-1" />
+                            <p className="text-foreground italic">
                               {testimonial.quote}
                             </p>
                           </div>
@@ -378,7 +378,7 @@ export default function AdminTestimonialsPage() {
                           {/* Rejection reason if rejected */}
                           {testimonial.status === "rejected" &&
                             testimonial.rejectionReason && (
-                              <div className="mt-2 p-2 bg-red-50 rounded text-sm text-red-700">
+                              <div className="mt-2 p-2 bg-red-500/10 rounded text-sm text-red-700">
                                 <strong>Rejection reason:</strong>{" "}
                                 {testimonial.rejectionReason}
                               </div>
@@ -393,8 +393,8 @@ export default function AdminTestimonialsPage() {
                         <>
                           <Button
                             size="sm"
-                            className="bg-green-600 hover:bg-green-700"
                             disabled={updating === testimonial._id}
+                            style={{ backgroundColor: "#00712D" }}
                             onClick={() =>
                               setActionDialog({
                                 isOpen: true,
@@ -428,7 +428,7 @@ export default function AdminTestimonialsPage() {
                         </>
                       )}
                       {testimonial.status === "approved" && (
-                        <span className="text-sm text-green-600 flex items-center">
+                        <span className="text-sm flex items-center" style={{ color: "#00712D" }}>
                           <CheckCircle className="w-4 h-4 mr-1" />
                           Live on homepage
                         </span>
@@ -443,7 +443,7 @@ export default function AdminTestimonialsPage() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-between items-center mt-6">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 Page {currentPage} of {totalPages}
               </p>
               <div className="space-x-2">
@@ -505,7 +505,12 @@ export default function AdminTestimonialsPage() {
               className={
                 actionDialog?.action === "reject"
                   ? "bg-red-600 hover:bg-red-700"
-                  : "bg-green-600 hover:bg-green-700"
+                  : undefined
+              }
+              style={
+                actionDialog?.action === "approve"
+                  ? { backgroundColor: "#00712D" }
+                  : undefined
               }
             >
               {actionDialog?.action === "approve" ? "Approve" : "Reject"}

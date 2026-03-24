@@ -377,7 +377,7 @@ export default function AdminDonationDetailPage() {
               {donation.provider.paymentId && (
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Payment ID:</span>
-                  <code className="text-sm bg-gray-100 px-2 py-1 rounded">
+                  <code className="text-sm bg-muted px-2 py-1 rounded">
                     {donation.provider.paymentId}
                   </code>
                 </div>
@@ -385,7 +385,7 @@ export default function AdminDonationDetailPage() {
               {donation.provider.checkoutSessionId && (
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Session ID:</span>
-                  <code className="text-sm bg-gray-100 px-2 py-1 rounded">
+                  <code className="text-sm bg-muted px-2 py-1 rounded">
                     {donation.provider.checkoutSessionId}
                   </code>
                 </div>
@@ -470,7 +470,7 @@ export default function AdminDonationDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-muted/50 p-4 rounded-lg">
                 <p>&ldquo;{donation.message}&rdquo;</p>
               </div>
             </CardContent>
@@ -513,7 +513,7 @@ export default function AdminDonationDetailPage() {
 
         {/* Flag Information */}
         {donation.isFlagged && (
-          <Card className="border-red-200 bg-red-50">
+          <Card className="border-red-500/30 bg-red-500/5">
             <CardHeader>
               <CardTitle className="text-red-600 flex items-center gap-2">
                 <Flag className="h-4 w-4" />
@@ -524,7 +524,7 @@ export default function AdminDonationDetailPage() {
               {donation.flagReason && (
                 <div>
                   <span className="text-muted-foreground">Reason:</span>
-                  <div className="mt-1 p-3 bg-white rounded border">
+                  <div className="mt-1 p-3 bg-background rounded border border-border">
                     {donation.flagReason}
                   </div>
                 </div>
@@ -541,7 +541,7 @@ export default function AdminDonationDetailPage() {
 
         {/* Refund Information */}
         {donation.status === "refunded" && (
-          <Card className="border-orange-200 bg-orange-50">
+          <Card className="border-orange-500/30 bg-orange-500/5">
             <CardHeader>
               <CardTitle className="text-orange-600 flex items-center gap-2">
                 <RefreshCw className="h-4 w-4" />
@@ -552,7 +552,7 @@ export default function AdminDonationDetailPage() {
               {donation.refundReason && (
                 <div>
                   <span className="text-muted-foreground">Reason:</span>
-                  <div className="mt-1 p-3 bg-white rounded border">
+                  <div className="mt-1 p-3 bg-background rounded border border-border">
                     {donation.refundReason}
                   </div>
                 </div>
@@ -563,7 +563,7 @@ export default function AdminDonationDetailPage() {
 
         {/* Failure Information */}
         {donation.status === "failed" && donation.failureReason && (
-          <Card className="border-red-200 bg-red-50">
+          <Card className="border-red-500/30 bg-red-500/5">
             <CardHeader>
               <CardTitle className="text-red-600 flex items-center gap-2">
                 <XCircle className="h-4 w-4" />

@@ -90,7 +90,7 @@ export default function DocumentUpload({ accept = ["image/*", "application/pdf"]
         className="rounded-2xl border border-dashed bg-white/70 p-5 text-center"
       >
         <p className="text-sm">{label}</p>
-        <p className="text-xs text-gray-500 mt-1">Drag & drop images or PDFs, or</p>
+        <p className="text-xs text-muted-foreground mt-1">Drag & drop images or PDFs, or</p>
         <Button type="button" onClick={pick} className="mt-3">Browse</Button>
         <input ref={inputRef} type="file" multiple accept={accept.join(",")} className="hidden" onChange={(e) => handleFiles(e.target.files)} />
       </div>
@@ -108,16 +108,16 @@ export default function DocumentUpload({ accept = ["image/*", "application/pdf"]
                 {f.previewUrl && isImage ? (
                   <Image src={f.previewUrl} alt={displayName} width={48} height={48} className="h-12 w-12 rounded-md object-cover" />
                 ) : (
-                  <div className="h-12 w-12 grid place-items-center rounded-md bg-gray-100 ">
+                  <div className="h-12 w-12 grid place-items-center rounded-md bg-muted ">
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="truncate text-sm font-medium">
                     {displayName}
-                    {f.isExisting && <span className="ml-2 text-xs text-gray-400">(existing)</span>}
+                    {f.isExisting && <span className="ml-2 text-xs text-muted-foreground">(existing)</span>}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">
                     {displayType}
                     {displaySize && ` • ${displaySize}`}
                   </div>

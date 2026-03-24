@@ -300,10 +300,10 @@ export default function AdminCategoriesPage() {
     return (
       <div className="space-y-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-8 bg-muted rounded w-1/4"></div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              <div key={i} className="h-24 bg-muted rounded"></div>
             ))}
           </div>
         </div>
@@ -312,12 +312,12 @@ export default function AdminCategoriesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-Sora">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Categories</h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <h2 className="text-2xl font-bold text-foreground">Categories</h2>
+          <p className="text-sm text-muted-foreground mt-1">
             Manage campaign categories for the platform
           </p>
         </div>
@@ -333,7 +333,7 @@ export default function AdminCategoriesPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Total Categories
               </CardTitle>
             </CardHeader>
@@ -344,12 +344,12 @@ export default function AdminCategoriesPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Active
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-2xl font-bold" style={{ color: "#00712D" }}>
                 {analytics.active}
               </div>
             </CardContent>
@@ -357,12 +357,12 @@ export default function AdminCategoriesPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Inactive
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">
+              <div className="text-2xl font-bold" style={{ color: "#FF6000" }}>
                 {analytics.inactive}
               </div>
             </CardContent>
@@ -370,12 +370,12 @@ export default function AdminCategoriesPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Total Active
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold" style={{ color: "#00712D" }}>
                 {analytics.active}
               </div>
             </CardContent>
@@ -429,12 +429,12 @@ export default function AdminCategoriesPage() {
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="animate-pulse h-16 bg-gray-200 rounded"
+                  className="animate-pulse h-16 bg-muted rounded"
                 ></div>
               ))}
             </div>
           ) : categories.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               No categories found
             </div>
           ) : (
@@ -442,23 +442,23 @@ export default function AdminCategoriesPage() {
               {categories.map((category) => (
                 <div
                   key={category._id}
-                  className="border rounded-lg p-4 hover:bg-gray-50"
+                  className="border rounded-lg p-4 hover:bg-muted/50"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-4 mb-2">
                         <div className="flex items-center">
-                          <Tag className="w-5 h-5 text-gray-400 mr-2" />
-                          <h3 className="font-medium text-gray-900">
+                          <Tag className="w-5 h-5 text-muted-foreground mr-2" />
+                          <h3 className="font-medium text-foreground">
                             {category.name}
                           </h3>
                         </div>
                         {getStatusBadge(category.isActive)}
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
                         <div>
-                          <p className="text-gray-500">Slug: {category.slug}</p>
+                          <p className="text-muted-foreground">Slug: {category.slug}</p>
                         </div>
                         <div className="flex items-center">
                           <ArrowUpDown className="w-4 h-4 mr-1" />
@@ -470,12 +470,12 @@ export default function AdminCategoriesPage() {
                       </div>
 
                       {category.description && (
-                        <p className="mt-2 text-sm text-gray-500">
+                        <p className="mt-2 text-sm text-muted-foreground">
                           {category.description}
                         </p>
                       )}
 
-                      <div className="mt-2 text-xs text-gray-500">
+                      <div className="mt-2 text-xs text-muted-foreground">
                         Created:{" "}
                         {new Date(category.createdAt).toLocaleDateString()}
                       </div>
@@ -525,7 +525,7 @@ export default function AdminCategoriesPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Showing page {currentPage} of {totalPages}
           </p>
           <div className="space-x-2">
@@ -551,15 +551,15 @@ export default function AdminCategoriesPage() {
 
       {/* Form Dialog */}
       {formOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-background border border-border rounded-2xl p-6 w-full max-w-md shadow-xl">
             <h3 className="text-lg font-semibold mb-4">
               {editingCategory ? "Edit Category" : "Add Category"}
             </h3>
 
             <form onSubmit={handleFormSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Category Name *
                 </label>
                 <Input
@@ -573,11 +573,11 @@ export default function AdminCategoriesPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Description
                 </label>
                 <textarea
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-[#00712D] focus:border-[#00712D] bg-background text-foreground"
                   rows={3}
                   value={formData.description}
                   onChange={(e) =>
@@ -588,7 +588,7 @@ export default function AdminCategoriesPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Icon
                 </label>
                 <Select
@@ -611,7 +611,7 @@ export default function AdminCategoriesPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Display Order
                 </label>
                 <Input
@@ -640,7 +640,7 @@ export default function AdminCategoriesPage() {
                 />
                 <label
                   htmlFor="isActive"
-                  className="text-sm font-medium text-gray-700"
+                  className="text-sm font-medium text-foreground"
                 >
                   Active (visible in campaign form)
                 </label>

@@ -31,7 +31,7 @@ async function DonationSuccessContent({ params, searchParams }: PageProps) {
       }
     : {
         patient: undefined,
-        diagnosis: "the medical campaign",
+        diagnosis: "the campaign",
       };
 
   return (
@@ -49,10 +49,10 @@ export default function DonationSuccessPage({ params, searchParams }: PageProps)
   return (
     <Suspense
       fallback={
-        <div className="container mx-auto max-w-2xl px-4 py-8">
+        <div className="container mx-auto max-w-2xl px-4 py-8 font-Sora">
           <div className="rounded-3xl border border-border/40 bg-card/80 shadow-2xl backdrop-blur p-8">
             <div className="text-center space-y-6">
-              <div className="mx-auto h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted">
                 <div className="h-8 w-8 animate-spin rounded-full border-4 border-border border-t-muted-foreground" />
               </div>
               <div className="space-y-3">

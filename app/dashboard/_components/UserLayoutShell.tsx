@@ -5,6 +5,15 @@ import { usePathname } from "next/navigation";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import PageTransition from "./PageTransition";
+import { NotificationsContext } from "./NotificationsContext";
+
+export type DashboardNotification = {
+  id: string;
+  type: string;
+  message: string;
+  date: string;
+  read: boolean;
+};
 
 type UserLayoutShellProps = {
   children: React.ReactNode;
@@ -12,17 +21,59 @@ type UserLayoutShellProps = {
 
 export default function UserLayoutShell({ children }: UserLayoutShellProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [notifications, setNotifications] = React.useState<DashboardNotification[]>([]);
   const pathname = usePathname();
+
+  // Fetch notifications on mount
+  React.useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch("/api/user/notifications");
+        if (res.ok) {
+          const data = await res.json();
+          setNotifications(data.notifications || []);
+        }
+      } catch {
+        // silent — non-critical
+      }
+    };
+    fetchNotifications();
+  }, []);
+
+  const handleMarkAsRead = (id: string) =>
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+
+  const handleMarkAllAsRead = () =>
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+
+  const handleDelete = (id: string) =>
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
 
   React.useEffect(() => {
     setSidebarOpen(false);
   }, [pathname]);
 
+  const ctxValue = React.useMemo(
+    () => ({
+      notifications,
+      markAsRead: handleMarkAsRead,
+      markAllAsRead: handleMarkAllAsRead,
+      deleteNotification: handleDelete,
+      unreadCount: notifications.filter((n) => !n.read).length,
+    }),
+    [notifications],
+  );
+
   return (
+    <NotificationsContext.Provider value={ctxValue}>
     <div className="min-h-dvh bg-[radial-gradient(circle_at_top_left,_rgba(36,173,85,0.08),_transparent_55%),_linear-gradient(180deg,_#f7fbff_0%,_#f4f6f8_100%)] text-foreground">
       <Header
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
+        notifications={notifications}
+        onMarkAsRead={handleMarkAsRead}
+        onMarkAllAsRead={handleMarkAllAsRead}
+        onDelete={handleDelete}
       />
       <main className="flex-1 pb-12 pt-6 sm:pt-8">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 sm:px-6 lg:flex-row lg:items-start lg:gap-8 lg:px-8 xl:gap-10">
@@ -58,5 +109,6 @@ export default function UserLayoutShell({ children }: UserLayoutShellProps) {
         </div>
       )}
     </div>
+    </NotificationsContext.Provider>
   );
 }

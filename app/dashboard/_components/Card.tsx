@@ -11,7 +11,7 @@ export function Card({ children, className = "", gradient = false }: CardProps) 
     <div
       className={`rounded-2xl border shadow-sm ${
         gradient
-          ? "bg-gradient-to-br from-indigo-600 to-sky-500 text-white"
+          ? "bg-gradient-to-br from-fun-green to-fun-green/80 text-white"
           : "bg-white"
       } ${className}`}
     >

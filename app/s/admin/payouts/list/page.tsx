@@ -55,15 +55,15 @@ interface PaginationInfo {
 }
 
 const statusConfig = {
-  processing: { label: "Processing", color: "bg-blue-100 text-blue-800", icon: Clock },
-  threshold_review: { label: "Threshold Review", color: "bg-yellow-100 text-yellow-800", icon: AlertTriangle },
-  in_review: { label: "In Review", color: "bg-orange-100 text-orange-800", icon: Clock },
-  approved: { label: "Approved", color: "bg-green-100 text-green-800", icon: CheckCircle },
-  rejected: { label: "Rejected", color: "bg-red-100 text-red-800", icon: XCircle },
-  completed: { label: "Completed", color: "bg-green-100 text-green-800", icon: CheckCircle },
-  failed: { label: "Failed", color: "bg-red-100 text-red-800", icon: XCircle },
-  cancelled: { label: "Cancelled", color: "bg-gray-100 text-gray-800", icon: XCircle },
-  paid: { label: "Paid", color: "bg-green-100 text-green-800", icon: CheckCircle },
+  processing: { label: "Processing", color: "bg-blue-500/15 text-blue-700", icon: Clock },
+  threshold_review: { label: "Threshold Review", color: "bg-yellow-500/15 text-yellow-700", icon: AlertTriangle },
+  in_review: { label: "In Review", color: "bg-orange-500/15 text-orange-700", icon: Clock },
+  approved: { label: "Approved", color: "bg-green-500/15 text-green-700", icon: CheckCircle },
+  rejected: { label: "Rejected", color: "bg-red-500/15 text-red-700", icon: XCircle },
+  completed: { label: "Completed", color: "bg-green-500/15 text-green-700", icon: CheckCircle },
+  failed: { label: "Failed", color: "bg-red-500/15 text-red-700", icon: XCircle },
+  cancelled: { label: "Cancelled", color: "bg-muted text-muted-foreground", icon: XCircle },
+  paid: { label: "Paid", color: "bg-green-500/15 text-green-700", icon: CheckCircle },
 };
 
 const formatCurrency = (amountMinor: number, currency: string = "SLE") => {
@@ -353,12 +353,12 @@ export default function PayoutListPage() {
                             {payout.policyCheck ? (
                               <div className="text-sm">
                                 {payout.policyCheck.minThresholdMet ? (
-                                  <Badge className="bg-green-100 text-green-800">
+                                  <Badge className="bg-green-500/15 text-green-700">
                                     <CheckCircle className="w-3 h-3 mr-1" />
                                     Met
                                   </Badge>
                                 ) : (
-                                  <Badge className="bg-red-100 text-red-800">
+                                  <Badge className="bg-red-500/15 text-red-700">
                                     <AlertTriangle className="w-3 h-3 mr-1" />
                                     Below Min
                                   </Badge>

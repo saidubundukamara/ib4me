@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Heart, Lock, Info } from "lucide-react";
+import { Heart, Lock, Info, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -183,6 +184,15 @@ export default function DonateClient({
 
   return (
     <div className="font-Sora space-y-8">
+      {/* Back link */}
+      <Link
+        href={`/campaigns/${slug}`}
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Back to campaign
+      </Link>
+
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <div className="space-y-6">
           <div className="relative aspect-video w-full overflow-hidden rounded-3xl border border-border/40 shadow-xl">
@@ -191,9 +201,9 @@ export default function DonateClient({
               alt={title}
               width={1600}
               height={900}
-              className="size-full object-cover transition-transform duration-500 hover:scale-105"
+              className="size-full object-cover"
             />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 hover:opacity-100" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent" />
           </div>
 
           <Card className="rounded-3xl border border-border/40 bg-card/80 shadow-2xl backdrop-blur">
@@ -221,7 +231,7 @@ export default function DonateClient({
               </div>
               <div>
                 <Progress value={progressPercent} className="h-3" />
-                <div className="mt-2 flex justify-between text-xs font-medium text-blaze-orange">
+                <div className="mt-2 flex justify-between text-xs font-medium text-muted-foreground">
                   <span>{progressPercent}% funded</span>
                   <span>Goal {formatAmount(goalAmount, currency)}</span>
                 </div>
@@ -266,17 +276,22 @@ export default function DonateClient({
                 </div>
                 {selectedPreset === "custom" && (
                   <div className="space-y-2">
-                    <Label htmlFor="custom-amount">Enter amount</Label>
-                    <Input
-                      id="custom-amount"
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={customAmount}
-                      onChange={(event) => setCustomAmount(event.target.value)}
-                      placeholder="Enter amount"
-                      className="h-12 rounded-2xl border-border/50"
-                    />
+                    <Label htmlFor="custom-amount">Enter amount ({currency})</Label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">
+                        {currency}
+                      </span>
+                      <Input
+                        id="custom-amount"
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={customAmount}
+                        onChange={(event) => setCustomAmount(event.target.value)}
+                        placeholder="0"
+                        className="h-12 rounded-2xl border-border/50 pl-14"
+                      />
+                    </div>
                   </div>
                 )}
               </section>
@@ -286,7 +301,7 @@ export default function DonateClient({
               <section className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-foreground">Your details</h2>
-                  <span className="inline-flex items-center gap-2 text-xs text-blaze-orange">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
                     <Lock className="h-3.5 w-3.5" />
                     Secure donation
                   </span>
@@ -326,7 +341,7 @@ export default function DonateClient({
                     placeholder="you@example.com"
                     className="rounded-2xl border-border/50"
                   />
-                  <p className="text-xs text-blaze-orange">
+                  <p className="text-xs text-muted-foreground">
                     We&#39;ll send your receipt to this email.
                   </p>
                 </div>
@@ -335,7 +350,7 @@ export default function DonateClient({
                     <p className="text-sm font-medium text-foreground">
                       Make this donation anonymous
                     </p>
-                    <p className="text-xs text-blaze-orange">
+                    <p className="text-xs text-muted-foreground">
                       Your name won&#39;t be displayed publicly on the campaign.
                     </p>
                   </div>
@@ -356,7 +371,7 @@ export default function DonateClient({
                         <p className="text-sm font-medium text-foreground">
                           Cover the transaction fee
                         </p>
-                        <p className="text-xs text-blaze-orange">
+                        <p className="text-xs text-muted-foreground">
                           {coverFee
                             ? `Your generosity means ${formatAmount(amount, currency)} goes directly to this campaign.`
                             : `The campaign will receive ${formatAmount(campaignReceives, currency)} after fees.`
@@ -427,13 +442,13 @@ export default function DonateClient({
                 />
                 <div className="min-w-0">
                   <h3 className="text-base font-semibold text-foreground">{title}</h3>
-                  <p className="text-xs text-blaze-orange">
+                  <p className="text-xs text-muted-foreground">
                     {organizerName ? `by ${organizerName}` : "Campaign organizer"}
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-2 text-sm text-blaze-orange">
+              <div className="space-y-2 text-sm text-muted-foreground">
                 <div className="flex items-center justify-between">
                   <span>Campaign progress</span>
                   <span className="font-semibold text-foreground">{progressPercent}%</span>
@@ -455,7 +470,7 @@ export default function DonateClient({
 
               <Separator />
 
-              <div className="space-y-2 text-sm text-blaze-orange">
+              <div className="space-y-2 text-sm text-muted-foreground">
                 <div className="flex items-center justify-between">
                   <span>Your donation</span>
                   <span className="font-medium text-foreground">

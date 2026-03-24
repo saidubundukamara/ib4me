@@ -208,7 +208,7 @@ export default function TipPage() {
           <div>
             <h1 className="text-3xl font-bold">Support IB4ME</h1>
             <p className="text-muted-foreground mt-2">
-              Your tip helps us maintain the platform and support more medical campaigns in Sierra Leone.
+              Your tip helps us maintain the platform and support more campaigns in Sierra Leone.
             </p>
           </div>
         </div>
@@ -408,11 +408,11 @@ export default function TipPage() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="inline-block h-2 w-2 rounded-full bg-primary mt-2" />
-                Support our team in verifying medical campaigns
+                Support our team in verifying campaigns
               </li>
               <li className="flex items-start gap-2">
                 <span className="inline-block h-2 w-2 rounded-full bg-primary mt-2" />
-                Enable us to reach more patients in need across Sierra Leone
+                Enable us to reach more people in need across Sierra Leone
               </li>
             </ul>
           </CardContent>
