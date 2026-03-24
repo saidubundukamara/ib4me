@@ -20,7 +20,7 @@ import HospitalCombobox, { type HospitalValue } from "./HospitalCombobox";
 
 const steps = [
   { number: 1, label: "Details" },
-  { number: 2, label: "Patient" },
+  { number: 2, label: "Beneficiary" },
   { number: 3, label: "Goal" },
   { number: 4, label: "Story" },
   { number: 5, label: "Documents" },
@@ -188,7 +188,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
         if (!title.trim()) nextErrors.title = "Title is required";
       }
       if (step === 2) {
-        if (!patientName.trim()) nextErrors.patientName = "Patient name is required";
+        if (!patientName.trim()) nextErrors.patientName = "Beneficiary name is required";
         if (!category.trim()) nextErrors.category = "Category is required";
       }
       if (step === 3) {
@@ -289,7 +289,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
 
   const reviewItems = [
     { label: "Title", value: title || "-", key: "title" as const },
-    { label: "Emergency Type", value: typeOfEmergency || "-", key: "emergency" as const },
+    { label: "Campaign Type", value: typeOfEmergency || "-", key: "emergency" as const },
     { label: "Category", value: category || "-", key: "category" as const },
     {
       label: "Urgency",
@@ -300,15 +300,15 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
       ),
       key: "urgency" as const,
     },
-    { label: "Diagnosis", value: diagnosis || "-", key: "diagnosis" as const },
-    { label: "Patient Details", value: description || "-", key: "description" as const },
+    { label: "Key Details", value: diagnosis || "-", key: "diagnosis" as const },
+    { label: "Beneficiary Details", value: description || "-", key: "description" as const },
     {
-      label: "Patient",
+      label: "Beneficiary",
       value: `${patientName} ${patientAge ? `(${patientAge})` : ""}`.trim() || "—",
       key: "patient" as const,
     },
     {
-      label: "Patient Photo",
+      label: "Beneficiary Photo",
       value: patientPhoto
         ? patientPhoto.isExisting
           ? "Current photo (existing)"
@@ -374,7 +374,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Help with surgery"
+                placeholder="e.g. Help fund education for 20 students"
                 className="rounded-2xl my-2"
                 disabled={mode === "edit"}
               />
@@ -383,12 +383,12 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
 
             <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="emergency">Emergency Type</Label>
+                <Label htmlFor="emergency">Campaign Type</Label>
                 <Input
                   id="emergency"
                   value={typeOfEmergency}
                   onChange={(e) => setTypeOfEmergency(e.target.value)}
-                  placeholder="Surgery, Accident, etc"
+                  placeholder="Education, Medical, Community..."
                   className="rounded-2xl my-2"
                 />
               </div>
@@ -406,12 +406,12 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="diagnosis">Diagnosis</Label>
+                <Label htmlFor="diagnosis">Key Details (Optional)</Label>
                 <Input
                   id="diagnosis"
                   value={diagnosis}
                   onChange={(e) => setDiagnosis(e.target.value)}
-                  placeholder="Condition"
+                  placeholder="e.g. Condition, cause, goal"
                   className="rounded-2xl my-2"
                 />
               </div>
@@ -422,7 +422,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
         {currentStep === 2 && (
           <div className="space-y-4">
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="patient-name">Patient Name</Label>
+              <Label htmlFor="patient-name">Beneficiary Name</Label>
               <Input
                 id="patient-name"
                 value={patientName}
@@ -441,7 +441,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
                   setRemovePatientPhoto(true);
                 }
               }}
-              label="Patient Photo (Optional)"
+              label="Beneficiary Photo (Optional)"
             />
 
             <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
@@ -457,7 +457,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
                 />
               </div>
               <div className="sm:col-span-1 md:col-span-2 space-y-2">
-                <Label>Hospital</Label>
+                <Label>Hospital / Organization (Optional)</Label>
                 <HospitalCombobox
                   value={hospital}
                   onChange={setHospital}
@@ -467,12 +467,12 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="patient-description">Patient Information</Label>
+              <Label htmlFor="patient-description">Beneficiary Information</Label>
               <Textarea
                 id="patient-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Provide details about the patient and their condition..."
+                placeholder="Provide details about the beneficiary and their situation..."
                 className="rounded-2xl min-h-[140px] my-2"
               />
             </div>
@@ -492,10 +492,14 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
                     ))
                   ) : (
                     <>
-                      <SelectItem value="Medical Emergency">Medical Emergency</SelectItem>
-                      <SelectItem value="Heart Surgery">Heart Surgery</SelectItem>
-                      <SelectItem value="Cancer Treatment">Cancer Treatment</SelectItem>
-                      <SelectItem value="Medical Support">Medical Support</SelectItem>
+                      <SelectItem value="Medical & Health">Medical & Health</SelectItem>
+                      <SelectItem value="Education">Education</SelectItem>
+                      <SelectItem value="Emergency Relief">Emergency Relief</SelectItem>
+                      <SelectItem value="Community Development">Community Development</SelectItem>
+                      <SelectItem value="Charity & Nonprofit">Charity & Nonprofit</SelectItem>
+                      <SelectItem value="Children & Youth">Children & Youth</SelectItem>
+                      <SelectItem value="Environment">Environment</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
                     </>
                   )}
                 </SelectContent>
@@ -528,7 +532,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
                   className="rounded-2xl text-xl sm:text-2xl font-semibold my-2"
                 />
                 {errors.goalAmount && <p className="text-sm text-destructive mt-1">{errors.goalAmount}</p>}
-                <p className="text-sm text-muted-foreground">Enter the total amount needed for treatment</p>
+                <p className="text-sm text-muted-foreground">Enter the total amount needed for your campaign</p>
               </div>
             </div>
           </div>
@@ -556,7 +560,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
         {currentStep === 5 && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Upload Medical Documents</Label>
+              <Label>Upload Supporting Documents</Label>
               <DocumentUpload
                 value={documents}
                 onChange={(files, removedIds) => {

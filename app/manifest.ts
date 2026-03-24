@@ -2,9 +2,9 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'ib4me - Medical Emergency Fundraising',
+    name: 'ib4me - Crowdfunding for Social Good',
     short_name: 'ib4me',
-    description: 'Raise and donate for medical emergencies in Sierra Leone. Put fɔ wɛlbɔdi.',
+    description: 'Raise and donate for causes that matter in Sierra Leone. Put fɔ wɛlbɔdi.',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',

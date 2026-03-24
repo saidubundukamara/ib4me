@@ -237,20 +237,7 @@ export function WithdrawalForm({
             onValueChange={setSelectedCampaign}
           >
             <SelectTrigger className="flex w-full items-center justify-between gap-2 rounded-xl border bg-background px-3 py-3 text-left hover:bg-background focus-visible:ring-2">
-              <SelectValue placeholder={campaignSelectPlaceholder} className="sr-only" />
-              <div className="flex min-w-0 flex-col text-left">
-                <span className="font-medium truncate">
-                  {selectedCampaignOption?.title ?? campaignSelectPlaceholder}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {selectedCampaignOption
-                    ? `Available ${formatCurrency(
-                        selectedCampaignOption.availableMinor,
-                        selectedCampaignOption.currency,
-                      )}`
-                    : "Select a campaign to view available balance"}
-                </span>
-              </div>
+              <SelectValue placeholder={campaignSelectPlaceholder} />
             </SelectTrigger>
             <SelectContent>{campaignOptionsContent}</SelectContent>
           </Select>

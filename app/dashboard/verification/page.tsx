@@ -39,7 +39,7 @@ interface VerificationStatus {
 type DocumentType = "idDocument" | "addressProof" | "registrationCertificate" | "representativeId" | "taxCertificate";
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
-  not_started: { label: "Not Started", color: "bg-gray-100 text-gray-800", icon: Clock },
+  not_started: { label: "Not Started", color: "bg-muted text-foreground", icon: Clock },
   pending: { label: "Pending Review", color: "bg-yellow-100 text-yellow-800", icon: Clock },
   under_review: { label: "Under Review", color: "bg-blue-100 text-blue-800", icon: ShieldCheck },
   approved: { label: "Approved", color: "bg-green-100 text-green-800", icon: CheckCircle },
@@ -265,8 +265,8 @@ export default function VerificationPage() {
   if (!verification) {
     return (
       <div className="text-center py-12">
-        <ShieldAlert className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-        <p className="text-gray-600">Unable to load verification status</p>
+        <ShieldAlert className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+        <p className="text-muted-foreground">Unable to load verification status</p>
         <Button onClick={fetchVerificationStatus} className="mt-4">
           Try Again
         </Button>
@@ -292,8 +292,8 @@ export default function VerificationPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Verification</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-2xl font-bold text-foreground">Verification</h1>
+        <p className="text-muted-foreground mt-1">
           Complete your {isKyb ? "KYB (Know Your Business)" : "KYC (Know Your Customer)"} verification to create campaigns
         </p>
       </div>
@@ -324,8 +324,8 @@ export default function VerificationPage() {
                   <Clock className="w-6 h-6 text-blue-600" />
                 </div>
               ) : (
-                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                  <ShieldAlert className="w-6 h-6 text-gray-600" />
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                  <ShieldAlert className="w-6 h-6 text-muted-foreground" />
                 </div>
               )}
               <div>
@@ -340,7 +340,7 @@ export default function VerificationPage() {
                           ? "Under Review"
                           : "Verification Required"}
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   {verification.status === "approved"
                     ? "You can now create campaigns on the platform."
                     : verification.status === "rejected"
@@ -369,7 +369,7 @@ export default function VerificationPage() {
 
           {/* Submitted/Reviewed dates */}
           {verification.submittedAt && (
-            <div className="mt-4 text-sm text-gray-500">
+            <div className="mt-4 text-sm text-muted-foreground">
               Submitted: {new Date(verification.submittedAt).toLocaleDateString()}
               {verification.reviewedAt && (
                 <> | Reviewed: {new Date(verification.reviewedAt).toLocaleDateString()}</>
@@ -438,17 +438,17 @@ export default function VerificationPage() {
           )}
 
           {/* Document Requirements Info */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <div className="mt-6 p-4 bg-muted/50 rounded-lg">
             <h4 className="font-medium text-sm mb-2">Document Requirements:</h4>
             {isKyb ? (
-              <ul className="text-sm text-gray-600 space-y-1">
+              <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• Registration Certificate: Official NGO/Charity registration document</li>
                 <li>• Representative ID: Valid ID of the authorized representative</li>
                 <li>• Address Proof: Utility bill or bank statement (less than 3 months old)</li>
                 <li>• Tax Certificate: Tax exemption or registration certificate</li>
               </ul>
             ) : (
-              <ul className="text-sm text-gray-600 space-y-1">
+              <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• ID Document: National ID, passport, or driver&apos;s license</li>
                 <li>• Address Proof: Utility bill or bank statement (less than 3 months old)</li>
               </ul>
@@ -466,7 +466,7 @@ export default function VerificationPage() {
                 <p className="font-medium">
                   {canResubmit ? "Ready to resubmit?" : "Ready to submit?"}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   {allDocumentsUploaded
                     ? "All required documents have been uploaded."
                     : "Please upload all required documents before submitting."}

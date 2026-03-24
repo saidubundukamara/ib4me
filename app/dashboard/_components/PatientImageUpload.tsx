@@ -92,7 +92,7 @@ export default function PatientImageUpload({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
+      <label className="block text-sm font-medium text-foreground mb-2">
         {label}
       </label>
 
@@ -102,9 +102,9 @@ export default function PatientImageUpload({
           onDrop={onDrop}
           className="rounded-2xl border border-dashed bg-white/70 p-5 text-center"
         >
-          <div className="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+          <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-3">
             <svg
-              className="w-8 h-8 text-gray-400"
+              className="w-8 h-8 text-muted-foreground"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -114,8 +114,8 @@ export default function PatientImageUpload({
               <path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
             </svg>
           </div>
-          <p className="text-sm text-gray-600">Add a photo of the patient</p>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-sm text-muted-foreground">Add a photo of the beneficiary</p>
+          <p className="text-xs text-muted-foreground mt-1">
             Drag & drop an image, or click to browse
           </p>
           <Button type="button" onClick={pick} className="mt-3">
@@ -143,10 +143,10 @@ export default function PatientImageUpload({
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">
                 {displayName}
-                {image.isExisting && <span className="ml-2 text-xs text-gray-400">(existing)</span>}
+                {image.isExisting && <span className="ml-2 text-xs text-muted-foreground">(existing)</span>}
               </p>
               {displaySize && (
-                <p className="text-xs text-gray-500 mt-1">{displaySize}</p>
+                <p className="text-xs text-muted-foreground mt-1">{displaySize}</p>
               )}
               <div className="flex gap-2 mt-3">
                 <Button type="button" variant="outline" size="sm" onClick={pick}>

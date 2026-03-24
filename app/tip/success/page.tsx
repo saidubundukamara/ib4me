@@ -37,8 +37,8 @@ async function TipSuccessContent({ searchParams }: PageProps) {
             </div>
 
             <p className="text-sm text-muted-foreground">
-              Your tip helps us continue our mission of connecting patients in Sierra Leone
-              with donors who can help fund their medical emergencies.
+              Your tip helps us continue our mission of connecting people in Sierra Leone
+              with donors who can help fund their causes.
             </p>
 
             {tipId && (

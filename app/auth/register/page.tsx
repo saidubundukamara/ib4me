@@ -127,7 +127,7 @@ export default function RegisterPage() {
   return (
     <AuthLayout
       title="Create your account"
-      subtitle="Join ib4me to support urgent medical needs."
+      subtitle="Join ib4me to support causes that matter."
       highlight={
         <p className="flex items-center justify-center gap-2 text-sm font-medium text-blaze-orange md:justify-start">
           Start making a difference today

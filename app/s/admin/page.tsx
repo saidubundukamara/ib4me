@@ -21,7 +21,7 @@ interface DashboardStats {
     refunded: number;
     successRate: number;
   };
-  monthlyRevenue: Array<{month: string; revenue: number}>;
+  monthlyRevenue: Array<{ month: string; revenue: number }>;
   averageDonationAmount: number;
   totalUsers: number;
   platformHealth: {
@@ -30,6 +30,11 @@ interface DashboardStats {
     systemHealth: string;
   };
 }
+
+const GREEN = "#00712D";
+const ORANGE = "#FF6000";
+const CHARTEREUSE = "#80E10A";
+const AMBER = "#FBB03B";
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -42,49 +47,42 @@ export default function AdminDashboardPage() {
   }, []);
 
   const fetchDashboardStats = async () => {
+    setLoading(true);
     try {
-      const dashboardResponse = await fetch("/api/admin/dashboard/stats");
-      const dashboardData = await dashboardResponse.json();
-      
-      if (!dashboardResponse.ok) {
-        throw new Error(dashboardData.message || "Failed to fetch dashboard stats");
-      }
-
-      setStats(dashboardData.data);
-
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'An error occurred');
+      const res = await fetch("/api/admin/dashboard/stats");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to fetch dashboard stats");
+      setStats(data.data);
+      setError("");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-SL", {
-      style: "currency",
-      currency: "SLE",
-    }).format(amount);
-  };
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("en-SL", { style: "currency", currency: "SLE" }).format(amount);
 
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat("en-US").format(num);
-  };
+  const formatNumber = (num: number) =>
+    new Intl.NumberFormat("en-US").format(num);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-300 rounded w-1/4 mb-8"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-white p-6 rounded-lg shadow">
-                  <div className="h-4 bg-gray-300 rounded w-1/2 mb-4"></div>
-                  <div className="h-8 bg-gray-300 rounded w-3/4"></div>
-                </div>
-              ))}
+      <div className="space-y-6">
+        {/* Header skeleton */}
+        <div className="animate-pulse">
+          <div className="h-8 w-48 rounded-xl bg-muted mb-2" />
+          <div className="h-4 w-64 rounded-xl bg-muted" />
+        </div>
+        {/* Cards skeleton */}
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="animate-pulse rounded-2xl border border-border bg-background p-6">
+              <div className="h-4 w-1/2 rounded-lg bg-muted mb-4" />
+              <div className="h-8 w-3/4 rounded-lg bg-muted" />
             </div>
-          </div>
+          ))}
         </div>
       </div>
     );
@@ -92,278 +90,239 @@ export default function AdminDashboardPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-600 mb-4">
-            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Dashboard</h3>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={fetchDashboardStats}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-          >
-            Try Again
-          </button>
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div
+          className="mb-4 flex h-16 w-16 items-center justify-center rounded-full"
+          style={{ backgroundColor: `${ORANGE}15` }}
+        >
+          <svg className="h-8 w-8" style={{ color: ORANGE }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
         </div>
+        <h3 className="text-lg font-bold text-foreground mb-1">Error Loading Dashboard</h3>
+        <p className="text-sm text-muted-foreground mb-6 max-w-sm">{error}</p>
+        <button
+          onClick={fetchDashboardStats}
+          className="rounded-xl px-6 py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90"
+          style={{ backgroundColor: GREEN }}
+        >
+          Try Again
+        </button>
       </div>
     );
   }
 
   if (!stats) return null;
 
+  const topCards = [
+    {
+      label: "Total Campaigns",
+      value: formatNumber(stats.totalCampaigns),
+      sub: `${stats.activeCampaigns} active`,
+      color: GREEN,
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        </svg>
+      ),
+    },
+    {
+      label: "Total Donations",
+      value: formatNumber(stats.totalDonations),
+      sub: `Avg: ${formatCurrency(stats.averageDonationAmount)}`,
+      color: ORANGE,
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+        </svg>
+      ),
+    },
+    {
+      label: "Total Revenue",
+      value: formatCurrency(stats.totalRevenue),
+      sub: `From ${formatNumber(stats.totalDonations)} donations`,
+      color: AMBER,
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+        </svg>
+      ),
+    },
+    {
+      label: "Platform Users",
+      value: formatNumber(stats.totalUsers),
+      sub: "Registered accounts",
+      color: "#8B5CF6",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+        </svg>
+      ),
+    },
+  ];
+
+  const campaignStatus = [
+    { label: "Approved", value: stats.campaignBreakdown?.approved ?? 0, color: GREEN },
+    { label: "Pending", value: stats.campaignBreakdown?.pending ?? 0, color: AMBER },
+    { label: "Rejected", value: stats.campaignBreakdown?.rejected ?? 0, color: "#EF4444" },
+    { label: "Completed", value: stats.campaignBreakdown?.completed ?? 0, color: "#8B5CF6" },
+  ];
+
+  const paymentStats = [
+    { label: "Completed", value: `${formatNumber(stats.donationBreakdown?.completed ?? 0)} donations`, bg: `${GREEN}10`, dot: GREEN, text: `${GREEN}` },
+    { label: "Failed", value: `${formatNumber(stats.donationBreakdown?.failed ?? 0)} donations`, bg: "#EF444410", dot: "#EF4444", text: "#EF4444" },
+    { label: "Success Rate", value: `${stats.donationBreakdown?.successRate ?? 0}%`, bg: `${ORANGE}10`, dot: ORANGE, text: ORANGE },
+  ];
+
+  const healthItems = [
+    { label: "Campaign Health", value: stats.platformHealth?.campaignHealth ?? "warning", icon: "❤️" },
+    { label: "Payment Health", value: stats.platformHealth?.paymentHealth ?? "warning", icon: "💳" },
+    { label: "System Health", value: stats.platformHealth?.systemHealth ?? "warning", icon: "⚙️" },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <div className="flex items-center justify-between">
+    <div className="space-y-6 font-Sora">
+      {/* Page header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Welcome back, <span className="font-semibold" style={{ color: GREEN }}>{user?.name}</span>
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">
+            Updated {new Date().toLocaleTimeString()}
+          </span>
+          <button
+            onClick={fetchDashboardStats}
+            className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-all hover:opacity-90"
+            style={{ backgroundColor: GREEN }}
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Top stat cards */}
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
+        {topCards.map((card) => (
+          <div
+            key={card.label}
+            className="rounded-2xl border border-border bg-background p-6 transition-all hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-                <p className="text-gray-600 mt-1">
-                  Welcome back, {user?.name}
-                </p>
+                <p className="text-sm font-medium text-muted-foreground">{card.label}</p>
+                <p className="mt-1 text-2xl font-bold text-foreground">{card.value}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{card.sub}</p>
               </div>
-              <div className="flex items-center space-x-4">
-                <div className="text-sm text-gray-500">
-                  Last updated: {new Date().toLocaleTimeString()}
-                </div>
-                <button
-                  onClick={fetchDashboardStats}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Refresh
-                </button>
+              <div
+                className="flex h-11 w-11 items-center justify-center rounded-xl text-white"
+                style={{ backgroundColor: card.color }}
+              >
+                {card.icon}
               </div>
             </div>
+            {/* Colored bottom accent */}
+            <div className="mt-4 h-1 w-full rounded-full" style={{ backgroundColor: `${card.color}25` }}>
+              <div className="h-1 w-2/3 rounded-full" style={{ backgroundColor: card.color }} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Campaign status + Payment stats */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        {/* Campaign Status */}
+        <div className="rounded-2xl border border-border bg-background p-6">
+          <h3 className="mb-5 text-base font-bold text-foreground">Campaign Status</h3>
+          <div className="space-y-3">
+            {campaignStatus.map((item) => {
+              const total = Object.values(stats.campaignBreakdown ?? {}).reduce((a, b) => a + b, 0) || 1;
+              const pct = Math.round((item.value / total) * 100);
+              return (
+                <div key={item.label}>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span className="text-sm font-medium text-foreground">{item.label}</span>
+                    </div>
+                    <span className="text-sm font-bold" style={{ color: item.color }}>
+                      {formatNumber(item.value)}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-muted">
+                    <div
+                      className="h-1.5 rounded-full transition-all duration-700"
+                      style={{ width: `${pct}%`, backgroundColor: item.color }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Payment Stats */}
+        <div className="rounded-2xl border border-border bg-background p-6">
+          <h3 className="mb-5 text-base font-bold text-foreground">Payment Statistics</h3>
+          <div className="space-y-3">
+            {paymentStats.map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center justify-between rounded-xl p-4"
+                style={{ backgroundColor: item.bg }}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.dot }} />
+                  <span className="text-sm font-medium" style={{ color: item.text }}>{item.label}</span>
+                </div>
+                <span className="text-sm font-bold" style={{ color: item.text }}>{item.value}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Main Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Total Campaigns */}
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                  </div>
+      {/* Platform Health */}
+      <div>
+        <h3 className="mb-4 text-base font-bold text-foreground">Platform Health</h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {healthItems.map((item) => {
+            const isHealthy = item.value === "healthy";
+            const color = isHealthy ? GREEN : AMBER;
+            return (
+              <div
+                key={item.label}
+                className="flex items-center gap-4 rounded-2xl border border-border bg-background p-5"
+              >
+                <div
+                  className="flex h-12 w-12 items-center justify-center rounded-xl text-xl"
+                  style={{ backgroundColor: `${color}15` }}
+                >
+                  {item.icon}
                 </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Campaigns</dt>
-                    <dd className="text-2xl font-bold text-gray-900">{formatNumber(stats?.totalCampaigns || 0)}</dd>
-                  </dl>
+                <div>
+                  <p className="text-sm text-muted-foreground">{item.label}</p>
+                  <p className="text-lg font-bold" style={{ color }}>
+                    {isHealthy ? "Healthy" : "Warning"}
+                  </p>
                 </div>
-              </div>
-              <div className="mt-4">
-                <div className="text-sm text-gray-600">
-                  <span className="font-medium text-green-600">{stats?.activeCampaigns || 0}</span> active campaigns
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Total Donations */}
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Donations</dt>
-                    <dd className="text-2xl font-bold text-gray-900">{formatNumber(stats?.totalDonations || 0)}</dd>
-                  </dl>
+                <div className="ml-auto">
+                  <div
+                    className="h-3 w-3 rounded-full"
+                    style={{ backgroundColor: color }}
+                  />
                 </div>
               </div>
-              <div className="mt-4">
-                <div className="text-sm text-gray-600">
-                  Avg: {formatCurrency(stats?.averageDonationAmount || 0)}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Total Revenue */}
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Revenue</dt>
-                    <dd className="text-2xl font-bold text-gray-900">{formatCurrency(stats?.totalRevenue || 0)}</dd>
-                  </dl>
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="text-sm text-gray-600">
-                  From {formatNumber(stats?.totalDonations || 0)} donations
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Total Users */}
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-orange-500 rounded-md flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Platform Users</dt>
-                    <dd className="text-2xl font-bold text-gray-900">{formatNumber(stats?.totalUsers || 0)}</dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Campaign & Donation Overview */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Campaign Status Breakdown */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Campaign Status</h3>
-              <div className="space-y-4">
-                {[
-                  { label: "Approved", value: stats?.campaignBreakdown?.approved || 0, color: "bg-green-500" },
-                  { label: "Pending", value: stats?.campaignBreakdown?.pending || 0, color: "bg-yellow-500" },
-                  { label: "Rejected", value: stats?.campaignBreakdown?.rejected || 0, color: "bg-red-500" },
-                  { label: "Completed", value: stats?.campaignBreakdown?.completed || 0, color: "bg-blue-500" },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className={`w-3 h-3 rounded-full ${item.color} mr-3`}></div>
-                      <span className="text-sm font-medium text-gray-700">{item.label}</span>
-                    </div>
-                    <span className="text-sm font-bold text-gray-900">{formatNumber(item.value)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Payment Stats */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Payment Statistics</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
-                    <span className="text-sm font-medium text-green-800">Completed</span>
-                  </div>
-                  <span className="text-sm font-bold text-green-900">{formatNumber(stats?.donationBreakdown?.completed || 0)} donations</span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
-                    <span className="text-sm font-medium text-red-800">Failed</span>
-                  </div>
-                  <span className="text-sm font-bold text-red-900">{formatNumber(stats?.donationBreakdown?.failed || 0)} donations</span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
-                    <span className="text-sm font-medium text-blue-800">Success Rate</span>
-                  </div>
-                  <span className="text-sm font-bold text-blue-900">{stats?.donationBreakdown?.successRate || 0}%</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Platform Health */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Campaign Health */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className={`w-8 h-8 ${(stats?.platformHealth?.campaignHealth || 'warning') === 'healthy' ? 'bg-green-500' : 'bg-yellow-500'} rounded-md flex items-center justify-center`}>
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="ml-5">
-                <p className="text-sm font-medium text-gray-500">Campaign Health</p>
-                <p className={`text-2xl font-bold ${(stats?.platformHealth?.campaignHealth || 'warning') === 'healthy' ? 'text-green-600' : 'text-yellow-600'}`}>
-                  {(stats?.platformHealth?.campaignHealth || 'warning') === 'healthy' ? 'Healthy' : 'Warning'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Payment Health */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className={`w-8 h-8 ${(stats?.platformHealth?.paymentHealth || 'warning') === 'healthy' ? 'bg-green-500' : 'bg-yellow-500'} rounded-md flex items-center justify-center`}>
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="ml-5">
-                <p className="text-sm font-medium text-gray-500">Payment Health</p>
-                <p className={`text-2xl font-bold ${(stats?.platformHealth?.paymentHealth || 'warning') === 'healthy' ? 'text-green-600' : 'text-yellow-600'}`}>
-                  {(stats?.platformHealth?.paymentHealth || 'warning') === 'healthy' ? 'Healthy' : 'Warning'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* System Health */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className={`w-8 h-8 ${(stats?.platformHealth?.systemHealth || 'warning') === 'healthy' ? 'bg-green-500' : 'bg-yellow-500'} rounded-md flex items-center justify-center`}>
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="ml-5">
-                <p className="text-sm font-medium text-gray-500">System Health</p>
-                <p className={`text-2xl font-bold ${(stats?.platformHealth?.systemHealth || 'warning') === 'healthy' ? 'text-green-600' : 'text-yellow-600'}`}>
-                  {(stats?.platformHealth?.systemHealth || 'warning') === 'healthy' ? 'Healthy' : 'Warning'}
-                </p>
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
       </div>
     </div>
   );
 }
-
-

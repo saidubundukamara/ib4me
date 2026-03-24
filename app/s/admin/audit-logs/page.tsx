@@ -24,8 +24,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { 
-  Eye, 
+import {
+  Eye,
   Download,
   RefreshCw,
   Filter,
@@ -93,13 +93,13 @@ export default function AdminAuditLogsPage() {
   const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [limit] = useState(50);
-  
+
   // Filters
   const [filters, setFilters] = useState({
     action: "",
@@ -111,14 +111,14 @@ export default function AdminAuditLogsPage() {
     search: ""
   });
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // Selected log for details modal
   const [selectedLog, setSelectedLog] = useState<FormattedAuditLog | null>(null);
 
   const fetchAuditLogs = useCallback(async (page = 1) => {
     setLoading(true);
     setError("");
-    
+
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -133,13 +133,13 @@ export default function AdminAuditLogsPage() {
       });
 
       const response = await fetch(`/api/admin/audit-logs?${params.toString()}`);
-      
+
       if (!response.ok) {
         throw new Error("Failed to fetch audit logs");
       }
 
       const data = await response.json();
-      
+
       if (data.success) {
         setLogs(data.data.logs);
         setCurrentPage(data.data.pagination.currentPage);
@@ -168,7 +168,7 @@ export default function AdminAuditLogsPage() {
       });
 
       const response = await fetch(`/api/admin/audit-logs?${params.toString()}`);
-      
+
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -183,7 +183,7 @@ export default function AdminAuditLogsPage() {
   const fetchFilterOptions = useCallback(async () => {
     try {
       const response = await fetch(`/api/admin/audit-logs?filterOptions=true`);
-      
+
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -240,7 +240,7 @@ export default function AdminAuditLogsPage() {
       });
 
       const response = await fetch(`/api/admin/audit-logs?${params.toString()}`);
-      
+
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -251,7 +251,7 @@ export default function AdminAuditLogsPage() {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-        
+
         toast.success(`Audit logs exported as ${format.toUpperCase()}`);
       } else {
         throw new Error("Failed to export logs");
@@ -281,17 +281,17 @@ export default function AdminAuditLogsPage() {
 
   const truncateUserAgent = (userAgent: string, maxLength = 50) => {
     if (!userAgent) return "Unknown";
-    return userAgent.length > maxLength 
-      ? `${userAgent.substring(0, maxLength)}...` 
+    return userAgent.length > maxLength
+      ? `${userAgent.substring(0, maxLength)}...`
       : userAgent;
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="font-Sora space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Audit Logs</h1>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Audit Logs</h1>
           <p className="text-muted-foreground">
             Track admin and system actions for compliance and monitoring
           </p>
@@ -392,8 +392,8 @@ export default function AdminAuditLogsPage() {
               {/* Action Filter */}
               <div>
                 <label className="text-sm font-medium mb-1 block">Action</label>
-                <Select 
-                  value={filters.action} 
+                <Select
+                  value={filters.action}
                   onValueChange={(value) => handleFilterChange("action", value)}
                 >
                   <SelectTrigger>
@@ -417,8 +417,8 @@ export default function AdminAuditLogsPage() {
               {/* Target Type Filter */}
               <div>
                 <label className="text-sm font-medium mb-1 block">Target Type</label>
-                <Select 
-                  value={filters.targetType} 
+                <Select
+                  value={filters.targetType}
                   onValueChange={(value) => handleFilterChange("targetType", value)}
                 >
                   <SelectTrigger>
@@ -438,8 +438,8 @@ export default function AdminAuditLogsPage() {
               {/* Admin Filter */}
               <div>
                 <label className="text-sm font-medium mb-1 block">Admin User</label>
-                <Select 
-                  value={filters.adminId} 
+                <Select
+                  value={filters.adminId}
                   onValueChange={(value) => handleFilterChange("adminId", value)}
                 >
                   <SelectTrigger>
@@ -505,9 +505,9 @@ export default function AdminAuditLogsPage() {
               <Button variant="outline" onClick={clearFilters}>
                 Clear All
               </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowFilters(false)}
               >
                 <X className="h-4 w-4" />
@@ -561,7 +561,7 @@ export default function AdminAuditLogsPage() {
                 </TableHeader>
                 <TableBody>
                   {logs.map((log) => (
-                    <TableRow key={log.id}>
+                    <TableRow key={log.id} className="hover:bg-muted/50">
                       <TableCell className="text-sm">
                         {formatDate(log.timestamp)}
                       </TableCell>
@@ -696,7 +696,7 @@ export default function AdminAuditLogsPage() {
                                 {selectedLog.changes && (
                                   <div>
                                     <label className="text-sm font-medium">Changes</label>
-                                    <div className="text-sm p-3 bg-muted rounded">
+                                    <div className="text-sm p-3 bg-muted rounded border border-border">
                                       <pre className="whitespace-pre-wrap">
                                         {JSON.stringify(selectedLog.changes, null, 2)}
                                       </pre>

@@ -87,7 +87,7 @@ export default function ContactSettings() {
           <div className="space-y-2">
             <Label htmlFor="phone">Phone Number</Label>
             <div className="flex">
-              <span className="inline-flex items-center px-3 text-sm text-gray-900 bg-gray-200 border border-r-0 border-gray-300 rounded-l-md">
+              <span className="inline-flex items-center px-3 text-sm text-foreground bg-muted border border-r-0 border-border rounded-l-md">
                 +232
               </span>
               <Input
@@ -169,9 +169,9 @@ export default function ContactSettings() {
       </div>
 
       {/* Usage Note */}
-      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h4 className="font-medium text-blue-900 mb-2">How This Information Is Used</h4>
-        <ul className="text-sm text-blue-800 space-y-1">
+      <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+        <h4 className="font-medium text-blue-700 mb-2">How This Information Is Used</h4>
+        <ul className="text-sm text-blue-700 space-y-1">
           <li>• Contact email appears in the footer and support pages</li>
           <li>• Phone number is displayed for urgent inquiries</li>
           <li>• Address is shown in the &quot;About Us&quot; and legal pages</li>

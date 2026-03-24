@@ -59,8 +59,8 @@ async function TipCancelContent({ searchParams }: PageProps) {
               <span className="font-semibold">Your support still matters!</span>
             </div>
             <p className="text-sm text-blue-800">
-              IB4ME helps connect patients in Sierra Leone with donors who can fund their
-              medical emergencies. Every tip helps us maintain and improve the platform.
+              IB4ME helps connect people in Sierra Leone with donors who can fund their
+              causes. Every tip helps us maintain and improve the platform.
             </p>
           </CardContent>
         </Card>
@@ -87,7 +87,7 @@ async function TipCancelContent({ searchParams }: PageProps) {
               <CardContent className="p-4 text-left">
                 <h4 className="font-medium text-gray-900 mb-2">Donate to a Campaign</h4>
                 <p className="text-gray-600 mb-3">
-                  Support patients directly by donating to their medical campaigns.
+                  Support people directly by donating to their campaigns.
                 </p>
                 <Button asChild variant="secondary" size="sm" className="rounded-lg">
                   <Link href="/campaigns">View Campaigns</Link>

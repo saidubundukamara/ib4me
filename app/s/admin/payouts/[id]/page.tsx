@@ -82,15 +82,15 @@ interface Payout {
 }
 
 const statusConfig = {
-  processing: { label: "Processing", color: "bg-blue-100 text-blue-800", icon: Clock },
-  threshold_review: { label: "Threshold Review", color: "bg-yellow-100 text-yellow-800", icon: AlertTriangle },
-  in_review: { label: "In Review", color: "bg-orange-100 text-orange-800", icon: Clock },
-  approved: { label: "Approved", color: "bg-green-100 text-green-800", icon: CheckCircle },
-  rejected: { label: "Rejected", color: "bg-red-100 text-red-800", icon: XCircle },
-  completed: { label: "Completed", color: "bg-green-100 text-green-800", icon: CheckCircle },
-  failed: { label: "Failed", color: "bg-red-100 text-red-800", icon: XCircle },
-  cancelled: { label: "Cancelled", color: "bg-gray-100 text-gray-800", icon: XCircle },
-  paid: { label: "Paid", color: "bg-green-100 text-green-800", icon: CheckCircle },
+  processing: { label: "Processing", color: "bg-blue-500/15 text-blue-700", icon: Clock },
+  threshold_review: { label: "Threshold Review", color: "bg-yellow-500/15 text-yellow-700", icon: AlertTriangle },
+  in_review: { label: "In Review", color: "bg-orange-500/15 text-orange-700", icon: Clock },
+  approved: { label: "Approved", color: "bg-green-500/15 text-green-700", icon: CheckCircle },
+  rejected: { label: "Rejected", color: "bg-red-500/15 text-red-700", icon: XCircle },
+  completed: { label: "Completed", color: "bg-green-500/15 text-green-700", icon: CheckCircle },
+  failed: { label: "Failed", color: "bg-red-500/15 text-red-700", icon: XCircle },
+  cancelled: { label: "Cancelled", color: "bg-muted text-muted-foreground", icon: XCircle },
+  paid: { label: "Paid", color: "bg-green-500/15 text-green-700", icon: CheckCircle },
 };
 
 const formatCurrency = (amountMinor: number, currency: string = "SLE") => {
@@ -392,11 +392,11 @@ export default function PayoutDetailPage() {
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
                           <div className="flex items-center">
                             <AlertCircle className="w-5 h-5 text-yellow-600 mr-2" />
                             <div>
-                              <div className="font-medium text-yellow-800">Threshold Warning</div>
+                              <div className="font-medium text-yellow-700">Threshold Warning</div>
                               <div className="text-sm text-yellow-700">
                                 Amount: {formatCurrency(payout.amountMinor, payout.campaignId.goal?.currency)} is below minimum threshold
                               </div>
@@ -602,12 +602,12 @@ export default function PayoutDetailPage() {
                           <label className="text-sm font-medium">Minimum Threshold Met</label>
                           <div className="mt-1">
                             {payout.policyCheck.minThresholdMet ? (
-                              <Badge className="bg-green-100 text-green-800">
+                              <Badge className="bg-green-500/15 text-green-700">
                                 <CheckCircle className="w-4 h-4 mr-1" />
                                 Yes
                               </Badge>
                             ) : (
-                              <Badge className="bg-red-100 text-red-800">
+                              <Badge className="bg-red-500/15 text-red-700">
                                 <AlertTriangle className="w-4 h-4 mr-1" />
                                 No
                               </Badge>
@@ -665,9 +665,9 @@ export default function PayoutDetailPage() {
 
             {/* Error Information */}
             {payout.failureReason && (
-              <Card className="border-red-200">
+              <Card className="border-red-500/30 bg-red-500/5">
                 <CardHeader>
-                  <CardTitle className="text-red-800">Failure Information</CardTitle>
+                  <CardTitle className="text-red-700">Failure Information</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-red-700">{payout.failureReason}</p>
@@ -707,7 +707,7 @@ export default function PayoutDetailPage() {
                         </div>
                         
                         {log.diff && Object.keys(log.diff).length > 0 && (
-                          <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
+                          <div className="mt-2 p-2 bg-muted/50 rounded text-xs">
                             <details>
                               <summary className="cursor-pointer font-medium">View Changes</summary>
                               <pre className="mt-2 whitespace-pre-wrap">

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
     Menu, ChevronRight, PhoneCall, Heart, MessageCircleQuestion, DollarSign,
-    LogOutIcon,
+    LogOutIcon, Search,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -119,30 +120,41 @@ const Navbar = ({
     },
 }: NavbarProps) => {
     const [hasScrolled, setHasScrolled] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchOpen, setSearchOpen] = useState(false);
+    const searchRef = useRef<HTMLInputElement>(null);
     const { data: session, status } = useSession();
-    const isLoadingSession = status === "loading";
     const isAuthenticated = status === "authenticated";
+    const router = useRouter();
 
     useEffect(() => {
         const handleScroll = () => {
             setHasScrolled(window.scrollY > 20);
         };
-
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
+
+    const handleSearchSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const q = searchQuery.trim();
+        if (q) {
+            router.push(`/campaigns?q=${encodeURIComponent(q)}`);
+            setSearchQuery("");
+            setSearchOpen(false);
+        }
+    };
     const avatarUrl = session?.user?.image ?? undefined;
     const name = session?.user?.name ?? "User";
     const initial = name.trim().charAt(0).toUpperCase();
     return (
-        <section data-testid="navbar" className={`py-3 sticky top-0 z-40 w-full bg-white transition-all ${hasScrolled ? "border-b border-gray-100 shadow-sm" : "border-b-0"
-            }`}>
+        <section data-testid="navbar" className={`sticky top-0 z-40 w-full bg-background transition-all duration-200 ${hasScrolled ? "py-1.5 border-b border-border shadow-sm" : "py-3 border-b-0"}`}>
             <div className="container max-w-screen-xl px-5 mx-auto">
                 {/* Desktop Menu */}
-                <nav className="hidden justify-between lg:flex">
+                <nav className="hidden justify-between lg:flex items-center">
                     <div className="flex items-center gap-6">
-                        <a href={logo.url} className="flex items-center gap-2">
-                            <Image src={logo.src} className="w-32 h-12 object-contain" alt={logo.alt} />
+                        <a href={logo.url} className="flex items-center gap-2 shrink-0">
+                            <Image src={logo.src} className={`object-contain transition-all duration-200 ${hasScrolled ? "w-24 h-9" : "w-32 h-12"}`} alt={logo.alt} />
                         </a>
                         <div className="flex items-center font-Sora text-neutral-900">
                             <NavigationMenu>
@@ -152,13 +164,29 @@ const Navbar = ({
                             </NavigationMenu>
                         </div>
                     </div>
-                    <div className="flex gap-2 font-Sora">
-                        {isLoadingSession ? (
-                            <div
-                                className="h-10 w-10 rounded-full border border-muted-foreground/30 animate-pulse"
-                                aria-hidden="true"
+                    <div className="flex items-center gap-2 font-Sora">
+                        {/* Search */}
+                        <form onSubmit={handleSearchSubmit} className={`relative flex items-center transition-all duration-200 ${searchOpen ? "w-52" : "w-9"}`}>
+                            <button
+                                type="button"
+                                onClick={() => { setSearchOpen((v) => !v); setTimeout(() => searchRef.current?.focus(), 50); }}
+                                className="absolute left-0 z-10 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                                aria-label="Search campaigns"
+                            >
+                                <Search className="h-4 w-4" />
+                            </button>
+                            <input
+                                ref={searchRef}
+                                type="search"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onBlur={() => { if (!searchQuery) setSearchOpen(false); }}
+                                placeholder="Search campaigns..."
+                                className={`h-9 rounded-full border border-border bg-muted pl-9 pr-3 text-sm outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 ${searchOpen ? "opacity-100 w-full" : "opacity-0 w-0 pointer-events-none"}`}
+                                aria-label="Search campaigns"
                             />
-                        ) : isAuthenticated ? (
+                        </form>
+                        {isAuthenticated ? (
                             <Userprofile />
                         ) : (
                             <>
@@ -204,10 +232,10 @@ const Navbar = ({
                                                 <AvatarFallback>{initial}</AvatarFallback>
                                             </Avatar>
 
-                                            <h2 className="mt-2 text-sm sm:text-lg font-Lora font-semibold">{name}</h2>
+                                            <h2 className="mt-2 text-sm sm:text-lg font-Sora font-semibold">{name}</h2>
                                             <div className="w-full mt-4 space-y-2">
                                                 <a href="/dashboard">
-                                                    <button className="flex w-full cursor-pointer justify-between items-center hover:text-fun-green px-4 py-2 rounded-lg hover:bg-gray-100">
+                                                    <button className="flex w-full cursor-pointer justify-between items-center hover:text-fun-green px-4 py-2 rounded-lg hover:bg-muted">
                                                         Manage Campaigns <ChevronRight size={16} />
                                                     </button>
                                                 </a>
@@ -275,7 +303,7 @@ const renderMenuItem = (item: MenuItem) => {
     return (
         <a
             key={item.title}
-            className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium text-neutral-700transition-colors hover:bg-muted hover:text-accent-foreground"
+            className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-accent-foreground"
             href={item.url}
         >
             {item.title}

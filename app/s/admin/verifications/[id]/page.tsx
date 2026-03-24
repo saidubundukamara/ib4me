@@ -90,27 +90,27 @@ const statusConfig: Record<
 > = {
   not_started: {
     label: "Not Started",
-    color: "bg-gray-100 text-gray-800",
+    color: "bg-muted text-muted-foreground",
     icon: Clock,
   },
   pending: {
     label: "Pending",
-    color: "bg-yellow-100 text-yellow-800",
+    color: "bg-yellow-500/15 text-yellow-700",
     icon: Clock,
   },
   under_review: {
     label: "Under Review",
-    color: "bg-blue-100 text-blue-800",
+    color: "bg-blue-500/15 text-blue-700",
     icon: Eye,
   },
   approved: {
     label: "Approved",
-    color: "bg-green-100 text-green-800",
+    color: "bg-green-500/15 text-green-700",
     icon: CheckCircle,
   },
   rejected: {
     label: "Rejected",
-    color: "bg-red-100 text-red-800",
+    color: "bg-red-500/15 text-red-700",
     icon: XCircle,
   },
 };
@@ -284,7 +284,7 @@ export default function VerificationDetailPage() {
     if (!document) {
       return (
         <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-8 text-gray-400">
+          <CardContent className="flex flex-col items-center justify-center py-8 text-muted-foreground/60">
             <FileText className="w-8 h-8 mb-2" />
             <p className="text-sm">{label}</p>
             <p className="text-xs">Not uploaded</p>
@@ -307,7 +307,7 @@ export default function VerificationDetailPage() {
           {docData?.url ? (
             <div className="space-y-2">
               {isImage ? (
-                <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={docData.url}
@@ -316,12 +316,12 @@ export default function VerificationDetailPage() {
                   />
                 </div>
               ) : (
-                <div className="flex items-center justify-center py-8 bg-gray-50 rounded-lg">
-                  <FileText className="w-12 h-12 text-gray-400" />
+                <div className="flex items-center justify-center py-8 bg-muted/50 rounded-lg">
+                  <FileText className="w-12 h-12 text-muted-foreground/60" />
                 </div>
               )}
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-500 truncate">
+                <span className="text-xs text-muted-foreground truncate">
                   {docData.type || "Document"}
                 </span>
                 <a
@@ -338,7 +338,7 @@ export default function VerificationDetailPage() {
               </div>
             </div>
           ) : (
-            <div className="text-center py-4 text-gray-400">
+            <div className="text-center py-4 text-muted-foreground/60">
               <FileText className="w-8 h-8 mx-auto mb-2" />
               <p className="text-sm">Document ID: {typeof document === "string" ? document : docData?._id}</p>
             </div>
@@ -352,8 +352,8 @@ export default function VerificationDetailPage() {
     return (
       <div className="space-y-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="h-8 bg-muted rounded w-1/4"></div>
+          <div className="h-64 bg-muted rounded"></div>
         </div>
       </div>
     );
@@ -386,7 +386,7 @@ export default function VerificationDetailPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Verification Details</h1>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               {verification.type.toUpperCase()} Verification for{" "}
               {verification.userName || "Unknown User"}
             </p>
@@ -578,28 +578,28 @@ export default function VerificationDetailPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Name</label>
+                  <label className="text-sm font-medium text-muted-foreground">Name</label>
                   <p className="font-medium">
                     {verification.userName || "Not provided"}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">User ID</label>
-                  <p className="text-xs text-gray-400 truncate">
+                  <label className="text-sm font-medium text-muted-foreground">User ID</label>
+                  <p className="text-xs text-muted-foreground/60 truncate">
                     {verification.userId || "Unknown"}
                   </p>
                 </div>
                 <div className="flex items-start space-x-2">
-                  <Mail className="w-4 h-4 text-gray-400 mt-1" />
+                  <Mail className="w-4 h-4 text-muted-foreground/60 mt-1" />
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Email</label>
+                    <label className="text-sm font-medium text-muted-foreground">Email</label>
                     <p>{verification.userEmail || "Not provided"}</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-2">
-                  <Phone className="w-4 h-4 text-gray-400 mt-1" />
+                  <Phone className="w-4 h-4 text-muted-foreground/60 mt-1" />
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Phone</label>
+                    <label className="text-sm font-medium text-muted-foreground">Phone</label>
                     <p>{verification.userPhone || "Not provided"}</p>
                   </div>
                 </div>
@@ -609,24 +609,24 @@ export default function VerificationDetailPage() {
               {verification.type === "kyb" && verification.userOrganization && (
                 <div className="border-t pt-4 mt-4">
                   <div className="flex items-center mb-3">
-                    <Building className="w-4 h-4 mr-2 text-gray-500" />
+                    <Building className="w-4 h-4 mr-2 text-muted-foreground" />
                     <span className="font-medium">Organization Details</span>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-500">
+                      <label className="text-sm font-medium text-muted-foreground">
                         Organization Name
                       </label>
                       <p>{verification.userOrganization.name || "Not provided"}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Type</label>
+                      <label className="text-sm font-medium text-muted-foreground">Type</label>
                       <p className="capitalize">
                         {verification.userOrganization.type || "Not provided"}
                       </p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-500">
+                      <label className="text-sm font-medium text-muted-foreground">
                         Registration Number
                       </label>
                       <p>
@@ -636,7 +636,7 @@ export default function VerificationDetailPage() {
                     </div>
                     {verification.userOrganization.description && (
                       <div className="col-span-2">
-                        <label className="text-sm font-medium text-gray-500">
+                        <label className="text-sm font-medium text-muted-foreground">
                           Description
                         </label>
                         <p>{verification.userOrganization.description}</p>
@@ -706,7 +706,7 @@ export default function VerificationDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-500">Type</label>
+                <label className="text-sm font-medium text-muted-foreground">Type</label>
                 <p>
                   <Badge variant={verification.type === "kyb" ? "info" : "secondary"}>
                     {verification.type.toUpperCase()}
@@ -714,13 +714,13 @@ export default function VerificationDetailPage() {
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Status</label>
+                <label className="text-sm font-medium text-muted-foreground">Status</label>
                 <div className="mt-1">
                   <StatusBadge status={verification.status} />
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">
+                <label className="text-sm font-medium text-muted-foreground">
                   Submitted At
                 </label>
                 <p>
@@ -731,7 +731,7 @@ export default function VerificationDetailPage() {
               </div>
               {verification.reviewedAt && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-muted-foreground">
                     Reviewed At
                   </label>
                   <p>{new Date(verification.reviewedAt).toLocaleString()}</p>
@@ -739,20 +739,20 @@ export default function VerificationDetailPage() {
               )}
               {verification.reviewedBy && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-muted-foreground">
                     Reviewed By
                   </label>
-                  <p className="text-xs text-gray-400 truncate">
+                  <p className="text-xs text-muted-foreground/60 truncate">
                     {verification.reviewedBy}
                   </p>
                 </div>
               )}
               <div>
-                <label className="text-sm font-medium text-gray-500">Created</label>
+                <label className="text-sm font-medium text-muted-foreground">Created</label>
                 <p>{new Date(verification.createdAt).toLocaleString()}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">
+                <label className="text-sm font-medium text-muted-foreground">
                   Last Updated
                 </label>
                 <p>{new Date(verification.updatedAt).toLocaleString()}</p>
@@ -762,9 +762,9 @@ export default function VerificationDetailPage() {
 
           {/* Rejection Reason (if rejected) */}
           {verification.status === "rejected" && verification.rejectionReason && (
-            <Card className="border-red-200">
+            <Card className="border-red-500/30 bg-red-500/5">
               <CardHeader>
-                <CardTitle className="text-red-800 flex items-center">
+                <CardTitle className="text-red-700 flex items-center">
                   <AlertCircle className="w-5 h-5 mr-2" />
                   Rejection Reason
                 </CardTitle>

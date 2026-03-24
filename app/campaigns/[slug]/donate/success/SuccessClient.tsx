@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { CheckCircle, XCircle, Loader2, Info, Share2 } from "lucide-react";
+import { FaFacebookF, FaWhatsapp, FaXTwitter } from "react-icons/fa6";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -58,16 +59,14 @@ export default function SuccessClient({
   }, []);
 
   const [status, setStatus] = useState<DonationStatus>(() => {
-    // If we have an initial status from the API redirect, use it
     if (initialStatus) {
       return mapStatus(initialStatus);
     }
-    // Otherwise, show loading until we check
     return donationId ? "loading" : "succeeded";
   });
   const [error, setError] = useState<string | null>(errorMessage || null);
   const [pollingCount, setPollingCount] = useState(0);
-  const MAX_POLLING_ATTEMPTS = 30; // 60 seconds max polling
+  const MAX_POLLING_ATTEMPTS = 30;
 
   const checkDonationStatus = useCallback(async () => {
     try {
@@ -84,12 +83,10 @@ export default function SuccessClient({
   }, [donationId]);
 
   useEffect(() => {
-    // If we already have a terminal status from the API, don't poll
     if (initialStatus === "succeeded" || initialStatus === "failed" || initialStatus === "error") {
       return;
     }
 
-    // If no donation ID, show success
     if (!donationId) {
       setStatus("succeeded");
       return;
@@ -98,7 +95,6 @@ export default function SuccessClient({
     let isMounted = true;
     let pollInterval: NodeJS.Timeout | null = null;
 
-    // Only poll if status is pending or transferring (non-terminal)
     const shouldPoll = status === "loading" || status === "pending" || status === "transferring";
 
     if (!shouldPoll) {
@@ -132,7 +128,6 @@ export default function SuccessClient({
           setStatus("pending");
         }
 
-        // Continue polling if not terminal
         setPollingCount((prev) => {
           if (prev >= MAX_POLLING_ATTEMPTS) {
             if (pollInterval) clearInterval(pollInterval);
@@ -140,16 +135,12 @@ export default function SuccessClient({
           }
           return prev + 1;
         });
-      } catch (err) {
-        console.error("Polling error:", err);
+      } catch {
         // Continue polling on transient errors
       }
     }
 
-    // Initial check
     checkAndUpdateStatus();
-
-    // Start polling
     pollInterval = setInterval(checkAndUpdateStatus, 2000);
 
     return () => {
@@ -158,16 +149,19 @@ export default function SuccessClient({
     };
   }, [donationId, initialStatus, status, checkDonationStatus]);
 
-  const campaignName = campaign?.patient?.name || campaign?.diagnosis || "this medical campaign";
+  const campaignName = campaign?.patient?.name || campaign?.diagnosis || "this campaign";
+  const siteUrl = origin || "https://ib4me.org";
+  const absoluteUrl = `${siteUrl}/campaigns/${slug}`;
+  const shareText = `I just donated to support ${campaignName} on ib4me! You can help too`;
 
   // Loading state
   if (status === "loading") {
     return (
-      <main className="container mx-auto max-w-2xl px-4 py-8">
+      <main className="container mx-auto max-w-2xl px-4 py-8 font-Sora">
         <Card className="rounded-3xl border border-border/40 bg-card/80 shadow-2xl backdrop-blur">
           <CardContent className="p-8">
             <div className="text-center space-y-6">
-              <div className="mx-auto h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
               <div>
@@ -181,14 +175,14 @@ export default function SuccessClient({
     );
   }
 
-  // Pending state - waiting for payment confirmation
+  // Pending state
   if (status === "pending") {
     return (
-      <main className="container mx-auto max-w-2xl px-4 py-8">
+      <main className="container mx-auto max-w-2xl px-4 py-8 font-Sora">
         <Card className="rounded-3xl border border-border/40 bg-card/80 shadow-2xl backdrop-blur">
           <CardContent className="p-8">
             <div className="text-center space-y-6">
-              <div className="mx-auto h-16 w-16 rounded-full bg-yellow-100 dark:bg-yellow-950/30 flex items-center justify-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-950/30">
                 <Loader2 className="h-8 w-8 animate-spin text-yellow-600 dark:text-yellow-500" />
               </div>
               <div>
@@ -214,14 +208,14 @@ export default function SuccessClient({
     );
   }
 
-  // Transferring state - payment confirmed, moving funds
+  // Transferring state
   if (status === "transferring") {
     return (
-      <main className="container mx-auto max-w-2xl px-4 py-8">
+      <main className="container mx-auto max-w-2xl px-4 py-8 font-Sora">
         <Card className="rounded-3xl border border-border/40 bg-card/80 shadow-2xl backdrop-blur">
           <CardContent className="p-8">
             <div className="text-center space-y-6">
-              <div className="mx-auto h-16 w-16 rounded-full bg-blue-100 dark:bg-blue-950/30 flex items-center justify-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950/30">
                 <Loader2 className="h-8 w-8 animate-spin text-blue-600 dark:text-blue-500" />
               </div>
               <div>
@@ -248,11 +242,11 @@ export default function SuccessClient({
   // Failed state
   if (status === "failed") {
     return (
-      <main className="container mx-auto max-w-2xl px-4 py-8">
+      <main className="container mx-auto max-w-2xl px-4 py-8 font-Sora">
         <Card className="rounded-3xl border border-border/40 bg-card/80 shadow-2xl backdrop-blur">
           <CardContent className="p-8">
             <div className="text-center space-y-6">
-              <div className="mx-auto h-16 w-16 rounded-full bg-red-100 dark:bg-red-950/30 flex items-center justify-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-950/30">
                 <XCircle className="h-10 w-10 text-red-500 dark:text-red-400" />
               </div>
               <div>
@@ -288,12 +282,12 @@ export default function SuccessClient({
 
   // Success state
   return (
-    <main className="container mx-auto max-w-2xl px-4 py-8">
+    <main className="container mx-auto max-w-2xl px-4 py-8 font-Sora">
       <Card className="rounded-3xl border border-border/40 bg-card/80 shadow-2xl backdrop-blur">
         <CardContent className="p-8">
           <div className="text-center space-y-6">
             {/* Success Icon */}
-            <div className="mx-auto h-16 w-16 rounded-full bg-green-100 dark:bg-green-950/30 flex items-center justify-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-950/30">
               <CheckCircle className="h-10 w-10 text-green-500 dark:text-green-400" />
             </div>
 
@@ -327,21 +321,21 @@ export default function SuccessClient({
             </div>
 
             {/* Next Steps */}
-            <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 rounded-2xl text-left">
-              <Info className="h-4 w-4 text-blue-500" />
-              <AlertDescription className="text-blue-800 dark:text-blue-300">
+            <Alert className="bg-primary/5 border-primary/20 rounded-2xl text-left">
+              <Info className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-foreground">
                 <h3 className="font-semibold mb-2">What happens next?</h3>
-                <ul className="space-y-2 text-sm">
+                <ul className="space-y-2 text-sm text-muted-foreground">
                   <li className="flex items-start gap-2">
-                    <span className="inline-block h-2 w-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                    <span className="inline-block h-2 w-2 rounded-full bg-primary mt-1.5 shrink-0" />
                     Your donation has been transferred to the campaign
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="inline-block h-2 w-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                    <span className="inline-block h-2 w-2 rounded-full bg-primary mt-1.5 shrink-0" />
                     You&apos;ll receive an email confirmation with your receipt
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="inline-block h-2 w-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                    <span className="inline-block h-2 w-2 rounded-full bg-primary mt-1.5 shrink-0" />
                     The campaign organizer has been notified of your contribution
                   </li>
                 </ul>
@@ -370,37 +364,52 @@ export default function SuccessClient({
                 <Share2 className="h-4 w-4" />
                 <span>Help spread the word about this campaign</span>
               </div>
-              <div className="flex gap-4 justify-center">
-                {origin && (
-                  <>
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-950/40"
-                    >
-                      <a
-                        href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${origin}/campaigns/${slug}`)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Facebook
-                      </a>
-                    </Button>
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="h-10 rounded-2xl bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-950/40"
-                    >
-                      <a
-                        href={`https://wa.me/?text=${encodeURIComponent(`Help support ${campaignName}! ${origin}/campaigns/${slug}`)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        WhatsApp
-                      </a>
-                    </Button>
-                  </>
-                )}
+              <div className="flex flex-wrap gap-3 justify-center">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-950/40"
+                >
+                  <a
+                    href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(absoluteUrl)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Share on Facebook"
+                  >
+                    <FaFacebookF className="mr-2 h-4 w-4" />
+                    Facebook
+                  </a>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="h-10 rounded-2xl bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-950/40"
+                >
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`${shareText}\n${absoluteUrl}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Share on WhatsApp"
+                  >
+                    <FaWhatsapp className="mr-2 h-4 w-4" />
+                    WhatsApp
+                  </a>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="h-10 rounded-2xl bg-muted border-border text-foreground hover:bg-muted/80"
+                >
+                  <a
+                    href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(absoluteUrl)}&text=${encodeURIComponent(shareText)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Share on X"
+                  >
+                    <FaXTwitter className="mr-2 h-4 w-4" />
+                    X
+                  </a>
+                </Button>
               </div>
             </div>
           </div>

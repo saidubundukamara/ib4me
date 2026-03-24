@@ -7,7 +7,7 @@ const DEFAULT_OG_IMAGE = {
   url: "https://ib4me.org/assets/Hero.png",
   width: 1200,
   height: 630,
-  alt: "ib4me - Medical Emergency Fundraising",
+  alt: "ib4me - Crowdfunding for Social Good",
 };
 
 const OG_TRANSFORMATIONS = {
@@ -27,7 +27,7 @@ export interface OGImageResult {
 }
 
 /**
- * Get OG image from the first campaign that has a patient photo
+ * Get OG image from the first campaign that has a beneficiary photo
  */
 export async function getOGImageFromCampaigns(
   campaigns: Array<{ patient?: { photoAssetId?: mongoose.Types.ObjectId; name?: string } }>,
@@ -49,7 +49,7 @@ export async function getOGImageFromCampaigns(
       url: CloudinaryService.generateTransformationUrl(asset.storage.key, OG_TRANSFORMATIONS),
       width: 1200,
       height: 630,
-      alt: altText || campaignWithPhoto.patient.name || "Campaign patient",
+      alt: altText || campaignWithPhoto.patient.name || "Campaign beneficiary",
     };
   }
 
@@ -59,7 +59,7 @@ export async function getOGImageFromCampaigns(
       url: asset.url,
       width: 1200,
       height: 630,
-      alt: altText || campaignWithPhoto.patient.name || "Campaign patient",
+      alt: altText || campaignWithPhoto.patient.name || "Campaign beneficiary",
     };
   }
 

@@ -3,11 +3,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import mongoose from "mongoose";
-import { Heart, Info, CheckCircle } from "lucide-react";
+import { Heart, Info, CheckCircle, ChevronRight, Share2 } from "lucide-react";
 import {
   FaFacebookF,
   FaXTwitter,
-  FaInstagram,
   FaWhatsapp,
   FaLinkedinIn,
 } from "react-icons/fa6";
@@ -27,6 +26,7 @@ import {
   userRepository,
 } from "@/repositories";
 import CampaignTabs, { CampaignUpdateItem } from "./Tabs";
+import DonorsTicker, { timeAgo } from "./DonorsTicker";
 
 type PageParams = { params: Promise<{ slug: string }> };
 
@@ -38,34 +38,32 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     return { title: 'Campaign Not Found' };
   }
 
-  // Get patient photo URL if available
+  // Get beneficiary photo URL if available
   let imageUrl = 'https://ib4me.org/assets/Hero.png';
   if (campaign.patient?.photoAssetId) {
     const assets = await mediaAssetService.listByIds([campaign.patient.photoAssetId as mongoose.Types.ObjectId]);
     const asset = assets[0];
     if (asset?.storage?.key) {
-      // Use Cloudinary transformation for optimal OG image
       imageUrl = CloudinaryService.generateTransformationUrl(asset.storage.key, {
         width: 1200,
         crop: 'fill',
         gravity: 'auto',
         aspect_ratio: '1.91:1',
-        fetch_format: 'jpg',  // Use jpg for better crawler compatibility
+        fetch_format: 'jpg',
         quality: 'auto',
       });
     } else if (asset?.url) {
-      // Fallback to stored URL if no storage key
       imageUrl = asset.url;
     }
   }
 
-  const patientName = campaign.patient?.name || 'a patient';
+  const patientName = campaign.patient?.name || 'a beneficiary';
   const goalAmount = campaign.goal?.amountMinor ? (campaign.goal.amountMinor / 100).toLocaleString() : '0';
   const raisedAmount = campaign.totals?.raisedMinor ? (campaign.totals.raisedMinor / 100).toLocaleString() : '0';
   const currency = campaign.goal?.currency || 'SLE';
 
-  const title = `Help ${patientName} - Medical Fundraiser`;
-  const description = `Help ${patientName} raise ${currency} ${goalAmount} for ${campaign.diagnosis || 'medical treatment'}. ${currency} ${raisedAmount} raised so far.`;
+  const title = `Help ${patientName} - Fundraiser on ib4me`;
+  const description = `Help ${patientName} raise ${currency} ${goalAmount} for ${campaign.diagnosis || 'their cause'}. ${currency} ${raisedAmount} raised so far.`;
   const pageUrl = `https://ib4me.org/campaigns/${slug}`;
 
   return {
@@ -100,8 +98,8 @@ function formatAmount(amount: number, currency: string = "SLE") {
 function formatDate(date: Date) {
   return new Date(date).toLocaleDateString(undefined, {
     year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
+    month: "short",
+    day: "numeric",
   });
 }
 
@@ -120,7 +118,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
 
   const title = campaign.patient?.name || campaign.diagnosis || campaign.slug;
 
-  // Collect asset IDs: patient photo (priority) and first document image (fallback)
+  // Collect asset IDs: beneficiary photo (priority) and first document image (fallback)
   const assetIds: mongoose.Types.ObjectId[] = [];
   if (campaign.patient?.photoAssetId) {
     assetIds.push(campaign.patient.photoAssetId as mongoose.Types.ObjectId);
@@ -138,7 +136,6 @@ export default async function CampaignDetailPage({ params }: PageParams) {
     const assets = await mediaAssetService.listByIds(assetIds);
     const assetMap = new Map(assets.map((a) => [String(a._id), a]));
 
-    // Try patient photo first
     let resolvedUrl: string | null = null;
     if (campaign.patient?.photoAssetId) {
       const photoAsset = assetMap.get(String(campaign.patient.photoAssetId));
@@ -157,7 +154,6 @@ export default async function CampaignDetailPage({ params }: PageParams) {
       }
     }
 
-    // Fallback to first document image
     if (!resolvedUrl && firstImageDoc?.assetId) {
       const docAsset = assetMap.get(String(firstImageDoc.assetId));
       if (docAsset) {
@@ -184,9 +180,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
     ? await userRepository.findById(String(campaign.ownerId))
     : null;
 
-  // Check if campaign owner is verified
   const isOwnerVerified = campaign.ownerVerification?.verified ?? false;
-  // Check if campaign content is verified by admin
   const isCampaignVerified = campaign.verification?.status === "approved";
 
   const donations = await donationRepository.listByCampaign(
@@ -217,69 +211,65 @@ export default async function CampaignDetailPage({ params }: PageParams) {
   const organizerPhoto = organizer?.photoUrl ?? null;
   const createdLabel = campaign.createdAt ? formatDate(campaign.createdAt) : null;
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ib4me.org";
   const absoluteUrl = `${siteUrl}/campaigns/${campaign.slug}`;
+  const shareText = `Help ${title} — ${formatAmount(amountRaised, currency)} raised of ${formatAmount(goalAmount, currency)} goal`;
 
   const shareLinks = [
     {
       name: "Facebook",
-      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-        absoluteUrl,
-      )}`,
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(absoluteUrl)}`,
       icon: FaFacebookF,
-      bgColor: "bg-blue-50",
-      hoverbg: "hover:border-blue-300"
+      bgColor: "bg-blue-50 dark:bg-blue-950/20",
+      hoverBg: "hover:bg-blue-100 dark:hover:bg-blue-950/40 hover:border-blue-300",
     },
     {
       name: "X",
-      href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(
-        absoluteUrl,
-      )}&text=${encodeURIComponent(title)}`,
+      href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(absoluteUrl)}&text=${encodeURIComponent(shareText)}`,
       icon: FaXTwitter,
-      bgColor: "bg-gray-50",
-      hoverbg: "hover:border-gray-400"
+      bgColor: "bg-muted",
+      hoverBg: "hover:bg-muted/80 hover:border-foreground/30",
     },
-    {
-      name: "Instagram",
-      href: `https://www.instagram.com/?url=${encodeURIComponent(absoluteUrl)}`,
-      icon: FaInstagram,
-      bgColor: "bg-pink-50",
-      hoverbg: "hover:border-pink-300"
-    },
-    
     {
       name: "WhatsApp",
-      href: `https://wa.me/?text=${encodeURIComponent(`${title} – ${absoluteUrl}`)}`,
+      href: `https://wa.me/?text=${encodeURIComponent(`${shareText}\n${absoluteUrl}`)}`,
       icon: FaWhatsapp,
-      bgColor: "bg-green-50",
-      hoverbg: "hover:border-green-300"
+      bgColor: "bg-green-50 dark:bg-green-950/20",
+      hoverBg: "hover:bg-green-100 dark:hover:bg-green-950/40 hover:border-green-300",
     },
     {
       name: "LinkedIn",
-      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-        absoluteUrl,
-      )}`,
+      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(absoluteUrl)}`,
       icon: FaLinkedinIn,
-      bgColor: "bg-blue-50",
-      hoverbg: "hover:border-blue-400"
+      bgColor: "bg-blue-50 dark:bg-blue-950/20",
+      hoverBg: "hover:bg-blue-100 dark:hover:bg-blue-950/40 hover:border-blue-400",
     },
   ];
 
   return (
-    <div className="min-h-dvh bg-gradient-to-b from-background to-muted/20">
+    <div className="min-h-dvh bg-gradient-to-b from-background to-muted/20 font-Sora">
       <main className="py-8 md:py-12">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+          {/* Breadcrumb */}
+          <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Link href="/campaigns" className="hover:text-primary transition-colors">
+              Campaigns
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5" />
+            <span className="truncate text-foreground font-medium">{title}</span>
+          </nav>
+
           <div className="grid gap-8 lg:grid-cols-12">
-            <section className="space-y-6 lg:col-span-8">
+            <section className="animate-fade-up space-y-6 lg:col-span-8">
               <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border/40 bg-muted shadow-lg">
                 <Image
                   src={heroUrl}
                   alt={title}
                   width={1280}
                   height={720}
-                  className="size-full object-cover transition-transform duration-500 hover:scale-105"
+                  className="size-full object-cover"
                 />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-500 hover:opacity-100" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent" />
               </div>
 
               {!isCampaignVerified && (
@@ -300,13 +290,13 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                        Medical Campaign
+                        Campaign
                       </span>
                     )}
                     <h1 className="text-3xl font-bold leading-tight text-foreground sm:text-4xl">
                       {title}
                     </h1>
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-blaze-orange">
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                       <span>
                         {supporters} supporter{supporters === 1 ? "" : "s"}
                       </span>
@@ -319,7 +309,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
               </Card>
             </section>
 
-            <aside className="space-y-6 lg:col-span-4">
+            <aside className="animate-fade-up delay-200 space-y-6 lg:col-span-4">
               <div className="space-y-6 lg:sticky lg:top-6">
                 <Card className="overflow-hidden rounded-3xl border border-border/50 shadow-xl">
                   <div className="h-1 bg-gradient-to-r from-primary via-primary/80 to-primary/40" />
@@ -329,16 +319,17 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                         <span className="text-3xl font-semibold text-primary">
                           {formatAmount(amountRaised, currency)}
                         </span>
-                        <span className="text-sm text-blaze-orange">
+                        <span className="text-sm text-muted-foreground">
                           of {formatAmount(goalAmount, currency)} goal
                         </span>
                       </div>
                       <Progress value={progress} className="mt-4 h-3" />
-                      <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-blaze-orange">
+                      <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                         <span className="inline-flex items-center gap-2">
                           <Heart className="h-4 w-4 text-primary" />
                           {supporters} supporter{supporters === 1 ? "" : "s"}
                         </span>
+                        <span className="font-semibold text-primary">{progress}%</span>
                       </div>
                     </div>
 
@@ -367,16 +358,17 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                     )}
 
                     <div>
-                      <h3 className="text-center text-sm font-semibold text-blaze-orange">
+                      <h3 className="flex items-center justify-center gap-2 text-sm font-semibold text-foreground">
+                        <Share2 className="h-4 w-4" />
                         Share Campaign
                       </h3>
                       <div className="mt-3 flex flex-wrap gap-2">
-                        {shareLinks.map(({ name, href, icon: Icon, bgColor, hoverbg}) => (
+                        {shareLinks.map(({ name, href, icon: Icon, bgColor, hoverBg }) => (
                           <Button
                             key={name}
                             variant="outline"
                             size="icon"
-                            className={`${bgColor} ${hoverbg} flex-1 min-w-12`}
+                            className={`${bgColor} ${hoverBg} flex-1 min-w-12 transition-colors`}
                             asChild
                           >
                             <a
@@ -412,13 +404,13 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                               <Badge
                                 variant="outline"
                                 className="text-[10px] bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800"
-                                title="This organizer&apos;s identity verification is pending"
+                                title="This organizer's identity verification is pending"
                               >
                                 Pending Verification
                               </Badge>
                             )}
                           </div>
-                          <p className="text-xs text-blaze-orange">
+                          <p className="text-xs text-muted-foreground">
                             Campaign organizer
                             {createdLabel ? ` • Created ${createdLabel}` : ""}
                           </p>
@@ -429,58 +421,32 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                     <Separator />
 
                     <div>
-                      <h4 className="text-sm font-semibold text-foreground">
+                      <h4 className="mb-3 text-sm font-semibold text-foreground">
                         Recent Donations
                       </h4>
-                      <div className="mt-3 space-y-3">
-                        {recentDonations.length === 0 ? (
-                          <p className="text-sm text-blaze-orange">
-                            No donations yet.
+                      {recentDonations.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-border/60 bg-muted/30 p-4 text-center">
+                          <Heart className="mx-auto h-6 w-6 text-muted-foreground/50" />
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            No donations yet. Be the first to support!
                           </p>
-                        ) : (
-                          recentDonations.map((d) => (
-                            <div
-                              key={String(d._id)}
-                              className="rounded-xl border border-border/50 bg-muted/30 p-3"
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div>
-                                  <p className="text-sm font-semibold text-foreground">
-                                    {d.isAnonymous
-                                      ? "Anonymous"
-                                      : d.donorSnapshot?.name || "Supporter"}
-                                  </p>
-                                  <p className="text-xs text-blaze-orange">
-                                    {formatDate(d.createdAt)}
-                                  </p>
-                                  {d.message ? (
-                                    <p className="mt-2 text-sm text-blaze-orange italic">
-                                      “{d.message}”
-                                    </p>
-                                  ) : null}
-                                </div>
-                                <p className="text-sm font-semibold text-primary">
-                                  {formatAmount(
-                                    Math.floor((d.amount?.minor ?? 0) / 100),
-                                    d.amount?.currency || currency,
-                                  )}
-                                </p>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        <DonorsTicker
+                          donors={recentDonations.map((d) => ({
+                            name: d.isAnonymous ? "Anonymous" : (d.donorSnapshot?.name || "Supporter"),
+                            amount: formatAmount(Math.floor((d.amount?.minor ?? 0) / 100), d.amount?.currency || currency),
+                            timeAgo: timeAgo(d.createdAt),
+                            message: d.message || undefined,
+                          }))}
+                        />
+                      )}
                     </div>
                   </CardContent>
                 </Card>
               </div>
             </aside>
           </div>
-        </div>
-        <div className="mt-10 text-center text-sm">
-          <Link href="/campaigns" className="text-blaze-orange hover:text-primary">
-            ← Back to all campaigns
-          </Link>
         </div>
       </main>
     </div>

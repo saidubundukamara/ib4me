@@ -22,14 +22,21 @@ type Notification = {
 type HeaderProps = {
   sidebarOpen?: boolean;
   onToggleSidebar?: () => void;
+  notifications?: Notification[];
+  onMarkAsRead?: (id: string) => void;
+  onMarkAllAsRead?: () => void;
+  onDelete?: (id: string) => void;
 };
 
 export default function Header({
   sidebarOpen = false,
   onToggleSidebar,
+  notifications = [],
+  onMarkAsRead,
+  onMarkAllAsRead,
+  onDelete,
 }: HeaderProps) {
   const router = useRouter();
-  const [notifications, setNotifications] = React.useState<Notification[]>([]);
 
   const handleLogout = async () => {
     await logout();
@@ -64,22 +71,15 @@ export default function Header({
 
           <NotificationPopover
             notifications={notifications}
-            onMarkAsRead={(id) =>
-              setNotifications((prev) =>
-                prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-              )
-            }
-            onMarkAllAsRead={() =>
-              setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-            }
-            onDelete={(id) =>
-              setNotifications((prev) => prev.filter((n) => n.id !== id))
-            }
+            onMarkAsRead={(id) => onMarkAsRead?.(id)}
+            onMarkAllAsRead={() => onMarkAllAsRead?.()}
+            onDelete={(id) => onDelete?.(id)}
           />
 
           <Button
             variant="outline"
-            className="rounded-full border-primary/40 text-primary hover:bg-primary hover:text-white"
+            size="sm"
+            className="rounded-full border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/40 transition-colors"
             onClick={handleLogout}
           >
             <LogOut className="mr-2 h-4 w-4" />

@@ -318,13 +318,13 @@ export default function AdminDonationsListPage() {
               <div>
                 <label className="text-sm font-medium">Search</label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/60 h-4 w-4" />
                   <Input
                     placeholder="Name, email, or payment ID..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="pl-10"
-                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   />
                 </div>
               </div>
@@ -438,8 +438,8 @@ export default function AdminDonationsListPage() {
                 {donations.map((donation) => (
                   <div
                     key={donation._id}
-                    className={`p-4 border rounded-lg hover:bg-gray-50 ${
-                      donation.isFlagged ? "border-red-300 bg-red-50" : ""
+                    className={`p-4 border rounded-lg hover:bg-muted/50 ${
+                      donation.isFlagged ? "border-red-500/40 bg-red-500/8" : ""
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -488,7 +488,7 @@ export default function AdminDonationsListPage() {
 
                         {/* Third Row - Message */}
                         {donation.message && (
-                          <div className="text-sm text-muted-foreground bg-gray-100 p-2 rounded">
+                          <div className="text-sm text-muted-foreground bg-muted p-2 rounded">
                             &ldquo;{donation.message}&rdquo;
                           </div>
                         )}
@@ -511,7 +511,7 @@ export default function AdminDonationsListPage() {
 
                         {/* Flag Reason */}
                         {donation.isFlagged && donation.flagReason && (
-                          <div className="text-sm text-red-600 bg-red-100 p-2 rounded">
+                          <div className="text-sm text-red-700 bg-red-500/10 p-2 rounded">
                             <strong>Flag Reason:</strong> {donation.flagReason}
                           </div>
                         )}

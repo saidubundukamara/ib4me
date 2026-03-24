@@ -235,10 +235,10 @@ export default function AdminVerificationsPage() {
     return (
       <div className="space-y-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-8 bg-muted rounded w-1/4"></div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              <div key={i} className="h-24 bg-muted rounded"></div>
             ))}
           </div>
         </div>
@@ -247,11 +247,11 @@ export default function AdminVerificationsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-Sora">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Verifications</h2>
-        <p className="text-sm text-gray-600 mt-1">
+        <h2 className="text-2xl font-bold text-foreground">Verifications</h2>
+        <p className="text-sm text-muted-foreground mt-1">
           Review and approve KYC/KYB verification requests
         </p>
       </div>
@@ -260,43 +260,43 @@ export default function AdminVerificationsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
               <Clock className="w-4 h-4 mr-2 text-orange-500" />
               Pending
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{stats.pending}</div>
+            <div className="text-2xl font-bold" style={{ color: "#FF6000" }}>{stats.pending}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
               <Eye className="w-4 h-4 mr-2 text-blue-500" />
               Under Review
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.under_review}</div>
+            <div className="text-2xl font-bold" style={{ color: "#00712D" }}>{stats.under_review}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
               <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
               Approved
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
+            <div className="text-2xl font-bold" style={{ color: "#00712D" }}>{stats.approved}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
               <XCircle className="w-4 h-4 mr-2 text-red-500" />
               Rejected
             </CardTitle>
@@ -366,8 +366,8 @@ export default function AdminVerificationsPage() {
         </CardHeader>
         <CardContent>
           {verifications.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <ShieldAlert className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <div className="text-center py-8 text-muted-foreground">
+              <ShieldAlert className="w-12 h-12 mx-auto mb-4 text-muted-foreground/40" />
               <p>No verifications found</p>
             </div>
           ) : (
@@ -375,7 +375,7 @@ export default function AdminVerificationsPage() {
               {verifications.map((verification) => (
                 <div
                   key={verification._id}
-                  className="border rounded-lg p-4 hover:bg-gray-50"
+                  className="border rounded-lg p-4 hover:bg-muted/50"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -384,7 +384,7 @@ export default function AdminVerificationsPage() {
                           <div className="font-medium">
                             {verification.userName || "Unknown User"}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-muted-foreground">
                             {verification.userEmail || verification.userPhone}
                           </div>
                         </div>
@@ -395,7 +395,7 @@ export default function AdminVerificationsPage() {
                         </div>
                       </div>
 
-                      <div className="mt-2 flex items-center space-x-6 text-sm text-gray-500">
+                      <div className="mt-2 flex items-center space-x-6 text-sm text-muted-foreground">
                         {verification.submittedAt && (
                           <span>
                             Submitted:{" "}
@@ -443,7 +443,7 @@ export default function AdminVerificationsPage() {
                           <Button
                             size="sm"
                             variant="default"
-                            className="bg-green-600 hover:bg-green-700"
+                            style={{ backgroundColor: "#00712D" }}
                             disabled={updating === verification._id}
                             onClick={() =>
                               setActionDialog({
@@ -496,7 +496,7 @@ export default function AdminVerificationsPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Showing page {currentPage} of {totalPages}
           </p>
           <div className="space-x-2">
