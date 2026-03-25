@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Heart, Users, Shield, TrendingUp, Target, CheckCircle, ArrowRight } from "lucide-react";
 import { stats } from "../_components/stats";
-import ib4meteam from "@/public/assets/team/ib4me_team.jpg";
+import ib4meteam from "@/public/assets/team/ib4me_team.jpeg";
 import Melvin from "@/public/assets/team/melvin.jpg";
 import Saidu from "@/public/assets/team/Saidu.jpg";
 import Shaka from "@/public/assets/team/Shaka.jpg";

@@ -16,12 +16,12 @@ const Pricing = () => {
     const [campaignType, setCampaignType] = useState<"individual" | "organization">("individual");
 
     // Get fee settings from context (fetched from API)
-    const { fees, loading } = useSettings();
+    const { fees } = useSettings();
 
     // Fee constants (in basis points) - use API values with fallbacks
     const BASE_FEE_BPS = 100; // Monime's 1% - always fixed
-    const PLATFORM_FEE_INDIVIDUAL_BPS = fees?.processingFee?.individualBps ?? 260;
-    const PLATFORM_FEE_ORGANIZATION_BPS = fees?.processingFee?.organizationBps ?? 200;
+    const PLATFORM_FEE_INDIVIDUAL_BPS = fees?.processingFee?.individualBps ?? 800;
+    const PLATFORM_FEE_ORGANIZATION_BPS = fees?.processingFee?.organizationBps ?? 600;
 
     const amount = Math.max(0, Number(donationAmount) || 0);
 
@@ -60,17 +60,10 @@ const Pricing = () => {
                 </div>
             </section>
 
-            <main className="pb-20">
-                <div className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-                    {/* Fee Structure + Calculator */}
-                    <section className="py-10 sm:py-14">
-                        {loading ? (
-                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 sm:gap-8 lg:gap-12">
-                                <Skeleton className="h-[600px] rounded-3xl" />
-                                <Skeleton className="h-[600px] rounded-3xl" />
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-2 sm:gap-8 lg:gap-12">
+                    {/* Fee Structure */}
+                    <section className="py-12 sm:py-16 lg:py-20">
+                        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 items-start gap-6 sm:gap-8 lg:gap-12">
                                 {/* Platform Fee */}
                                 <Card className="h-full rounded-3xl border-0 p-6 shadow-[var(--shadow-lift)] sm:p-8">
                                     <div className="mb-5 flex items-center gap-3 sm:mb-6">
@@ -307,7 +300,19 @@ const Pricing = () => {
                                 </p>
                             </div>
                         </div>
-                    </section>
+                        <div className="space-y-4 sm:space-y-5 text-base sm:text-lg text-muted-foreground leading-relaxed">
+                            <p>
+                                Verified organizations benefit from a reduced platform fee of 6% (vs 8% for individuals),
+                                bringing their total fee to just 7%. This helps established healthcare organizations,
+                                hospitals, and NGOs maximize the impact of every donation they receive.
+                            </p>
+                            <p>
+                                <strong>Organizations must complete verification</strong> to unlock the reduced fee rate.
+                                This ensures trust and accountability for larger fundraising campaigns.
+                            </p>
+                        </div>
+                    </div>
+
 
                     {/* CTA Section */}
                     <div className="mx-auto mt-14 max-w-5xl rounded-3xl bg-primary px-6 py-8 text-center text-white sm:mt-18 sm:px-8 sm:py-10 md:px-12 md:py-12">
