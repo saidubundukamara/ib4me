@@ -154,7 +154,7 @@ const Navbar = ({
                 <nav className="hidden justify-between lg:flex items-center">
                     <div className="flex items-center gap-6">
                         <a href={logo.url} className="flex items-center gap-2 shrink-0">
-                            <Image src={logo.src} className={`object-contain transition-all duration-200 ${hasScrolled ? "w-24 h-9" : "w-32 h-12"}`} alt={logo.alt} />
+                            <Image src={logo.src} className={`object-contain transition-all duration-200 ${hasScrolled ? "w-28 h-14" : "w-36 h-16"}`} alt={logo.alt} />
                         </a>
                         <div className="flex items-center font-Sora text-neutral-900">
                             <NavigationMenu>
@@ -216,7 +216,7 @@ const Navbar = ({
                                 <SheetHeader>
                                     <SheetTitle>
                                         <a href={logo.url} className="flex items-center gap-2">
-                                            <Image src={logo.src} className="w-32 h-12 object-contain" alt={logo.alt} />
+                                            <Image src={logo.src} className="w-36 h-16 object-contain" alt={logo.alt} />
                                         </a>
                                     </SheetTitle>
                                 </SheetHeader>

@@ -89,7 +89,7 @@ const Footer = ({
               <Image
                 src={logo.src}
                 alt={logo.alt}
-                className="h-24 w-44 object-contain"
+                className="h-28 w-48 object-contain"
               />
             </Link>
             <p className="max-w-sm text-sm leading-relaxed text-white/80">

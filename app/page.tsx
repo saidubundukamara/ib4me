@@ -48,7 +48,7 @@ function HeroSection() {
             <Image
               src={Logo}
               alt="ib4me - Put Fo Wɛlbɔdi"
-              className="h-16 w-auto sm:h-20 md:h-24 lg:h-28"
+              className="h-18 w-auto sm:h-24 md:h-28 lg:h-32"
               priority
             />
           </div>
