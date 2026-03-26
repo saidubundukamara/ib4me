@@ -60,6 +60,8 @@ const Pricing = () => {
                 </div>
             </section>
 
+            <main>
+                <div>
                     {/* Fee Structure */}
                     <section className="py-12 sm:py-16 lg:py-20">
                         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -255,7 +257,7 @@ const Pricing = () => {
                                     </div>
                                 </Card>
                             </div>
-                        )}
+                        </div>
                     </section>
 
                     {/* FAQ Section */}
@@ -300,18 +302,7 @@ const Pricing = () => {
                                 </p>
                             </div>
                         </div>
-                        <div className="space-y-4 sm:space-y-5 text-base sm:text-lg text-muted-foreground leading-relaxed">
-                            <p>
-                                Verified organizations benefit from a reduced platform fee of 6% (vs 8% for individuals),
-                                bringing their total fee to just 7%. This helps established healthcare organizations,
-                                hospitals, and NGOs maximize the impact of every donation they receive.
-                            </p>
-                            <p>
-                                <strong>Organizations must complete verification</strong> to unlock the reduced fee rate.
-                                This ensures trust and accountability for larger fundraising campaigns.
-                            </p>
-                        </div>
-                    </div>
+                    </section>
 
 
                     {/* CTA Section */}
