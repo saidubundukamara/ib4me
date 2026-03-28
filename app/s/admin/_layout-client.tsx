@@ -111,7 +111,6 @@ export default function AdminLayoutClient({
         { name: "Donations", href: "/s/admin/donations", icon: "donations", current: pathname.startsWith("/s/admin/donations") },
         { name: "Tips", href: "/s/admin/tips", icon: "tips", current: pathname.startsWith("/s/admin/tips") },
         { name: "Payouts", href: "/s/admin/payouts", icon: "payouts", current: pathname.startsWith("/s/admin/payouts") },
-        { name: "Hospitals", href: "/s/admin/hospitals", icon: "hospitals", current: pathname.startsWith("/s/admin/hospitals") },
         { name: "Partners", href: "/s/admin/partners", icon: "partners", current: pathname.startsWith("/s/admin/partners") },
         { name: "Categories", href: "/s/admin/categories", icon: "categories", current: pathname.startsWith("/s/admin/categories") },
         { name: "Users", href: "/s/admin/users", icon: "users", current: pathname.startsWith("/s/admin/users") },

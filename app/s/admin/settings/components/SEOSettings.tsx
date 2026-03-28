@@ -99,7 +99,7 @@ export default function SEOSettings() {
               id="metaTitle"
               value={formData.metaTitle}
               onChange={(e) => handleChange("metaTitle", e.target.value)}
-              placeholder="IB4ME - Medical Emergency Crowdfunding for Sierra Leone"
+              placeholder="IB4ME - Crowdfunding Platform for Social Good in Sierra Leone"
               maxLength={70}
             />
             <div className="flex justify-between text-sm">
@@ -118,7 +118,7 @@ export default function SEOSettings() {
               id="metaDescription"
               value={formData.metaDescription}
               onChange={(e) => handleChange("metaDescription", e.target.value)}
-              placeholder="Help Sierra Leoneans raise funds for medical emergencies. Secure donations via mobile money, cards, and PayPal. Verified campaigns with transparent fund management."
+              placeholder="Raise and donate for causes that matter in Sierra Leone. Secure donations via mobile money and cards. Verified campaigns with transparent fund management."
               rows={3}
               maxLength={170}
             />
@@ -138,7 +138,7 @@ export default function SEOSettings() {
               id="metaKeywords"
               value={formData.metaKeywords}
               onChange={(e) => handleChange("metaKeywords", e.target.value)}
-              placeholder="medical crowdfunding, sierra leone, healthcare, emergency fund, donations"
+              placeholder="crowdfunding, sierra leone, fundraising, social good, donations, education, community"
             />
             <p className="text-sm text-muted-foreground">
               Comma-separated keywords (less important for modern SEO, but still useful).
@@ -161,7 +161,7 @@ export default function SEOSettings() {
               id="ogTitle"
               value={formData.ogTitle}
               onChange={(e) => handleChange("ogTitle", e.target.value)}
-              placeholder="IB4ME - Medical Emergency Crowdfunding for Sierra Leone"
+              placeholder="IB4ME - Crowdfunding Platform for Social Good in Sierra Leone"
               maxLength={95}
             />
             <div className="flex justify-between text-sm">
@@ -180,7 +180,7 @@ export default function SEOSettings() {
               id="ogDescription"
               value={formData.ogDescription}
               onChange={(e) => handleChange("ogDescription", e.target.value)}
-              placeholder="Join thousands helping Sierra Leoneans access life-saving medical treatment. Every donation makes a difference in someone's fight for health."
+              placeholder="Join thousands supporting Sierra Leoneans through crowdfunding for education, community projects, personal needs, and more. Every donation makes a difference."
               rows={3}
               maxLength={300}
             />

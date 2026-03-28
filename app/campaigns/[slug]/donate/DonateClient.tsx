@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Heart, Lock, Info, ChevronLeft } from "lucide-react";
+import { Heart, Lock, ShieldAlert, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -30,7 +30,7 @@ export type DonateClientProps = {
   goalAmount: number;
   imageUrl: string;
   processingFeeBps?: number; // Processing fee in basis points (e.g., 260 = 2.6%)
-  isVerified?: boolean; // Whether campaign content is admin-verified
+  isOwnerVerified?: boolean; // Whether organizer has completed KYC
   donorFeeChoiceEnabled?: boolean; // Whether donor can choose to cover fees
 };
 
@@ -55,7 +55,7 @@ export default function DonateClient({
   goalAmount,
   imageUrl,
   processingFeeBps = 260, // Default 2.6%
-  isVerified = false,
+  isOwnerVerified = true,
   donorFeeChoiceEnabled = false,
 }: DonateClientProps) {
   const [selectedPreset, setSelectedPreset] = useState<number | "custom">(PRESET_AMOUNTS[1]);
@@ -214,11 +214,11 @@ export default function DonateClient({
               <CardTitle className="text-3xl font-bold text-foreground sm:text-4xl">
                 {title}
               </CardTitle>
-              {!isVerified && (
-                <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 rounded-xl">
-                  <Info className="h-4 w-4 text-blue-500" />
-                  <AlertDescription className="text-blue-700 dark:text-blue-300 text-sm">
-                    This campaign is pending verification. Please review carefully before donating.
+              {!isOwnerVerified && (
+                <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 rounded-xl">
+                  <ShieldAlert className="h-4 w-4 text-amber-500" />
+                  <AlertDescription className="text-amber-700 dark:text-amber-300 text-sm">
+                    The organizer of this campaign has not completed identity verification. Please exercise caution before donating.
                   </AlertDescription>
                 </Alert>
               )}

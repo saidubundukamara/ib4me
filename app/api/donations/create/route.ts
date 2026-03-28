@@ -43,17 +43,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if campaign owner is verified
-    if (!campaign.ownerVerification?.verified) {
-      return NextResponse.json(
-        {
-          error: "This campaign cannot receive donations until the organizer completes identity verification.",
-          code: "OWNER_NOT_VERIFIED"
-        },
-        { status: 403 }
-      );
-    }
-
     // Check if campaign has financial account
     if (!campaign.financial_account?.id) {
       return NextResponse.json(
@@ -141,7 +130,7 @@ export async function POST(req: NextRequest) {
     // Note: We charge totalChargedMinor (donation + fees) to the donor
     // The campaign's financial account receives this amount, and we track fees separately
     // Build line item description (Monime has 100 char limit)
-    const baseDescription = `Donation for ${campaign.diagnosis || 'campaign'}`;
+    const baseDescription = `Donation for ${campaign.details || 'campaign'}`;
     let lineItemDescription = baseDescription;
     if (validatedData.message) {
       const withMessage = `${baseDescription} - ${validatedData.message}`;
@@ -155,13 +144,13 @@ export async function POST(req: NextRequest) {
     // Create checkout session targeting PLATFORM account (not campaign)
     // Funds will be transferred to campaign after payment completion
     const checkoutSession = await monimeService.createCheckoutSession({
-      name: `Donation for ${campaign.patient?.name || campaign.diagnosis || "campaign"}`,
+      name: `Donation for ${campaign.beneficiary?.name || campaign.details || "campaign"}`,
       successUrl,
       cancelUrl,
       financialAccountId: platformAccount.id, // Target platform account, NOT campaign
       lineItems: [{
         type: 'custom',
-        name: `Donation for ${campaign.patient?.name || campaign.diagnosis || "campaign"}`,
+        name: `Donation for ${campaign.beneficiary?.name || campaign.details || "campaign"}`,
         price: {
           currency: validatedData.currency,
           value: totalChargedMinor,  // Charge total amount (donation + fees) to donor

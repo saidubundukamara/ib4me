@@ -16,7 +16,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import DocumentUpload, { SelectedFile } from "./DocumentUpload";
 import PatientImageUpload, { SelectedImage } from "./PatientImageUpload";
-import HospitalCombobox, { type HospitalValue } from "./HospitalCombobox";
 
 const steps = [
   { number: 1, label: "Details" },
@@ -29,18 +28,18 @@ const steps = [
 
 export type CampaignFormSubmitPayload = {
   title: string;
-  typeOfEmergency: string;
+  campaignType: string;
   urgency: "low" | "medium" | "high";
-  diagnosis: string;
+  details: string;
   description: string;
   category: string;
-  patient: {
+  beneficiary: {
     name: string;
     age?: number;
     photo?: File;
     removePhoto?: boolean;  // Flag to remove existing photo
   };
-  hospital: { hospitalId?: string; name: string };
+  institution: { name: string };
   goal: { currency: string; amountMajor: number };
   story: string;
   documents?: File[];
@@ -49,17 +48,17 @@ export type CampaignFormSubmitPayload = {
 
 export type CampaignFormInitialValues = Partial<{
   title: string;
-  typeOfEmergency: string;
+  campaignType: string;
   urgency: "low" | "medium" | "high";
-  diagnosis: string;
+  details: string;
   description: string;
   category: string;
-  patient: {
+  beneficiary: {
     name: string;
     age?: number;
     photo?: SelectedImage;  // Can be existing (with URL) or new
   };
-  hospital: { hospitalId?: string; name: string };
+  institution: { name: string };
   goal: { currency: string; amountMajor: number };
   story: string;
   documents?: SelectedFile[];  // Can include existing docs
@@ -91,40 +90,40 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
   const [currentStep, setCurrentStep] = React.useState<number>(1);
   const [title, setTitle] = React.useState("");
   const [availableCategories, setAvailableCategories] = React.useState<CategoryOption[]>([]);
-  const [typeOfEmergency, setTypeOfEmergency] = React.useState("");
+  const [campaignType, setCampaignType] = React.useState("");
   const [urgency, setUrgency] = React.useState<"low" | "medium" | "high">("medium");
-  const [diagnosis, setDiagnosis] = React.useState("");
+  const [details, setDetails] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [category, setCategory] = React.useState("");
-  const [patientName, setPatientName] = React.useState("");
-  const [patientAge, setPatientAge] = React.useState<string>("");
-  const [patientPhoto, setPatientPhoto] = React.useState<SelectedImage | null>(null);
-  const [hospital, setHospital] = React.useState<HospitalValue>({ name: "" });
+  const [beneficiaryName, setBeneficiaryName] = React.useState("");
+  const [beneficiaryAge, setBeneficiaryAge] = React.useState<string>("");
+  const [beneficiaryPhoto, setBeneficiaryPhoto] = React.useState<SelectedImage | null>(null);
+  const [institution, setInstitution] = React.useState<{ name: string }>({ name: "" });
   const [goalAmount, setGoalAmount] = React.useState<string>("");
   const [story, setStory] = React.useState("");
   const [documents, setDocuments] = React.useState<SelectedFile[]>([]);
   const [removedDocumentIds, setRemovedDocumentIds] = React.useState<string[]>([]);
-  const [removePatientPhoto, setRemovePatientPhoto] = React.useState(false);
+  const [removeBeneficiaryPhoto, setRemoveBeneficiaryPhoto] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const resetState = React.useCallback(() => {
     setCurrentStep(1);
     setTitle("");
-    setTypeOfEmergency("");
+    setCampaignType("");
     setUrgency("medium");
-    setDiagnosis("");
+    setDetails("");
     setDescription("");
     setCategory("");
-    setPatientName("");
-    setPatientAge("");
-    setPatientPhoto(null);
-    setHospital({ name: "" });
+    setBeneficiaryName("");
+    setBeneficiaryAge("");
+    setBeneficiaryPhoto(null);
+    setInstitution({ name: "" });
     setGoalAmount("");
     setStory("");
     setDocuments([]);
     setRemovedDocumentIds([]);
-    setRemovePatientPhoto(false);
+    setRemoveBeneficiaryPhoto(false);
     setErrors({});
   }, []);
 
@@ -153,21 +152,20 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
     }
     if (initialValues) {
       setTitle(initialValues.title ?? "");
-      setTypeOfEmergency(initialValues.typeOfEmergency ?? "");
+      setCampaignType(initialValues.campaignType ?? "");
       setUrgency(initialValues.urgency ?? "medium");
-      setDiagnosis(initialValues.diagnosis ?? "");
+      setDetails(initialValues.details ?? "");
       setDescription(initialValues.description ?? "");
       setCategory(initialValues.category ?? "");
-      setPatientName(initialValues.patient?.name ?? "");
-      setPatientAge(
-        initialValues.patient?.age !== undefined && initialValues.patient?.age !== null
-          ? String(initialValues.patient?.age)
+      setBeneficiaryName(initialValues.beneficiary?.name ?? "");
+      setBeneficiaryAge(
+        initialValues.beneficiary?.age !== undefined && initialValues.beneficiary?.age !== null
+          ? String(initialValues.beneficiary?.age)
           : "",
       );
-      setPatientPhoto(initialValues.patient?.photo ?? null);
-      setHospital({
-        hospitalId: initialValues.hospital?.hospitalId,
-        name: initialValues.hospital?.name ?? "",
+      setBeneficiaryPhoto(initialValues.beneficiary?.photo ?? null);
+      setInstitution({
+        name: initialValues.institution?.name ?? "",
       });
       setGoalAmount(
         initialValues.goal?.amountMajor !== undefined && initialValues.goal?.amountMajor !== null
@@ -188,7 +186,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
         if (!title.trim()) nextErrors.title = "Title is required";
       }
       if (step === 2) {
-        if (!patientName.trim()) nextErrors.patientName = "Beneficiary name is required";
+        if (!beneficiaryName.trim()) nextErrors.beneficiaryName = "Beneficiary name is required";
         if (!category.trim()) nextErrors.category = "Category is required";
       }
       if (step === 3) {
@@ -202,7 +200,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
       setErrors(nextErrors);
       return Object.keys(nextErrors).length === 0;
     },
-    [category, goalAmount, patientName, story, title],
+    [category, goalAmount, beneficiaryName, story, title],
   );
 
   const handleNext = React.useCallback(() => {
@@ -217,7 +215,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
   const handleSubmit = React.useCallback(async () => {
     if (!validate(currentStep)) return;
     const amountMajor = Number.parseFloat(goalAmount);
-    const trimmedAge = patientAge.trim();
+    const trimmedAge = beneficiaryAge.trim();
     const parsedAge =
       trimmedAge.length > 0 ? Number.parseInt(trimmedAge, 10) : undefined;
     setIsSubmitting(true);
@@ -229,24 +227,23 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
 
       await onSubmit({
         title: title.trim(),
-        typeOfEmergency: typeOfEmergency.trim(),
+        campaignType: campaignType.trim(),
         urgency,
-        diagnosis: diagnosis.trim(),
+        details: details.trim(),
         description: description.trim(),
         category: category.trim(),
-        patient: {
-          name: patientName.trim(),
+        beneficiary: {
+          name: beneficiaryName.trim(),
           ...(Number.isFinite(parsedAge as number) ? { age: parsedAge } : {}),
           // Only include photo file if it's a new upload
-          ...(patientPhoto && !patientPhoto.isExisting && patientPhoto.file
-            ? { photo: patientPhoto.file }
+          ...(beneficiaryPhoto && !beneficiaryPhoto.isExisting && beneficiaryPhoto.file
+            ? { photo: beneficiaryPhoto.file }
             : {}),
           // Include removePhoto flag if we're removing an existing photo
-          ...(removePatientPhoto ? { removePhoto: true } : {}),
+          ...(removeBeneficiaryPhoto ? { removePhoto: true } : {}),
         },
-        hospital: {
-          ...(hospital.hospitalId ? { hospitalId: hospital.hospitalId } : {}),
-          name: hospital.name.trim(),
+        institution: {
+          name: institution.name.trim(),
         },
         goal: {
           currency: defaultCurrency,
@@ -265,31 +262,31 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
       setIsSubmitting(false);
     }
   }, [
-    diagnosis,
+    details,
     documents,
     goalAmount,
-    hospital,
+    institution,
     mode,
     onSubmit,
-    patientAge,
-    patientName,
-    patientPhoto,
+    beneficiaryAge,
+    beneficiaryName,
+    beneficiaryPhoto,
     resetState,
     story,
     title,
-    typeOfEmergency,
+    campaignType,
     urgency,
     validate,
     currentStep,
     category,
     description,
-    removePatientPhoto,
+    removeBeneficiaryPhoto,
     removedDocumentIds,
   ]);
 
   const reviewItems = [
     { label: "Title", value: title || "-", key: "title" as const },
-    { label: "Campaign Type", value: typeOfEmergency || "-", key: "emergency" as const },
+    { label: "Campaign Type", value: campaignType || "-", key: "emergency" as const },
     { label: "Category", value: category || "-", key: "category" as const },
     {
       label: "Urgency",
@@ -300,23 +297,23 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
       ),
       key: "urgency" as const,
     },
-    { label: "Key Details", value: diagnosis || "-", key: "diagnosis" as const },
+    { label: "Key Details", value: details || "-", key: "details" as const },
     { label: "Beneficiary Details", value: description || "-", key: "description" as const },
     {
       label: "Beneficiary",
-      value: `${patientName} ${patientAge ? `(${patientAge})` : ""}`.trim() || "—",
-      key: "patient" as const,
+      value: `${beneficiaryName} ${beneficiaryAge ? `(${beneficiaryAge})` : ""}`.trim() || "—",
+      key: "beneficiary" as const,
     },
     {
       label: "Beneficiary Photo",
-      value: patientPhoto
-        ? patientPhoto.isExisting
+      value: beneficiaryPhoto
+        ? beneficiaryPhoto.isExisting
           ? "Current photo (existing)"
-          : patientPhoto.file?.name || "Photo selected"
+          : beneficiaryPhoto.file?.name || "Photo selected"
         : "No photo",
-      key: "patientPhoto" as const,
+      key: "beneficiaryPhoto" as const,
     },
-    { label: "Hospital", value: hospital.name || "—", key: "hospital" as const },
+    { label: "Institution/Organization", value: institution.name || "—", key: "institution" as const },
     {
       label: "Goal",
       value: `${defaultCurrency} ${goalAmount || 0}`,
@@ -386,8 +383,8 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
                 <Label htmlFor="emergency">Campaign Type</Label>
                 <Input
                   id="emergency"
-                  value={typeOfEmergency}
-                  onChange={(e) => setTypeOfEmergency(e.target.value)}
+                  value={campaignType}
+                  onChange={(e) => setCampaignType(e.target.value)}
                   placeholder="Education, Medical, Community..."
                   className="rounded-2xl my-2"
                 />
@@ -406,11 +403,11 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="diagnosis">Key Details (Optional)</Label>
+                <Label htmlFor="details">Key Details (Optional)</Label>
                 <Input
-                  id="diagnosis"
-                  value={diagnosis}
-                  onChange={(e) => setDiagnosis(e.target.value)}
+                  id="details"
+                  value={details}
+                  onChange={(e) => setDetails(e.target.value)}
                   placeholder="e.g. Condition, cause, goal"
                   className="rounded-2xl my-2"
                 />
@@ -422,23 +419,23 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
         {currentStep === 2 && (
           <div className="space-y-4">
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="patient-name">Beneficiary Name</Label>
+              <Label htmlFor="beneficiary-name">Beneficiary Name</Label>
               <Input
-                id="patient-name"
-                value={patientName}
-                onChange={(e) => setPatientName(e.target.value)}
+                id="beneficiary-name"
+                value={beneficiaryName}
+                onChange={(e) => setBeneficiaryName(e.target.value)}
                 placeholder="Full name"
                 className="rounded-2xl my-2"
               />
-              {errors.patientName && <p className="text-sm text-destructive mt-1">{errors.patientName}</p>}
+              {errors.beneficiaryName && <p className="text-sm text-destructive mt-1">{errors.beneficiaryName}</p>}
             </div>
 
             <PatientImageUpload
-              value={patientPhoto}
+              value={beneficiaryPhoto}
               onChange={(image, removeExisting) => {
-                setPatientPhoto(image);
+                setBeneficiaryPhoto(image);
                 if (removeExisting) {
-                  setRemovePatientPhoto(true);
+                  setRemoveBeneficiaryPhoto(true);
                 }
               }}
               label="Beneficiary Photo (Optional)"
@@ -446,30 +443,31 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
 
             <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="patient-age">Age</Label>
+                <Label htmlFor="beneficiary-age">Age</Label>
                 <Input
-                  id="patient-age"
+                  id="beneficiary-age"
                   type="number"
-                  value={patientAge}
-                  onChange={(e) => setPatientAge(e.target.value)}
+                  value={beneficiaryAge}
+                  onChange={(e) => setBeneficiaryAge(e.target.value)}
                   placeholder="e.g. 42"
                   className="rounded-2xl my-2"
                 />
               </div>
               <div className="sm:col-span-1 md:col-span-2 space-y-2">
-                <Label>Hospital / Organization (Optional)</Label>
-                <HospitalCombobox
-                  value={hospital}
-                  onChange={setHospital}
-                  className="my-2"
+                <Label>Institution / Organization (Optional)</Label>
+                <Input
+                  value={institution.name}
+                  onChange={(e) => setInstitution({ name: e.target.value })}
+                  placeholder="e.g. School, Hospital, Organization..."
+                  className="rounded-2xl my-2"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="patient-description">Beneficiary Information</Label>
+              <Label htmlFor="beneficiary-description">Beneficiary Information</Label>
               <Textarea
-                id="patient-description"
+                id="beneficiary-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Provide details about the beneficiary and their situation..."
@@ -492,12 +490,13 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
                     ))
                   ) : (
                     <>
-                      <SelectItem value="Medical & Health">Medical & Health</SelectItem>
                       <SelectItem value="Education">Education</SelectItem>
-                      <SelectItem value="Emergency Relief">Emergency Relief</SelectItem>
                       <SelectItem value="Community Development">Community Development</SelectItem>
+                      <SelectItem value="Emergency Relief">Emergency Relief</SelectItem>
+                      <SelectItem value="Health & Wellness">Health & Wellness</SelectItem>
                       <SelectItem value="Charity & Nonprofit">Charity & Nonprofit</SelectItem>
                       <SelectItem value="Children & Youth">Children & Youth</SelectItem>
+                      <SelectItem value="Personal & Family">Personal & Family</SelectItem>
                       <SelectItem value="Environment">Environment</SelectItem>
                       <SelectItem value="Other">Other</SelectItem>
                     </>

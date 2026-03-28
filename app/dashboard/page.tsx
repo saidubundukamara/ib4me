@@ -223,7 +223,7 @@ export default async function UserDashboardPage() {
             const raised = c.totals?.raisedMinor ?? 0;
             const goalMinor = c.goal?.amountMinor ?? 0;
             const progress = goalMinor ? Math.min(100, Math.round((raised / goalMinor) * 100)) : 0;
-            const title = c.patient?.name || c.diagnosis || c.slug;
+            const title = c.beneficiary?.name || c.details || c.slug;
             return (
               <Card key={String(c._id)} className="p-4 rounded-2xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
                 <div className="flex items-center gap-2 mb-3">

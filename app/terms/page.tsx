@@ -225,7 +225,7 @@ export default function TermsAndConditions() {
                                 <Check items={["Full legal name", "Valid email address or phone number", "Government-issued ID (for campaigns)", "Proof of address"]} />
                             </Sub>
                             <Sub title="Organisation Accounts">
-                                <p className="text-sm text-muted-foreground leading-relaxed">For registered NGOs, charities, hospitals, and legal entities. Additional requirements:</p>
+                                <p className="text-sm text-muted-foreground leading-relaxed">For registered NGOs, charities, schools, and other legal entities. Additional requirements:</p>
                                 <Check items={["Organisation name and type", "Registration number", "Tax ID (if applicable)", "Registered address", "Authorised representative details"]} />
                             </Sub>
                         </div>
@@ -297,6 +297,14 @@ export default function TermsAndConditions() {
                             <p className="text-sm text-muted-foreground mb-3">Donations are generally <strong className="text-foreground">non-refundable</strong>. Refunds may be issued only if:</p>
                             <Check items={["A campaign is cancelled by ib4me due to fraud or policy violation", "A duplicate or erroneous transaction is verified by ib4me", "Required by applicable law"]} />
                             <Callout color="blue">Refund requests must be submitted within 30 days of the donation.</Callout>
+                        </Sub>
+
+                        <Sub title="Unverified Organizers & Donor Responsibility">
+                            <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                                Some campaigns may display an <strong className="text-foreground">&quot;Unverified Organizer&quot;</strong> badge, meaning the organizer has not completed identity verification (KYC). While all campaigns are reviewed before publication, an unverified organizer badge indicates additional risk. Donors should:
+                            </p>
+                            <Check items={["Exercise their own judgement before donating to any campaign", "Consider the organizer's verification status when making decisions", "Understand that ib4me does not guarantee the identity or intentions of unverified organizers", "Report any concerns about a campaign to support@ib4me.org"]} />
+                            <Callout color="orange">Donations are made at your own risk. ib4me facilitates connections but does not act as a guarantor of campaign outcomes or organizer credibility.</Callout>
                         </Sub>
 
                         <Sub title="Donor Rights">

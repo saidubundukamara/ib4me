@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import CountUp from "react-countup";
-import { stats } from "./stats";
+import { usePlatformStats, getStatItems, StatItem } from "./LiveStatsGrid";
 
 export default function StatsSection() {
   const [isVisible, setIsVisible] = useState(false);
+  const data = usePlatformStats();
+  const stats = getStatItems(data);
 
   useEffect(() => {
     setIsVisible(true);
@@ -25,48 +26,19 @@ export default function StatsSection() {
         </div>
 
         <div className="mt-10 grid grid-cols-2 gap-6 font-Sora sm:mt-12 sm:gap-8 lg:grid-cols-4">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <div
-                key={index}
-                className={`flex h-full flex-col items-center text-center transition-all duration-700 ${
-                  isVisible
-                    ? "translate-y-0 opacity-100"
-                    : "translate-y-10 opacity-0"
-                } motion-reduce:transform-none motion-reduce:opacity-100`}
-                style={{ transitionDelay: `${index * 100}ms` }}
-              >
-                <div
-                  className="mb-3 flex h-14 w-14 items-center justify-center rounded-full sm:mb-4 sm:h-16 sm:w-16"
-                  style={{ backgroundColor: `${stat.color}20` }}
-                >
-                  <Icon
-                    className="h-7 w-7 sm:h-8 sm:w-8"
-                    style={{ color: stat.color }}
-                    aria-hidden="true"
-                  />
-                </div>
-
-                <div
-                  className="mb-1.5 text-3xl font-bold sm:mb-2 sm:text-4xl"
-                  style={{ color: stat.color }}
-                >
-                  <CountUp
-                    start={0}
-                    end={parseFloat(stat.value.replace(/[^\d.-]/g, ""))}
-                    duration={5}
-                    separator=","
-                  />
-                  {stat.value.includes("%") ? "%" : "+"}
-                </div>
-
-                <div className="text-xs font-medium text-muted-foreground sm:text-sm">
-                  {stat.label}
-                </div>
-              </div>
-            );
-          })}
+          {stats.map((stat, index) => (
+            <div
+              key={index}
+              className={`flex h-full flex-col items-center text-center transition-all duration-700 ${
+                isVisible
+                  ? "translate-y-0 opacity-100"
+                  : "translate-y-10 opacity-0"
+              } motion-reduce:transform-none motion-reduce:opacity-100`}
+              style={{ transitionDelay: `${index * 100}ms` }}
+            >
+              <StatItem stat={stat} loaded={!!data} />
+            </div>
+          ))}
         </div>
       </div>
     </section>

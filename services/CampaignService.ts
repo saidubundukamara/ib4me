@@ -136,9 +136,10 @@ export class CampaignService {
     
     if (filters.search) {
       query.$or = [
-        { "patient.name": { $regex: filters.search, $options: "i" } },
-        { diagnosis: { $regex: filters.search, $options: "i" } },
-        { slug: { $regex: filters.search, $options: "i" } }
+        { "beneficiary.name": { $regex: filters.search, $options: "i" } },
+        { details: { $regex: filters.search, $options: "i" } },
+        { slug: { $regex: filters.search, $options: "i" } },
+        { story: { $regex: filters.search, $options: "i" } }
       ];
     }
 
@@ -287,33 +288,33 @@ export class CampaignService {
   async getCampaignAnalytics(): Promise<{
     totalCampaigns: number;
     activeCampaigns: number;
-    pendingApprovals: number;
+    unverifiedOwnerCampaigns: number;
     totalRaised: number;
     verificationBreakdown: Record<string, number>;
     statusBreakdown: Record<string, number>;
   }> {
     const [
       totalCampaigns,
-      activeCampaigns, 
-      pendingApprovals,
+      activeCampaigns,
+      unverifiedOwnerCampaigns,
       allCampaigns
     ] = await Promise.all([
       campaignRepository.count({} as never),
       campaignRepository.count({ status: "active" } as never),
-      campaignRepository.count({ "verification.status": "pending" } as never),
-      campaignRepository.findMany({} as never, { 
-        query: { 
-          select: "status verification.status totals.raisedMinor" 
+      campaignRepository.count({ status: "active", "ownerVerification.verified": false } as never),
+      campaignRepository.findMany({} as never, {
+        query: {
+          select: "status verification.status totals.raisedMinor"
         }
       })
     ]);
 
-    const totalRaised = allCampaigns.reduce((sum, campaign) => 
+    const totalRaised = allCampaigns.reduce((sum, campaign) =>
       sum + (campaign.totals?.raisedMinor || 0), 0
     );
 
     const verificationBreakdown = allCampaigns.reduce((acc, campaign) => {
-      const status = campaign.verification?.status || "pending";
+      const status = campaign.verification?.status || "approved";
       acc[status] = (acc[status] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
@@ -326,7 +327,7 @@ export class CampaignService {
     return {
       totalCampaigns,
       activeCampaigns,
-      pendingApprovals,
+      unverifiedOwnerCampaigns,
       totalRaised,
       verificationBreakdown,
       statusBreakdown
@@ -398,10 +399,9 @@ export class CampaignService {
     };
     let verificationMessage: string | undefined;
 
-    // Determine initial campaign status and verification
-    // Default: draft status, pending verification (requires admin approval)
-    let initialStatus: ICampaign["status"] = "draft";
-    let initialVerificationStatus: "pending" | "under_review" | "approved" | "rejected" = "pending";
+    // All campaigns go live immediately — no admin approval required
+    const initialStatus: ICampaign["status"] = "active";
+    const initialVerificationStatus: "pending" | "under_review" | "approved" | "rejected" = "approved";
 
     if (campaignData.ownerId) {
       const verificationStatus = await verificationService.isUserVerifiedForCampaigns(
@@ -414,21 +414,14 @@ export class CampaignService {
         status: (verificationStatus.status || "not_started") as ICampaignOwnerVerification["status"],
       };
 
-      // Auto-approve for verified organizations
-      // Verified organizations get their campaigns automatically approved and made active
-      if (verificationStatus.verified && verificationStatus.role === "Organization") {
-        initialStatus = "active";
-        initialVerificationStatus = "approved";
-      }
-
       // Set message based on verification status
       if (!verificationStatus.verified) {
         if (verificationStatus.status === "pending" || verificationStatus.status === "under_review") {
-          verificationMessage = "Your verification is being reviewed. You can create campaigns but they will be hidden until approved by admin.";
+          verificationMessage = "Your verification is being reviewed. Your campaign is live but will display an 'Unverified' badge until verification is complete.";
         } else if (verificationStatus.status === "rejected") {
-          verificationMessage = "Your verification was rejected. Please resubmit to enable donations.";
+          verificationMessage = "Your verification was rejected. Please resubmit to earn a verified badge on your campaigns.";
         } else {
-          verificationMessage = "Please complete KYC verification. Your campaign will be hidden until approved by admin.";
+          verificationMessage = "Complete KYC verification to earn a verified badge on your campaigns.";
         }
       }
 
@@ -445,9 +438,8 @@ export class CampaignService {
       status: initialStatus,
       verification: {
         status: initialVerificationStatus,
-        verifiedAt: initialVerificationStatus === "approved" ? new Date() : null,
+        verifiedAt: new Date(),
         verifiedBy: null, // null indicates system auto-approved
-        hospitalVerified: false,
       },
       ownerVerification: ownerVerificationData,
     };
@@ -461,7 +453,7 @@ export class CampaignService {
         name: `Campaign: ${campaign.slug}`,
         currency: campaign.goal?.currency || "SLE",
         reference: campaign.slug,
-        description: `Financial account for campaign: ${campaign.patient?.name || campaign.diagnosis || campaign.slug}`,
+        description: `Financial account for campaign: ${campaign.beneficiary?.name || campaign.details || campaign.slug}`,
       };
 
       try {

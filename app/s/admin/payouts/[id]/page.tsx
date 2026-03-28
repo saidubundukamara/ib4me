@@ -58,8 +58,8 @@ interface Payout {
   campaignId: {
     _id: string;
     slug: string;
-    patient?: { name: string };
-    diagnosis?: { condition: string };
+    beneficiary?: { name: string };
+    details?: { condition: string };
     goal?: { targetMinor: number; currency: string };
     ownerId: string;
   };
@@ -282,7 +282,7 @@ export default function PayoutDetailPage() {
             <div>
               <h1 className="text-3xl font-bold">Payout Details</h1>
               <p className="text-muted-foreground">
-                {payout.campaignId.patient?.name} - #{payout.campaignId.slug}
+                {payout.campaignId.beneficiary?.name} - #{payout.campaignId.slug}
               </p>
             </div>
           </div>
@@ -492,8 +492,8 @@ export default function PayoutDetailPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium">Patient</label>
-                    <p>{payout.campaignId.patient?.name || "N/A"}</p>
+                    <label className="text-sm font-medium">Beneficiary</label>
+                    <p>{payout.campaignId.beneficiary?.name || "N/A"}</p>
                   </div>
                   
                   <div>
@@ -501,10 +501,10 @@ export default function PayoutDetailPage() {
                     <p className="text-sm text-muted-foreground">#{payout.campaignId.slug}</p>
                   </div>
 
-                  {payout.campaignId.diagnosis?.condition && (
+                  {payout.campaignId.details?.condition && (
                     <div>
-                      <label className="text-sm font-medium">Diagnosis</label>
-                      <p>{payout.campaignId.diagnosis.condition}</p>
+                      <label className="text-sm font-medium">Details</label>
+                      <p>{payout.campaignId.details.condition}</p>
                     </div>
                   )}
 

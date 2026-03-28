@@ -20,10 +20,10 @@ export default async function CampaignDonatePage({ params }: PageParams) {
   const amountRaised = Math.max(0, Math.floor(raisedMinor) / 100);
   const goalAmount = Math.max(0, Math.floor(goalMinor) / 100);
   const progress = goalAmount > 0 ? Math.min(100, Math.round((amountRaised / goalAmount) * 100)) : 0;
-  const title = campaign.patient?.name || campaign.diagnosis || campaign.slug;
+  const title = campaign.beneficiary?.name || campaign.details || campaign.slug;
 
   const organizer = campaign.ownerId ? await userRepository.findById(String(campaign.ownerId)) : null;
-  const isVerified = campaign.verification?.status === "approved";
+  const isOwnerVerified = campaign.ownerVerification?.verified ?? false;
 
   // Get fee settings for this campaign type
   const feeSettings = await settingService.getFeeSettings();
@@ -38,8 +38,8 @@ export default async function CampaignDonatePage({ params }: PageParams) {
 
   // Collect asset IDs: beneficiary photo (priority) and first document image (fallback)
   const assetIds: mongoose.Types.ObjectId[] = [];
-  if (campaign.patient?.photoAssetId) {
-    assetIds.push(campaign.patient.photoAssetId as mongoose.Types.ObjectId);
+  if (campaign.beneficiary?.photoAssetId) {
+    assetIds.push(campaign.beneficiary.photoAssetId as mongoose.Types.ObjectId);
   }
   const firstImageDoc = (campaign.documents || []).find((d) => d.type?.startsWith("image/"));
   if (firstImageDoc?.assetId) {
@@ -53,8 +53,8 @@ export default async function CampaignDonatePage({ params }: PageParams) {
 
     // Try beneficiary photo first
     let resolvedUrl: string | null = null;
-    if (campaign.patient?.photoAssetId) {
-      const photoAsset = assetMap.get(String(campaign.patient.photoAssetId));
+    if (campaign.beneficiary?.photoAssetId) {
+      const photoAsset = assetMap.get(String(campaign.beneficiary.photoAssetId));
       if (photoAsset) {
         const key = photoAsset.storage?.key;
         resolvedUrl = key
@@ -105,7 +105,7 @@ export default async function CampaignDonatePage({ params }: PageParams) {
         goalAmount={goalAmount}
         imageUrl={imageUrl}
         processingFeeBps={processingFeeBps}
-        isVerified={isVerified}
+        isOwnerVerified={isOwnerVerified}
         donorFeeChoiceEnabled={donorFeeChoiceEnabled}
       />
     </main>

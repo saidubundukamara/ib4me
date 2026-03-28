@@ -27,7 +27,7 @@ const faqCategories: FAQCategory[] = [
         faqs: [
             {
                 question: "What is ib4me?",
-                answer: "ib4me is a crowdfunding platform designed specifically for Sierra Leone. We connect people and communities facing urgent needs with donors who want to help. Our platform verifies all campaigns to ensure donations go to legitimate causes, from healthcare and education to community development and emergency relief.",
+                answer: "ib4me is a crowdfunding platform designed specifically for Sierra Leone. We connect people and communities with donors who want to help. Whether it's education, personal needs, community projects, health expenses, or emergency relief, our platform supports any meaningful cause. Campaigns are reviewed to help ensure donations go to legitimate needs.",
             },
             {
                 question: "How do I start a campaign?",
@@ -79,7 +79,7 @@ const faqCategories: FAQCategory[] = [
         faqs: [
             {
                 question: "What qualifies as an organization?",
-                answer: "Organizations include registered NGOs, charitable organizations, healthcare facilities, schools, and community groups. You'll need to provide registration documents and verification during the application process.",
+                answer: "Organizations include registered NGOs, charitable organizations, schools, community groups, and other legal entities. You'll need to provide registration documents and verification during the application process.",
             },
             {
                 question: "Why do organizations pay lower fees?",
@@ -99,7 +99,7 @@ const faqCategories: FAQCategory[] = [
         faqs: [
             {
                 question: "How do you verify campaigns?",
-                answer: "Every campaign undergoes a thorough verification process. We review supporting documentation, verify partnerships, confirm beneficiary identity, and assess the legitimacy of the funding request before approving any campaign.",
+                answer: "Every campaign undergoes a thorough verification process. We review supporting documentation, confirm beneficiary identity, and assess the legitimacy of the funding request before approving any campaign.",
             },
             {
                 question: "What happens if a campaign is fraudulent?",
@@ -108,6 +108,10 @@ const faqCategories: FAQCategory[] = [
             {
                 question: "How is my personal data protected?",
                 answer: "We take data protection seriously. All personal and financial information is encrypted and stored securely. We never share your data with third parties without your consent, except as required for payment processing.",
+            },
+            {
+                question: "What does the 'Unverified Organizer' badge mean?",
+                answer: "An 'Unverified Organizer' badge means the campaign organizer has not yet completed identity verification (KYC). The campaign itself has been reviewed and approved, but the organizer's identity has not been independently confirmed. We encourage donors to exercise their own judgement when donating to campaigns with unverified organizers.",
             },
             {
                 question: "Can I report a suspicious campaign?",

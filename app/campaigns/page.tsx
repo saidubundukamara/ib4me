@@ -44,15 +44,15 @@ async function getActiveCampaigns(): Promise<CampaignListItem[]> {
   const campaigns = await campaignService.listActive();
 
   // Collect asset IDs: beneficiary photos (priority) and first document images (fallback)
-  const campaignToPatientPhotoId = new Map<string, string>();
+  const campaignToBeneficiaryPhotoId = new Map<string, string>();
   const campaignToFirstDocImageId = new Map<string, string>();
 
   for (const c of campaigns) {
     const campaignId = String(c._id);
 
     // Beneficiary photo takes priority
-    if (c.patient?.photoAssetId) {
-      campaignToPatientPhotoId.set(campaignId, String(c.patient.photoAssetId));
+    if (c.beneficiary?.photoAssetId) {
+      campaignToBeneficiaryPhotoId.set(campaignId, String(c.beneficiary.photoAssetId));
     }
 
     // First document image as fallback
@@ -64,7 +64,7 @@ async function getActiveCampaigns(): Promise<CampaignListItem[]> {
 
   // Collect all unique asset IDs for batch fetch
   const allAssetIds = [
-    ...Array.from(campaignToPatientPhotoId.values()),
+    ...Array.from(campaignToBeneficiaryPhotoId.values()),
     ...Array.from(campaignToFirstDocImageId.values()),
   ];
   const uniqueAssetIds = Array.from(new Set(allAssetIds));
@@ -113,13 +113,13 @@ async function getActiveCampaigns(): Promise<CampaignListItem[]> {
     const raisedMinor = c.totals?.raisedMinor ?? 0;
     const goalMinor = c.goal?.amountMinor ?? 0;
     const currency = c.goal?.currency || "SLE";
-    const titleBase = c.patient?.name?.trim() || c.hospital?.name?.trim() || c.diagnosis?.trim() || c.slug;
+    const titleBase = c.beneficiary?.name?.trim() || c.institution?.name?.trim() || c.details?.trim() || c.slug;
 
     // Priority: beneficiary photo > document image > fallback
-    const patientPhotoId = campaignToPatientPhotoId.get(campaignId);
+    const beneficiaryPhotoId = campaignToBeneficiaryPhotoId.get(campaignId);
     const docImageId = campaignToFirstDocImageId.get(campaignId);
-    const img = patientPhotoId
-      ? assetIdToImage.get(patientPhotoId)
+    const img = beneficiaryPhotoId
+      ? assetIdToImage.get(beneficiaryPhotoId)
       : docImageId
         ? assetIdToImage.get(docImageId)
         : undefined;
@@ -147,6 +147,7 @@ async function getActiveCampaigns(): Promise<CampaignListItem[]> {
       category: c.category,
       urgency: c.urgency,
       verified: c.verification?.status === "approved",
+      ownerVerified: c.ownerVerification?.verified ?? false,
     };
   });
 }

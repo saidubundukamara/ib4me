@@ -66,8 +66,8 @@ interface PendingPayout {
   _id: string;
   campaignId: {
     slug: string;
-    patient: { name: string };
-    diagnosis: string;
+    beneficiary: { name: string };
+    details: string;
   };
   requestedBy: {
     firstName: string;
@@ -411,7 +411,7 @@ export default function AdminPayoutsPage() {
                   <div key={payout._id} className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: "#FF600010" }}>
                     <div>
                       <p className="font-medium">
-                        {payout.campaignId.patient?.name || payout.campaignId.diagnosis}
+                        {payout.campaignId.beneficiary?.name || payout.campaignId.details}
                       </p>
                       <div className="flex items-center gap-4 mt-1">
                         <span className="text-sm text-muted-foreground">

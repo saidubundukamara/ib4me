@@ -13,9 +13,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 interface Campaign {
   _id: string;
   slug: string;
-  patient?: { name?: string; age?: number; photoUrls?: string[] };
-  diagnosis?: string;
-  hospital?: { hospitalId?: string; name?: string };
+  beneficiary?: { name?: string; age?: number; photoUrls?: string[] };
+  details?: string;
+  institution?: { name?: string };
   status: string;
   verification?: { 
     status?: string; 
@@ -26,7 +26,7 @@ interface Campaign {
   totals?: { raisedMinor?: number; donationCount?: number; uniqueDonorCount?: number };
   goal?: { amountMinor?: number; currency?: string };
   story?: string;
-  typeOfEmergency?: string;
+  campaignType?: string;
   createdAt: string;
   updatedAt: string;
   ownerId?: { 
@@ -243,7 +243,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
             </Link>
           </div>
           <h1 className="text-3xl font-bold text-foreground">
-            {campaign.patient?.name || campaign.diagnosis || campaign.slug}
+            {campaign.beneficiary?.name || campaign.details || campaign.slug}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Campaign ID: {campaign._id}
@@ -265,29 +265,29 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
               <CardTitle>Campaign Overview</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Patient Information */}
+              {/* Beneficiary Information */}
               <div>
-                <h3 className="text-lg font-semibold text-foreground mb-3">Patient Information</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-3">Beneficiary Information</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Name</label>
-                    <p className="text-foreground">{campaign.patient?.name || "Not provided"}</p>
+                    <p className="text-foreground">{campaign.beneficiary?.name || "Not provided"}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Age</label>
-                    <p className="text-foreground">{campaign.patient?.age || "Not provided"}</p>
+                    <p className="text-foreground">{campaign.beneficiary?.age || "Not provided"}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Diagnosis</label>
-                    <p className="text-foreground">{campaign.diagnosis || "Not provided"}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Details</label>
+                    <p className="text-foreground">{campaign.details || "Not provided"}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Emergency Type</label>
-                    <p className="text-foreground">{campaign.typeOfEmergency || "Not provided"}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Campaign Type</label>
+                    <p className="text-foreground">{campaign.campaignType || "Not provided"}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Hospital</label>
-                    <p className="text-foreground">{campaign.hospital?.name || "Not provided"}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Institution</label>
+                    <p className="text-foreground">{campaign.institution?.name || "Not provided"}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Urgency</label>

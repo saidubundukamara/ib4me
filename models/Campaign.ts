@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-export interface ICampaignPatient {
+export interface ICampaignBeneficiary {
   name: string;
   age?: number;
   photoAssetId?: mongoose.Types.ObjectId;
@@ -20,7 +20,6 @@ export interface ICampaignVerification {
   status: "pending" | "under_review" | "approved" | "rejected";
   verifiedBy?: mongoose.Types.ObjectId | null;
   verifiedAt?: Date | null;
-  hospitalVerified?: boolean;
 }
 
 export interface ICampaignOutcomeNextOfKin {
@@ -31,7 +30,7 @@ export interface ICampaignOutcomeNextOfKin {
 }
 
 export interface ICampaignOutcome {
-  status?: "ongoing" | "recovered" | "deceased" | "completed";
+  status?: "ongoing" | "successful" | "closed" | "completed";
   date?: Date | null;
   nextOfKin?: ICampaignOutcomeNextOfKin;
 }
@@ -67,10 +66,9 @@ export interface ICampaignOwnerVerification {
 export interface ICampaign extends mongoose.Document {
   ownerId: mongoose.Types.ObjectId;
   slug: string;
-  patient?: ICampaignPatient;
-  diagnosis?: string;
-  hospital?: {
-    hospitalId?: mongoose.Types.ObjectId;
+  beneficiary?: ICampaignBeneficiary;
+  details?: string;
+  institution?: {
     name?: string;
   };
   goal?: ICampaignGoal;
@@ -80,7 +78,7 @@ export interface ICampaign extends mongoose.Document {
   status: "draft" | "active" | "paused" | "completed" | "archived";
   outcome?: ICampaignOutcome;
   urgency?: "low" | "medium" | "high";
-  typeOfEmergency?: string;
+  campaignType?: string;
   category?: string;
   categoryId?: mongoose.Types.ObjectId;
   share?: { whatsAppPostId?: string | null };
@@ -108,7 +106,7 @@ const campaignSchema = new mongoose.Schema<ICampaign>(
       trim: true,
       lowercase: true,
     },
-    patient: {
+    beneficiary: {
       name: { type: String, trim: true },
       age: { type: Number, min: 0 },
       photoAssetId: {
@@ -116,9 +114,8 @@ const campaignSchema = new mongoose.Schema<ICampaign>(
         ref: "MediaAsset",
       },
     },
-    diagnosis: { type: String },
-    hospital: {
-      hospitalId: { type: mongoose.Schema.Types.ObjectId, ref: "Hospital" },
+    details: { type: String },
+    institution: {
       name: { type: String, trim: true },
     },
     goal: {
@@ -140,7 +137,7 @@ const campaignSchema = new mongoose.Schema<ICampaign>(
       status: {
         type: String,
         enum: ["pending", "under_review", "approved", "rejected"],
-        default: "pending",
+        default: "approved",
       },
       verifiedBy: {
         type: mongoose.Schema.Types.ObjectId,
@@ -148,18 +145,17 @@ const campaignSchema = new mongoose.Schema<ICampaign>(
         default: null,
       },
       verifiedAt: { type: Date, default: null },
-      hospitalVerified: { type: Boolean, default: false },
     },
     status: {
       type: String,
       enum: ["draft", "active", "paused", "completed", "archived"],
-      default: "draft",
+      default: "active",
       index: true,
     },
     outcome: {
       status: {
         type: String,
-        enum: ["ongoing", "recovered", "deceased", "completed"],
+        enum: ["ongoing", "successful", "closed", "completed"],
         default: "ongoing",
       },
       date: { type: Date, default: null },
@@ -175,7 +171,7 @@ const campaignSchema = new mongoose.Schema<ICampaign>(
       enum: ["low", "medium", "high"],
       default: "medium",
     },
-    typeOfEmergency: { type: String },
+    campaignType: { type: String },
     category: { type: String, trim: true },
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,

@@ -141,9 +141,9 @@ export class HospitalService {
       throw new Error("Hospital not found");
     }
 
-    // Check if hospital is used in any campaigns
+    // Check if hospital is used in any campaigns (legacy field path)
     const campaignCount = await campaignRepository.count({
-      "hospital.hospitalId": new mongoose.Types.ObjectId(id)
+      "institution.hospitalId": new mongoose.Types.ObjectId(id)
     } as never);
 
     if (campaignCount > 0) {

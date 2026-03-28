@@ -20,15 +20,15 @@ test("register, sign in, create new campaign", async ({ page }) => {
 
   // Step: details
   await page.getByLabel("Title").fill("Test Campaign " + unique);
-  await page.getByLabel("Emergency Type").fill("Surgery");
+  await page.getByLabel("Campaign Type").fill("Education");
   await page.getByLabel("Urgency").selectOption("high");
-  await page.getByLabel("Diagnosis").fill("Appendicitis");
+  await page.getByLabel("Key Details").fill("School fees needed");
   await page.getByRole("button", { name: "Continue" }).click();
 
-  // Step: patient
-  await page.getByLabel("Patient Name").fill("John Doe");
+  // Step: beneficiary
+  await page.getByLabel("Beneficiary Name").fill("John Doe");
   await page.getByLabel("Age").fill("42");
-  await page.getByLabel("Hospital Name").fill("City Hospital");
+  await page.getByLabel("Organization / Institution").fill("City School");
   await page.getByRole("button", { name: "Continue" }).click();
 
   // Step: goal

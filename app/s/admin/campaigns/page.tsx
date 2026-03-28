@@ -12,8 +12,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 interface Campaign {
   _id: string;
   slug: string;
-  patient?: { name?: string; age?: number };
-  diagnosis?: string;
+  beneficiary?: { name?: string; age?: number };
+  details?: string;
   status: string;
   verification?: { status?: string };
   urgency?: string;
@@ -26,7 +26,7 @@ interface Campaign {
 interface Analytics {
   totalCampaigns: number;
   activeCampaigns: number;
-  pendingApprovals: number;
+  unverifiedOwnerCampaigns: number;
   totalRaised: number;
   verificationBreakdown: Record<string, number>;
   statusBreakdown: Record<string, number>;
@@ -201,7 +201,7 @@ export default function AdminCampaignsPage() {
           {[
             { label: "Total Campaigns", value: analytics.totalCampaigns, color: "#00712D" },
             { label: "Active Campaigns", value: analytics.activeCampaigns, color: "#00712D" },
-            { label: "Pending Approvals", value: analytics.pendingApprovals, color: "#FF6000" },
+            { label: "Unverified Owner Campaigns", value: analytics.unverifiedOwnerCampaigns, color: "#FF6000" },
             { label: "Total Raised", value: formatAmount(analytics.totalRaised), color: "#FBB03B" },
           ].map((card) => (
             <Card key={card.label} className="rounded-2xl">
@@ -309,7 +309,7 @@ export default function AdminCampaignsPage() {
                             href={`/campaigns/${campaign._id}`}
                             className="font-medium hover:underline" style={{ color: "#00712D" }}
                           >
-                            {campaign.patient?.name || campaign.diagnosis || campaign.slug}
+                            {campaign.beneficiary?.name || campaign.details || campaign.slug}
                           </Link>
                           <div className="text-sm text-muted-foreground mt-1">
                             Owner: {campaign.ownerId?.firstName} {campaign.ownerId?.lastName} ({campaign.ownerId?.email})

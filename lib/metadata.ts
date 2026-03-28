@@ -30,17 +30,17 @@ export interface OGImageResult {
  * Get OG image from the first campaign that has a beneficiary photo
  */
 export async function getOGImageFromCampaigns(
-  campaigns: Array<{ patient?: { photoAssetId?: mongoose.Types.ObjectId; name?: string } }>,
+  campaigns: Array<{ beneficiary?: { photoAssetId?: mongoose.Types.ObjectId; name?: string } }>,
   altText?: string
 ): Promise<OGImageResult> {
-  const campaignWithPhoto = campaigns.find((c) => c.patient?.photoAssetId);
+  const campaignWithPhoto = campaigns.find((c) => c.beneficiary?.photoAssetId);
 
-  if (!campaignWithPhoto?.patient?.photoAssetId) {
+  if (!campaignWithPhoto?.beneficiary?.photoAssetId) {
     return { ...DEFAULT_OG_IMAGE, alt: altText || DEFAULT_OG_IMAGE.alt };
   }
 
   const assets = await mediaAssetService.listByIds([
-    campaignWithPhoto.patient.photoAssetId as mongoose.Types.ObjectId,
+    campaignWithPhoto.beneficiary.photoAssetId as mongoose.Types.ObjectId,
   ]);
   const asset = assets[0];
 
@@ -49,7 +49,7 @@ export async function getOGImageFromCampaigns(
       url: CloudinaryService.generateTransformationUrl(asset.storage.key, OG_TRANSFORMATIONS),
       width: 1200,
       height: 630,
-      alt: altText || campaignWithPhoto.patient.name || "Campaign beneficiary",
+      alt: altText || campaignWithPhoto.beneficiary.name || "Campaign beneficiary",
     };
   }
 
@@ -59,7 +59,7 @@ export async function getOGImageFromCampaigns(
       url: asset.url,
       width: 1200,
       height: 630,
-      alt: altText || campaignWithPhoto.patient.name || "Campaign beneficiary",
+      alt: altText || campaignWithPhoto.beneficiary.name || "Campaign beneficiary",
     };
   }
 
