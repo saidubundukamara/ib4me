@@ -29,7 +29,7 @@ interface Payout {
   campaignId: {
     _id: string;
     slug: string;
-    patient?: { name: string };
+    beneficiary?: { name: string };
     goal?: { targetMinor: number; currency: string };
   };
   requestedBy: {
@@ -305,7 +305,7 @@ export default function PayoutListPage() {
                           <TableCell>
                             <div>
                               <div className="font-medium">
-                                {payout.campaignId.patient?.name || "N/A"}
+                                {payout.campaignId.beneficiary?.name || "N/A"}
                               </div>
                               <div className="text-sm text-muted-foreground">
                                 #{payout.campaignId.slug}

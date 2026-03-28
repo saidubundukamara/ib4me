@@ -35,7 +35,7 @@ async function DonationCancelContent({ params }: PageProps) {
   const amountRaised = Math.max(0, Math.floor(raisedMinor) / 100);
   const goalAmount = Math.max(0, Math.floor(goalMinor) / 100);
   const progress = goalAmount > 0 ? Math.min(100, Math.round((amountRaised / goalAmount) * 100)) : 0;
-  const campaignName = campaign.patient?.name || campaign.diagnosis || "this campaign";
+  const campaignName = campaign.beneficiary?.name || campaign.details || "this campaign";
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ib4me.org";
   const absoluteUrl = `${siteUrl}/campaigns/${slug}`;

@@ -54,8 +54,8 @@ interface Donation {
   campaignId: {
     _id: string;
     slug: string;
-    patient: { name: string };
-    diagnosis: string;
+    beneficiary: { name: string };
+    details: string;
   } | null;
   donorId: {
     _id: string;
@@ -477,7 +477,7 @@ export default function AdminDonationsListPage() {
                           <div>
                             <span className="text-sm text-muted-foreground">Campaign: </span>
                             <span className="font-medium">
-                              {donation.campaignId?.patient?.name || donation.campaignId?.diagnosis || "Unknown"}
+                              {donation.campaignId?.beneficiary?.name || donation.campaignId?.details || "Unknown"}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">

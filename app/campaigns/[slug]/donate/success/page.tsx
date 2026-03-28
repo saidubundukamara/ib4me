@@ -26,12 +26,12 @@ async function DonationSuccessContent({ params, searchParams }: PageProps) {
   // The SuccessClient will handle showing appropriate content
   const campaignData = campaign
     ? {
-        patient: campaign.patient ? { name: campaign.patient.name } : undefined,
-        diagnosis: campaign.diagnosis,
+        beneficiary: campaign.beneficiary ? { name: campaign.beneficiary.name } : undefined,
+        details: campaign.details,
       }
     : {
-        patient: undefined,
-        diagnosis: "the campaign",
+        beneficiary: undefined,
+        details: "the campaign",
       };
 
   return (

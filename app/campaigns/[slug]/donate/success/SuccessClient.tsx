@@ -12,8 +12,8 @@ import { Separator } from "@/components/ui/separator";
 type DonationStatus = "loading" | "pending" | "transferring" | "succeeded" | "failed";
 
 interface Campaign {
-  patient?: { name?: string };
-  diagnosis?: string;
+  beneficiary?: { name?: string };
+  details?: string;
 }
 
 interface SuccessClientProps {
@@ -149,7 +149,7 @@ export default function SuccessClient({
     };
   }, [donationId, initialStatus, status, checkDonationStatus]);
 
-  const campaignName = campaign?.patient?.name || campaign?.diagnosis || "this campaign";
+  const campaignName = campaign?.beneficiary?.name || campaign?.details || "this campaign";
   const siteUrl = origin || "https://ib4me.org";
   const absoluteUrl = `${siteUrl}/campaigns/${slug}`;
   const shareText = `I just donated to support ${campaignName} on ib4me! You can help too`;

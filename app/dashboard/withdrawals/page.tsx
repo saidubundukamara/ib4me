@@ -41,8 +41,8 @@ interface Campaign {
   _id?: string;
   id?: string;
   slug: string;
-  patient?: { name?: string };
-  diagnosis?: string;
+  beneficiary?: { name?: string };
+  details?: string;
   goal?: { currency?: string };
   totals?: { raisedMinor?: number };
   withdrawals?: { totalPaidMinor?: number };
@@ -88,7 +88,7 @@ export default function UserWithdrawalsPage() {
           const paid = c.withdrawals?.totalPaidMinor ?? 0;
           const available = Math.max(0, raised - paid);
           const currency = c.goal?.currency ?? "SLE";
-          const title = c.patient?.name || c.diagnosis || c.slug;
+          const title = c.beneficiary?.name || c.details || c.slug;
           return {
             id: c.id || String(c._id),
             title,
@@ -252,7 +252,7 @@ export default function UserWithdrawalsPage() {
                   const campaign = campaigns.find((c) => (c.id || String(c._id)) === String(p.campaignId));
                   const currency = campaign?.goal?.currency ?? "SLE";
                   const title =
-                    campaign?.patient?.name || campaign?.diagnosis || campaign?.slug || "Campaign";
+                    campaign?.beneficiary?.name || campaign?.details || campaign?.slug || "Campaign";
                   const statusColor =
                     p.status === "completed" || p.status === "paid"
                       ? "text-emerald-600"

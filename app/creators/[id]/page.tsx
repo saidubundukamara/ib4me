@@ -111,13 +111,13 @@ export default async function CreatorProfilePage({ params }: PageParams) {
     .toUpperCase();
 
   // Fetch campaign images
-  const campaignToPatientPhotoId = new Map<string, string>();
+  const campaignToBeneficiaryPhotoId = new Map<string, string>();
   const campaignToFirstDocImageId = new Map<string, string>();
 
   for (const c of campaigns) {
     const campaignId = String(c._id);
-    if (c.patient?.photoAssetId) {
-      campaignToPatientPhotoId.set(campaignId, String(c.patient.photoAssetId));
+    if (c.beneficiary?.photoAssetId) {
+      campaignToBeneficiaryPhotoId.set(campaignId, String(c.beneficiary.photoAssetId));
     }
     const firstImageDoc = (c.documents || []).find((d) => d.type?.startsWith("image/"));
     if (firstImageDoc?.assetId) {
@@ -126,7 +126,7 @@ export default async function CreatorProfilePage({ params }: PageParams) {
   }
 
   const allAssetIds = [
-    ...Array.from(campaignToPatientPhotoId.values()),
+    ...Array.from(campaignToBeneficiaryPhotoId.values()),
     ...Array.from(campaignToFirstDocImageId.values()),
   ];
   const uniqueAssetIds = Array.from(new Set(allAssetIds));
@@ -159,12 +159,12 @@ export default async function CreatorProfilePage({ params }: PageParams) {
     const raisedMinor = c.totals?.raisedMinor ?? 0;
     const goalMinor = c.goal?.amountMinor ?? 0;
     const currency = c.goal?.currency || "SLE";
-    const titleBase = c.patient?.name?.trim() || c.hospital?.name?.trim() || c.diagnosis?.trim() || c.slug;
+    const titleBase = c.beneficiary?.name?.trim() || c.institution?.name?.trim() || c.details?.trim() || c.slug;
 
-    const patientPhotoId = campaignToPatientPhotoId.get(campaignId);
+    const beneficiaryPhotoId = campaignToBeneficiaryPhotoId.get(campaignId);
     const docImageId = campaignToFirstDocImageId.get(campaignId);
-    const imageUrl = patientPhotoId
-      ? assetIdToImage.get(patientPhotoId) || "/assets/Hero.png"
+    const imageUrl = beneficiaryPhotoId
+      ? assetIdToImage.get(beneficiaryPhotoId) || "/assets/Hero.png"
       : docImageId
         ? assetIdToImage.get(docImageId) || "/assets/Hero.png"
         : "/assets/Hero.png";
@@ -179,6 +179,7 @@ export default async function CreatorProfilePage({ params }: PageParams) {
       donationsCount: c.totals?.donationCount ?? 0,
       imageUrl,
       verified: c.verification?.status === "approved",
+      ownerVerified: c.ownerVerification?.verified ?? false,
     };
   });
 

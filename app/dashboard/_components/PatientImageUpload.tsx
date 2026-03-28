@@ -21,7 +21,7 @@ type PatientImageUploadProps = {
 export default function PatientImageUpload({
   onChange,
   value,
-  label = "Patient Photo",
+  label = "Beneficiary Photo",
 }: PatientImageUploadProps) {
   const [image, setImage] = React.useState<SelectedImage | null>(value || null);
   const [removedExisting, setRemovedExisting] = React.useState(false);
@@ -87,7 +87,7 @@ export default function PatientImageUpload({
     setImage(null);
   }
 
-  const displayName = image?.file?.name || (image?.isExisting ? "Current patient photo" : "");
+  const displayName = image?.file?.name || (image?.isExisting ? "Current beneficiary photo" : "");
   const displaySize = image?.file ? `${(image.file.size / 1024).toFixed(1)} KB` : null;
 
   return (
@@ -135,7 +135,7 @@ export default function PatientImageUpload({
             <div className="relative w-24 h-24 rounded-xl overflow-hidden flex-shrink-0">
               <Image
                 src={image.previewUrl}
-                alt="Patient photo preview"
+                alt="Beneficiary photo preview"
                 fill
                 className="object-cover"
               />

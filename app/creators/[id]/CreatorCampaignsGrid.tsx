@@ -13,6 +13,7 @@ export type CreatorCampaignItem = {
   donationsCount: number;
   imageUrl: string;
   verified: boolean;
+  ownerVerified?: boolean;
 };
 
 function formatAmount(amount: number, currency: string = "SLE") {
@@ -69,6 +70,7 @@ export default function CreatorCampaignsGrid({ campaigns }: Props) {
           donors={item.donationsCount}
           currency={item.currency}
           verified={item.verified}
+          ownerVerified={item.ownerVerified ?? true}
           href={`/campaigns/${item.slug}`}
           onShare={() => handleShare(item)}
         />
