@@ -33,18 +33,18 @@ export async function GET() {
     .sort({ createdAt: -1 })
     .lean();
 
-  // Collect all asset IDs (patient photos and first document images) for batch fetch
+  // Collect all asset IDs (beneficiary photos and first document images) for batch fetch
   const assetIds: mongoose.Types.ObjectId[] = [];
-  const campaignToPatientPhotoId = new Map<string, string>();
+  const campaignToBeneficiaryPhotoId = new Map<string, string>();
   const campaignToFirstDocImageId = new Map<string, string>();
 
   for (const c of items) {
     const campaignId = String(c._id);
 
-    // Patient photo takes priority
-    if (c.patient?.photoAssetId) {
-      assetIds.push(c.patient.photoAssetId as mongoose.Types.ObjectId);
-      campaignToPatientPhotoId.set(campaignId, String(c.patient.photoAssetId));
+    // Beneficiary photo takes priority
+    if (c.beneficiary?.photoAssetId) {
+      assetIds.push(c.beneficiary.photoAssetId as mongoose.Types.ObjectId);
+      campaignToBeneficiaryPhotoId.set(campaignId, String(c.beneficiary.photoAssetId));
     }
 
     // First document image as fallback
@@ -82,11 +82,11 @@ export async function GET() {
   return NextResponse.json(
     items.map((c) => {
       const campaignId = String(c._id);
-      // Priority: patient photo > document image > null
-      const patientPhotoId = campaignToPatientPhotoId.get(campaignId);
+      // Priority: beneficiary photo > document image > null
+      const beneficiaryPhotoId = campaignToBeneficiaryPhotoId.get(campaignId);
       const docImageId = campaignToFirstDocImageId.get(campaignId);
-      const imageUrl = patientPhotoId
-        ? assetIdToUrl.get(patientPhotoId)
+      const imageUrl = beneficiaryPhotoId
+        ? assetIdToUrl.get(beneficiaryPhotoId)
         : docImageId
           ? assetIdToUrl.get(docImageId)
           : null;
@@ -99,7 +99,7 @@ export async function GET() {
         goal: c.goal,
         createdAt: c.createdAt,
         totals: c.totals,
-        patient: c.patient,
+        beneficiary: c.beneficiary,
         story: c.story,
         imageUrl,
       };
@@ -125,27 +125,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "slug is required" }, { status: 400 });
   }
 
-  const diagnosis = (form.get("diagnosis") as string | null) || undefined;
-  const typeOfEmergency =
-    (form.get("typeOfEmergency") as string | null) || undefined;
+  const details = (form.get("details") as string | null) || undefined;
+  const campaignType =
+    (form.get("campaignType") as string | null) || undefined;
   const urgency =
     (form.get("urgency") as "low" | "medium" | "high" | null) || "medium";
   const category = (form.get("category") as string | null) || undefined;
-  const patientName = (form.get("patient.name") as string | null) || "";
-  const patientAgeRaw = (form.get("patient.age") as string | null) || "";
-  const hospitalId = (form.get("hospital.hospitalId") as string | null) || undefined;
-  const hospitalName = (form.get("hospital.name") as string | null) || "";
+  const beneficiaryName = (form.get("beneficiary.name") as string | null) || "";
+  const beneficiaryAgeRaw = (form.get("beneficiary.age") as string | null) || "";
+  const institutionName = (form.get("institution.name") as string | null) || "";
   const goalCurrency = (form.get("goal.currency") as string | null) || "SLE";
   const goalAmountMinorRaw =
     (form.get("goal.amountMinor") as string | null) || "0";
   const story = (form.get("story") as string | null) || "";
-
-  if (!patientName.trim()) {
-    return NextResponse.json(
-      { error: "patient.name is required" },
-      { status: 400 }
-    );
-  }
 
   await connectDB();
   const ownerId = new mongoose.Types.ObjectId(session.user.id);
@@ -155,8 +147,8 @@ export async function POST(req: NextRequest) {
     0,
     Number.parseInt(goalAmountMinorRaw, 10) || 0
   );
-  const patientAge = patientAgeRaw
-    ? Number.parseInt(patientAgeRaw, 10)
+  const beneficiaryAge = beneficiaryAgeRaw
+    ? Number.parseInt(beneficiaryAgeRaw, 10)
     : undefined;
 
   try {
@@ -164,20 +156,17 @@ export async function POST(req: NextRequest) {
     const result = await campaignService.createCampaign({
       ownerId,
       slug,
-      diagnosis: diagnosis || undefined,
-      typeOfEmergency: typeOfEmergency || undefined,
+      details: details || undefined,
+      campaignType: campaignType || undefined,
       urgency,
       category: category || undefined,
-      patient: {
-        name: patientName,
-        age: Number.isFinite(patientAge as number) ? patientAge : undefined,
-      },
-      hospital: {
-        hospitalId: hospitalId && mongoose.Types.ObjectId.isValid(hospitalId)
-          ? new mongoose.Types.ObjectId(hospitalId)
-          : undefined,
-        name: hospitalName || undefined,
-      },
+      beneficiary: beneficiaryName.trim() ? {
+        name: beneficiaryName,
+        age: Number.isFinite(beneficiaryAge as number) ? beneficiaryAge : undefined,
+      } : undefined,
+      institution: institutionName.trim() ? {
+        name: institutionName,
+      } : undefined,
       goal: { currency: goalCurrency || "SLE", amountMinor: goalAmountMinor },
       story,
     });
@@ -219,26 +208,26 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Handle patient photo upload
-    const patientPhoto = form.get("patientPhoto") as File | null;
-    if (patientPhoto && patientPhoto.size > 0) {
-      const photoBuffer = Buffer.from(await patientPhoto.arrayBuffer());
+    // Handle beneficiary photo upload
+    const beneficiaryPhoto = form.get("beneficiaryPhoto") as File | null;
+    if (beneficiaryPhoto && beneficiaryPhoto.size > 0) {
+      const photoBuffer = Buffer.from(await beneficiaryPhoto.arrayBuffer());
       const photoResult = await CloudinaryService.uploadBuffer(photoBuffer, {
-        folder: `campaigns/${session.user.id}/patient`,
+        folder: `campaigns/${session.user.id}/beneficiary`,
         resource_type: "image",
       });
 
       const photoAsset = await MediaAssetModel.create({
         ownerId,
         campaignId: created._id,
-        type: patientPhoto.type || "image",
+        type: beneficiaryPhoto.type || "image",
         storage: { provider: "cloudinary", key: photoResult.public_id },
         url: photoResult.secure_url,
-        size: patientPhoto.size ?? photoResult.bytes,
+        size: beneficiaryPhoto.size ?? photoResult.bytes,
       });
 
       await CampaignModel.findByIdAndUpdate(created._id, {
-        "patient.photoAssetId": photoAsset._id,
+        "beneficiary.photoAssetId": photoAsset._id,
       });
     }
 
