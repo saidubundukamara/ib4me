@@ -1,8 +1,8 @@
 export interface CampaignImageData {
   slug: string;
-  patient?: { name?: string; age?: number };
-  hospital?: { name?: string };
-  diagnosis?: string;
+  beneficiary?: { name?: string; age?: number };
+  institution?: { name?: string };
+  details?: string;
   goal?: { currency?: string; amountMinor?: number };
   totals?: { raisedMinor?: number; donationCount?: number };
   story?: string;
@@ -282,7 +282,7 @@ export async function generateCampaignImage(
 
   // ── 7. Title & Description Section ──────────────────────────────────────────
   const CONTENT_Y = IMG_Y + IMG_H + 40;
-  const beneficiaryName = campaign.patient?.name || campaign.slug || "Campaign Help";
+  const beneficiaryName = campaign.beneficiary?.name || campaign.slug || "Campaign Help";
   
   ctx.save();
   ctx.textAlign = "left";
@@ -305,15 +305,15 @@ export async function generateCampaignImage(
   ctx.letterSpacing = "0px";
   ctx.fillText(beneficiaryName, IMG_X, CONTENT_Y + 24);
 
-  // Sub-details (Context agnostic, uses diagnosis/hospital if provided but graceful if missing)
+  // Sub-details (Context agnostic, uses details/institution if provided but graceful if missing)
   const yOffset = CONTENT_Y + 24 + titleFontSize + 16;
   ctx.font = "18px 'Sora', sans-serif";
   ctx.fillStyle = BRAND.textMid;
   
-  if (campaign.diagnosis || campaign.hospital?.name) {
+  if (campaign.details || campaign.institution?.name) {
     const detailParts = [];
-    if (campaign.diagnosis) detailParts.push(campaign.diagnosis);
-    if (campaign.hospital?.name) detailParts.push(`At ${campaign.hospital.name}`);
+    if (campaign.details) detailParts.push(campaign.details);
+    if (campaign.institution?.name) detailParts.push(`At ${campaign.institution.name}`);
     
     wrapText(ctx, detailParts.join(" • "), IMG_X, yOffset, IMG_W * 0.65, 26);
   } else if (campaign.story) {

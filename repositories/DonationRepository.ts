@@ -37,7 +37,7 @@ export class DonationRepository extends BaseRepository<IDonation> {
       .findById(id)
       .populate({
         path: 'campaignId',
-        select: '_id slug patient diagnosis status'
+        select: '_id slug beneficiary details status'
       })
       .populate({
         path: 'donorId',
