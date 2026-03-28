@@ -2,7 +2,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: 'About Us',
-  description: "Learn about ib4me's mission to help Sierra Leoneans raise funds for medical emergencies through secure crowdfunding.",
+  description: "Learn about ib4me's mission to help Sierra Leoneans raise funds for causes that matter through secure crowdfunding.",
 };
 
 export default function AboutLayout({

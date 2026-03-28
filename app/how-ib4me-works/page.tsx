@@ -7,7 +7,7 @@ import {
   Users, ArrowRight, Lock, Eye,
   Globe, Share2, Wallet,
 } from "lucide-react";
-import { stats } from "../_components/stats";
+import { usePlatformStats, getStatItems, StatItem } from "../_components/LiveStatsGrid";
 import Link from "next/link";
 
 const creatorSteps = [
@@ -103,6 +103,9 @@ const trustItems = [
 ];
 
 const HowItWorks = () => {
+  const platformData = usePlatformStats();
+  const stats = getStatItems(platformData);
+
   return (
     <div className="font-Sora">
       <main>
@@ -331,25 +334,7 @@ const HowItWorks = () => {
                   key={index}
                   className="flex flex-col items-center rounded-2xl bg-background p-5 text-center shadow-sm ring-1 ring-border sm:p-7 lg:p-8"
                 >
-                  <div
-                    className="mb-3 flex h-12 w-12 items-center justify-center rounded-full sm:mb-4 sm:h-14 sm:w-14"
-                    style={{ backgroundColor: `${stat.color}15` }}
-                  >
-                    <stat.icon
-                      className="h-6 w-6 sm:h-7 sm:w-7"
-                      style={{ color: stat.color }}
-                      aria-hidden="true"
-                    />
-                  </div>
-                  <div
-                    className="mb-1 text-2xl font-bold sm:text-3xl lg:text-4xl"
-                    style={{ color: stat.color }}
-                  >
-                    {stat.value}
-                  </div>
-                  <div className="text-xs font-medium text-muted-foreground sm:text-sm">
-                    {stat.label}
-                  </div>
+                  <StatItem stat={stat} loaded={!!platformData} />
                 </div>
               ))}
             </div>
