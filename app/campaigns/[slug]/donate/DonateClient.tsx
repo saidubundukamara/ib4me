@@ -201,6 +201,7 @@ export default function DonateClient({
               alt={title}
               width={1600}
               height={900}
+              sizes="(max-width: 1024px) 100vw, 60vw"
               className="size-full object-cover"
             />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent" />
