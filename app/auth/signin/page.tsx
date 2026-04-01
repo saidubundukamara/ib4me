@@ -30,7 +30,7 @@ export default function SignInPage() {
     try {
       const response = await signIn("credentials", {
         redirect: false,
-        callbackUrl: "/",
+        callbackUrl: "/dashboard",
         identifier,
         password,
       });
@@ -44,7 +44,7 @@ export default function SignInPage() {
 
       if (response?.ok) {
         toast.success("Signed in successfully!");
-        router.push(response.url ?? "/");
+        router.push(response.url ?? "/dashboard");
       }
     } catch (submitError) {
       console.error(submitError);
