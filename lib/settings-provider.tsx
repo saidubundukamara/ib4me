@@ -53,6 +53,7 @@ interface ContactSettings {
   state?: string;
   zipCode?: string;
   country?: string;
+  businessHours?: string;
 }
 
 interface SocialSettings {

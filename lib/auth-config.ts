@@ -11,7 +11,7 @@ import bcrypt from "bcrypt";
 export const authConfig: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   adapter: MongoDBAdapter(clientPromise),
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: 5400 },
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
