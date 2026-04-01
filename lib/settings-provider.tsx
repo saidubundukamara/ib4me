@@ -188,8 +188,8 @@ const defaultSeoSettings: SeoSettings = {};
 const defaultFeeSettings: FeeSettings = {
   baseFeeMinor: 50,
   processingFee: {
-    individualBps: 800,
-    organizationBps: 600,
+    individualBps: 260,
+    organizationBps: 200,
   },
 };
 
