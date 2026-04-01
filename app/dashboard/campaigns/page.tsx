@@ -521,9 +521,18 @@ export default function UserCampaignsPage() {
       .finally(() => setEditLoading(false));
   }, [handleCancelEdit]);
 
-  const handleDeleteCampaign = React.useCallback((id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
-    setDeletingCampaign(null);
+  const handleDeleteCampaign = React.useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/campaigns/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        toast.error("Failed to delete campaign");
+        return;
+      }
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      setDeletingCampaign(null);
+    } catch {
+      toast.error("Network error deleting campaign");
+    }
   }, []);
 
   // Responsive Skeleton + List
