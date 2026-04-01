@@ -98,7 +98,7 @@ export default function RegisterPage() {
       const identifier = email || phone;
       const result = await signIn("credentials", {
         redirect: false,
-        callbackUrl: "/",
+        callbackUrl: "/dashboard",
         identifier,
         password,
       });
@@ -109,7 +109,7 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push(result?.url ?? "/");
+      router.push(result?.url ?? "/dashboard");
     } catch (submitError) {
       console.error(submitError);
       const message = "Registration failed. Please try again.";
