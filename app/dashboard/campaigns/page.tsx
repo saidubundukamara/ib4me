@@ -47,7 +47,6 @@ type CampaignItem = {
   description?: string;
   raised: number;
   donors: number;
-  campaignType?: string;
   details?: string;
   story?: string;
   beneficiaryName?: string;
@@ -117,7 +116,6 @@ interface ApiCampaign {
   story?: string;
   raised?: number | string | null;
   donors?: number | string | null;
-  campaignType?: string;
   details?: string;
   beneficiary?: {
     name?: string;
@@ -145,7 +143,6 @@ const normalizeFromApi = (campaign: ApiCampaign): CampaignItem => {
     description: campaign?.description ?? campaign?.story ?? "",
     raised: raisedMinor > 0 ? raisedMinor / 100 : Number(campaign?.raised ?? 0),
     donors: Number(campaign?.totals?.donationCount ?? campaign?.donors ?? 0),
-    campaignType: campaign?.campaignType,
     details: campaign?.details,
     story: campaign?.story,
     beneficiaryName: campaign?.beneficiary?.name,
@@ -178,7 +175,6 @@ const fromFormResult = (
     description: form.description || form.story || previous?.description || "",
     raised: previous?.raised ?? 0,
     donors: previous?.donors ?? 0,
-    campaignType: form.campaignType || previous?.campaignType,
     details: form.details || previous?.details,
     story: form.story || previous?.story,
     beneficiaryName: form.beneficiary.name || previous?.beneficiaryName,
@@ -287,8 +283,6 @@ export default function UserCampaignsPage() {
       const slug = generateSlug(formValues.title || `campaign-${Date.now()}`);
       formData.set("slug", slug);
       if (formValues.details) formData.set("details", formValues.details);
-      if (formValues.campaignType)
-        formData.set("campaignType", formValues.campaignType);
       formData.set("urgency", formValues.urgency);
       formData.set("beneficiary.name", formValues.beneficiary.name);
       if (formValues.beneficiary.age !== undefined) {
@@ -379,7 +373,6 @@ export default function UserCampaignsPage() {
 
       // Basic text fields
       if (values.details) formData.set("details", values.details);
-      if (values.campaignType) formData.set("campaignType", values.campaignType);
       formData.set("urgency", values.urgency);
       if (values.category) formData.set("category", values.category);
       formData.set("beneficiary.name", values.beneficiary.name);
@@ -490,7 +483,6 @@ export default function UserCampaignsPage() {
 
         const initial: CampaignFormInitialValues = {
           title: campaign.title,
-          campaignType: data?.campaignType ?? campaign.campaignType ?? "",
           urgency: resolveUrgency(data?.urgency) ?? resolveUrgency(campaign.urgency) ?? "medium",
           details: data?.details ?? campaign.details ?? "",
           description: campaign.description ?? "",
