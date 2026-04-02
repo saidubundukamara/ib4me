@@ -28,7 +28,6 @@ const steps = [
 
 export type CampaignFormSubmitPayload = {
   title: string;
-  campaignType: string;
   urgency: "low" | "medium" | "high";
   details: string;
   description: string;
@@ -48,7 +47,6 @@ export type CampaignFormSubmitPayload = {
 
 export type CampaignFormInitialValues = Partial<{
   title: string;
-  campaignType: string;
   urgency: "low" | "medium" | "high";
   details: string;
   description: string;
@@ -90,7 +88,6 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
   const [currentStep, setCurrentStep] = React.useState<number>(1);
   const [title, setTitle] = React.useState("");
   const [availableCategories, setAvailableCategories] = React.useState<CategoryOption[]>([]);
-  const [campaignType, setCampaignType] = React.useState("");
   const [urgency, setUrgency] = React.useState<"low" | "medium" | "high">("medium");
   const [details, setDetails] = React.useState("");
   const [description, setDescription] = React.useState("");
@@ -110,7 +107,6 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
   const resetState = React.useCallback(() => {
     setCurrentStep(1);
     setTitle("");
-    setCampaignType("");
     setUrgency("medium");
     setDetails("");
     setDescription("");
@@ -152,7 +148,6 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
     }
     if (initialValues) {
       setTitle(initialValues.title ?? "");
-      setCampaignType(initialValues.campaignType ?? "");
       setUrgency(initialValues.urgency ?? "medium");
       setDetails(initialValues.details ?? "");
       setDescription(initialValues.description ?? "");
@@ -227,7 +222,6 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
 
       await onSubmit({
         title: title.trim(),
-        campaignType: campaignType.trim(),
         urgency,
         details: details.trim(),
         description: description.trim(),
@@ -274,7 +268,6 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
     resetState,
     story,
     title,
-    campaignType,
     urgency,
     validate,
     currentStep,
@@ -286,7 +279,6 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
 
   const reviewItems = [
     { label: "Title", value: title || "-", key: "title" as const },
-    { label: "Campaign Type", value: campaignType || "-", key: "emergency" as const },
     { label: "Category", value: category || "-", key: "category" as const },
     {
       label: "Urgency",
@@ -378,17 +370,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
               {errors.title && <p className="text-sm text-destructive mt-1">{errors.title}</p>}
             </div>
 
-            <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="emergency">Campaign Type</Label>
-                <Input
-                  id="emergency"
-                  value={campaignType}
-                  onChange={(e) => setCampaignType(e.target.value)}
-                  placeholder="Education, Medical, Community..."
-                  className="rounded-2xl my-2"
-                />
-              </div>
+            <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="urgency">Urgency</Label>
                 <Select value={urgency} onValueChange={(value) => setUrgency(value as typeof urgency)}>

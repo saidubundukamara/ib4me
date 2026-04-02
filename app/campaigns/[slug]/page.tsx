@@ -1,6 +1,5 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import mongoose from "mongoose";
 import { Heart, CheckCircle, ChevronRight, Share2 } from "lucide-react";
@@ -27,6 +26,27 @@ import {
 } from "@/repositories";
 import CampaignTabs, { CampaignUpdateItem } from "./Tabs";
 import DonorsTicker, { timeAgo } from "./DonorsTicker";
+import ShareImageButton from "./ShareImageButton";
+
+function buildResponsiveHero(key: string) {
+  const widths = [320, 480, 640, 768, 1024, 1280];
+  const base = {
+    crop: "fill" as const,
+    gravity: "auto",
+    aspect_ratio: "16:9",
+    fetch_format: "auto",
+    quality: "auto",
+  };
+  const src = CloudinaryService.generateTransformationUrl(key, { ...base, width: 768 });
+  const srcSet = widths
+    .map(
+      (w) =>
+        `${CloudinaryService.generateTransformationUrl(key, { ...base, width: w })} ${w}w`,
+    )
+    .join(", ");
+  const sizes = "(min-width: 1024px) 66vw, 100vw";
+  return { src, srcSet, sizes };
+}
 
 type PageParams = { params: Promise<{ slug: string }> };
 
@@ -132,6 +152,8 @@ export default async function CampaignDetailPage({ params }: PageParams) {
 
   // Fetch assets in batch
   let heroUrl = "/assets/Hero.png";
+  let heroSrcSet: string | undefined;
+  let heroSizes: string | undefined;
   if (assetIds.length > 0) {
     const assets = await mediaAssetService.listByIds(assetIds);
     const assetMap = new Map(assets.map((a) => [String(a._id), a]));
@@ -141,16 +163,14 @@ export default async function CampaignDetailPage({ params }: PageParams) {
       const photoAsset = assetMap.get(String(campaign.beneficiary.photoAssetId));
       if (photoAsset) {
         const key = photoAsset.storage?.key;
-        resolvedUrl = key
-          ? CloudinaryService.generateTransformationUrl(key, {
-              width: 1280,
-              crop: "fill",
-              gravity: "auto",
-              aspect_ratio: "16:9",
-              fetch_format: "auto",
-              quality: "auto",
-            })
-          : photoAsset.url || null;
+        if (key) {
+          const responsive = buildResponsiveHero(key);
+          resolvedUrl = responsive.src;
+          heroSrcSet = responsive.srcSet;
+          heroSizes = responsive.sizes;
+        } else {
+          resolvedUrl = photoAsset.url || null;
+        }
       }
     }
 
@@ -158,16 +178,14 @@ export default async function CampaignDetailPage({ params }: PageParams) {
       const docAsset = assetMap.get(String(firstImageDoc.assetId));
       if (docAsset) {
         const key = docAsset.storage?.key;
-        resolvedUrl = key
-          ? CloudinaryService.generateTransformationUrl(key, {
-              width: 1280,
-              crop: "fill",
-              gravity: "auto",
-              aspect_ratio: "16:9",
-              fetch_format: "auto",
-              quality: "auto",
-            })
-          : docAsset.url || null;
+        if (key) {
+          const responsive = buildResponsiveHero(key);
+          resolvedUrl = responsive.src;
+          heroSrcSet = responsive.srcSet;
+          heroSizes = responsive.sizes;
+        } else {
+          resolvedUrl = docAsset.url || null;
+        }
       }
     }
 
@@ -262,12 +280,17 @@ export default async function CampaignDetailPage({ params }: PageParams) {
           <div className="grid gap-8 lg:grid-cols-12">
             <section className="animate-fade-up space-y-6 lg:col-span-8">
               <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border/40 bg-muted shadow-lg">
-                <Image
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={heroUrl}
+                  srcSet={heroSrcSet}
+                  sizes={heroSizes}
                   alt={title}
                   width={1280}
                   height={720}
                   className="size-full object-cover"
+                  loading="eager"
+                  decoding="async"
                 />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent" />
               </div>
@@ -375,6 +398,24 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                           </Button>
                         ))}
                       </div>
+                      <ShareImageButton
+                        campaign={{
+                          slug: campaign.slug,
+                          beneficiary: campaign.beneficiary
+                            ? { name: campaign.beneficiary.name, age: campaign.beneficiary.age }
+                            : undefined,
+                          institution: campaign.institution
+                            ? { name: campaign.institution.name }
+                            : undefined,
+                          details: campaign.details,
+                          goal: campaign.goal,
+                          totals: campaign.totals,
+                          story: campaign.story,
+                          urgency: campaign.urgency,
+                          isVerified: isCampaignVerified,
+                          imageUrl: heroUrl,
+                        }}
+                      />
                     </div>
 
                     <Separator />

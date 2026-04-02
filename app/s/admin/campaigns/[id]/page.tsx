@@ -26,7 +26,6 @@ interface Campaign {
   totals?: { raisedMinor?: number; donationCount?: number; uniqueDonorCount?: number };
   goal?: { amountMinor?: number; currency?: string };
   story?: string;
-  campaignType?: string;
   createdAt: string;
   updatedAt: string;
   ownerId?: { 
@@ -280,10 +279,6 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Details</label>
                     <p className="text-foreground">{campaign.details || "Not provided"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Campaign Type</label>
-                    <p className="text-foreground">{campaign.campaignType || "Not provided"}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Institution</label>

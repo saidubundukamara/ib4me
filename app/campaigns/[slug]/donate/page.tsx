@@ -59,10 +59,10 @@ export default async function CampaignDonatePage({ params }: PageParams) {
         const key = photoAsset.storage?.key;
         resolvedUrl = key
           ? CloudinaryService.generateTransformationUrl(key, {
-              width: 256,
+              width: 1200,
               crop: "fill",
               gravity: "auto",
-              aspect_ratio: "1:1",
+              aspect_ratio: "16:9",
               fetch_format: "auto",
               quality: "auto",
             })
@@ -77,10 +77,10 @@ export default async function CampaignDonatePage({ params }: PageParams) {
         const key = docAsset.storage?.key;
         resolvedUrl = key
           ? CloudinaryService.generateTransformationUrl(key, {
-              width: 256,
+              width: 1200,
               crop: "fill",
               gravity: "auto",
-              aspect_ratio: "1:1",
+              aspect_ratio: "16:9",
               fetch_format: "auto",
               quality: "auto",
             })

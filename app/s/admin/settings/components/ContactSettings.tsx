@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSettings } from "@/lib/settings-provider";
-import { Loader2, Save, Mail, MapPin } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Save, Mail, MapPin, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ContactSettings() {
@@ -19,6 +20,7 @@ export default function ContactSettings() {
     state: contact?.state || "",
     zipCode: contact?.zipCode || "",
     country: contact?.country || "Sierra Leone",
+    businessHours: contact?.businessHours || "",
   });
 
   const [hasChanges, setHasChanges] = useState(false);
@@ -55,6 +57,7 @@ export default function ContactSettings() {
       state: contact?.state || "",
       zipCode: contact?.zipCode || "",
       country: contact?.country || "Sierra Leone",
+      businessHours: contact?.businessHours || "",
     });
     setHasChanges(false);
   };
@@ -165,6 +168,28 @@ export default function ContactSettings() {
               placeholder="Sierra Leone"
             />
           </div>
+        </div>
+      </div>
+
+      {/* Business Hours */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Clock className="h-5 w-5" />
+          <h3 className="text-lg font-medium">Business Hours</h3>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="businessHours">Operating Hours</Label>
+          <Textarea
+            id="businessHours"
+            value={formData.businessHours}
+            onChange={(e) => handleChange("businessHours", e.target.value)}
+            placeholder={"Monday - Friday: 8am - 6pm\nSaturday: 9am - 4pm\nSunday: Closed"}
+            rows={4}
+          />
+          <p className="text-sm text-muted-foreground">
+            Enter one schedule entry per line. Displayed on the contact page.
+          </p>
         </div>
       </div>
 
