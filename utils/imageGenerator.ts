@@ -24,6 +24,8 @@ const BRAND = {
   textMid: "#4B5563",
   textLight: "#9CA3AF",
   divider: "#E5E7EB",
+  amber: "#D97706",
+  amberLight: "#FEF3C7",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -39,7 +41,7 @@ async function loadImage(src: string): Promise<HTMLImageElement | null> {
       console.error("Failed to load image for canvas (possible CORS or network issue):", src);
       resolve(null);
     };
-    
+
     // Bypass browser cache for canvas CORS requirements
     const isDataURL = src.startsWith("data:");
     const cacheBuster = `cb=${Date.now()}`;
@@ -101,19 +103,18 @@ function roundRect(
   ctx.closePath();
 }
 
-/** Draws the beautiful minimal logo representation for 'ib4me' */
+/** Draws the logo text */
 function drawLogo(ctx: CanvasRenderingContext2D, x: number, y: number, color: string = BRAND.funGreen) {
   ctx.save();
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = "bold 32px 'Sora', sans-serif";
+  ctx.font = "bold 30px 'Sora', sans-serif";
   ctx.fillStyle = color;
   ctx.fillText("ib4me", x, y);
-  
-  // A tiny accent dot to make the brand stand out
+
   ctx.fillStyle = BRAND.blazeOrange;
   ctx.beginPath();
-  ctx.arc(x + 48, y + 8, 4, 0, Math.PI * 2);
+  ctx.arc(x + 44, y + 7, 4, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }
@@ -122,14 +123,13 @@ function drawLogo(ctx: CanvasRenderingContext2D, x: number, y: number, color: st
 function drawWatermark(ctx: CanvasRenderingContext2D, width: number, height: number) {
   ctx.save();
   ctx.translate(width / 2, height / 2);
-  ctx.rotate((-35 * Math.PI) / 180); // Diagonal tilt
+  ctx.rotate((-35 * Math.PI) / 180);
 
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.font = "bold 140px 'Sora', sans-serif";
-  ctx.fillStyle = "rgba(0, 113, 45, 0.035)"; // Super faint Fun Green
-  
-  // Draw repeating grid
+  ctx.fillStyle = "rgba(0, 113, 45, 0.035)";
+
   for (let i = -3; i <= 3; i++) {
     for (let j = -3; j <= 3; j++) {
       ctx.fillText("ib4me", i * 360, j * 220);
@@ -149,32 +149,27 @@ export async function generateCampaignImage(
   // ── Canvas setup (Instagram square friendly) ────────────────────────────────
   const W = 1080;
   const H = 1080;
-  
+
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext("2d")!;
   if (!ctx) throw new Error("Could not get canvas context");
 
-  // Load fonts (simulated, as canvas uses system native if Sora isn't strictly loaded)
-  // Ensure your global css imports 'Sora' for web context.
-  
-  // ── 1. Background (Minimal White) ───────────────────────────────
+  // ── 1. Background ───────────────────────────────────────────────────────────
   ctx.fillStyle = BRAND.whiteDark;
   ctx.fillRect(0, 0, W, H);
 
-  // Soft glowing ambient orbs (Blaze Orange and Chartereuse)
+  // Soft glowing ambient orbs
   ctx.save();
   ctx.globalCompositeOperation = "screen";
-  
-  // Top-left orange glow
+
   const grad1 = ctx.createRadialGradient(100, 100, 0, 100, 100, 500);
   grad1.addColorStop(0, "rgba(255, 96, 0, 0.08)");
   grad1.addColorStop(1, "rgba(255, 96, 0, 0)");
   ctx.fillStyle = grad1;
   ctx.fillRect(0, 0, W, H);
 
-  // Bottom-right green glow
   const grad2 = ctx.createRadialGradient(W - 100, H - 100, 0, W - 100, H - 100, 600);
   grad2.addColorStop(0, "rgba(0, 113, 45, 0.06)");
   grad2.addColorStop(1, "rgba(0, 113, 45, 0)");
@@ -186,12 +181,11 @@ export async function generateCampaignImage(
   drawWatermark(ctx, W, H);
 
   // ── 3. Main Central Card ─────────────────────────────────────────────────────
-  const CARD_M = 48; // Margin
+  const CARD_M = 48;
   const CW = W - CARD_M * 2;
   const CH = H - CARD_M * 2;
-  const CR = 40; // High border-radius for modern feel
+  const CR = 40;
 
-  // Soft drop shadow for elevation
   ctx.save();
   ctx.shadowColor = "rgba(0,0,0,0.06)";
   ctx.shadowBlur = 60;
@@ -201,28 +195,28 @@ export async function generateCampaignImage(
   ctx.fill();
   ctx.restore();
 
-  // Outer border to card
   ctx.lineWidth = 1;
   ctx.strokeStyle = "rgba(0,0,0,0.05)";
   ctx.stroke();
 
   // ── 4. Card Header & Logo ──────────────────────────────────────────────────
-  drawLogo(ctx, CARD_M + 80, CARD_M + 60, BRAND.funGreen);
+  const HEADER_CY = CARD_M + 52; // vertical center of header
+  drawLogo(ctx, CARD_M + 76, HEADER_CY, BRAND.funGreen);
 
   ctx.save();
   ctx.textAlign = "right";
   ctx.textBaseline = "middle";
-  ctx.font = "600 16px 'Sora', sans-serif";
+  ctx.font = "600 15px 'Sora', sans-serif";
   ctx.fillStyle = BRAND.textLight;
-  ctx.fillText("ib4me.org", CARD_M + CW - 40, CARD_M + 60);
+  ctx.fillText("ib4me.org", CARD_M + CW - 40, HEADER_CY);
   ctx.restore();
 
-  // ── 5. Primary Beneficiary Image ──────────────────────────────────────────
-  const IMG_Y = CARD_M + 110;
-  const IMG_H = 340;
-  const IMG_R = 30;
+  // ── 5. Campaign Image ──────────────────────────────────────────────────────
+  const IMG_Y = CARD_M + 92;   // starts at y=140
+  const IMG_H = 390;            // tall enough for good photo, leaves room for content
+  const IMG_R = 28;
   const IMG_X = CARD_M + 40;
-  const IMG_W = CW - 80;
+  const IMG_W = CW - 80;       // 904px wide
 
   const photoImg = campaign.imageUrl ? await loadImage(campaign.imageUrl) : null;
 
@@ -231,15 +225,28 @@ export async function generateCampaignImage(
     roundRect(ctx, IMG_X, IMG_Y, IMG_W, IMG_H, IMG_R);
     ctx.clip();
 
+    // Cover-fit: scale to fill the frame fully
     const scale = Math.max(IMG_W / photoImg.width, IMG_H / photoImg.height);
     const sw = IMG_W / scale;
     const sh = IMG_H / scale;
-    const sx = (photoImg.width - sw) / 2;
-    const sy = (photoImg.height - sh) / 2;
+    const sx = Math.max(0, (photoImg.width - sw) / 2);
+    // For portrait images, bias crop towards top (keeps subject's face visible)
+    const sy = photoImg.height > photoImg.width
+      ? Math.max(0, (photoImg.height - sh) / 3)
+      : Math.max(0, (photoImg.height - sh) / 2);
+
     ctx.drawImage(photoImg, sx, sy, sw, sh, IMG_X, IMG_Y, IMG_W, IMG_H);
+
+    // Subtle gradient overlay at bottom to improve text readability
+    const imgGrad = ctx.createLinearGradient(0, IMG_Y + IMG_H - 80, 0, IMG_Y + IMG_H);
+    imgGrad.addColorStop(0, "rgba(0,0,0,0)");
+    imgGrad.addColorStop(1, "rgba(0,0,0,0.25)");
+    ctx.fillStyle = imgGrad;
+    ctx.fillRect(IMG_X, IMG_Y + IMG_H - 80, IMG_W, 80);
+
     ctx.restore();
   } else {
-    // Beautiful placeholder grid pattern
+    // Placeholder when image is unavailable
     ctx.save();
     ctx.fillStyle = BRAND.whiteDark;
     roundRect(ctx, IMG_X, IMG_Y, IMG_W, IMG_H, IMG_R);
@@ -248,176 +255,214 @@ export async function generateCampaignImage(
     ctx.strokeStyle = BRAND.divider;
     ctx.setLineDash([8, 12]);
     ctx.stroke();
-    
+
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.font = "60px 'Sora', sans-serif";
     ctx.fillStyle = BRAND.textLight;
     ctx.fillText("🤍", IMG_X + IMG_W / 2, IMG_Y + IMG_H / 2 - 10);
-    
+
     ctx.font = "500 18px 'Sora', sans-serif";
     ctx.fillText("Support this campaign", IMG_X + IMG_W / 2, IMG_Y + IMG_H / 2 + 40);
     ctx.restore();
   }
 
-  // ── 6. Verification Badge (Floating on image) ─────────────────────────────
+  // ── 6. Verification Badge (floating on image) ─────────────────────────────
   if (campaign.isVerified) {
-    const badgeW = 160;
-    const badgeH = 36;
+    // Green "Verified Campaign" badge
+    const badgeW = 190;
+    const badgeH = 38;
     ctx.save();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
-    ctx.shadowColor = "rgba(0,0,0,0.1)";
-    ctx.shadowBlur = 10;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
+    ctx.shadowColor = "rgba(0,0,0,0.12)";
+    ctx.shadowBlur = 12;
     ctx.shadowOffsetY = 4;
-    roundRect(ctx, IMG_X + 20, IMG_Y + 20, badgeW, badgeH, 18);
+    roundRect(ctx, IMG_X + 20, IMG_Y + 20, badgeW, badgeH, 19);
     ctx.fill();
 
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.font = "bold 14px 'Sora', sans-serif";
     ctx.fillStyle = BRAND.funGreen;
-    ctx.fillText("✓ Verified", IMG_X + 20 + badgeW / 2, IMG_Y + 20 + badgeH / 2);
+    ctx.fillText("✓ Verified Campaign", IMG_X + 20 + badgeW / 2, IMG_Y + 20 + badgeH / 2);
+    ctx.restore();
+  } else {
+    // Amber "Not Verified" badge
+    const badgeW = 165;
+    const badgeH = 38;
+    ctx.save();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.94)";
+    ctx.shadowColor = "rgba(0,0,0,0.10)";
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 3;
+    roundRect(ctx, IMG_X + 20, IMG_Y + 20, badgeW, badgeH, 19);
+    ctx.fill();
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 14px 'Sora', sans-serif";
+    ctx.fillStyle = BRAND.amber;
+    ctx.fillText("⚠ Not Verified", IMG_X + 20 + badgeW / 2, IMG_Y + 20 + badgeH / 2);
     ctx.restore();
   }
 
-  // ── 7. Title & Description Section ──────────────────────────────────────────
-  const CONTENT_Y = IMG_Y + IMG_H + 40;
-  const beneficiaryName = campaign.beneficiary?.name || campaign.slug || "Campaign Help";
-  
+  // ── 7. Title — full card width so it never conflicts with the ring ──────────
+  const CONTENT_Y = IMG_Y + IMG_H + 22; // y=552
+
+  // Slug titles (hyphens, no spaces) → readable words so wrapText can break them
+  const rawTitle = campaign.beneficiary?.name || campaign.details || campaign.slug || "Campaign";
+  const displayTitle = (!rawTitle.includes(" ") && rawTitle.includes("-"))
+    ? rawTitle.replace(/-/g, " ")
+    : rawTitle;
+
   ctx.save();
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  
-  // Clean minimal "HELP SUPPORT" tag
-  ctx.font = "bold 14px 'Sora', sans-serif";
+
+  // "HELP SUPPORT" orange label
+  ctx.font = "bold 13px 'Sora', sans-serif";
   ctx.fillStyle = BRAND.blazeOrange;
-  ctx.letterSpacing = "2px";
   ctx.fillText("HELP SUPPORT", IMG_X, CONTENT_Y);
 
-  // Large Bold Title
-  let titleFontSize = 48;
+  // Shrink font until the widest single word fits full IMG_W, then wrap
+  let titleFontSize = 42;
   ctx.font = `bold ${titleFontSize}px 'Sora', sans-serif`;
-  while (ctx.measureText(beneficiaryName).width > IMG_W && titleFontSize > 28) {
+  const titleWordsArr = displayTitle.split(" ");
+  const widestWord = titleWordsArr.reduce(
+    (a, b) => (ctx.measureText(a).width >= ctx.measureText(b).width ? a : b),
+    ""
+  );
+  while (ctx.measureText(widestWord).width > IMG_W && titleFontSize > 20) {
     titleFontSize -= 2;
     ctx.font = `bold ${titleFontSize}px 'Sora', sans-serif`;
   }
+  const titleLineH = Math.round(titleFontSize * 1.25);
   ctx.fillStyle = BRAND.textDark;
-  ctx.letterSpacing = "0px";
-  ctx.fillText(beneficiaryName, IMG_X, CONTENT_Y + 24);
+  // Use full IMG_W — ring lives BELOW the title, not beside it
+  const titleEndY = wrapText(ctx, displayTitle, IMG_X, CONTENT_Y + 22, IMG_W, titleLineH);
+  ctx.restore();
 
-  // Sub-details (Context agnostic, uses details/institution if provided but graceful if missing)
-  const yOffset = CONTENT_Y + 24 + titleFontSize + 16;
-  ctx.font = "18px 'Sora', sans-serif";
+  // ── 8. Sub-row below title: story (left) | progress ring (right) ─────────
+  const SUB_Y = titleEndY + 14;
+  const FOOTER_LINE_Y = CH + CARD_M - 170; // y=862 (where footer divider goes)
+  const SUB_H = FOOTER_LINE_Y - 32 - SUB_Y; // available height for this sub-row
+
+  // Left zone: story / details
+  const STORY_W = Math.floor(IMG_W * 0.52); // 52% for text
+  ctx.save();
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.font = "16px 'Sora', sans-serif";
   ctx.fillStyle = BRAND.textMid;
-  
   if (campaign.details || campaign.institution?.name) {
-    const detailParts = [];
-    if (campaign.details) detailParts.push(campaign.details);
-    if (campaign.institution?.name) detailParts.push(`At ${campaign.institution.name}`);
-    
-    wrapText(ctx, detailParts.join(" • "), IMG_X, yOffset, IMG_W * 0.65, 26);
+    const parts: string[] = [];
+    if (campaign.details) parts.push(campaign.details);
+    if (campaign.institution?.name) parts.push(`At ${campaign.institution.name}`);
+    wrapText(ctx, parts.join(" • "), IMG_X, SUB_Y, STORY_W, 24);
   } else if (campaign.story) {
-    // If no explicit fields, show a snippet of the story
-    const shortStory = campaign.story.slice(0, 90).replace(/\s\S+$/, '...'); 
-    wrapText(ctx, shortStory, IMG_X, yOffset, IMG_W * 0.65, 26);
+    wrapText(ctx, campaign.story.slice(0, 130).replace(/\s\S+$/, "..."), IMG_X, SUB_Y, STORY_W, 24);
   }
   ctx.restore();
 
-
-  // ── 8. Progress / Goal Section (Right Side) ──────────────────────────────
-  const RIGHT_COL_W = 300;
-  const RIGHT_COL_X = CARD_M + CW - 40 - RIGHT_COL_W;
-  
-  // Progress Ring
+  // Right zone: progress ring centered in its area
   const goal = (campaign.goal?.amountMinor ?? 0) / 100;
   const raised = (campaign.totals?.raisedMinor ?? 0) / 100;
-  const currency = campaign.goal?.currency || "SLE"; // SLE is Sierra Leone Leones
+  const currency = campaign.goal?.currency || "SLE";
   const pct = goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0;
-  
-  const RING_CY = CONTENT_Y + 50;
-  const RING_CX = RIGHT_COL_X + RIGHT_COL_W - 60;
-  const RING_R = 40;
-  const RING_THICKNESS = 8;
-  
+
+  const RING_ZONE_X = IMG_X + STORY_W + 16;
+  const RING_ZONE_W = IMG_X + IMG_W - RING_ZONE_X;
+  const RING_CX = RING_ZONE_X + Math.floor(RING_ZONE_W / 2);
+  const RING_R = Math.min(50, Math.max(30, Math.floor(SUB_H / 2.8)));
+  const RING_CY = SUB_Y + RING_R + 8;
+  const RING_THICKNESS = Math.max(8, Math.floor(RING_R / 5.5));
+
   // Track
   ctx.save();
   ctx.beginPath();
   ctx.arc(RING_CX, RING_CY, RING_R, 0, Math.PI * 2);
   ctx.lineWidth = RING_THICKNESS;
-  ctx.strokeStyle = BRAND.whiteDark;
+  ctx.strokeStyle = BRAND.divider;
   ctx.stroke();
 
-  // Progress Arc
+  // Progress arc
   if (pct > 0) {
     ctx.beginPath();
-    ctx.arc(RING_CX, RING_CY, RING_R, -Math.PI / 2, (-Math.PI / 2) + ((Math.PI * 2) * (pct / 100)));
+    ctx.arc(RING_CX, RING_CY, RING_R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (pct / 100));
     ctx.lineCap = "round";
     ctx.lineWidth = RING_THICKNESS;
     ctx.strokeStyle = BRAND.chartereuse;
     ctx.stroke();
   }
-  
-  // Percent Text (Centered)
+
+  // Percentage text inside ring
+  const pctFont = Math.max(16, Math.floor(RING_R * 0.46));
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = "bold 20px 'Sora', sans-serif";
+  ctx.font = `bold ${pctFont}px 'Sora', sans-serif`;
   ctx.fillStyle = BRAND.textDark;
   ctx.fillText(`${pct}%`, RING_CX, RING_CY);
   ctx.restore();
 
-  // Text details under ring
+  // Raised / goal centered below ring
+  const statsY = RING_CY + RING_R + 12;
+  const raisedFmt = raised >= 1_000_000
+    ? `${(raised / 1_000_000).toFixed(1)}M`
+    : raised >= 1_000 ? `${(raised / 1_000).toFixed(1)}K`
+    : raised.toLocaleString();
+  const goalFmt = goal >= 1_000_000
+    ? `${(goal / 1_000_000).toFixed(1)}M`
+    : goal >= 1_000 ? `${(goal / 1_000).toFixed(1)}K`
+    : goal.toLocaleString();
+
+  const statFontSz = Math.max(13, Math.min(19, Math.floor(RING_R / 2.6)));
   ctx.save();
-  ctx.textAlign = "right";
+  ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  
-  ctx.font = "bold 24px 'Sora', sans-serif";
+  ctx.font = `bold ${statFontSz}px 'Sora', sans-serif`;
   ctx.fillStyle = BRAND.funGreen;
-  ctx.fillText(`${currency} ${raised.toLocaleString()}`, RIGHT_COL_X + RIGHT_COL_W, RING_CY + 60);
-  
-  ctx.font = "16px 'Sora', sans-serif";
+  ctx.fillText(`${currency} ${raisedFmt} raised`, RING_CX, statsY);
+  ctx.font = `${Math.max(11, statFontSz - 3)}px 'Sora', sans-serif`;
   ctx.fillStyle = BRAND.textLight;
-  ctx.fillText(`raised of ${currency} ${goal.toLocaleString()}`, RIGHT_COL_X + RIGHT_COL_W, RING_CY + 90);
+  ctx.fillText(`of ${currency} ${goalFmt} goal`, RING_CX, statsY + statFontSz + 4);
   ctx.restore();
 
+  // ── 9. Footer: CTA & QR Code ─────────────────────────────────────────────────
+  const FOOTER_Y = FOOTER_LINE_Y;
 
-  // ── 9. Footer: Call to action & QR Code ─────────────────────────────────────
-  const FOOTER_Y = CH + CARD_M - 180;
-  
-  // Divider
+  // Divider line
   ctx.strokeStyle = BRAND.divider;
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(IMG_X, FOOTER_Y - 30);
-  ctx.lineTo(IMG_X + IMG_W, FOOTER_Y - 30);
+  ctx.moveTo(IMG_X, FOOTER_Y - 28);
+  ctx.lineTo(IMG_X + IMG_W, FOOTER_Y - 28);
   ctx.stroke();
 
-  // Scan text CTA
+  // CTA text
   ctx.save();
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.font = "bold 22px 'Sora', sans-serif";
+  ctx.font = "bold 20px 'Sora', sans-serif";
   ctx.fillStyle = BRAND.textDark;
   ctx.fillText("Scan to contribute via Mobile Money", IMG_X, FOOTER_Y + 10);
-  
-  ctx.font = "16px 'Sora', sans-serif";
+
+  ctx.font = "15px 'Sora', sans-serif";
   ctx.fillStyle = BRAND.textMid;
-  ctx.fillText("Every contribution makes an impact ✨", IMG_X, FOOTER_Y + 44);
-  
-  // Modern general tagline
-  ctx.font = "500 13px 'Sora', sans-serif";
+  ctx.fillText("Every contribution makes an impact ✨", IMG_X, FOOTER_Y + 40);
+
+  ctx.font = "500 12px 'Sora', sans-serif";
   ctx.fillStyle = BRAND.textLight;
-  ctx.fillText("Powered by ib4me — Sierra Leone's Premier Crowdfunding Platform", IMG_X, FOOTER_Y + 110);
+  ctx.fillText("Powered by ib4me — Sierra Leone's Premier Crowdfunding Platform", IMG_X, FOOTER_Y + 108);
   ctx.restore();
 
-  // Draw QR Code
+  // QR Code
   const QR_SIZE = 140;
   const QR_X = CARD_M + CW - 40 - QR_SIZE;
-  const QR_Y = FOOTER_Y - 10;
-  
-  // Backing for QR Code
+  const QR_Y = FOOTER_Y - 14;
+
   ctx.save();
   ctx.fillStyle = BRAND.white;
-  ctx.shadowColor = "rgba(0,0,0,0.05)";
+  ctx.shadowColor = "rgba(0,0,0,0.06)";
   ctx.shadowBlur = 10;
   ctx.shadowOffsetY = 4;
   roundRect(ctx, QR_X - 10, QR_Y - 10, QR_SIZE + 20, QR_SIZE + 20, 16);
@@ -425,7 +470,6 @@ export async function generateCampaignImage(
   ctx.restore();
 
   const qrCodeUrl = `${baseUrl}/campaigns/${campaign.slug}/donate`;
-  // Using pure white background and funGreen dots for a modern aesthetic
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${QR_SIZE}x${QR_SIZE}&data=${encodeURIComponent(qrCodeUrl)}&format=png&bgcolor=ffffff&color=00712D&qzone=1`;
 
   const qrImg = await loadImage(qrImageUrl);
@@ -441,12 +485,12 @@ export async function generateCampaignImage(
         else reject(new Error("Failed to generate image"));
       },
       "image/png",
-      1.0 // Maximum quality for beautiful results
+      1.0
     );
   });
 }
 
-/** Legacy signature alias - simply forwards to the new modern implementation */
+/** Legacy signature alias */
 export const generateCampaignImageLegacy = generateCampaignImage;
 
 export function downloadImage(blob: Blob, filename: string): void {

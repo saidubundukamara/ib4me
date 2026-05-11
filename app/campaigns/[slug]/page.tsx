@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import mongoose from "mongoose";
-import { Heart, CheckCircle, ChevronRight, Share2 } from "lucide-react";
+import { Heart, CheckCircle, ChevronRight, Share2, Info } from "lucide-react";
 import {
   FaFacebookF,
   FaXTwitter,
@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ShieldAlert } from "lucide-react";
 import { campaignService, mediaAssetService } from "@/services";
 import { CloudinaryService } from "@/lib/cloudinary";
@@ -24,7 +25,7 @@ import {
   campaignUpdateRepository,
   userRepository,
 } from "@/repositories";
-import CampaignTabs, { CampaignUpdateItem } from "./Tabs";
+import CampaignTabs, { type CampaignUpdateItem } from "./Tabs";
 import DonorsTicker, { timeAgo } from "./DonorsTicker";
 import ShareImageButton from "./ShareImageButton";
 
@@ -265,8 +266,31 @@ export default async function CampaignDetailPage({ params }: PageParams) {
   ];
 
   return (
-    <div className="min-h-dvh bg-gradient-to-b from-background to-muted/20 font-Sora">
-      <main className="py-8 md:py-12">
+    <div className="min-h-dvh overflow-x-hidden bg-gradient-to-b from-background to-muted/20 font-Sora pb-20 md:pb-0">
+      {/* Mobile sticky donate bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] text-muted-foreground leading-none mb-0.5">Raised so far</p>
+            <p className="text-sm font-bold text-primary truncate">{formatAmount(amountRaised, currency)} <span className="text-muted-foreground font-normal text-xs">of {formatAmount(goalAmount, currency)}</span></p>
+          </div>
+          <Button asChild className="ml-auto shrink-0 h-10 px-6 font-semibold shadow-md">
+            <Link href={`/campaigns/${campaign.slug}/donate`}>Donate Now</Link>
+          </Button>
+        </div>
+      </div>
+
+      {/* Non-dismissible unverified banner — shown at very top of page */}
+      {!isOwnerVerified && (
+        <div className="w-full bg-amber-500 text-white px-4 py-2.5">
+          <div className="mx-auto max-w-6xl flex items-center gap-2 text-sm font-medium">
+            <ShieldAlert className="h-4 w-4 shrink-0" />
+            <span>This campaign organizer has not been verified. Review carefully before contributing.</span>
+          </div>
+        </div>
+      )}
+
+      <div className="py-8 md:py-12">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
           {/* Breadcrumb */}
           <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -278,7 +302,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
           </nav>
 
           <div className="grid gap-8 lg:grid-cols-12">
-            <section className="animate-fade-up space-y-6 lg:col-span-8">
+            <section className="animate-fade-up min-w-0 space-y-6 lg:col-span-8">
               <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border/40 bg-muted shadow-lg">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -295,28 +319,28 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent" />
               </div>
 
-              {!isOwnerVerified && (
-                <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 rounded-xl">
-                  <ShieldAlert className="h-4 w-4 text-amber-500" />
-                  <AlertDescription className="text-amber-700 dark:text-amber-300 text-sm">
-                    The organizer of this campaign has not completed identity verification. Please exercise caution and review carefully before contributing.
-                  </AlertDescription>
-                </Alert>
-              )}
 
               <Card className="rounded-3xl border border-border/50 bg-card/70 shadow-xl backdrop-blur">
                 <CardContent className="space-y-6 p-6 sm:p-8">
                   <div className="space-y-4">
                     {isCampaignVerified ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                        <CheckCircle className="h-3 w-3" /> Verified Campaign
-                      </span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700 cursor-help">
+                            <CheckCircle className="h-3 w-3" /> Verified Campaign
+                            <Info className="h-3 w-3 opacity-60" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-[240px] text-xs">
+                          ib4me has verified this organizer&apos;s identity and confirmed the campaign&apos;s purpose. <a href="/faqs" className="underline">Learn more</a>
+                        </TooltipContent>
+                      </Tooltip>
                     ) : (
                       <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
                         Campaign
                       </span>
                     )}
-                    <h1 className="text-3xl font-bold leading-tight text-foreground sm:text-4xl">
+                    <h1 className="break-words text-3xl font-bold leading-tight text-foreground sm:text-4xl">
                       {title}
                     </h1>
                     <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
@@ -327,7 +351,11 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                     </div>
                   </div>
 
-                  <CampaignTabs story={campaign.story} updates={updates} comments={[]} />
+                  <CampaignTabs
+                    story={campaign.story}
+                    updates={updates}
+                    campaignId={String(campaign._id)}
+                  />
                 </CardContent>
               </Card>
             </section>
@@ -402,16 +430,22 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                         campaign={{
                           slug: campaign.slug,
                           beneficiary: campaign.beneficiary
-                            ? { name: campaign.beneficiary.name, age: campaign.beneficiary.age }
+                            ? { name: campaign.beneficiary.name ?? undefined, age: campaign.beneficiary.age ?? undefined }
                             : undefined,
                           institution: campaign.institution
-                            ? { name: campaign.institution.name }
+                            ? { name: campaign.institution.name ?? undefined }
                             : undefined,
-                          details: campaign.details,
-                          goal: campaign.goal,
-                          totals: campaign.totals,
-                          story: campaign.story,
-                          urgency: campaign.urgency,
+                          details: campaign.details ?? undefined,
+                          goal: {
+                            currency: campaign.goal?.currency ?? undefined,
+                            amountMinor: campaign.goal?.amountMinor != null ? Number(campaign.goal.amountMinor) : undefined,
+                          },
+                          totals: {
+                            raisedMinor: Number(campaign.totals?.raisedMinor ?? 0),
+                            donationCount: Number(campaign.totals?.donationCount ?? 0),
+                          },
+                          story: campaign.story ?? undefined,
+                          urgency: campaign.urgency ?? undefined,
                           isVerified: isCampaignVerified,
                           imageUrl: heroUrl,
                         }}
@@ -482,7 +516,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
             </aside>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

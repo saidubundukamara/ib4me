@@ -7,7 +7,14 @@ import { campaignService } from "@/services/CampaignService";
 import { donationRepository } from "@/repositories/DonationRepository";
 import Card from "./_components/Card";
 import ProgressBar from "./_components/ProgressBar";
-import { DollarSign, Heart, Users, TrendingUp } from "lucide-react";
+import { DollarSign, Heart, Users, TrendingUp, MoreVertical, Eye, Pencil, Share2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 function formatCurrency(minor: number, currency: string): string {
   const value = minor / 100;
@@ -86,6 +93,13 @@ export default async function UserDashboardPage() {
     ? await donationRepository.listRecentSucceededByCampaignIds(campaignIds, 6)
     : [];
 
+  const campaignTitleMap = new Map(
+    campaigns.map((c) => [
+      String(c._id),
+      c.beneficiary?.name || c.details || c.slug,
+    ])
+  );
+
   return (
     <div className="flex w-full flex-col gap-6">
       {/* Header */}
@@ -155,7 +169,7 @@ export default async function UserDashboardPage() {
         <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 sm:w-14 sm:h-14 bg-chartereuse/10 rounded-full flex items-center justify-center shrink-0">
-              <Users className="w-6 h-6 sm:w-7 sm:h-7 text-chartereuse" aria-hidden />
+              <Users className="w-6 h-6 sm:w-7 sm:h-7 text-chartereuse-dark" aria-hidden />
             </div>
             <div>
               <div className="text-xs sm:text-sm text-muted-foreground">Unique Donors</div>
@@ -224,13 +238,49 @@ export default async function UserDashboardPage() {
             const goalMinor = c.goal?.amountMinor ?? 0;
             const progress = goalMinor ? Math.min(100, Math.round((raised / goalMinor) * 100)) : 0;
             const title = c.beneficiary?.name || c.details || c.slug;
+            const campaignId = String(c._id);
             return (
-              <Card key={String(c._id)} className="p-4 rounded-2xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
+              <Card key={campaignId} className="p-4 rounded-2xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <svg className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6" /></svg>
+                  <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                    <Heart className="w-4 h-4 text-primary" />
                   </div>
-                  <div className="font-medium text-sm truncate" title={title}>{title}</div>
+                  <div className="font-medium text-sm truncate flex-1" title={title}>{title}</div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 rounded-full">
+                        <MoreVertical className="h-4 w-4" />
+                        <span className="sr-only">Campaign actions</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <Link href={`/campaigns/${c.slug}`} className="flex items-center gap-2">
+                          <Eye className="h-4 w-4" /> View Campaign
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={`/dashboard/campaigns/${campaignId}`} className="flex items-center gap-2">
+                          <Pencil className="h-4 w-4" /> Edit
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={`/dashboard/donations?campaign=${campaignId}`} className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4" /> View Donations
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <a
+                          href={`https://wa.me/?text=${encodeURIComponent(`Support this campaign: ${process.env.NEXT_PUBLIC_SITE_URL || "https://ib4me.org"}/campaigns/${c.slug}`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2"
+                        >
+                          <Share2 className="h-4 w-4" /> Share
+                        </a>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 <ProgressBar value={progress} className="w-full mb-2" />
                 <div className="text-xs text-muted-foreground flex items-center justify-between">
@@ -269,17 +319,31 @@ export default async function UserDashboardPage() {
               </Link>
             </div>
           ) : (
-            recentDonations.map((d) => (
-              <div key={String(d._id)} className="flex justify-between items-center p-4 bg-muted/30 rounded-2xl">
-                <div className="flex-1">
-                  <h3 className="font-bold text-foreground text-sm">Donation to your campaign</h3>
-                  <p className="text-sm text-muted-foreground">{new Date(d.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</p>
+            recentDonations.map((d) => {
+              const donorName = d.isAnonymous ? "Anonymous" : (d.donorSnapshot?.name || "A supporter");
+              const campaignTitle = campaignTitleMap.get(String(d.campaignId)) || "your campaign";
+              return (
+                <div key={String(d._id)} className="flex justify-between items-center p-4 bg-muted/30 rounded-2xl gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-blaze-orange/10 flex items-center justify-center shrink-0">
+                      <Heart className="w-4 h-4 text-blaze-orange" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground text-sm truncate">{donorName}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        donated to <span className="text-foreground font-medium">{campaignTitle}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(d.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-base font-bold text-blaze-orange">{formatCurrency(d.amount.minor, d.amount.currency)}</div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-xl font-bold text-blaze-orange">{formatCurrency(d.amount.minor, d.amount.currency)}</div>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </Card>

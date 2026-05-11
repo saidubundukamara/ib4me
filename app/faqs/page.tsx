@@ -219,8 +219,8 @@ export default function FAQsPage() {
 
     return (
         <>
-        <div className="min-h-screen bg-background font-Sora">
-            <main>
+        <div className="bg-background font-Sora">
+            <div>
                 {/* Hero Section */}
                 <section className="relative py-12 sm:py-16 md:py-24 lg:py-28 px-4 sm:px-6 lg:px-8 bg-fun-green">
                     <div className="mx-auto max-w-4xl text-center">
@@ -327,7 +327,7 @@ export default function FAQsPage() {
                         </a>
                     </div>
                 </section>
-            </main>
+            </div>
         </div>
         <BackToTop />
         </>

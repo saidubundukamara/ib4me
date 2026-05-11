@@ -108,7 +108,7 @@ const HowItWorks = () => {
 
   return (
     <div className="font-Sora">
-      <main>
+      <div>
         {/* ── Hero ── */}
         <section className="relative overflow-hidden bg-fun-green px-4 pb-20 pt-14 sm:px-6 sm:pb-24 sm:pt-20 lg:px-8 lg:pb-28 lg:pt-28">
           <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/5 sm:-right-24 sm:-top-24 sm:h-72 sm:w-72" />
@@ -256,7 +256,7 @@ const HowItWorks = () => {
                     className="group relative rounded-2xl bg-background p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md sm:rounded-3xl sm:p-6"
                   >
                     {/* Faded number */}
-                    <span className="absolute right-4 top-3 text-4xl font-black text-muted transition-colors group-hover:text-fun-green/10 sm:text-5xl">
+                    <span className="absolute right-3 top-2 text-3xl font-black text-muted transition-colors group-hover:text-fun-green/10 sm:right-4 sm:top-3 sm:text-4xl">
                       {item.number}
                     </span>
 
@@ -343,7 +343,7 @@ const HowItWorks = () => {
 
         {/* ── CTA card ── */}
         <section className="px-4 py-14 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-          <div className="mx-auto max-w-3xl rounded-3xl border border-border bg-white px-8 py-12 text-center shadow-[0_2px_8px_rgba(0,0,0,0.06),_0_20px_60px_-5px_rgba(0,0,0,0.18)] sm:px-12 sm:py-16">
+          <div className="mx-auto max-w-3xl rounded-3xl border border-border bg-white px-5 py-10 text-center shadow-[0_2px_8px_rgba(0,0,0,0.06),_0_20px_60px_-5px_rgba(0,0,0,0.18)] sm:px-10 sm:py-12 md:px-12 md:py-16">
             <div className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 sm:h-20 sm:w-20">
               <Heart className="h-8 w-8 text-primary sm:h-10 sm:w-10" aria-hidden="true" />
             </div>
@@ -378,7 +378,7 @@ const HowItWorks = () => {
             </div>
           </div>
         </section>
-      </main>
+      </div>
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { SessionProvider } from "next-auth/react";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/lib/auth-provider";
 import { SettingsProvider } from "@/lib/settings-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   CookieConsentProvider,
   CookieConsentBanner,
@@ -15,10 +16,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <AuthProvider>
         <SettingsProvider>
           <CookieConsentProvider>
-            {children}
-            <CookieConsentBanner />
-            <AnalyticsScripts />
-            <Toaster richColors position="top-center" />
+            <TooltipProvider>
+              {children}
+              <CookieConsentBanner />
+              <AnalyticsScripts />
+              <Toaster richColors position="top-center" />
+            </TooltipProvider>
           </CookieConsentProvider>
         </SettingsProvider>
       </AuthProvider>

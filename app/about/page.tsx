@@ -91,7 +91,7 @@ const About = () => {
 
     return (
         <div className="font-Sora">
-            <main>
+            <div>
                 {/* Hero Section */}
                 <section className="relative overflow-hidden bg-fun-green py-14 px-4 sm:py-18 sm:px-6 lg:py-24 lg:px-8">
                     <div className="pointer-events-none absolute inset-0">
@@ -332,7 +332,7 @@ const About = () => {
                         </div>
                     </div>
                 </section>
-            </main>
+            </div>
         </div>
     );
 };

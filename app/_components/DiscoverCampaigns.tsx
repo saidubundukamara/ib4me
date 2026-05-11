@@ -200,13 +200,39 @@ export default function DiscoverCampaigns() {
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="animate-pulse rounded-3xl border-0 bg-card p-0 overflow-hidden"
+                className="animate-pulse rounded-3xl bg-card overflow-hidden shadow-sm"
               >
-                <div className="h-56 bg-muted" />
-                <div className="space-y-3 p-6">
-                  <div className="h-5 w-3/4 rounded bg-muted" />
-                  <div className="h-3 w-full rounded bg-muted" />
-                  <div className="h-3 w-1/2 rounded bg-muted" />
+                {/* Image area */}
+                <div className="aspect-video bg-muted" />
+                <div className="p-6 space-y-4">
+                  {/* Title */}
+                  <div className="space-y-2">
+                    <div className="h-5 w-4/5 rounded-lg bg-muted" />
+                    <div className="h-4 w-3/5 rounded-lg bg-muted" />
+                  </div>
+                  {/* Progress bar */}
+                  <div className="space-y-2">
+                    <div className="h-3 w-full rounded-full bg-muted" />
+                    <div className="flex justify-between">
+                      <div className="h-4 w-24 rounded bg-muted" />
+                      <div className="h-4 w-10 rounded bg-muted" />
+                    </div>
+                  </div>
+                  {/* Donor row */}
+                  <div className="pt-4 border-t border-muted flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex -space-x-1">
+                        {[0,1,2].map(j => <div key={j} className="h-5 w-5 rounded-full bg-muted" />)}
+                      </div>
+                      <div className="h-3 w-16 rounded bg-muted" />
+                    </div>
+                    <div className="h-3 w-14 rounded bg-muted" />
+                  </div>
+                  {/* Button row */}
+                  <div className="flex gap-3 pt-2">
+                    <div className="h-9 flex-1 rounded-xl bg-muted" />
+                    <div className="h-9 w-9 rounded-full bg-muted" />
+                  </div>
                 </div>
               </div>
             ))}
