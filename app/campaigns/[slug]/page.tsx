@@ -1,9 +1,8 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import mongoose from "mongoose";
-import { Heart, Info, CheckCircle, ChevronRight, Share2 } from "lucide-react";
+import { Heart, CheckCircle, ChevronRight, Share2 } from "lucide-react";
 import {
   FaFacebookF,
   FaXTwitter,
@@ -27,6 +26,27 @@ import {
 } from "@/repositories";
 import CampaignTabs, { CampaignUpdateItem } from "./Tabs";
 import DonorsTicker, { timeAgo } from "./DonorsTicker";
+import ShareImageButton from "./ShareImageButton";
+
+function buildResponsiveHero(key: string) {
+  const widths = [320, 480, 640, 768, 1024, 1280];
+  const base = {
+    crop: "fill" as const,
+    gravity: "auto",
+    aspect_ratio: "16:9",
+    fetch_format: "auto",
+    quality: "auto",
+  };
+  const src = CloudinaryService.generateTransformationUrl(key, { ...base, width: 768 });
+  const srcSet = widths
+    .map(
+      (w) =>
+        `${CloudinaryService.generateTransformationUrl(key, { ...base, width: w })} ${w}w`,
+    )
+    .join(", ");
+  const sizes = "(min-width: 1024px) 66vw, 100vw";
+  return { src, srcSet, sizes };
+}
 
 type PageParams = { params: Promise<{ slug: string }> };
 
@@ -40,8 +60,8 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
 
   // Get beneficiary photo URL if available
   let imageUrl = 'https://ib4me.org/assets/Hero.png';
-  if (campaign.patient?.photoAssetId) {
-    const assets = await mediaAssetService.listByIds([campaign.patient.photoAssetId as mongoose.Types.ObjectId]);
+  if (campaign.beneficiary?.photoAssetId) {
+    const assets = await mediaAssetService.listByIds([campaign.beneficiary.photoAssetId as mongoose.Types.ObjectId]);
     const asset = assets[0];
     if (asset?.storage?.key) {
       imageUrl = CloudinaryService.generateTransformationUrl(asset.storage.key, {
@@ -57,13 +77,13 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     }
   }
 
-  const patientName = campaign.patient?.name || 'a beneficiary';
+  const beneficiaryName = campaign.beneficiary?.name || 'a beneficiary';
   const goalAmount = campaign.goal?.amountMinor ? (campaign.goal.amountMinor / 100).toLocaleString() : '0';
   const raisedAmount = campaign.totals?.raisedMinor ? (campaign.totals.raisedMinor / 100).toLocaleString() : '0';
   const currency = campaign.goal?.currency || 'SLE';
 
-  const title = `Help ${patientName} - Fundraiser on ib4me`;
-  const description = `Help ${patientName} raise ${currency} ${goalAmount} for ${campaign.diagnosis || 'their cause'}. ${currency} ${raisedAmount} raised so far.`;
+  const title = `Help ${beneficiaryName} - Fundraiser on ib4me`;
+  const description = `Help ${beneficiaryName} raise ${currency} ${goalAmount} for ${campaign.details || 'their cause'}. ${currency} ${raisedAmount} raised so far.`;
   const pageUrl = `https://ib4me.org/campaigns/${slug}`;
 
   return {
@@ -73,7 +93,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
       title,
       description,
       url: pageUrl,
-      images: [{ url: imageUrl, width: 1200, height: 630, alt: patientName }],
+      images: [{ url: imageUrl, width: 1200, height: 630, alt: beneficiaryName }],
       type: 'website',
       siteName: 'ib4me',
     },
@@ -116,12 +136,12 @@ export default async function CampaignDetailPage({ params }: PageParams) {
   const progress =
     goalAmount > 0 ? Math.min(100, Math.round((amountRaised / goalAmount) * 100)) : 0;
 
-  const title = campaign.patient?.name || campaign.diagnosis || campaign.slug;
+  const title = campaign.beneficiary?.name || campaign.details || campaign.slug;
 
   // Collect asset IDs: beneficiary photo (priority) and first document image (fallback)
   const assetIds: mongoose.Types.ObjectId[] = [];
-  if (campaign.patient?.photoAssetId) {
-    assetIds.push(campaign.patient.photoAssetId as mongoose.Types.ObjectId);
+  if (campaign.beneficiary?.photoAssetId) {
+    assetIds.push(campaign.beneficiary.photoAssetId as mongoose.Types.ObjectId);
   }
   const firstImageDoc = (campaign.documents || []).find((d) =>
     d.type?.startsWith("image/"),
@@ -132,25 +152,25 @@ export default async function CampaignDetailPage({ params }: PageParams) {
 
   // Fetch assets in batch
   let heroUrl = "/assets/Hero.png";
+  let heroSrcSet: string | undefined;
+  let heroSizes: string | undefined;
   if (assetIds.length > 0) {
     const assets = await mediaAssetService.listByIds(assetIds);
     const assetMap = new Map(assets.map((a) => [String(a._id), a]));
 
     let resolvedUrl: string | null = null;
-    if (campaign.patient?.photoAssetId) {
-      const photoAsset = assetMap.get(String(campaign.patient.photoAssetId));
+    if (campaign.beneficiary?.photoAssetId) {
+      const photoAsset = assetMap.get(String(campaign.beneficiary.photoAssetId));
       if (photoAsset) {
         const key = photoAsset.storage?.key;
-        resolvedUrl = key
-          ? CloudinaryService.generateTransformationUrl(key, {
-              width: 1280,
-              crop: "fill",
-              gravity: "auto",
-              aspect_ratio: "16:9",
-              fetch_format: "auto",
-              quality: "auto",
-            })
-          : photoAsset.url || null;
+        if (key) {
+          const responsive = buildResponsiveHero(key);
+          resolvedUrl = responsive.src;
+          heroSrcSet = responsive.srcSet;
+          heroSizes = responsive.sizes;
+        } else {
+          resolvedUrl = photoAsset.url || null;
+        }
       }
     }
 
@@ -158,16 +178,14 @@ export default async function CampaignDetailPage({ params }: PageParams) {
       const docAsset = assetMap.get(String(firstImageDoc.assetId));
       if (docAsset) {
         const key = docAsset.storage?.key;
-        resolvedUrl = key
-          ? CloudinaryService.generateTransformationUrl(key, {
-              width: 1280,
-              crop: "fill",
-              gravity: "auto",
-              aspect_ratio: "16:9",
-              fetch_format: "auto",
-              quality: "auto",
-            })
-          : docAsset.url || null;
+        if (key) {
+          const responsive = buildResponsiveHero(key);
+          resolvedUrl = responsive.src;
+          heroSrcSet = responsive.srcSet;
+          heroSizes = responsive.sizes;
+        } else {
+          resolvedUrl = docAsset.url || null;
+        }
       }
     }
 
@@ -262,21 +280,26 @@ export default async function CampaignDetailPage({ params }: PageParams) {
           <div className="grid gap-8 lg:grid-cols-12">
             <section className="animate-fade-up space-y-6 lg:col-span-8">
               <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border/40 bg-muted shadow-lg">
-                <Image
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={heroUrl}
+                  srcSet={heroSrcSet}
+                  sizes={heroSizes}
                   alt={title}
                   width={1280}
                   height={720}
                   className="size-full object-cover"
+                  loading="eager"
+                  decoding="async"
                 />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent" />
               </div>
 
-              {!isCampaignVerified && (
-                <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 rounded-xl">
-                  <Info className="h-4 w-4 text-blue-500" />
-                  <AlertDescription className="text-blue-700 dark:text-blue-300 text-sm">
-                    This campaign is pending verification. Donations are still accepted, but please review carefully before contributing.
+              {!isOwnerVerified && (
+                <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 rounded-xl">
+                  <ShieldAlert className="h-4 w-4 text-amber-500" />
+                  <AlertDescription className="text-amber-700 dark:text-amber-300 text-sm">
+                    The organizer of this campaign has not completed identity verification. Please exercise caution and review carefully before contributing.
                   </AlertDescription>
                 </Alert>
               )}
@@ -333,29 +356,22 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                       </div>
                     </div>
 
-                    {isOwnerVerified ? (
+                    <div className="space-y-3">
                       <Button
                         asChild
                         className="h-11 w-full text-base font-semibold shadow-lg hover:shadow-xl"
                       >
                         <Link href={`/campaigns/${campaign.slug}/donate`}>Donate Now</Link>
                       </Button>
-                    ) : (
-                      <div className="space-y-3">
-                        <Button
-                          disabled
-                          className="h-11 w-full text-base font-semibold opacity-60"
-                        >
-                          Donations Paused
-                        </Button>
+                      {!isOwnerVerified && (
                         <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 rounded-xl">
                           <ShieldAlert className="h-4 w-4 text-amber-500" />
                           <AlertDescription className="text-amber-700 dark:text-amber-300 text-xs">
-                            Donations are paused while the organizer completes identity verification.
+                            This organizer has not verified their identity. Donate at your own discretion.
                           </AlertDescription>
                         </Alert>
-                      </div>
-                    )}
+                      )}
+                    </div>
 
                     <div>
                       <h3 className="flex items-center justify-center gap-2 text-sm font-semibold text-foreground">
@@ -382,6 +398,24 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                           </Button>
                         ))}
                       </div>
+                      <ShareImageButton
+                        campaign={{
+                          slug: campaign.slug,
+                          beneficiary: campaign.beneficiary
+                            ? { name: campaign.beneficiary.name, age: campaign.beneficiary.age }
+                            : undefined,
+                          institution: campaign.institution
+                            ? { name: campaign.institution.name }
+                            : undefined,
+                          details: campaign.details,
+                          goal: campaign.goal,
+                          totals: campaign.totals,
+                          story: campaign.story,
+                          urgency: campaign.urgency,
+                          isVerified: isCampaignVerified,
+                          imageUrl: heroUrl,
+                        }}
+                      />
                     </div>
 
                     <Separator />
@@ -404,9 +438,9 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                               <Badge
                                 variant="outline"
                                 className="text-[10px] bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800"
-                                title="This organizer's identity verification is pending"
+                                title="This organizer has not completed identity verification"
                               >
-                                Pending Verification
+                                Unverified Organizer
                               </Badge>
                             )}
                           </div>

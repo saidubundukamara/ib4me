@@ -36,7 +36,7 @@ export default async function UserDonationsPage() {
 
   const campaignIdToMeta = new Map<string, { title: string; slug?: string }>();
   for (const c of userCampaigns) {
-    const title = c.patient?.name || c.diagnosis || c.slug;
+    const title = c.beneficiary?.name || c.details || c.slug;
     campaignIdToMeta.set(String(c._id), { title, slug: c.slug });
   }
 
@@ -110,7 +110,7 @@ export default async function UserDonationsPage() {
     { title: string; slug?: string }
   >();
   for (const c of madeCampaigns) {
-    const title = c.patient?.name || c.diagnosis || c.slug;
+    const title = c.beneficiary?.name || c.details || c.slug;
     madeCampaignIdToMeta.set(String(c._id), { title, slug: c.slug });
   }
 

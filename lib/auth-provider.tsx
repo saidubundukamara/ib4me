@@ -26,16 +26,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Check if we're on the client side
     if (typeof window !== "undefined") {
-      // Clean up legacy localStorage tokens (security improvement)
-      // We now rely solely on httpOnly cookies for authentication
       localStorage.removeItem("auth_token")
 
-      // Always verify session with server
-      // The httpOnly cookie is automatically sent with the request
-      // We can't read httpOnly cookies via JavaScript (that's the security point)
-      verifyAdminSession()
+      // Only verify admin session on admin routes
+      const isAdminRoute =
+        window.location.pathname.startsWith("/s/admin") ||
+        window.location.pathname.startsWith("/admin")
+
+      if (isAdminRoute) {
+        verifyAdminSession()
+      } else {
+        setIsLoading(false)
+      }
     } else {
       setIsLoading(false)
     }

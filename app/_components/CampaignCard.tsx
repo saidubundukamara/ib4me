@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Share2, CheckCircle } from "lucide-react";
+import { Share2, CheckCircle, ShieldAlert } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
 import Link from "next/link";
@@ -13,6 +13,7 @@ interface CampaignCardProps {
   goal: number;
   donors: number;
   verified?: boolean;
+  ownerVerified?: boolean;
   urgent?: boolean;
   urgency?: "low" | "medium" | "high";
   daysLeft?: number;
@@ -30,6 +31,7 @@ const CampaignCard = ({
   goal,
   donors,
   verified = false,
+  ownerVerified = true,
   urgent = false,
   urgency,
   daysLeft,
@@ -87,11 +89,16 @@ const CampaignCard = ({
             Ending Soon
           </div>
         ) : null}
-        {verified && (
+        {verified && ownerVerified ? (
           <div className="absolute top-3 right-3 bg-fun-green backdrop-blur-sm text-white p-1.5 rounded-full shadow-lg">
             <CheckCircle className="w-4 h-4" />
           </div>
-        )}
+        ) : !ownerVerified ? (
+          <div className="absolute top-3 right-3 bg-amber-500 backdrop-blur-sm text-white px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-lg">
+            <ShieldAlert className="w-3 h-3" />
+            Unverified
+          </div>
+        ) : null}
         {/* Gradient overlay */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/30 to-transparent" />
       </div>

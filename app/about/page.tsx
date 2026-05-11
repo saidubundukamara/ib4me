@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, Users, Shield, TrendingUp, Target, CheckCircle, ArrowRight } from "lucide-react";
-import { stats } from "../_components/stats";
+import { usePlatformStats, getStatItems, StatItem } from "../_components/LiveStatsGrid";
 import ib4meteam from "@/public/assets/team/ib4me_team.jpeg";
 import Melvin from "@/public/assets/team/melvin.jpg";
 import Saidu from "@/public/assets/team/Saidu.jpg";
@@ -15,6 +15,9 @@ import Namina from "@/public/assets/team/namina.jpg";
 import Rugi from "@/public/assets/team/Rugi.jpeg";   
 
 const About = () => {
+    const platformData = usePlatformStats();
+    const stats = getStatItems(platformData);
+
     const values = [
         {
             icon: Heart,
@@ -127,7 +130,7 @@ const About = () => {
                                 </h2>
 
                                 <p className="mb-4 text-base leading-relaxed text-muted-foreground sm:mb-6 sm:text-lg">
-                                    Founded in 2024, ib4me was born from a simple belief: no one should face a crisis alone. We&#39;ve created a platform where communities come together to support those in need, from medical emergencies and education to community development.
+                                    Founded in 2024, ib4me was born from a simple belief: no one should face a crisis alone. We&#39;ve created a platform where communities come together to support those in need, from education and healthcare to personal emergencies and community development.
                                 </p>
 
                                 <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
@@ -146,8 +149,8 @@ const About = () => {
                                     className="h-auto w-full rounded-3xl object-cover shadow-2xl"
                                 />
                                 <div className="absolute -bottom-6 left-1/2 w-max -translate-x-1/2 rounded-2xl bg-accent px-6 py-3 text-accent-foreground shadow-xl sm:left-auto sm:translate-x-0 sm:px-8 sm:py-4">
-                                    <div className="text-2xl font-bold leading-none sm:text-3xl">{stats.find(s => s.label === "Lives Impacted")?.value}</div>
-                                    <div className="text-xs sm:text-sm">Lives Changed</div>
+                                    <div className="text-2xl font-bold leading-none sm:text-3xl">{platformData ? stats.find(s => s.label === "Donations Made")?.value.toLocaleString() : "—"}</div>
+                                    <div className="text-xs sm:text-sm">Donations Made</div>
                                 </div>
                             </div>
                         </div>
@@ -285,28 +288,14 @@ const About = () => {
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4 lg:gap-8">
-                            {stats.map((stat, index) => {
-                                const Icon = stat.icon;
-                                return (
-                                    <Card
-                                        key={index}
-                                        className="h-full rounded-3xl border-0 p-6 text-center shadow-[var(--shadow-soft)] transition-all hover:shadow-[var(--shadow-lift)] sm:p-8"
-                                    >
-                                        <div
-                                            className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full sm:mb-4 sm:h-14 sm:w-14"
-                                            style={{ backgroundColor: `${stat.color}20` }}
-                                        >
-                                            <Icon className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: stat.color }} />
-                                        </div>
-                                        <div className="mb-1.5 text-2xl font-bold text-foreground sm:mb-2 sm:text-3xl lg:text-4xl" style={{ color: stat.color }}>
-                                            {stat.value}
-                                        </div>
-                                        <div className="text-xs text-muted-foreground sm:text-sm">
-                                            {stat.label}
-                                        </div>
-                                    </Card>
-                                );
-                            })}
+                            {stats.map((stat, index) => (
+                                <Card
+                                    key={index}
+                                    className="h-full rounded-3xl border-0 p-6 text-center shadow-[var(--shadow-soft)] transition-all hover:shadow-[var(--shadow-lift)] sm:p-8"
+                                >
+                                    <StatItem stat={stat} loaded={!!platformData} />
+                                </Card>
+                            ))}
                         </div>
                     </div>
                 </section>

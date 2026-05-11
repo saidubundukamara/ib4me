@@ -52,16 +52,15 @@ type CampaignResponse = {
   id: string;
   slug: string;
   urgency: string;
-  diagnosis?: string;
-  patient?: { name?: string; age?: number; photoUrl?: string | null };
-  hospital?: { name?: string };
+  details?: string;
+  beneficiary?: { name?: string; age?: number; photoUrl?: string | null };
+  institution?: { name?: string };
   goal?: { currency?: string; amountMinor?: number };
   story?: string;
   status: string;
   totals?: { raisedMinor?: number; donationCount?: number };
   verification?: {
     status: "pending" | "under_review" | "approved" | "rejected";
-    hospitalVerified?: boolean;
   };
   financial_account?: { uvan?: string };
   imageUrl?: string | null;
@@ -254,7 +253,7 @@ export default function UserCampaignDetailPage() {
     setShareLoading(true);
     try {
       const sharePayload: ShareData = {
-        title: campaign.patient?.name || campaign.slug,
+        title: campaign.beneficiary?.name || campaign.slug,
         text: campaign.story ? campaign.story.slice(0, 140) : "Support this campaign",
         url,
       };
@@ -309,16 +308,16 @@ export default function UserCampaignDetailPage() {
 
       const campaignData: CampaignImageData = {
         slug: campaign.slug,
-        patient: campaign.patient,
-        hospital: campaign.hospital,
-        diagnosis: campaign.diagnosis,
+        beneficiary: campaign.beneficiary,
+        institution: campaign.institution,
+        details: campaign.details,
         goal: campaign.goal,
         totals: campaign.totals,
         story: campaign.story,
         urgency: campaign.urgency,
         financial_account: campaign.financial_account,
         isVerified: campaign.verification?.status === "approved",
-        imageUrl: campaign.imageUrl ?? campaign.patient?.photoUrl ?? undefined,
+        imageUrl: campaign.imageUrl ?? campaign.beneficiary?.photoUrl ?? undefined,
       };
 
       const baseUrl = window.location.origin;
@@ -465,7 +464,7 @@ export default function UserCampaignDetailPage() {
             </div>
             <div className="space-y-3">
               <h1 className="text-balance text-2xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
-                {campaign.patient?.name ?? campaign.slug}
+                {campaign.beneficiary?.name ?? campaign.slug}
               </h1>
               <p className="text-pretty text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 Manage every detail of your campaign, update stories, review progress, and keep supporters engaged.
@@ -560,27 +559,27 @@ export default function UserCampaignDetailPage() {
                 <h3 className="mb-3 text-base sm:text-lg font-semibold">Campaign Details</h3>
                 <dl className="grid grid-cols-1 gap-3 text-xs sm:text-sm sm:grid-cols-2">
                   <div className="min-w-0">
-                    <dt className="text-blaze-orange">Patient</dt>
+                    <dt className="text-blaze-orange">Beneficiary</dt>
                     <dd className="font-medium text-sm sm:text-xs text-foreground break-words">
-                      {campaign.patient?.name || "-"}
+                      {campaign.beneficiary?.name || "-"}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-blaze-orange">Age</dt>
                     <dd className="font-medium text-foreground text-sm sm:text-xs break-words">
-                      {campaign.patient?.age ?? "-"}
+                      {campaign.beneficiary?.age ?? "-"}
                     </dd>
                   </div>
                   <div className="min-w-0">
-                    <dt className="text-blaze-orange">Hospital</dt>
+                    <dt className="text-blaze-orange">Institution/Organization</dt>
                     <dd className="font-medium text-foreground break-words sm:text-xs text-sm">
-                      {campaign.hospital?.name || "-"}
+                      {campaign.institution?.name || "-"}
                     </dd>
                   </div>
                   <div className="min-w-0">
-                    <dt className="text-blaze-orange">Diagnosis</dt>
+                    <dt className="text-blaze-orange">Details</dt>
                     <dd className="font-medium text-foreground text-sm sm:text-xs break-words">
-                      {campaign.diagnosis || "-"}
+                      {campaign.details || "-"}
                     </dd>
                   </div>
                   <div>
@@ -705,7 +704,7 @@ export default function UserCampaignDetailPage() {
             <div className="mb-2 sm:mb-4 space-y-1 sm:space-y-2">
               <h2 className="text-lg sm:text-xl font-semibold text-foreground">Supporting Documents</h2>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                Upload medical records, photos, or proof for trust.
+                Upload records, photos, or supporting documents for trust.
               </p>
             </div>
             <DocumentUpload value={documents} onChange={setDocuments} />

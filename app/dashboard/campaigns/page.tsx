@@ -47,11 +47,10 @@ type CampaignItem = {
   description?: string;
   raised: number;
   donors: number;
-  typeOfEmergency?: string;
-  diagnosis?: string;
+  details?: string;
   story?: string;
-  patientName?: string;
-  hospitalName?: string;
+  beneficiaryName?: string;
+  institutionName?: string;
   category?: string;
 };
 
@@ -117,12 +116,11 @@ interface ApiCampaign {
   story?: string;
   raised?: number | string | null;
   donors?: number | string | null;
-  typeOfEmergency?: string;
-  diagnosis?: string;
-  patient?: {
+  details?: string;
+  beneficiary?: {
     name?: string;
   };
-  hospital?: {
+  institution?: {
     name?: string;
   };
   category?: string;
@@ -145,11 +143,10 @@ const normalizeFromApi = (campaign: ApiCampaign): CampaignItem => {
     description: campaign?.description ?? campaign?.story ?? "",
     raised: raisedMinor > 0 ? raisedMinor / 100 : Number(campaign?.raised ?? 0),
     donors: Number(campaign?.totals?.donationCount ?? campaign?.donors ?? 0),
-    typeOfEmergency: campaign?.typeOfEmergency,
-    diagnosis: campaign?.diagnosis,
+    details: campaign?.details,
     story: campaign?.story,
-    patientName: campaign?.patient?.name,
-    hospitalName: campaign?.hospital?.name,
+    beneficiaryName: campaign?.beneficiary?.name,
+    institutionName: campaign?.institution?.name,
     category: campaign?.category,
   };
 };
@@ -178,11 +175,10 @@ const fromFormResult = (
     description: form.description || form.story || previous?.description || "",
     raised: previous?.raised ?? 0,
     donors: previous?.donors ?? 0,
-    typeOfEmergency: form.typeOfEmergency || previous?.typeOfEmergency,
-    diagnosis: form.diagnosis || previous?.diagnosis,
+    details: form.details || previous?.details,
     story: form.story || previous?.story,
-    patientName: form.patient.name || previous?.patientName,
-    hospitalName: form.hospital.name || previous?.hospitalName,
+    beneficiaryName: form.beneficiary.name || previous?.beneficiaryName,
+    institutionName: form.institution.name || previous?.institutionName,
     category: form.category || previous?.category,
   };
 };
@@ -286,22 +282,17 @@ export default function UserCampaignsPage() {
       const formData = new FormData();
       const slug = generateSlug(formValues.title || `campaign-${Date.now()}`);
       formData.set("slug", slug);
-      if (formValues.diagnosis) formData.set("diagnosis", formValues.diagnosis);
-      if (formValues.typeOfEmergency)
-        formData.set("typeOfEmergency", formValues.typeOfEmergency);
+      if (formValues.details) formData.set("details", formValues.details);
       formData.set("urgency", formValues.urgency);
-      formData.set("patient.name", formValues.patient.name);
-      if (formValues.patient.age !== undefined) {
-        formData.set("patient.age", String(formValues.patient.age));
+      formData.set("beneficiary.name", formValues.beneficiary.name);
+      if (formValues.beneficiary.age !== undefined) {
+        formData.set("beneficiary.age", String(formValues.beneficiary.age));
       }
-      if (formValues.patient.photo) {
-        formData.set("patientPhoto", formValues.patient.photo);
+      if (formValues.beneficiary.photo) {
+        formData.set("beneficiaryPhoto", formValues.beneficiary.photo);
       }
-      if (formValues.hospital.hospitalId) {
-        formData.set("hospital.hospitalId", formValues.hospital.hospitalId);
-      }
-      if (formValues.hospital.name) {
-        formData.set("hospital.name", formValues.hospital.name);
+      if (formValues.institution.name) {
+        formData.set("institution.name", formValues.institution.name);
       }
       if (formValues.description) {
         formData.set("description", formValues.description);
@@ -381,19 +372,15 @@ export default function UserCampaignsPage() {
       const formData = new FormData();
 
       // Basic text fields
-      if (values.diagnosis) formData.set("diagnosis", values.diagnosis);
-      if (values.typeOfEmergency) formData.set("typeOfEmergency", values.typeOfEmergency);
+      if (values.details) formData.set("details", values.details);
       formData.set("urgency", values.urgency);
       if (values.category) formData.set("category", values.category);
-      formData.set("patient.name", values.patient.name);
-      if (values.patient.age !== undefined) {
-        formData.set("patient.age", String(values.patient.age));
+      formData.set("beneficiary.name", values.beneficiary.name);
+      if (values.beneficiary.age !== undefined) {
+        formData.set("beneficiary.age", String(values.beneficiary.age));
       }
-      if (values.hospital.hospitalId) {
-        formData.set("hospital.hospitalId", values.hospital.hospitalId);
-      }
-      if (values.hospital.name) {
-        formData.set("hospital.name", values.hospital.name);
+      if (values.institution.name) {
+        formData.set("institution.name", values.institution.name);
       }
 
       // Goal
@@ -404,12 +391,12 @@ export default function UserCampaignsPage() {
       // Story
       if (values.story) formData.set("story", values.story);
 
-      // Patient photo
-      if (values.patient.photo) {
-        formData.set("patientPhoto", values.patient.photo);
+      // Beneficiary photo
+      if (values.beneficiary.photo) {
+        formData.set("beneficiaryPhoto", values.beneficiary.photo);
       }
-      if (values.patient.removePhoto) {
-        formData.set("removePatientPhoto", "true");
+      if (values.beneficiary.removePhoto) {
+        formData.set("removeBeneficiaryPhoto", "true");
       }
 
       // New documents
@@ -471,13 +458,13 @@ export default function UserCampaignsPage() {
         const data = await res.json();
         const goalAmountMinor = Number(data?.goal?.amountMinor ?? 0);
 
-        // Build existing patient photo if available
-        let existingPatientPhoto;
-        if (data?.patient?.photoUrl && data?.patient?.photoAssetId) {
-          existingPatientPhoto = {
-            id: "existing-patient-photo",
-            previewUrl: data.patient.photoUrl,
-            existingAssetId: data.patient.photoAssetId,
+        // Build existing beneficiary photo if available
+        let existingBeneficiaryPhoto;
+        if (data?.beneficiary?.photoUrl && data?.beneficiary?.photoAssetId) {
+          existingBeneficiaryPhoto = {
+            id: "existing-beneficiary-photo",
+            previewUrl: data.beneficiary.photoUrl,
+            existingAssetId: data.beneficiary.photoAssetId,
             isExisting: true,
           };
         }
@@ -496,19 +483,17 @@ export default function UserCampaignsPage() {
 
         const initial: CampaignFormInitialValues = {
           title: campaign.title,
-          typeOfEmergency: data?.typeOfEmergency ?? campaign.typeOfEmergency ?? "",
           urgency: resolveUrgency(data?.urgency) ?? resolveUrgency(campaign.urgency) ?? "medium",
-          diagnosis: data?.diagnosis ?? campaign.diagnosis ?? "",
+          details: data?.details ?? campaign.details ?? "",
           description: campaign.description ?? "",
           category: data?.category ?? campaign.category ?? "",
-          patient: {
-            name: data?.patient?.name ?? campaign.patientName ?? "",
-            ...(data?.patient?.age !== undefined ? { age: data.patient.age } : {}),
-            ...(existingPatientPhoto ? { photo: existingPatientPhoto } : {}),
+          beneficiary: {
+            name: data?.beneficiary?.name ?? campaign.beneficiaryName ?? "",
+            ...(data?.beneficiary?.age !== undefined ? { age: data.beneficiary.age } : {}),
+            ...(existingBeneficiaryPhoto ? { photo: existingBeneficiaryPhoto } : {}),
           },
-          hospital: {
-            hospitalId: data?.hospital?.hospitalId ?? undefined,
-            name: data?.hospital?.name ?? campaign.hospitalName ?? "",
+          institution: {
+            name: data?.institution?.name ?? campaign.institutionName ?? "",
           },
           goal: {
             currency: data?.goal?.currency ?? campaign.goalCurrency ?? "SLE",
@@ -528,9 +513,18 @@ export default function UserCampaignsPage() {
       .finally(() => setEditLoading(false));
   }, [handleCancelEdit]);
 
-  const handleDeleteCampaign = React.useCallback((id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
-    setDeletingCampaign(null);
+  const handleDeleteCampaign = React.useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/campaigns/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        toast.error("Failed to delete campaign");
+        return;
+      }
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      setDeletingCampaign(null);
+    } catch {
+      toast.error("Network error deleting campaign");
+    }
   }, []);
 
   // Responsive Skeleton + List

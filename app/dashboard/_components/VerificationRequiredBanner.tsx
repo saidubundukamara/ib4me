@@ -20,8 +20,8 @@ export default function VerificationRequiredBanner({
   const config = {
     not_started: {
       icon: ShieldAlert,
-      title: `${typeLabel} Verification Required`,
-      description: `Complete identity verification to enable donations on your campaigns. This helps protect donors and ensures funds reach the right people.`,
+      title: `Complete ${typeLabel} Verification`,
+      description: `Complete identity verification to earn a verified badge on your campaigns. This builds trust with donors and helps your campaigns stand out.`,
       className: "bg-orange-50 dark:bg-orange-950/20 border-blaze-orange/30 dark:border-blaze-orange/20",
       iconClassName: "text-blaze-orange",
       titleClassName: "text-orange-800 dark:text-orange-200",
@@ -30,7 +30,7 @@ export default function VerificationRequiredBanner({
     pending: {
       icon: Clock,
       title: "Verification Pending",
-      description: `Your ${typeLabel} verification is pending review. Donations will be enabled once approved (usually 1-2 business days).`,
+      description: `Your ${typeLabel} verification is pending review. Your campaigns are live but will show a verified badge once approved (usually 1-2 business days).`,
       className: "bg-green-50 dark:bg-green-950/20 border-primary/30 dark:border-primary/20",
       iconClassName: "text-primary",
       titleClassName: "text-green-800 dark:text-green-200",
@@ -39,7 +39,7 @@ export default function VerificationRequiredBanner({
     under_review: {
       icon: Clock,
       title: "Verification Under Review",
-      description: `Your ${typeLabel} verification is currently under review. Donations will be enabled once approved.`,
+      description: `Your ${typeLabel} verification is currently under review. Your campaigns are live and will display a verified badge once approved.`,
       className: "bg-green-50 dark:bg-green-950/20 border-primary/30 dark:border-primary/20",
       iconClassName: "text-primary",
       titleClassName: "text-green-800 dark:text-green-200",
@@ -49,8 +49,8 @@ export default function VerificationRequiredBanner({
       icon: XCircle,
       title: "Verification Rejected",
       description: rejectionReason
-        ? `Your verification was rejected: ${rejectionReason}. Please update your documents and resubmit.`
-        : "Your verification was rejected. Please update your documents and resubmit.",
+        ? `Your verification was rejected: ${rejectionReason}. Please update your documents and resubmit to earn a verified badge.`
+        : "Your verification was rejected. Please update your documents and resubmit to earn a verified badge.",
       className: "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800",
       iconClassName: "text-red-500",
       titleClassName: "text-red-800 dark:text-red-200",

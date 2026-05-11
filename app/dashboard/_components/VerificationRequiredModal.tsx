@@ -23,13 +23,13 @@ interface VerificationRequiredModalProps {
 
 const statusMessages = {
   not_started:
-    "You need to complete identity verification to enable donations on your campaign. This protects donors and ensures funds are handled responsibly.",
+    "Complete identity verification to earn a verified badge on your campaigns. This builds trust with donors and helps your campaigns stand out.",
   pending:
-    "Your verification documents are being reviewed. Donations will be enabled once approved.",
+    "Your verification documents are being reviewed. Your campaigns are live and will display a verified badge once approved.",
   under_review:
-    "Your verification is currently under review. Donations will be enabled once approved.",
+    "Your verification is currently under review. Your campaigns are live and will display a verified badge once approved.",
   rejected:
-    "Your verification was rejected. Please review and resubmit your documents to enable donations.",
+    "Your verification was rejected. Please review and resubmit your documents to earn a verified badge on your campaigns.",
 };
 
 export default function VerificationRequiredModal({

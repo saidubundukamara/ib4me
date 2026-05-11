@@ -181,14 +181,15 @@ export class CategoryService {
 
   async seedInitialCategories(): Promise<{ created: number; skipped: number }> {
     const defaultCategories = [
-      { name: "Medical & Health", icon: "HeartPulse", displayOrder: 1 },
-      { name: "Education", icon: "GraduationCap", displayOrder: 2 },
+      { name: "Education", icon: "GraduationCap", displayOrder: 1 },
+      { name: "Community Development", icon: "Users", displayOrder: 2 },
       { name: "Emergency Relief", icon: "Siren", displayOrder: 3 },
-      { name: "Community Development", icon: "Users", displayOrder: 4 },
+      { name: "Health & Wellness", icon: "HeartPulse", displayOrder: 4 },
       { name: "Charity & Nonprofit", icon: "HandHeart", displayOrder: 5 },
       { name: "Children & Youth", icon: "Baby", displayOrder: 6 },
-      { name: "Environment", icon: "TreePine", displayOrder: 7 },
-      { name: "Other", icon: "LayoutGrid", displayOrder: 8 },
+      { name: "Personal & Family", icon: "Home", displayOrder: 7 },
+      { name: "Environment", icon: "TreePine", displayOrder: 8 },
+      { name: "Other", icon: "LayoutGrid", displayOrder: 9 },
     ];
 
     let created = 0;

@@ -31,10 +31,10 @@ export async function GET(
   const doc = await CampaignModel.findOne({ _id: oid, ownerId });
   if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Collect ALL asset IDs to fetch (patient photo + all documents)
+  // Collect ALL asset IDs to fetch (beneficiary photo + all documents)
   const assetIds: mongoose.Types.ObjectId[] = [];
-  if (doc.patient?.photoAssetId) {
-    assetIds.push(doc.patient.photoAssetId as mongoose.Types.ObjectId);
+  if (doc.beneficiary?.photoAssetId) {
+    assetIds.push(doc.beneficiary.photoAssetId as mongoose.Types.ObjectId);
   }
   for (const d of doc.documents || []) {
     if (d.assetId) {
@@ -48,12 +48,12 @@ export async function GET(
     : [];
   const assetMap = new Map(assets.map((a) => [String(a._id), a]));
 
-  // Resolve patient photo URL
-  let patientPhotoUrl: string | null = null;
-  if (doc.patient?.photoAssetId) {
-    const photoAsset = assetMap.get(String(doc.patient.photoAssetId));
+  // Resolve beneficiary photo URL
+  let beneficiaryPhotoUrl: string | null = null;
+  if (doc.beneficiary?.photoAssetId) {
+    const photoAsset = assetMap.get(String(doc.beneficiary.photoAssetId));
     if (photoAsset) {
-      patientPhotoUrl = photoAsset.storage?.key
+      beneficiaryPhotoUrl = photoAsset.storage?.key
         ? CloudinaryService.generateTransformationUrl(photoAsset.storage.key, {
             width: 800,
             crop: "fill",
@@ -87,8 +87,8 @@ export async function GET(
     };
   });
 
-  // Determine main imageUrl: patient photo > first document image > null
-  let imageUrl: string | null = patientPhotoUrl;
+  // Determine main imageUrl: beneficiary photo > first document image > null
+  let imageUrl: string | null = beneficiaryPhotoUrl;
   if (!imageUrl) {
     const firstImageDoc = documentsWithUrls.find(
       (d: { type: string; assetId: string; url: string | null }) => d.type?.startsWith("image/")
@@ -99,16 +99,16 @@ export async function GET(
   return NextResponse.json({
     id: String(doc._id),
     slug: doc.slug,
-    diagnosis: doc.diagnosis,
-    typeOfEmergency: doc.typeOfEmergency,
+    details: doc.details,
+    campaignType: doc.campaignType,
     urgency: doc.urgency,
     category: doc.category,
-    patient: {
-      ...doc.patient,
-      photoUrl: patientPhotoUrl,
-      photoAssetId: doc.patient?.photoAssetId ? String(doc.patient.photoAssetId) : null,
+    beneficiary: {
+      ...doc.beneficiary,
+      photoUrl: beneficiaryPhotoUrl,
+      photoAssetId: doc.beneficiary?.photoAssetId ? String(doc.beneficiary.photoAssetId) : null,
     },
-    hospital: doc.hospital,
+    institution: doc.institution,
     goal: doc.goal,
     story: doc.story,
     status: doc.status,
@@ -152,22 +152,21 @@ export async function PATCH(
   }
 
   // Extract text fields
-  const diagnosis = form.get("diagnosis") as string | null;
-  const typeOfEmergency = form.get("typeOfEmergency") as string | null;
+  const details = form.get("details") as string | null;
+  const campaignType = form.get("campaignType") as string | null;
   const urgency = form.get("urgency") as string | null;
   const category = form.get("category") as string | null;
-  const patientName = form.get("patient.name") as string | null;
-  const patientAgeStr = form.get("patient.age") as string | null;
-  const hospitalId = form.get("hospital.hospitalId") as string | null;
-  const hospitalName = form.get("hospital.name") as string | null;
+  const beneficiaryName = form.get("beneficiary.name") as string | null;
+  const beneficiaryAgeStr = form.get("beneficiary.age") as string | null;
+  const institutionName = form.get("institution.name") as string | null;
   const goalCurrency = form.get("goal.currency") as string | null;
   const goalAmountMinorStr = form.get("goal.amountMinor") as string | null;
   const story = form.get("story") as string | null;
   const status = form.get("status") as string | null;
 
   // File handling
-  const patientPhoto = form.get("patientPhoto") as File | null;
-  const removePatientPhoto = form.get("removePatientPhoto") === "true";
+  const beneficiaryPhoto = form.get("beneficiaryPhoto") as File | null;
+  const removeBeneficiaryPhoto = form.get("removeBeneficiaryPhoto") === "true";
   const removedDocumentIdsStr = form.get("removedDocumentIds") as string | null;
   const removedDocumentIds: string[] = removedDocumentIdsStr
     ? JSON.parse(removedDocumentIdsStr)
@@ -184,11 +183,11 @@ export async function PATCH(
   // Build update object
   const updatable: Record<string, unknown> = {};
 
-  if (typeof diagnosis === "string") {
-    updatable.diagnosis = diagnosis || undefined;
+  if (typeof details === "string") {
+    updatable.details = details || undefined;
   }
-  if (typeof typeOfEmergency === "string") {
-    updatable.typeOfEmergency = typeOfEmergency || undefined;
+  if (typeof campaignType === "string") {
+    updatable.campaignType = campaignType || undefined;
   }
   if (urgency === "low" || urgency === "medium" || urgency === "high") {
     updatable.urgency = urgency;
@@ -203,28 +202,18 @@ export async function PATCH(
     updatable.status = status;
   }
 
-  // Handle patient fields
-  if (patientName !== null || patientAgeStr !== null) {
-    const patientAge = patientAgeStr ? parseInt(patientAgeStr, 10) : undefined;
-    updatable["patient.name"] = patientName || campaign.patient?.name;
-    if (Number.isFinite(patientAge) && patientAge! >= 0) {
-      updatable["patient.age"] = patientAge;
+  // Handle beneficiary fields
+  if (beneficiaryName !== null || beneficiaryAgeStr !== null) {
+    const beneficiaryAge = beneficiaryAgeStr ? parseInt(beneficiaryAgeStr, 10) : undefined;
+    updatable["beneficiary.name"] = beneficiaryName || campaign.beneficiary?.name;
+    if (Number.isFinite(beneficiaryAge) && beneficiaryAge! >= 0) {
+      updatable["beneficiary.age"] = beneficiaryAge;
     }
   }
 
-  // Handle hospital
-  if (hospitalId !== null || hospitalName !== null) {
-    if (hospitalId) {
-      updatable["hospital.hospitalId"] = mongoose.Types.ObjectId.isValid(hospitalId)
-        ? new mongoose.Types.ObjectId(hospitalId)
-        : null;
-    } else if (hospitalId === "") {
-      // Clear hospitalId if empty string passed
-      updatable["hospital.hospitalId"] = null;
-    }
-    if (hospitalName !== null) {
-      updatable["hospital.name"] = hospitalName;
-    }
+  // Handle institution
+  if (institutionName !== null) {
+    updatable["institution.name"] = institutionName;
   }
 
   // Handle goal
@@ -236,29 +225,29 @@ export async function PATCH(
     };
   }
 
-  // Handle patient photo removal/replacement
-  if (removePatientPhoto && campaign.patient?.photoAssetId) {
+  // Handle beneficiary photo removal/replacement
+  if (removeBeneficiaryPhoto && campaign.beneficiary?.photoAssetId) {
     // Delete old photo
-    await deleteMediaAssetWithCloudinary(campaign.patient.photoAssetId, MediaAssetModel);
-    updatable["patient.photoAssetId"] = null;
+    await deleteMediaAssetWithCloudinary(campaign.beneficiary.photoAssetId, MediaAssetModel);
+    updatable["beneficiary.photoAssetId"] = null;
   }
 
-  if (patientPhoto && patientPhoto.size > 0) {
+  if (beneficiaryPhoto && beneficiaryPhoto.size > 0) {
     // Delete existing photo if any
-    if (campaign.patient?.photoAssetId) {
-      await deleteMediaAssetWithCloudinary(campaign.patient.photoAssetId, MediaAssetModel);
+    if (campaign.beneficiary?.photoAssetId) {
+      await deleteMediaAssetWithCloudinary(campaign.beneficiary.photoAssetId, MediaAssetModel);
     }
     // Upload new photo
-    const photoBuffer = Buffer.from(await patientPhoto.arrayBuffer());
+    const photoBuffer = Buffer.from(await beneficiaryPhoto.arrayBuffer());
     const photoResult = await CloudinaryService.uploadBuffer(photoBuffer, {
-      folder: `campaigns/${session.user.id}/patient`,
+      folder: `campaigns/${session.user.id}/beneficiary`,
       resource_type: "image",
     });
     const photoAsset = await MediaAssetModel.create({
       campaignId: campaign._id,
       ownerId,
       type: "image",
-      mimeType: patientPhoto.type,
+      mimeType: beneficiaryPhoto.type,
       url: photoResult.secure_url,
       storage: {
         provider: "cloudinary",
@@ -271,7 +260,7 @@ export async function PATCH(
         bytes: photoResult.bytes,
       },
     });
-    updatable["patient.photoAssetId"] = photoAsset._id;
+    updatable["beneficiary.photoAssetId"] = photoAsset._id;
   }
 
   // Handle document removals

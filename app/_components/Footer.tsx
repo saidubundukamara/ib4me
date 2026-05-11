@@ -70,7 +70,7 @@ const Footer = ({
   ],
 }: FooterProps) => {
   const { config, openSettings } = useCookieConsent();
-  const { social } = useSettings();
+  const { social, contact } = useSettings();
 
   const hasSocials =
     isValidUrl(social.facebook) ||
@@ -97,8 +97,8 @@ const Footer = ({
             </p>
             <div className="flex items-center gap-2 text-sm text-white/60">
               <Mail className="h-4 w-4 shrink-0" />
-              <a href="mailto:ib4me.organisation@gmail.com" className="hover:text-white transition-colors">
-                ib4me.organisation@gmail.com
+              <a href={`mailto:${contact?.email || "ib4me.organisation@gmail.com"}`} className="hover:text-white transition-colors">
+                {contact?.email || "ib4me.organisation@gmail.com"}
               </a>
             </div>
 

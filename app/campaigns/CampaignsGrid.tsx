@@ -23,6 +23,7 @@ export type CampaignGridItem = {
   goalAmount: number;
   donationsCount: number;
   verified?: boolean;
+  ownerVerified?: boolean;
   urgent?: boolean;
   imageUrl: string;
   imageSrcSet?: string;
@@ -221,6 +222,7 @@ export default function CampaignsGrid({ items, categories }: Props) {
                 goal={c.goalAmount}
                 donors={c.donationsCount}
                 verified={c.verified || false}
+                ownerVerified={c.ownerVerified ?? true}
                 urgent={c.urgent || c.urgency === "high" || false}
                 urgency={c.urgency}
                 category={c.category}

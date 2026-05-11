@@ -38,6 +38,7 @@ type CampaignItem = {
   donationsCount: number;
   imageUrl: string;
   urgency?: "low" | "medium" | "high";
+  ownerVerified?: boolean;
 };
 
 type FilterKey = "" | "just_started" | "close_to_goal" | "needs_momentum";
@@ -248,6 +249,7 @@ export default function DiscoverCampaigns() {
                       goal={c.goalAmount}
                       donors={c.donationsCount}
                       verified={false}
+                      ownerVerified={c.ownerVerified ?? true}
                       urgency={c.urgency}
                       urgent={c.urgency === "high"}
                       href={`/campaigns/${c.slug}`}

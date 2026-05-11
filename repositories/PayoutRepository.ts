@@ -283,7 +283,7 @@ export class PayoutRepository extends BaseRepository<IPayout> {
         $project: {
           campaignId: "$_id",
           campaignName: {
-            $ifNull: ["$campaign.patient.name", "$campaign.diagnosis"]
+            $ifNull: ["$campaign.beneficiary.name", "$campaign.details"]
           },
           totalAmount: 1,
           payoutCount: 1,

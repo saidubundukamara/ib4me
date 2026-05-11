@@ -1,28 +1,34 @@
-import { Users,  Heart, DollarSign, TrendingUp, } from "lucide-react";
+import { Users, Heart, DollarSign, TrendingUp } from "lucide-react";
 
-export const stats = [
+export const statDefinitions = [
   {
+    key: "totalRaised" as const,
     icon: DollarSign,
-    value: "$12.5M+",
     label: "Funds Raised",
     color: "#FF6000",
   },
   {
+    key: "totalDonors" as const,
     icon: Users,
-    value: "50K+",
-    label: "Active Donors",
+    label: "Registered Users",
     color: "#FBB03B",
   },
   {
+    key: "totalDonations" as const,
     icon: Heart,
-    value: "8,500+",
-    label: "Lives Impacted",
+    label: "Donations Made",
     color: "#00712D",
   },
   {
+    key: "totalCampaigns" as const,
     icon: TrendingUp,
-    value: "95%",
-    label: "Success Rate",
+    label: "Active Campaigns",
     color: "#80E10A",
   },
 ];
+
+/** @deprecated Use LiveStatsGrid or the /api/stats endpoint instead */
+export const stats = statDefinitions.map((s) => ({
+  ...s,
+  value: "—",
+}));

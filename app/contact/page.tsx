@@ -7,12 +7,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectValue, SelectItem, SelectTrigger, SelectContent } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Mail, MapPin, Clock, Send } from "lucide-react";
+import { Mail, MapPin, Clock, Send, Phone } from "lucide-react";
 import { toast } from "sonner";
+import { useSettings } from "@/lib/settings-provider";
+
+const FALLBACK_EMAIL = "ib4me.organisation@gmail.com";
+const FALLBACK_ADDRESS = "27B Grassfield";
+const FALLBACK_CITY = "Freetown";
+const FALLBACK_COUNTRY = "Sierra Leone";
+const FALLBACK_BUSINESS_HOURS = "Monday - Friday: 8am - 6pm\nSaturday: 9am - 4pm\nSunday: Closed";
 
 const Contact = () => {
+  const { contact, loading } = useSettings();
   const [subject, setSubject] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const email = contact?.email || FALLBACK_EMAIL;
+  const phone = contact?.phone;
+  const address = contact?.address || FALLBACK_ADDRESS;
+  const city = contact?.city || FALLBACK_CITY;
+  const state = contact?.state;
+  const country = contact?.country || FALLBACK_COUNTRY;
+  const businessHours = contact?.businessHours || FALLBACK_BUSINESS_HOURS;
+
+  const formattedAddress = [address, city, state, country].filter(Boolean).join(", ");
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -21,22 +39,22 @@ const Contact = () => {
     const formData = new FormData(e.currentTarget);
     const firstName = (formData.get("firstName") as string)?.trim();
     const lastName = (formData.get("lastName") as string)?.trim();
-    const email = (formData.get("email") as string)?.trim();
+    const senderEmail = (formData.get("email") as string)?.trim();
     const message = (formData.get("message") as string)?.trim();
 
-    if (!firstName || !lastName || !email || !message) {
+    if (!firstName || !lastName || !senderEmail || !message) {
       toast.error("Please fill in all required fields");
       setIsSubmitting(false);
       return;
     }
 
     const subjectLine = subject || "General Inquiry";
-    const mailtoBody = `Name: ${firstName} ${lastName}\nEmail: ${email}\nSubject: ${subjectLine}\n\nMessage:\n${message}`;
-    const mailtoLink = `mailto:ib4me.organisation@gmail.com?subject=${encodeURIComponent(subjectLine)}&body=${encodeURIComponent(mailtoBody)}`;
+    const mailtoBody = `Name: ${firstName} ${lastName}\nEmail: ${senderEmail}\nSubject: ${subjectLine}\n\nMessage:\n${message}`;
+    const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subjectLine)}&body=${encodeURIComponent(mailtoBody)}`;
 
     window.open(mailtoLink, "_blank");
     toast.success(
-      "Opening your email client. If it doesn't open, please email us directly at ib4me.organisation@gmail.com"
+      `Opening your email client. If it doesn't open, please email us directly at ${email}`
     );
     setIsSubmitting(false);
   };
@@ -131,54 +149,90 @@ const Contact = () => {
 
             {/* Contact Information */}
             <div className="space-y-6">
-              <Card className="rounded-3xl border-0 p-6 shadow-[var(--shadow-soft)]">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
-                    <Mail className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="mb-1 font-bold text-foreground">Email Us</h3>
-                    <p className="mb-2 text-sm text-muted-foreground">
-                      Send us an email anytime
-                    </p>
-                    <a href="mailto:ib4me.organisation@gmail.com" className="text-sm text-primary hover:underline">
-                      ib4me.organisation@gmail.com
-                    </a>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="rounded-3xl border-0 p-6 shadow-[var(--shadow-soft)]">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-chartereuse/10">
-                    <MapPin className="h-6 w-6 text-chartereuse" />
-                  </div>
-                  <div>
-                    <h3 className="mb-1 font-bold text-foreground">Visit Us</h3>
-                    <p className="text-sm text-muted-foreground">
-                      27B Grassfield<br />
-                      Lumley<br />
-                      Freetown, Sierra Leone
-                    </p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="rounded-3xl border-0 p-6 shadow-[var(--shadow-soft)]">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-orange-blaze/10">
-                    <Clock className="h-6 w-6 text-orange-blaze" />
-                  </div>
-                  <div>
-                    <h3 className="mb-1 font-bold text-foreground">Business Hours</h3>
-                    <div className="space-y-1 text-sm text-muted-foreground">
-                      <p>Monday - Friday: 8am - 6pm</p>
-                      <p>Saturday: 9am - 4pm</p>
-                      <p>Sunday: Closed</p>
+              {loading ? (
+                <>
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i} className="rounded-3xl border-0 p-6 shadow-[var(--shadow-soft)]">
+                      <div className="flex items-start gap-4">
+                        <div className="h-12 w-12 flex-shrink-0 animate-pulse rounded-full bg-muted" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+                          <div className="h-3 w-36 animate-pulse rounded bg-muted" />
+                          <div className="h-3 w-44 animate-pulse rounded bg-muted" />
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <Card className="rounded-3xl border-0 p-6 shadow-[var(--shadow-soft)]">
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
+                        <Mail className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="mb-1 font-bold text-foreground">Email Us</h3>
+                        <p className="mb-2 text-sm text-muted-foreground">
+                          Send us an email anytime
+                        </p>
+                        <a href={`mailto:${email}`} className="text-sm text-primary hover:underline">
+                          {email}
+                        </a>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </Card>
+                  </Card>
+
+                  {phone && (
+                    <Card className="rounded-3xl border-0 p-6 shadow-[var(--shadow-soft)]">
+                      <div className="flex items-start gap-4">
+                        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
+                          <Phone className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="mb-1 font-bold text-foreground">Call Us</h3>
+                          <p className="mb-2 text-sm text-muted-foreground">
+                            Speak with our team
+                          </p>
+                          <a href={`tel:${phone}`} className="text-sm text-primary hover:underline">
+                            {phone}
+                          </a>
+                        </div>
+                      </div>
+                    </Card>
+                  )}
+
+                  <Card className="rounded-3xl border-0 p-6 shadow-[var(--shadow-soft)]">
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-chartereuse/10">
+                        <MapPin className="h-6 w-6 text-chartereuse" />
+                      </div>
+                      <div>
+                        <h3 className="mb-1 font-bold text-foreground">Visit Us</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {formattedAddress}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="rounded-3xl border-0 p-6 shadow-[var(--shadow-soft)]">
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-orange-blaze/10">
+                        <Clock className="h-6 w-6 text-orange-blaze" />
+                      </div>
+                      <div>
+                        <h3 className="mb-1 font-bold text-foreground">Business Hours</h3>
+                        <div className="space-y-1 text-sm text-muted-foreground">
+                          {businessHours.split("\n").map((line, i) => (
+                            <p key={i}>{line}</p>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </>
+              )}
             </div>
           </div>
         </div>

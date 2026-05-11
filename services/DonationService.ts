@@ -97,21 +97,6 @@ export class DonationService {
       );
       if (!updated) throw new Error("Failed to update donation status");
 
-      // Update campaign totals
-      const incUpdate: Record<string, number> = {
-        "totals.raisedMinor": donation.amount.minor,
-        "totals.donationCount": 1,
-      };
-      const setUpdate: Record<string, unknown> = {
-        "totals.lastDonationAt": new Date(),
-      };
-
-      await campaignRepository.updateById(
-        donation.campaignId.toString(),
-        { $inc: incUpdate as never, $set: setUpdate as never } as never,
-        txn
-      );
-
       // Ledger entry
       await ledgerEntryRepository.create(
         {
@@ -189,42 +174,63 @@ export class DonationService {
       paymentMethod: { type: string; provider?: string };
       fees?: { total: number; breakdown: Record<string, number> };
       completedAt?: string;
-    }
+    },
+    session?: ServiceSession
   ): Promise<IDonation> {
-    const donation = await donationRepository.findById(donationId);
-    if (!donation) throw new Error("Donation not found");
+    return runInTransaction<IDonation>(async (txn) => {
+      const donation = await donationRepository.findById(donationId);
+      if (!donation) throw new Error("Donation not found");
 
-    if (donation.status !== "pending") {
-      throw new Error(`Cannot mark donation as payment_received from status: ${donation.status}`);
-    }
+      if (donation.status !== "pending") {
+        throw new Error(`Cannot mark donation as payment_received from status: ${donation.status}`);
+      }
 
-    // Preserve existing fee data and add payment processor fees
-    const existingFees = donation.fees || {};
-    const paymentProcessorFee = paymentDetails.fees ? Math.round(paymentDetails.fees.total) : 0;
+      // Preserve existing fee data and add payment processor fees
+      const existingFees = donation.fees || {};
+      const paymentProcessorFee = paymentDetails.fees ? Math.round(paymentDetails.fees.total) : 0;
 
-    const fees = {
-      baseFeeMinor: existingFees.baseFeeMinor || 0,
-      processingFeeMinor: existingFees.processingFeeMinor || 0,
-      processingFeeBps: existingFees.processingFeeBps,
-      campaignType: existingFees.campaignType,
-      totalFeeMinor: existingFees.totalFeeMinor || 0,
-      paymentFeeMinor: paymentProcessorFee,
-      platformFeeMinor: existingFees.platformFeeMinor || existingFees.totalFeeMinor || 0,
-    };
+      const fees = {
+        baseFeeMinor: existingFees.baseFeeMinor || 0,
+        processingFeeMinor: existingFees.processingFeeMinor || 0,
+        processingFeeBps: existingFees.processingFeeBps,
+        campaignType: existingFees.campaignType,
+        totalFeeMinor: existingFees.totalFeeMinor || 0,
+        paymentFeeMinor: paymentProcessorFee,
+        platformFeeMinor: existingFees.platformFeeMinor || existingFees.totalFeeMinor || 0,
+      };
 
-    const updated = await donationRepository.updateById(
-      donationId,
-      {
-        $set: {
-          status: "payment_received",
-          "provider.paymentId": paymentDetails.paymentId,
-          fees,
-          updatedAt: new Date()
-        }
-      } as never
-    );
-    if (!updated) throw new Error("Failed to mark donation as payment_received");
-    return updated;
+      const updated = await donationRepository.updateById(
+        donationId,
+        {
+          $set: {
+            status: "payment_received",
+            "provider.paymentId": paymentDetails.paymentId,
+            fees,
+            updatedAt: new Date()
+          }
+        } as never,
+        txn
+      );
+      if (!updated) throw new Error("Failed to mark donation as payment_received");
+
+      // Update campaign totals now that payment is confirmed
+      const campaignReceivesAmount = donation.campaignReceivesMinor ?? donation.amount.minor;
+      const incUpdate: Record<string, number> = {
+        "totals.raisedMinor": campaignReceivesAmount,
+        "totals.donationCount": 1,
+      };
+      const setUpdate: Record<string, unknown> = {
+        "totals.lastDonationAt": new Date(),
+      };
+
+      await campaignRepository.updateById(
+        donation.campaignId.toString(),
+        { $inc: incUpdate as never, $set: setUpdate as never } as never,
+        txn
+      );
+
+      return updated;
+    }, session);
   }
 
   /**
@@ -269,7 +275,7 @@ export class DonationService {
       const donation = await donationRepository.findById(donationId);
       if (!donation) throw new Error("Donation not found");
 
-      if (donation.status !== "payment_received") {
+      if (donation.status !== "payment_received" && donation.status !== "pending") {
         throw new Error(`Cannot complete donation from status: ${donation.status}`);
       }
 
@@ -350,20 +356,7 @@ export class DonationService {
         description: `Donation received from transfer ${transferId}`,
       } as unknown as Partial<ILedgerEntry>, txn);
 
-      // Update campaign totals with what campaign actually receives
-      const incUpdate: Record<string, number> = {
-        "totals.raisedMinor": campaignReceivesAmount,
-        "totals.donationCount": 1,
-      };
-      const setUpdate: Record<string, unknown> = {
-        "totals.lastDonationAt": new Date(),
-      };
-
-      await campaignRepository.updateById(
-        donation.campaignId.toString(),
-        { $inc: incUpdate as never, $set: setUpdate as never } as never,
-        txn
-      );
+      // Campaign totals already updated in markPaymentReceived()
 
       return updated;
     }, session);
