@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Quote } from "lucide-react";
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 type TestimonialItem = {
@@ -95,9 +97,13 @@ export default function TestimonialsSection() {
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
               <Quote className="h-8 w-8 text-muted-foreground/40" />
             </div>
-            <p className="text-sm text-muted-foreground">
-              Be the first to share your ib4me experience.
+            <p className="mb-1 text-sm font-medium text-foreground">Be the first to share your story</p>
+            <p className="mb-5 text-xs text-muted-foreground max-w-xs">
+              Have you donated or started a campaign? Tell us how ib4me made a difference for you.
             </p>
+            <Button asChild variant="outline" size="sm" className="rounded-xl">
+              <Link href="/contact?subject=Share+My+Story">Share Your Story</Link>
+            </Button>
           </div>
         </div>
       </section>

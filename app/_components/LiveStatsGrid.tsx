@@ -84,7 +84,7 @@ export function StatItem({
         <Icon className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: stat.color }} aria-hidden="true" />
       </div>
       <div
-        className="mb-1.5 text-2xl font-bold sm:mb-2 sm:text-3xl lg:text-4xl"
+        className="mb-1.5 text-xl font-bold sm:mb-2 sm:text-2xl lg:text-3xl xl:text-4xl"
         style={{ color: stat.color }}
       >
         {stat.prefix ?? ""}

@@ -18,3 +18,4 @@ export * from "./VerificationRepository";
 export * from "./TipRepository";
 export * from "./TestimonialRepository";
 export * from "./PartnerRepository";
+export * from "./CampaignCommentRepository";

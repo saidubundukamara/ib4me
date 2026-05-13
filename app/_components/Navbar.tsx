@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
     Menu, ChevronRight, PhoneCall, Heart, MessageCircleQuestion, DollarSign,
     LogOutIcon, Search,
@@ -126,6 +126,7 @@ const Navbar = ({
     const { data: session, status } = useSession();
     const isAuthenticated = status === "authenticated";
     const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -154,12 +155,12 @@ const Navbar = ({
                 <nav className="hidden justify-between lg:flex items-center">
                     <div className="flex items-center gap-6">
                         <a href={logo.url} className="flex items-center gap-2 shrink-0">
-                            <Image src={logo.src} className={`object-contain transition-all duration-200 ${hasScrolled ? "w-24 h-9" : "w-32 h-12"}`} alt={logo.alt} />
+                            <Image src={logo.src} className={`object-contain transition-all duration-200 ${hasScrolled ? "w-28 h-14" : "w-36 h-16"}`} alt={logo.alt} />
                         </a>
                         <div className="flex items-center font-Sora text-neutral-900">
                             <NavigationMenu>
                                 <NavigationMenuList>
-                                    {menu.map((item) => renderMenuItem(item))}
+                                    {menu.map((item) => renderMenuItem(item, pathname))}
                                 </NavigationMenuList>
                             </NavigationMenu>
                         </div>
@@ -216,7 +217,7 @@ const Navbar = ({
                                 <SheetHeader>
                                     <SheetTitle>
                                         <a href={logo.url} className="flex items-center gap-2">
-                                            <Image src={logo.src} className="w-32 h-12 object-contain" alt={logo.alt} />
+                                            <Image src={logo.src} className="w-36 h-16 object-contain" alt={logo.alt} />
                                         </a>
                                     </SheetTitle>
                                 </SheetHeader>
@@ -242,8 +243,8 @@ const Navbar = ({
                                                 <Button
                                                     type="button"
                                                     onClick={() => logout({ redirectTo: "/" })}
-                                                    variant="destructive"
-                                                    className="inline-flex items-center gap-2 mt-2"
+                                                    variant="default"
+                                                    className="inline-flex items-center gap-2 mt-2 bg-blaze-orange hover:bg-blaze-orange/90 text-white"
                                                 >
                                                     <LogOutIcon size={16} className="opacity-70" aria-hidden="true" />
                                                     <span>LogOut</span>
@@ -258,7 +259,7 @@ const Navbar = ({
                                         collapsible
                                         className="flex w-full flex-col gap-4"
                                     >
-                                        {menu.map((item) => renderMobileMenuItem(item))}
+                                        {menu.map((item) => renderMobileMenuItem(item, pathname))}
                                     </Accordion>
                                     <div className="flex flex-col gap-3">
                                         {status !== "authenticated" && (
@@ -282,16 +283,23 @@ const Navbar = ({
     );
 };
 
-const renderMenuItem = (item: MenuItem) => {
+const renderMenuItem = (item: MenuItem, pathname: string) => {
+    const isActive = item.url ? pathname === item.url || pathname.startsWith(item.url + "/") : false;
+    const hasActiveChild = item.items?.some(
+        (sub) => sub.url && (pathname === sub.url || pathname.startsWith(sub.url + "/"))
+    );
+
     if (item.items) {
         return (
             <NavigationMenuItem key={item.title} className="text-neutral-700">
-                <NavigationMenuTrigger>{item.title}</NavigationMenuTrigger>
+                <NavigationMenuTrigger className={hasActiveChild ? "text-primary font-semibold" : ""}>
+                    {item.title}
+                </NavigationMenuTrigger>
                 <NavigationMenuContent>
                     <div className="grid w-[400px] gap-2 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
                         {item.items.map((subItem) => (
                             <NavigationMenuLink asChild key={subItem.title} className="w-80">
-                                <SubMenuLink item={subItem} />
+                                <SubMenuLink item={subItem} pathname={pathname} />
                             </NavigationMenuLink>
                         ))}
                     </div>
@@ -303,7 +311,11 @@ const renderMenuItem = (item: MenuItem) => {
     return (
         <a
             key={item.title}
-            className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-accent-foreground"
+            className={`group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-accent-foreground ${
+                isActive
+                    ? "bg-primary/10 text-primary font-semibold"
+                    : "bg-background text-muted-foreground"
+            }`}
             href={item.url}
         >
             {item.title}
@@ -311,7 +323,9 @@ const renderMenuItem = (item: MenuItem) => {
     );
 };
 
-const renderMobileMenuItem = (item: MenuItem) => {
+const renderMobileMenuItem = (item: MenuItem, pathname: string) => {
+    const isActive = item.url ? pathname === item.url || pathname.startsWith(item.url + "/") : false;
+
     if (item.items) {
         return (
             <AccordionItem key={item.title} value={item.title} className="border-b-0">
@@ -320,7 +334,7 @@ const renderMobileMenuItem = (item: MenuItem) => {
                 </AccordionTrigger>
                 <AccordionContent className="mt-2">
                     {item.items.map((subItem) => (
-                        <SubMenuLink key={subItem.title} item={subItem} />
+                        <SubMenuLink key={subItem.title} item={subItem} pathname={pathname} />
                     ))}
                 </AccordionContent>
             </AccordionItem>
@@ -328,21 +342,33 @@ const renderMobileMenuItem = (item: MenuItem) => {
     }
 
     return (
-        <a key={item.title} href={item.url} className="text-md font-semibold">
+        <a
+            key={item.title}
+            href={item.url}
+            className={`text-md font-semibold transition-colors ${isActive ? "text-primary" : ""}`}
+        >
             {item.title}
         </a>
     );
 };
 
-const SubMenuLink = ({ item }: { item: MenuItem }) => {
+const SubMenuLink = ({ item, pathname }: { item: MenuItem; pathname?: string }) => {
+    const isActive = pathname && item.url
+        ? pathname === item.url || pathname.startsWith(item.url + "/")
+        : false;
+
     return (
         <a
-            className="flex flex-row gap-4 rounded-md p-3 leading-none no-underline transition-colors outline-none select-none hover:bg-muted hover:text-accent-foreground"
+            className={`flex flex-row gap-4 rounded-md p-3 leading-none no-underline transition-colors outline-none select-none hover:bg-muted hover:text-accent-foreground ${
+                isActive ? "bg-primary/10 text-primary" : ""
+            }`}
             href={item.url}
         >
             <div>{item.icon}</div>
             <div>
-                <div className="text-sm font-semibold">{item.title}</div>
+                <div className={`text-sm font-semibold ${isActive ? "text-primary" : ""}`}>
+                    {item.title}
+                </div>
                 {item.description && (
                     <p className="text-sm leading-snug text-muted-foreground">
                         {item.description}

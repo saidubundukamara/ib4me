@@ -32,7 +32,7 @@ export default function Loading() {
         </div>
 
         {/* Tagline */}
-        <p className="ib4me-loader__tagline">Put Fo Wɛlbɔdi</p>
+        <p className="ib4me-loader__tagline">Help Start ya</p>
 
         {/* Bouncing dots */}
         <div className="ib4me-loader__dots" aria-label="Loading">

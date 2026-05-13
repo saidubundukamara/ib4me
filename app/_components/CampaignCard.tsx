@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Share2, CheckCircle, ShieldAlert } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
@@ -90,9 +91,16 @@ const CampaignCard = ({
           </div>
         ) : null}
         {verified && ownerVerified ? (
-          <div className="absolute top-3 right-3 bg-fun-green backdrop-blur-sm text-white p-1.5 rounded-full shadow-lg">
-            <CheckCircle className="w-4 h-4" />
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="absolute top-3 right-3 bg-fun-green backdrop-blur-sm text-white p-1.5 rounded-full shadow-lg cursor-help">
+                <CheckCircle className="w-4 h-4" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="max-w-[200px] text-xs">
+              ib4me verified the organizer&apos;s identity and campaign purpose.
+            </TooltipContent>
+          </Tooltip>
         ) : !ownerVerified ? (
           <div className="absolute top-3 right-3 bg-amber-500 backdrop-blur-sm text-white px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-lg">
             <ShieldAlert className="w-3 h-3" />

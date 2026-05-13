@@ -38,7 +38,7 @@ const Pricing = () => {
 
 
     return (
-        <div className="min-h-screen bg-background font-Sora">
+        <div className="bg-background font-Sora">
             {/* Hero Banner */}
             <section className="relative overflow-hidden bg-fun-green py-14 sm:py-18 lg:py-24">
                 <div className="pointer-events-none absolute inset-0">
@@ -60,8 +60,7 @@ const Pricing = () => {
                 </div>
             </section>
 
-            <main>
-                <div>
+            <div>
                     {/* Fee Structure */}
                     <section className="py-12 sm:py-16 lg:py-20">
                         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -269,7 +268,8 @@ const Pricing = () => {
                     </section>
 
                     {/* FAQ Section */}
-                    <section className="space-y-0 divide-y divide-border rounded-3xl border bg-card shadow-[var(--shadow-soft)]">
+                    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="space-y-0 divide-y divide-border rounded-3xl border bg-card shadow-[var(--shadow-soft)]">
                         <div className="grid grid-cols-1 items-start gap-6 p-6 md:grid-cols-2 sm:gap-8 sm:p-8 lg:gap-12">
                             <div>
                                 <h3 className="font-Sora text-2xl font-bold sm:text-3xl lg:text-4xl">
@@ -310,11 +310,15 @@ const Pricing = () => {
                                 </p>
                             </div>
                         </div>
+                    </div>
                     </section>
 
+                </div>
 
-                    {/* CTA Section */}
-                    <div className="mx-auto mt-14 max-w-5xl rounded-3xl bg-primary px-6 py-8 text-center text-white sm:mt-18 sm:px-8 sm:py-10 md:px-12 md:py-12">
+            {/* CTA Section */}
+            <section className="px-4 pt-12 pb-24 sm:px-6 sm:pt-16 sm:pb-28 lg:px-8 lg:pt-20 lg:pb-32">
+                <div className="mx-auto max-w-7xl">
+                    <div className="rounded-3xl bg-primary px-5 py-10 text-center text-white sm:px-8 sm:py-12 md:px-12 md:py-14">
                         <h3 className="mb-4 text-2xl font-bold sm:mb-6 sm:text-3xl md:text-4xl">
                             Everything you need to fundraise
                         </h3>
@@ -334,7 +338,7 @@ const Pricing = () => {
                         </div>
                     </div>
                 </div>
-            </main>
+            </section>
         </div>
     );
 };
