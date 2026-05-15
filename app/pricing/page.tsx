@@ -300,9 +300,12 @@ const Pricing = () => {
                             </div>
                             <div className="space-y-4 text-base leading-relaxed text-muted-foreground sm:space-y-5 sm:text-lg">
                                 <p>
-                                    Verified organizations benefit from a reduced platform fee of 2.0% (vs 2.6% for individuals),
-                                    bringing their total fee to just 3.0%. This helps established organizations
-                                    and NGOs maximize the impact of every donation they receive.
+                                    Verified organizations benefit from a reduced platform fee of{" "}
+                                    {loading ? "…" : `${(PLATFORM_FEE_ORGANIZATION_BPS / 100).toFixed(1)}%`}{" "}
+                                    (vs {loading ? "…" : `${(PLATFORM_FEE_INDIVIDUAL_BPS / 100).toFixed(1)}%`} for individuals),
+                                    bringing their total fee to just{" "}
+                                    {loading ? "…" : `${((BASE_FEE_BPS + PLATFORM_FEE_ORGANIZATION_BPS) / 100).toFixed(1)}%`}.{" "}
+                                    This helps established organizations and NGOs maximize the impact of every donation they receive.
                                 </p>
                                 <p>
                                     <strong className="text-foreground">Organizations must complete verification</strong> to unlock the reduced fee rate.
