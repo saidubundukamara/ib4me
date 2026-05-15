@@ -98,7 +98,7 @@ export default function RegisterPage() {
       const identifier = email || phone;
       const result = await signIn("credentials", {
         redirect: false,
-        callbackUrl: "/",
+        callbackUrl: "/dashboard",
         identifier,
         password,
       });
@@ -109,7 +109,7 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push(result?.url ?? "/");
+      router.push(result?.url ?? "/dashboard");
     } catch (submitError) {
       console.error(submitError);
       const message = "Registration failed. Please try again.";
@@ -168,30 +168,30 @@ export default function RegisterPage() {
         {/* Account Type Toggle */}
         <div className="space-y-2">
           <Label className="text-sm font-semibold text-foreground">Account Type</Label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() => setAccountType("individual")}
-              className={`flex items-center justify-center gap-2 rounded-xl border-2 p-4 transition-all ${
+              className={`flex items-center justify-center gap-1.5 rounded-xl border-2 p-3 sm:gap-2 sm:p-4 transition-all ${
                 accountType === "individual"
                   ? "border-primary bg-primary/5 text-primary"
                   : "border-border hover:border-primary/50"
               }`}
             >
-              <User className="h-5 w-5" />
-              <span className="font-medium">Individual</span>
+              <User className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
+              <span className="text-sm font-medium sm:text-base">Individual</span>
             </button>
             <button
               type="button"
               onClick={() => setAccountType("organization")}
-              className={`flex items-center justify-center gap-2 rounded-xl border-2 p-4 transition-all ${
+              className={`flex items-center justify-center gap-1.5 rounded-xl border-2 p-3 sm:gap-2 sm:p-4 transition-all ${
                 accountType === "organization"
                   ? "border-primary bg-primary/5 text-primary"
                   : "border-border hover:border-primary/50"
               }`}
             >
-              <Building className="h-5 w-5" />
-              <span className="font-medium">Organization</span>
+              <Building className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
+              <span className="text-sm font-medium sm:text-base">Organization</span>
             </button>
           </div>
         </div>

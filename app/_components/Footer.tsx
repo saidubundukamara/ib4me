@@ -70,7 +70,7 @@ const Footer = ({
   ],
 }: FooterProps) => {
   const { config, openSettings } = useCookieConsent();
-  const { social } = useSettings();
+  const { social, contact } = useSettings();
 
   const hasSocials =
     isValidUrl(social.facebook) ||
@@ -80,16 +80,16 @@ const Footer = ({
 
   return (
     <footer data-testid="footer" className="relative border-t-2 border-white/20 bg-primary text-white font-Sora">
-      <div className="container mx-auto max-w-screen-xl px-6 pt-14 pb-8 sm:px-8">
+      <div className="container mx-auto max-w-screen-xl px-4 pt-14 pb-8 sm:px-6 md:px-8">
         {/* Main grid */}
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5 lg:gap-12">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 md:gap-10 lg:gap-12">
           {/* Brand column */}
           <div className="col-span-2 space-y-5">
             <Link href="/">
               <Image
                 src={logo.src}
                 alt={logo.alt}
-                className="h-24 w-44 object-contain"
+                className="h-auto w-28 sm:w-36 md:w-44 lg:w-48 object-contain"
               />
             </Link>
             <p className="max-w-sm text-sm leading-relaxed text-white/80">
@@ -97,8 +97,8 @@ const Footer = ({
             </p>
             <div className="flex items-center gap-2 text-sm text-white/60">
               <Mail className="h-4 w-4 shrink-0" />
-              <a href="mailto:ib4me.organisation@gmail.com" className="hover:text-white transition-colors">
-                ib4me.organisation@gmail.com
+              <a href={`mailto:${contact?.email || "ib4me.organisation@gmail.com"}`} className="hover:text-white transition-colors">
+                {contact?.email || "ib4me.organisation@gmail.com"}
               </a>
             </div>
 

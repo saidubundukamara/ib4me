@@ -167,8 +167,14 @@ async function handleCheckoutSessionCompleted(payload: MonimeWebhookPayload) {
 
     if (checkoutSessionData.status === "completed") {
       if (donation.status === "pending") {
-        await donationService.markSucceeded(donationId);
-        console.log(`Marked donation ${donationId} as succeeded`);
+        // Mark payment as received (updates campaign totals).
+        // The full transfer + succeeded flow is handled by handlePaymentCompleted.
+        await donationService.markPaymentReceived(donationId, {
+          paymentId: checkoutSessionId,
+          paymentMethod: { type: "checkout_session", provider: "MONIME" },
+          completedAt: new Date().toISOString(),
+        });
+        console.log(`Marked donation ${donationId} as payment_received`);
       }
     }
   } catch (error) {

@@ -12,6 +12,7 @@ import Saidu from "@/public/assets/team/Saidu.jpg";
 import Shaka from "@/public/assets/team/Shaka.jpg";
 import Abib from "@/public/assets/team/Abib.jpg";
 import Namina from "@/public/assets/team/namina.jpg";
+import Rugi from "@/public/assets/team/Rugi.jpeg";   
 
 const About = () => {
     const platformData = usePlatformStats();
@@ -51,37 +52,46 @@ const About = () => {
     const team = [
         {
             name: "Joseph Melvin Kanu",
-            role: "COO & Co-Founder",
+            role: "Chief Operating Officer",
+            subtitle: "Co-Founder",
             image: Melvin,
         },
         {
             name: "Saidu Bundu Kamara",
-            role: "CTO & Co-Founder",
+            role: "Chief Technology Officer",
+            subtitle: "Co-Founder",
             image: Saidu,
         },
         {
             name: "Umara Abib Kamara",
-            role: "Product & Platform Head",
+            role: "Head of Product",
             subtitle: "Co-Founder",
             image: Abib,
         },
         {
             name: "Ishaka Kargbo",
-            role: "Campaign & Outreach Lead",
+            role: "Head of Campaign",
             subtitle: "Co-Founder",
             image: Shaka,
         },
         {
             name: "Namina Warah Mansaray",
-            role: "Director of Communications",
+            role: "Communications Lead",
             subtitle: "Co-Founder",
             image: Namina,
         },
+        {
+            name: "Rugiatu Kargbo",
+            role: "Head of Growth",
+            subtitle: "Volunteer",
+            image: Rugi,
+        },
+
     ];
 
     return (
         <div className="font-Sora">
-            <main>
+            <div>
                 {/* Hero Section */}
                 <section className="relative overflow-hidden bg-fun-green py-14 px-4 sm:py-18 sm:px-6 lg:py-24 lg:px-8">
                     <div className="pointer-events-none absolute inset-0">
@@ -232,7 +242,7 @@ const About = () => {
                         </div>
 
                         {/* Bottom row: 2 members, centered */}
-                        <div className="mt-8 grid grid-cols-1 gap-8 sm:mt-10 sm:grid-cols-2 sm:gap-10 lg:mx-auto lg:max-w-3xl lg:gap-12">
+                        <div className="mt-8 grid grid-cols-1 gap-8 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3 sm:gap-10 lg:mx-auto  lg:gap-12">
                             {team.slice(3).map((member, index) => (
                                 <div key={index} className="mx-auto max-w-sm text-center">
                                     <div className="relative mb-4 sm:mb-6">
@@ -322,7 +332,7 @@ const About = () => {
                         </div>
                     </div>
                 </section>
-            </main>
+            </div>
         </div>
     );
 };

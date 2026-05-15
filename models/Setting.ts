@@ -71,6 +71,7 @@ export interface IContactSettings {
   state?: string;
   zipCode?: string;
   country?: string;
+  businessHours?: string;
 }
 
 export interface ISocialSettings {
@@ -193,6 +194,7 @@ const settingSchema = new mongoose.Schema<ISetting>(
       state: { type: String },
       zipCode: { type: String },
       country: { type: String },
+      businessHours: { type: String },
     },
     social: {
       facebook: { type: String },

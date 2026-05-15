@@ -16,12 +16,12 @@ const Pricing = () => {
     const [campaignType, setCampaignType] = useState<"individual" | "organization">("individual");
 
     // Get fee settings from context (fetched from API)
-    const { fees } = useSettings();
+    const { fees, loading } = useSettings();
 
     // Fee constants (in basis points) - use API values with fallbacks
     const BASE_FEE_BPS = 100; // Monime's 1% - always fixed
-    const PLATFORM_FEE_INDIVIDUAL_BPS = fees?.processingFee?.individualBps ?? 800;
-    const PLATFORM_FEE_ORGANIZATION_BPS = fees?.processingFee?.organizationBps ?? 600;
+    const PLATFORM_FEE_INDIVIDUAL_BPS = fees?.processingFee?.individualBps ?? 260;
+    const PLATFORM_FEE_ORGANIZATION_BPS = fees?.processingFee?.organizationBps ?? 200;
 
     const amount = Math.max(0, Number(donationAmount) || 0);
 
@@ -38,7 +38,7 @@ const Pricing = () => {
 
 
     return (
-        <div className="min-h-screen bg-background font-Sora">
+        <div className="bg-background font-Sora">
             {/* Hero Banner */}
             <section className="relative overflow-hidden bg-fun-green py-14 sm:py-18 lg:py-24">
                 <div className="pointer-events-none absolute inset-0">
@@ -60,8 +60,7 @@ const Pricing = () => {
                 </div>
             </section>
 
-            <main>
-                <div>
+            <div>
                     {/* Fee Structure */}
                     <section className="py-12 sm:py-16 lg:py-20">
                         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -78,7 +77,7 @@ const Pricing = () => {
                                     <div className="space-y-5 sm:space-y-6">
                                         <div>
                                             <div className="mb-1.5 text-4xl font-bold text-blaze-orange sm:mb-2 sm:text-5xl">
-                                                {totalFeePercent}%
+                                                {loading ? <Skeleton className="h-10 w-24 sm:h-12" /> : `${totalFeePercent}%`}
                                             </div>
                                             <p className="text-sm text-muted-foreground sm:text-base">
                                                 Total fee for {campaignType === "individual" ? "individual" : "organization"} campaigns. Donors cover the fees so 100% of the donation goes to the campaign.
@@ -90,15 +89,15 @@ const Pricing = () => {
                                             <div className="space-y-3">
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-sm text-muted-foreground">Payment processing (Monime)</span>
-                                                    <span className="font-semibold text-foreground">{paymentFeePercent}%</span>
+                                                    {loading ? <Skeleton className="h-5 w-12" /> : <span className="font-semibold text-foreground">{paymentFeePercent}%</span>}
                                                 </div>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-sm text-muted-foreground">Platform fee</span>
-                                                    <span className="font-semibold text-foreground">{platformFeePercent}%</span>
+                                                    {loading ? <Skeleton className="h-5 w-12" /> : <span className="font-semibold text-foreground">{platformFeePercent}%</span>}
                                                 </div>
                                                 <div className="flex items-center justify-between border-t border-border pt-3">
                                                     <span className="font-semibold text-foreground">Total</span>
-                                                    <span className="font-bold text-blaze-orange">{totalFeePercent}%</span>
+                                                    {loading ? <Skeleton className="h-5 w-12" /> : <span className="font-bold text-blaze-orange">{totalFeePercent}%</span>}
                                                 </div>
                                             </div>
                                         </div>
@@ -172,7 +171,7 @@ const Pricing = () => {
                                                 </button>
                                             </div>
                                             <p className="mt-2 text-xs text-muted-foreground">
-                                                Organizations get a reduced platform fee ({(PLATFORM_FEE_ORGANIZATION_BPS / 100).toFixed(1)}% vs {(PLATFORM_FEE_INDIVIDUAL_BPS / 100).toFixed(1)}%)
+                                                Organizations get a reduced platform fee ({loading ? "…" : `${(PLATFORM_FEE_ORGANIZATION_BPS / 100).toFixed(1)}% vs ${(PLATFORM_FEE_INDIVIDUAL_BPS / 100).toFixed(1)}%`})
                                             </p>
                                         </div>
 
@@ -206,24 +205,30 @@ const Pricing = () => {
                                             </div>
 
                                             <div className="flex items-center justify-between border-b border-border pb-3">
-                                                <span className="text-muted-foreground">Payment Fee ({paymentFeePercent}%)</span>
-                                                <span className="font-semibold text-foreground">
-                                                    SLL {paymentFee.toFixed(2)}
-                                                </span>
+                                                <span className="text-muted-foreground">Payment Fee ({loading ? "…" : `${paymentFeePercent}%`})</span>
+                                                {loading ? <Skeleton className="h-5 w-20" /> : (
+                                                    <span className="font-semibold text-foreground">
+                                                        SLL {paymentFee.toFixed(2)}
+                                                    </span>
+                                                )}
                                             </div>
 
                                             <div className="flex items-center justify-between border-b border-border pb-3">
-                                                <span className="text-muted-foreground">Platform Fee ({platformFeePercent}%)</span>
-                                                <span className="font-semibold text-foreground">
-                                                    SLL {platformFee.toFixed(2)}
-                                                </span>
+                                                <span className="text-muted-foreground">Platform Fee ({loading ? "…" : `${platformFeePercent}%`})</span>
+                                                {loading ? <Skeleton className="h-5 w-20" /> : (
+                                                    <span className="font-semibold text-foreground">
+                                                        SLL {platformFee.toFixed(2)}
+                                                    </span>
+                                                )}
                                             </div>
 
                                             <div className="flex items-center justify-between border-b border-border pb-3">
                                                 <span className="font-semibold text-foreground">Total Donor Pays</span>
-                                                <span className="text-lg font-bold text-blaze-orange sm:text-xl">
-                                                    SLL {totalCharged.toFixed(2)}
-                                                </span>
+                                                {loading ? <Skeleton className="h-6 w-24" /> : (
+                                                    <span className="text-lg font-bold text-blaze-orange sm:text-xl">
+                                                        SLL {totalCharged.toFixed(2)}
+                                                    </span>
+                                                )}
                                             </div>
 
                                             <div className="-mx-5 flex items-center justify-between rounded-b-xl bg-primary/5 px-5 py-3 pt-2 sm:-mx-6 sm:px-6">
@@ -235,10 +240,12 @@ const Pricing = () => {
                                         </div>
 
                                         <div className="space-y-3">
-                                            <Button size="lg" className="w-full" asChild>
-                                                <Link href="/campaigns">
-                                                    Donate SLL {totalCharged.toFixed(2)}
-                                                </Link>
+                                            <Button size="lg" className="w-full" disabled={loading} asChild={!loading}>
+                                                {loading ? <Skeleton className="h-5 w-32" /> : (
+                                                    <Link href="/campaigns">
+                                                        Donate SLL {totalCharged.toFixed(2)}
+                                                    </Link>
+                                                )}
                                             </Button>
                                             <p className="text-center text-xs text-muted-foreground">
                                                 100% of your SLL {amount.toFixed(2)} donation goes to the campaign
@@ -261,7 +268,8 @@ const Pricing = () => {
                     </section>
 
                     {/* FAQ Section */}
-                    <section className="space-y-0 divide-y divide-border rounded-3xl border bg-card shadow-[var(--shadow-soft)]">
+                    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="space-y-0 divide-y divide-border rounded-3xl border bg-card shadow-[var(--shadow-soft)]">
                         <div className="grid grid-cols-1 items-start gap-6 p-6 md:grid-cols-2 sm:gap-8 sm:p-8 lg:gap-12">
                             <div>
                                 <h3 className="font-Sora text-2xl font-bold sm:text-3xl lg:text-4xl">
@@ -275,8 +283,8 @@ const Pricing = () => {
                                 </p>
                                 <p>
                                     <strong className="text-foreground">Donors cover the fees</strong> so that 100% of every donation goes directly to the campaign.
-                                    The small fee ({totalFeePercent}% for {campaignType} campaigns) is added on top of the donation amount and covers
-                                    payment processing (1%) and platform costs ({platformFeePercent}%).
+                                    The small fee ({loading ? "…" : `${totalFeePercent}%`} for {campaignType} campaigns) is added on top of the donation amount and covers
+                                    payment processing (1%) and platform costs ({loading ? "…" : `${platformFeePercent}%`}).
                                 </p>
                                 <p>
                                     <strong className="text-foreground">Campaign organizers pay nothing</strong> — starting a fundraiser on ib4me is completely free.
@@ -302,11 +310,15 @@ const Pricing = () => {
                                 </p>
                             </div>
                         </div>
+                    </div>
                     </section>
 
+                </div>
 
-                    {/* CTA Section */}
-                    <div className="mx-auto mt-14 max-w-5xl rounded-3xl bg-primary px-6 py-8 text-center text-white sm:mt-18 sm:px-8 sm:py-10 md:px-12 md:py-12">
+            {/* CTA Section */}
+            <section className="px-4 pt-12 pb-24 sm:px-6 sm:pt-16 sm:pb-28 lg:px-8 lg:pt-20 lg:pb-32">
+                <div className="mx-auto max-w-7xl">
+                    <div className="rounded-3xl bg-primary px-5 py-10 text-center text-white sm:px-8 sm:py-12 md:px-12 md:py-14">
                         <h3 className="mb-4 text-2xl font-bold sm:mb-6 sm:text-3xl md:text-4xl">
                             Everything you need to fundraise
                         </h3>
@@ -326,7 +338,7 @@ const Pricing = () => {
                         </div>
                     </div>
                 </div>
-            </main>
+            </section>
         </div>
     );
 };

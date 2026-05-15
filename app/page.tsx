@@ -12,9 +12,9 @@ export default function Home() {
   return (
     <div>
       <HeroSection />
-      <StatsSection />
-      <CategoriesSection />
       <DiscoverCampaigns />
+      <CategoriesSection />
+      <StatsSection />
       <GetStartedSection />
       <TestimonialsSection />
       <FundraiseSection />
@@ -48,7 +48,7 @@ function HeroSection() {
             <Image
               src={Logo}
               alt="ib4me - Put Fo Wɛlbɔdi"
-              className="h-16 w-auto sm:h-20 md:h-24 lg:h-28"
+              className="h-18 w-auto sm:h-24 md:h-28 lg:h-32"
               priority
             />
           </div>
@@ -163,7 +163,7 @@ function GetStartedSection() {
       title: "Track Your Impact",
       description:
         "Follow the campaigns you support and see the real-world impact of your generosity.",
-      color: "text-chartereuse",
+      color: "text-chartereuse-dark",
       bgColor: "bg-chartereuse/10",
     },
   ];
@@ -233,7 +233,7 @@ function GetStartedSection() {
 function FundraiseSection() {
   return (
     <section className="px-4 py-16 font-Sora sm:px-6 sm:py-20 lg:px-8">
-      <div className="animate-fade-up mx-auto max-w-3xl rounded-3xl border border-border bg-background px-8 py-12 text-center shadow-[0_2px_8px_rgba(0,0,0,0.06),_0_20px_60px_-5px_rgba(0,0,0,0.22)] sm:px-12 sm:py-16">
+      <div className="animate-fade-up mx-auto max-w-3xl rounded-3xl border border-border bg-background px-5 py-10 text-center shadow-[0_2px_8px_rgba(0,0,0,0.06),_0_20px_60px_-5px_rgba(0,0,0,0.22)] sm:px-10 sm:py-12 md:px-12 md:py-16">
         <div className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 sm:h-20 sm:w-20">
           <Heart className="h-8 w-8 text-primary sm:h-10 sm:w-10" aria-hidden="true" />
         </div>
