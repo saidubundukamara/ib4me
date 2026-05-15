@@ -33,7 +33,6 @@ interface DashboardStats {
 
 const GREEN = "#00712D";
 const ORANGE = "#FF6000";
-const CHARTEREUSE = "#80E10A";
 const AMBER = "#FBB03B";
 
 export default function AdminDashboardPage() {
