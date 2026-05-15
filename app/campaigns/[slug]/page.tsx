@@ -26,7 +26,8 @@ import {
   userRepository,
 } from "@/repositories";
 import CampaignTabs, { type CampaignUpdateItem } from "./Tabs";
-import DonorsTicker, { timeAgo } from "./DonorsTicker";
+import DonorsTicker from "./DonorsTicker";
+import { timeAgo } from "@/lib/utils";
 import ShareImageButton from "./ShareImageButton";
 
 function buildResponsiveHero(key: string) {
