@@ -15,7 +15,7 @@ export async function GET() {
       allCampaigns,
     ] = await Promise.all([
       campaignRepository.count({ status: "active" } as never),
-      donationRepository.count({ status: "completed" } as never),
+      donationRepository.count({ status: "succeeded" } as never),
       userRepository.count({} as never),
       campaignRepository.findMany({ status: "active" } as never, {
         query: { select: "totals.raisedMinor goal.currency" },
