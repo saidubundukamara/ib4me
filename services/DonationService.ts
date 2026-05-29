@@ -10,6 +10,27 @@ import type { DonationFilters, DonationListOptions } from "../repositories/Donat
 import { auditLogService } from "./AuditLogService";
 import type { AuditContext } from "../lib/admin-auth";
 import type { ILedgerEntry } from "../models/LedgerEntry";
+import { monimeService } from "../lib/monime";
+import { settingService } from "./SettingService";
+
+export type ReconcileAction =
+  | "advanced_to_succeeded"
+  | "advanced_to_payment_received"
+  | "marked_failed"
+  | "skipped_no_session"
+  | "skipped_not_pending"
+  | "skipped_session_pending"
+  | "skipped_dry_run"
+  | "error";
+
+export interface ReconcileResult {
+  donationId: string;
+  action: ReconcileAction;
+  fromStatus: string;
+  toStatus: string;
+  monimeSessionStatus?: string;
+  reason?: string;
+}
 
 export interface DonationFeeInput {
   baseFeeMinor: number;
@@ -278,6 +299,7 @@ export class DonationService {
       if (donation.status !== "payment_received" && donation.status !== "pending") {
         throw new Error(`Cannot complete donation from status: ${donation.status}`);
       }
+      const enteredFromPending = donation.status === "pending";
 
       // Calculate what campaign actually receives
       // For backward compat with old donations, use donation.amount.minor if campaignReceivesMinor not set
@@ -356,7 +378,23 @@ export class DonationService {
         description: `Donation received from transfer ${transferId}`,
       } as unknown as Partial<ILedgerEntry>, txn);
 
-      // Campaign totals already updated in markPaymentReceived()
+      // Normal flow: campaign totals were already incremented in markPaymentReceived().
+      // Idempotency-branch flow (e.g. webhook/process-transfer recovering a donation
+      // whose transfer was completed externally but whose status was still pending):
+      // markPaymentReceived was skipped, so we must update totals here to avoid silent loss.
+      if (enteredFromPending) {
+        await campaignRepository.updateById(
+          donation.campaignId.toString(),
+          {
+            $inc: {
+              "totals.raisedMinor": campaignReceivesAmount,
+              "totals.donationCount": 1,
+            } as never,
+            $set: { "totals.lastDonationAt": new Date() } as never,
+          } as never,
+          txn
+        );
+      }
 
       return updated;
     }, session);
@@ -468,6 +506,207 @@ export class DonationService {
 
       return updated;
     }, session);
+  }
+
+  /**
+   * List pending donations that have a Monime checkout session and are old
+   * enough to be safely reconciled (i.e. not still mid-flow).
+   */
+  async listPendingNeedingReconciliation(maxAgeMinutes: number = 10): Promise<IDonation[]> {
+    const cutoff = new Date(Date.now() - maxAgeMinutes * 60 * 1000);
+    return donationRepository.findMany({
+      status: "pending",
+      "provider.checkoutSessionId": { $exists: true, $ne: null },
+      createdAt: { $lt: cutoff },
+    } as never, { query: { sort: { createdAt: 1 } } });
+  }
+
+  /**
+   * Reconcile a single pending donation against Monime's authoritative checkout
+   * session state. Used by the cron reconciliation route to recover donations
+   * whose webhook was missed (common for mobile-money / USSD donors who never
+   * return to the browser, so /success and /[id]/status don't fire either).
+   *
+   * Mirrors the post-payment flow from app/api/donations/webhook/route.ts
+   * (handlePaymentCompleted) — markPaymentReceived → internal transfer →
+   * completeWithTransfer — but driven by the cron loop instead of a webhook.
+   */
+  async advanceFromCheckoutSession(
+    donationId: string,
+    options: { dryRun?: boolean } = {}
+  ): Promise<ReconcileResult> {
+    const dryRun = options.dryRun === true;
+    const donation = await donationRepository.findById(donationId);
+    if (!donation) throw new Error(`Donation ${donationId} not found`);
+
+    if (donation.status !== "pending") {
+      return {
+        donationId,
+        action: "skipped_not_pending",
+        fromStatus: donation.status,
+        toStatus: donation.status,
+        reason: `donation is ${donation.status}`,
+      };
+    }
+
+    const checkoutSessionId = donation.provider?.checkoutSessionId;
+    if (!checkoutSessionId) {
+      return {
+        donationId,
+        action: "skipped_no_session",
+        fromStatus: "pending",
+        toStatus: "pending",
+        reason: "no checkout session id",
+      };
+    }
+
+    const session = await monimeService.getCheckoutSession(checkoutSessionId);
+    const sessionStatus = session.result?.status;
+
+    if (sessionStatus === "failed" || sessionStatus === "cancelled") {
+      if (dryRun) {
+        return {
+          donationId,
+          action: "skipped_dry_run",
+          fromStatus: "pending",
+          toStatus: "failed",
+          monimeSessionStatus: sessionStatus,
+          reason: `would mark failed (Monime: ${sessionStatus})`,
+        };
+      }
+      await this.markFailed(donationId, `Reconciliation: Monime reported ${sessionStatus}`);
+      return {
+        donationId,
+        action: "marked_failed",
+        fromStatus: "pending",
+        toStatus: "failed",
+        monimeSessionStatus: sessionStatus,
+      };
+    }
+
+    if (sessionStatus !== "completed") {
+      return {
+        donationId,
+        action: "skipped_session_pending",
+        fromStatus: "pending",
+        toStatus: "pending",
+        monimeSessionStatus: sessionStatus,
+        reason: `Monime session not completed (${sessionStatus ?? "unknown"})`,
+      };
+    }
+
+    if (dryRun) {
+      return {
+        donationId,
+        action: "skipped_dry_run",
+        fromStatus: "pending",
+        toStatus: "payment_received",
+        monimeSessionStatus: sessionStatus,
+        reason: "would mark payment_received and attempt transfer",
+      };
+    }
+
+    await this.markPaymentReceived(donationId, {
+      paymentId: session.result.id,
+      paymentMethod: { type: "checkout_session", provider: "MONIME" },
+      completedAt: new Date().toISOString(),
+    });
+
+    const campaignFinancialAccountId = session.result.metadata?.campaignFinancialAccountId;
+    if (typeof campaignFinancialAccountId !== "string" || !campaignFinancialAccountId) {
+      await this.updateTransferStatus(donationId, {
+        status: "failed",
+        failureReason: "Missing campaign financial account ID in checkout session metadata",
+        initiatedAt: new Date(),
+        retryCount: 0,
+      });
+      return {
+        donationId,
+        action: "advanced_to_payment_received",
+        fromStatus: "pending",
+        toStatus: "payment_received",
+        monimeSessionStatus: sessionStatus,
+        reason: "transfer not attempted: missing campaign account id in metadata",
+      };
+    }
+
+    const platformAccount = await settingService.getPlatformAccountSettings();
+    if (!platformAccount?.id) {
+      await this.updateTransferStatus(donationId, {
+        status: "failed",
+        failureReason: "Platform financial account not configured",
+        initiatedAt: new Date(),
+        retryCount: 0,
+      });
+      return {
+        donationId,
+        action: "advanced_to_payment_received",
+        fromStatus: "pending",
+        toStatus: "payment_received",
+        monimeSessionStatus: sessionStatus,
+        reason: "transfer not attempted: platform account not configured",
+      };
+    }
+
+    const fresh = await donationRepository.findById(donationId);
+    if (!fresh) throw new Error(`Donation ${donationId} disappeared after markPaymentReceived`);
+
+    try {
+      await this.updateTransferStatus(donationId, {
+        status: "pending",
+        initiatedAt: new Date(),
+        retryCount: 0,
+      });
+
+      const transfer = await monimeService.createInternalTransfer({
+        amount: { currency: fresh.amount.currency, value: fresh.amount.minor },
+        sourceFinancialAccount: { id: platformAccount.id },
+        destinationFinancialAccount: { id: campaignFinancialAccountId },
+        description: `Donation transfer for ${donationId}`,
+        metadata: { donationId, type: "donation_transfer", source: "reconciliation" },
+      }, `donation_transfer_${donationId}`);
+
+      if (transfer.status === "completed") {
+        await this.completeWithTransfer(donationId, transfer.id);
+        return {
+          donationId,
+          action: "advanced_to_succeeded",
+          fromStatus: "pending",
+          toStatus: "succeeded",
+          monimeSessionStatus: sessionStatus,
+        };
+      }
+
+      await this.updateTransferStatus(donationId, {
+        id: transfer.id,
+        status: transfer.status === "failed" ? "failed" : "pending",
+        failureReason: transfer.status === "failed" ? (transfer.failureReason || "Transfer failed") : undefined,
+      });
+
+      return {
+        donationId,
+        action: "advanced_to_payment_received",
+        fromStatus: "pending",
+        toStatus: "payment_received",
+        monimeSessionStatus: sessionStatus,
+        reason: `transfer ${transfer.status}, will be resolved on next reconciliation tick`,
+      };
+    } catch (transferError) {
+      const message = transferError instanceof Error ? transferError.message : "Transfer API error";
+      await this.updateTransferStatus(donationId, {
+        status: "failed",
+        failureReason: message,
+        retryCount: 1,
+      });
+      return {
+        donationId,
+        action: "advanced_to_payment_received",
+        fromStatus: "pending",
+        toStatus: "payment_received",
+        monimeSessionStatus: sessionStatus,
+        reason: `transfer error: ${message}`,
+      };
+    }
   }
 
   async listByCampaign(
