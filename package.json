@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test:e2e": "playwright test",
     "create-superadmin": "node scripts/create-superadmin.js",
+    "reset-password": "node scripts/reset-password.js",
     "migrate:unapproved-campaigns": "node scripts/migrate-unapproved-campaigns.js",
     "reconcile:donations": "tsx scripts/reconcile-donations.ts"
   },
