@@ -22,18 +22,11 @@ export async function POST(req: NextRequest) {
       headersList.get("monime-signature") ||
       "";
 
-    // TODO: Implement proper webhook signature verification based on Monime docs
-    // For now, we're logging the signature for analysis
-    if (signature) {
-      // TODO: Verify signature using Monime's webhook secret
-      // const isValidSignature = monimeService.verifyWebhookSignature(body, signature);
-      // if (!isValidSignature) {
-      //   return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
-      // }
-    } else {
-      console.warn(
-        "No webhook signature found in headers - implement signature verification"
-      );
+    // Verify webhook signature. Enforced only when both MONIME_WEBHOOK_SECRET and
+    // MONIME_VERIFY_WEBHOOK_SIGNATURE=true are set — see monimeService.verifyWebhookSignature.
+    const isValidSignature = monimeService.verifyWebhookSignature(body, signature);
+    if (!isValidSignature) {
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
     // Parse webhook payload

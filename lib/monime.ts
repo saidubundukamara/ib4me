@@ -1,4 +1,4 @@
-// import * as crypto from "crypto"; // Removed - not needed for current implementation
+import * as crypto from "crypto";
 
 export interface MonimeConfig {
   accessToken: string;
@@ -488,12 +488,55 @@ export class MonimeService {
     );
   }
 
-  // Note: Webhook signature verification removed - check Monime docs for actual webhook authentication
-  verifyWebhookSignature(): boolean {
-    console.warn(
-      "Webhook signature verification not implemented - check Monime documentation for proper webhook authentication"
-    );
-    return true; // Always return true for now - implement proper verification based on Monime docs
+  /**
+   * Verify a Monime webhook signature.
+   *
+   * Behavior is controlled by env vars so this is safe to ship before the exact
+   * Monime signature format is confirmed and rolled out in production:
+   *   - MONIME_WEBHOOK_SECRET unset  → log-only mode (returns true). Same as before this method existed.
+   *   - MONIME_WEBHOOK_SECRET set, MONIME_VERIFY_WEBHOOK_SIGNATURE != "true" → compute + log mismatches, but still allow. Use this to validate the algorithm against live traffic before enforcing.
+   *   - Both set                     → enforce. Returns false on missing/invalid signature.
+   *
+   * Algorithm assumed: HMAC-SHA256 of the raw request body using the webhook
+   * secret, hex-encoded. Accepts either the raw hex digest or a `sha256=<hex>`
+   * prefixed form, which covers the most common provider conventions.
+   * Confirm against Monime's docs before flipping MONIME_VERIFY_WEBHOOK_SIGNATURE=true.
+   */
+  verifyWebhookSignature(rawBody: string, signatureHeader: string): boolean {
+    const secret = process.env.MONIME_WEBHOOK_SECRET;
+    const enforce = process.env.MONIME_VERIFY_WEBHOOK_SIGNATURE === "true";
+
+    if (!secret) {
+      console.warn(
+        "[monime] MONIME_WEBHOOK_SECRET not set — webhook signature verification disabled. Allowing through."
+      );
+      return true;
+    }
+
+    const expected = crypto.createHmac("sha256", secret).update(rawBody, "utf8").digest("hex");
+    const provided = (signatureHeader || "").replace(/^sha256=/i, "").trim().toLowerCase();
+
+    if (!provided) {
+      console.warn("[monime] webhook signature header missing or empty");
+      return !enforce;
+    }
+
+    let match = false;
+    try {
+      const a = Buffer.from(expected, "hex");
+      const b = Buffer.from(provided, "hex");
+      match = a.length === b.length && crypto.timingSafeEqual(a, b);
+    } catch {
+      match = false;
+    }
+
+    if (!match) {
+      console.warn(
+        `[monime] webhook signature mismatch (enforce=${enforce}). Expected ${expected.slice(0, 8)}..., got ${provided.slice(0, 8)}...`
+      );
+    }
+
+    return enforce ? match : true;
   }
 
   parseWebhookPayload(payload: string): MonimeWebhookPayload {
