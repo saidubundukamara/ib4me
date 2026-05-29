@@ -30,7 +30,7 @@ export interface MonimeCheckoutSessionRequest {
 
 export interface MonimeCheckoutSessionResult {
   id: string;
-  status: "pending" | "completed" | "failed" | "cancelled";
+  status: "pending" | "completed" | "failed" | "cancelled" | "expired";
   name?: string;
   orderNumber?: string;
   reference?: string;
@@ -50,7 +50,7 @@ export interface MonimeCheckoutSessionResult {
 export interface MonimeCheckoutSessionResponse {
   result: MonimeCheckoutSessionResult;
   id: string;
-  status: "pending" | "completed" | "failed" | "cancelled";
+  status: "pending" | "completed" | "failed" | "cancelled" | "expired";
   redirectUrl: string;
   reference: string;
   amount: {
@@ -242,7 +242,7 @@ export interface MonimeWebhookObject {
 export interface MonimeWebhookCheckoutSessionData {
   id: string;
   type?: string;
-  status: "pending" | "completed" | "failed" | "cancelled";
+  status: "pending" | "completed" | "failed" | "cancelled" | "expired";
   financialAccountId?: string;
   name?: string;
   description?: string;
