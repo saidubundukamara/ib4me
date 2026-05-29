@@ -489,54 +489,81 @@ export class MonimeService {
   }
 
   /**
-   * Verify a Monime webhook signature.
+   * Parse a Monime `monime-signature` header into its timestamp and signature parts.
    *
-   * Behavior is controlled by env vars so this is safe to ship before the exact
-   * Monime signature format is confirmed and rolled out in production:
-   *   - MONIME_WEBHOOK_SECRET unset  → log-only mode (returns true). Same as before this method existed.
-   *   - MONIME_WEBHOOK_SECRET set, MONIME_VERIFY_WEBHOOK_SIGNATURE != "true" → compute + log mismatches, but still allow. Use this to validate the algorithm against live traffic before enforcing.
-   *   - Both set                     → enforce. Returns false on missing/invalid signature.
+   * Format: `t=<unix-seconds>,v1=<base64-hmac>` (comma-separated key=value pairs).
+   * Returns null if either component is missing.
+   */
+  private parseMonimeSignature(
+    headerValue: string
+  ): { timestamp: string; v1: string } | null {
+    let timestamp: string | null = null;
+    let v1: string | null = null;
+    for (const part of (headerValue || "").split(",")) {
+      const [key, value] = part.split("=");
+      if (key?.trim() === "t") timestamp = value?.trim() ?? null;
+      if (key?.trim() === "v1") v1 = value?.trim() ?? null;
+    }
+    if (!timestamp || !v1) return null;
+    return { timestamp, v1 };
+  }
+
+  /**
+   * Verify a Monime webhook signature. Always enforced — returns false on any
+   * missing/invalid signature so callers reject the request.
    *
-   * Algorithm assumed: HMAC-SHA256 of the raw request body using the webhook
-   * secret, hex-encoded. Accepts either the raw hex digest or a `sha256=<hex>`
-   * prefixed form, which covers the most common provider conventions.
-   * Confirm against Monime's docs before flipping MONIME_VERIFY_WEBHOOK_SIGNATURE=true.
+   * Monime sends a `monime-signature: t=<timestamp>,v1=<base64>` header and signs
+   * `<timestamp>_<rawBody>` with HMAC-SHA256 keyed by MONIME_WEBHOOK_SECRET,
+   * base64-encoded. We also reject signatures older than 5 minutes or more than
+   * 60 seconds in the future for replay protection.
    */
   verifyWebhookSignature(rawBody: string, signatureHeader: string): boolean {
     const secret = process.env.MONIME_WEBHOOK_SECRET;
-    const enforce = process.env.MONIME_VERIFY_WEBHOOK_SIGNATURE === "true";
-
     if (!secret) {
-      console.warn(
-        "[monime] MONIME_WEBHOOK_SECRET not set — webhook signature verification disabled. Allowing through."
+      console.error(
+        "[monime] MONIME_WEBHOOK_SECRET not set — rejecting webhook (cannot verify signature)."
       );
-      return true;
+      return false;
     }
 
-    const expected = crypto.createHmac("sha256", secret).update(rawBody, "utf8").digest("hex");
-    const provided = (signatureHeader || "").replace(/^sha256=/i, "").trim().toLowerCase();
+    const parsed = this.parseMonimeSignature(signatureHeader);
+    if (!parsed) {
+      console.warn("[monime] webhook signature header missing or malformed");
+      return false;
+    }
+    const { timestamp, v1 } = parsed;
 
-    if (!provided) {
-      console.warn("[monime] webhook signature header missing or empty");
-      return !enforce;
+    // Replay protection — reject if timestamp is too old (5 min) or in the future (60s).
+    const ts = parseInt(timestamp, 10);
+    if (Number.isNaN(ts)) {
+      console.warn("[monime] webhook signature has invalid timestamp");
+      return false;
+    }
+    const age = Math.floor(Date.now() / 1000) - ts;
+    if (age > 5 * 60 || age < -60) {
+      console.warn(`[monime] webhook signature expired or out of window (age=${age}s)`);
+      return false;
     }
 
-    let match = false;
+    // Monime signs `${timestamp}_${rawBody}` and base64-encodes the HMAC-SHA256.
+    const signedPayload = `${timestamp}_${rawBody}`;
+    const expected = crypto
+      .createHmac("sha256", secret)
+      .update(signedPayload, "utf8")
+      .digest("base64");
+
     try {
-      const a = Buffer.from(expected, "hex");
-      const b = Buffer.from(provided, "hex");
-      match = a.length === b.length && crypto.timingSafeEqual(a, b);
+      const a = Buffer.from(v1, "base64");
+      const b = Buffer.from(expected, "base64");
+      const match = a.length === b.length && crypto.timingSafeEqual(a, b);
+      if (!match) {
+        console.warn("[monime] webhook signature mismatch");
+      }
+      return match;
     } catch {
-      match = false;
+      console.warn("[monime] webhook signature comparison failed");
+      return false;
     }
-
-    if (!match) {
-      console.warn(
-        `[monime] webhook signature mismatch (enforce=${enforce}). Expected ${expected.slice(0, 8)}..., got ${provided.slice(0, 8)}...`
-      );
-    }
-
-    return enforce ? match : true;
   }
 
   parseWebhookPayload(payload: string): MonimeWebhookPayload {
