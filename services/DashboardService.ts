@@ -107,59 +107,26 @@ export class DashboardService {
   }
 
   private async getDonationStatistics() {
-    // Aggregate donation statistics
-    const donationAggregation = await donationRepository.mongoModel.aggregate([
-      {
-        $group: {
-          _id: "$status",
-          count: { $sum: 1 },
-          totalAmount: { 
-            $sum: { 
-              $cond: [
-                { $eq: ["$status", "completed"] },
-                "$amount.minor",
-                0
-              ]
-            }
-          }
-        }
-      }
-    ]);
+    // Delegate to the repository aggregation, which correctly keys success off the
+    // real donation status "succeeded" (the schema has no "completed" status).
+    const analytics = await donationRepository.getAnalyticsByDateRange();
 
-    // Initialize breakdown with zeros
+    // The UI's "Completed" bucket represents succeeded donations.
     const breakdown = {
-      completed: 0,
-      failed: 0,
-      pending: 0,
-      refunded: 0,
-      successRate: 0
+      completed: analytics.successfulDonations,
+      failed: analytics.failedDonations,
+      pending: analytics.pendingDonations,
+      refunded: analytics.refundedDonations,
+      successRate: Math.round(analytics.successRate)
     };
 
-    let totalRevenue = 0;
-    let totalDonations = 0;
-    let completedDonations = 0;
+    // Gross revenue = sum of amount.minor across succeeded donations.
+    const totalRevenue = analytics.successfulAmount;
 
-    // Process aggregation results
-    donationAggregation.forEach((item) => {
-      const status = item._id as keyof typeof breakdown;
-      if (status in breakdown) {
-        breakdown[status] = item.count;
-      }
-      totalDonations += item.count;
-      
-      if (status === "completed") {
-        totalRevenue = item.totalAmount;
-        completedDonations = item.count;
-      }
-    });
-
-    // Calculate success rate
-    if (totalDonations > 0) {
-      breakdown.successRate = Math.round((completedDonations / totalDonations) * 100);
-    }
-
-    // Calculate average donation amount
-    const averageAmount = completedDonations > 0 ? Math.round(totalRevenue / completedDonations) : 0;
+    // Average over succeeded donations only.
+    const averageAmount = analytics.successfulDonations > 0
+      ? Math.round(analytics.successfulAmount / analytics.successfulDonations)
+      : 0;
 
     return {
       totalRevenue,
@@ -175,7 +142,7 @@ export class DashboardService {
     const monthlyAggregation = await donationRepository.mongoModel.aggregate([
       {
         $match: {
-          status: "completed",
+          status: "succeeded",
           createdAt: { $gte: thirteenMonthsAgo }
         }
       },
