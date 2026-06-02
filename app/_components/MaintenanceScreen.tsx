@@ -37,7 +37,7 @@ export default function MaintenanceScreen({ contact, social }: MaintenanceScreen
 
   return (
     <main
-      className="font-Sora relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 py-16 text-center"
+      className="font-Sora fixed inset-0 z-[100] flex min-h-screen flex-col items-center justify-center overflow-y-auto overflow-x-hidden px-6 py-16 text-center"
       style={{
         background:
           "radial-gradient(120% 120% at 50% -10%, #0a8f3c 0%, #00712D 38%, #014a20 100%)",
