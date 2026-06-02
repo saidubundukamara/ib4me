@@ -7,6 +7,11 @@ import { connectDB } from "@/lib/db";
 import { campaignService } from "@/services/CampaignService";
 import { payoutService } from "@/services/PayoutService";
 import { settingService } from "@/services/SettingService";
+import {
+  lookupMobileMoneyHolder,
+  InvalidMobileNumberError,
+  UnregisteredMobileMoneyError,
+} from "@/lib/mobileMoney";
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,9 +30,6 @@ export async function POST(request: NextRequest) {
     const amountStr = String(formData.get("amount") || "0");
     const payoutType = String(formData.get("payoutType") || "mobile_money");
     const msisdn = String(formData.get("msisdn") || "");
-    const accountNumber = String(formData.get("accountNumber") || "");
-    const accountName = String(formData.get("accountName") || "");
-    const providerId = String(formData.get("providerId") || "");
 
     if (!campaignIdStr) {
       return NextResponse.json({ error: "Please select a campaign" }, { status: 400 });
@@ -56,44 +58,47 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Please enter a valid amount" }, { status: 400 });
     }
 
-    // Validate payout method based on type
-    if (payoutType === "mobile_money") {
-      if (!msisdn || !/^\d{7,15}$/.test(msisdn)) {
-        return NextResponse.json({ 
-          error: "Please enter a valid mobile number (7-15 digits)" 
-        }, { status: 400 });
-      }
-    } else if (payoutType === "bank") {
-      if (!accountNumber || accountNumber.length < 5) {
-        return NextResponse.json({ 
-          error: "Please enter a valid account number" 
-        }, { status: 400 });
-      }
-      if (!accountName || accountName.trim().length < 2) {
-        return NextResponse.json({ 
-          error: "Please enter a valid account holder name" 
-        }, { status: 400 });
-      }
-      if (!providerId) {
-        return NextResponse.json({ error: "Please select a bank" }, { status: 400 });
-      }
-    } else {
+    // Bank withdrawals are disabled until a separate bank-KYC mechanism exists.
+    if (payoutType === "bank") {
+      return NextResponse.json({
+        error: "Bank withdrawals are temporarily unavailable. Please withdraw to a mobile money wallet.",
+      }, { status: 400 });
+    }
+    if (payoutType !== "mobile_money") {
       return NextResponse.json({ error: "Invalid payout method selected" }, { status: 400 });
     }
 
-    // Build method object based on type
-    const method = payoutType === "mobile_money"
-      ? {
-          type: "mobile_money" as const,
-          msisdn,
-          accountName: accountName || undefined,
-        }
-      : {
-          type: "bank" as const,
-          providerId,
-          accountNumber,
-          accountName,
-        };
+    if (!msisdn || !/^\d{7,15}$/.test(msisdn)) {
+      return NextResponse.json({
+        error: "Please enter a valid mobile number (7-15 digits)",
+      }, { status: 400 });
+    }
+
+    // Authoritative KYC: re-run the holder-name lookup server-side so it cannot be
+    // bypassed by the client. Resolves the operator (Orange/Africell) and the
+    // registered holder name, which we persist on the payout for audit.
+    let holder;
+    try {
+      holder = await lookupMobileMoneyHolder(msisdn);
+    } catch (kycError) {
+      if (
+        kycError instanceof InvalidMobileNumberError ||
+        kycError instanceof UnregisteredMobileMoneyError
+      ) {
+        return NextResponse.json({ error: kycError.message }, { status: 400 });
+      }
+      return NextResponse.json({
+        error: "Unable to verify this number. Please check it and try again.",
+      }, { status: 502 });
+    }
+
+    // Build method object — store the resolved provider and verified holder name.
+    const method = {
+      type: "mobile_money" as const,
+      provider: holder.providerId,
+      msisdn: holder.msisdn,
+      accountName: holder.holderName,
+    };
 
     // Get withdrawal settings for threshold checks
     const withdrawalSettings = await settingService.getWithdrawalSettings();

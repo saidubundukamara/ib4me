@@ -7,6 +7,7 @@ import {
 import { IPayout, IPayoutApproval, IPayoutPolicyCheck } from "../models/Payout";
 import { runInTransaction, ServiceSession } from "./ServiceTransaction";
 import { monimeService, MonimePayoutRequest } from "../lib/monime";
+import { resolveMobileOperator } from "../lib/mobileMoney";
 import { randomUUID } from "crypto";
 import type { PayoutFilters, PayoutListOptions } from "../repositories/PayoutRepository";
 import { auditLogService } from "./AuditLogService";
@@ -188,25 +189,6 @@ export class PayoutService {
 
       // Continue with existing Monime processing for threshold-compliant payouts
       try {
-        // Helper function to determine mobile money provider based on phone number
-        const getMobileMoneyProvider = (phoneNumber: string): string => {
-          // Remove any leading zeros or country codes
-          const cleanNumber = phoneNumber.replace(/^(\+232|232|0)/, "");
-
-          // Orange Money (Airtel) - starts with 76, 77, 78
-          if (/^7[678]/.test(cleanNumber)) {
-            return "m17"; // Orange Money provider ID
-          }
-
-          // Africell (AfriMoney) - starts with 79, 30, 31, 32, 33, 34
-          if (/^(79|3[0-4])/.test(cleanNumber)) {
-            return "m18"; // AfriMoney provider ID
-          }
-
-          // Default to Orange Money if can't determine
-          return "m17";
-        };
-
         // Prepare Monime payout request
         let destination: MonimePayoutRequest["destination"];
 
@@ -214,9 +196,14 @@ export class PayoutService {
           const phoneNumber =
             (input.method as { type: "mobile_money"; msisdn?: string })
               .msisdn || "";
+          // Operator resolved at request time (KYC step) is stored on method.provider;
+          // fall back to a live lookup so the correct provider (Orange/Africell) is used.
+          const providerId =
+            (input.method as { type: "mobile_money"; provider?: string })
+              .provider || resolveMobileOperator(phoneNumber).providerId;
           destination = {
             type: "momo",
-            providerId: "m17",
+            providerId,
             phoneNumber,
           };
         } else {
