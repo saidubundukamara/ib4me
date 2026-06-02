@@ -6,7 +6,8 @@ import {
 } from "../repositories";
 import { IPayout, IPayoutApproval, IPayoutPolicyCheck } from "../models/Payout";
 import { runInTransaction, ServiceSession } from "./ServiceTransaction";
-import { monimeService, MonimePayoutRequest } from "../lib/monime";
+import { monimeService, MonimePayoutRequest, MonimeApiError } from "../lib/monime";
+import { resolveMobileOperator } from "../lib/mobileMoney";
 import { randomUUID } from "crypto";
 import type { PayoutFilters, PayoutListOptions } from "../repositories/PayoutRepository";
 import { auditLogService } from "./AuditLogService";
@@ -29,6 +30,115 @@ export class PayoutService {
       blocked: withdrawalSettings.withdrawalsBlocked,
       reason: withdrawalSettings.blockedReason
     };
+  }
+
+  /**
+   * Read the REAL available balance of the source financial account from Monime
+   * and throw a clear error if it can't cover the payout. Prevents a payout from
+   * silently sitting on "processing" when the account isn't actually funded.
+   */
+  private async assertSufficientBalance(
+    financialAccountId: string,
+    amountMinor: number,
+    currency: string
+  ): Promise<void> {
+    const account = await monimeService.getFinancialAccount(financialAccountId);
+    const availableMinor = monimeService.getAccountBalanceMinor(account);
+    console.log("[payout] balance pre-flight", {
+      financialAccountId,
+      availableMinor,
+      amountMinor,
+      currency,
+      sufficient: availableMinor >= amountMinor,
+    });
+    if (availableMinor < amountMinor) {
+      const fmt = (minor: number) => `${currency} ${(minor / 100).toFixed(2)}`;
+      throw new Error(
+        `Insufficient funds in payout account. Available ${fmt(availableMinor)}, requested ${fmt(amountMinor)}.`
+      );
+    }
+  }
+
+  /**
+   * Authoritative available balance for a campaign: the REAL balance of its
+   * Monime financial account (where donation funds are settled), NOT the
+   * MongoDB raised−paid figure. This is what the withdrawal UI should display
+   * and what gates a withdrawal request.
+   */
+  async getAvailableBalanceMinor(campaignId: string): Promise<number> {
+    const campaign = await campaignRepository.findById(campaignId);
+    if (!campaign?.financial_account?.id) {
+      // No funding account yet → nothing is withdrawable.
+      return 0;
+    }
+    const account = await monimeService.getFinancialAccount(
+      campaign.financial_account.id
+    );
+    return monimeService.getAccountBalanceMinor(account);
+  }
+
+  /**
+   * Apply the one-time side-effects of a completed payout: bump the campaign's
+   * withdrawal counters and write the "out" ledger entry. Idempotent — the
+   * synchronous disburse response and the payout.completed webhook may both
+   * reach this, so we atomically claim completion via `completionApplied` and
+   * only the first caller does the work.
+   */
+  private async applyPayoutCompletion(
+    payout: IPayout,
+    txn: ServiceSession
+  ): Promise<void> {
+    const claim = await payoutRepository.updateOne(
+      { _id: payout.id, completionApplied: { $ne: true } } as never,
+      { $set: { completionApplied: true } } as never,
+      txn
+    );
+    if (claim.modifiedCount !== 1) {
+      // Another path already applied the completion side-effects.
+      return;
+    }
+
+    const campaign = await campaignRepository.findById(
+      payout.campaignId.toString()
+    );
+    const currency = campaign?.goal?.currency ?? "SLE";
+
+    await campaignRepository.updateById(
+      payout.campaignId.toString(),
+      {
+        $inc: {
+          "withdrawals.totalPaidMinor": payout.amountMinor,
+          "withdrawals.count": 1,
+        } as never,
+      } as never,
+      txn
+    );
+
+    await ledgerEntryRepository.create(
+      {
+        campaignId: payout.campaignId,
+        refType: "payout",
+        refId: payout._id,
+        direction: "out",
+        amountMinor: payout.amountMinor,
+        currency,
+      } as unknown as Partial<import("../models/LedgerEntry").ILedgerEntry>,
+      txn
+    );
+  }
+
+  /** Map a Monime payout status to our payout status enum. */
+  private mapMonimeStatus(status?: string): IPayout["status"] {
+    switch (status) {
+      case "completed":
+        return "completed";
+      case "failed":
+        return "failed";
+      case "cancelled":
+        return "cancelled";
+      default:
+        return "processing";
+    }
   }
 
   /**
@@ -85,6 +195,13 @@ export class PayoutService {
     if (input.amountMinor <= 0)
       throw new Error("Payout amount must be positive");
 
+    console.log("[payout] requestPayout start", {
+      campaignId: input.campaignId.toString(),
+      requestedBy: input.requestedBy.toString(),
+      amountMinor: input.amountMinor,
+      methodType: input.method?.type,
+    });
+
     // Check if withdrawals are globally blocked
     const blockStatus = await this.isWithdrawalsBlocked();
     if (blockStatus.blocked) {
@@ -109,13 +226,15 @@ export class PayoutService {
         throw new Error("Not authorized to withdraw from this campaign");
       }
 
-      // Verify sufficient funds
-      const raised = campaign.totals?.raisedMinor ?? 0;
-      const paid = campaign.withdrawals?.totalPaidMinor ?? 0;
-      const availableMinor = Math.max(0, raised - paid);
-      if (input.amountMinor > availableMinor) {
-        throw new Error("Insufficient funds available for withdrawal");
-      }
+      // Verify sufficient funds against the REAL Monime balance of the
+      // campaign's financial account (the single source of truth), not the
+      // MongoDB raised−paid figure which can overstate what has actually
+      // settled into the account.
+      await this.assertSufficientBalance(
+        campaign.financial_account.id,
+        input.amountMinor,
+        campaign.goal?.currency ?? "SLE"
+      );
 
       // Check minimum withdrawal threshold
       const policyCheck = await this.checkMinimumThreshold(
@@ -126,6 +245,14 @@ export class PayoutService {
 
       // Determine initial status based on threshold check
       const initialStatus = policyCheck.minThresholdMet ? "processing" : "threshold_review";
+
+      console.log("[payout] threshold check", {
+        campaignId: input.campaignId.toString(),
+        amountMinor: input.amountMinor,
+        raisedMinor: campaign.totals?.raisedMinor ?? 0,
+        minThresholdMet: policyCheck.minThresholdMet,
+        initialStatus,
+      });
 
       // Create payout record first
       const payout = await payoutRepository.create(
@@ -183,30 +310,17 @@ export class PayoutService {
           userAgent: auditContext?.userAgent
         });
 
+        console.warn("[payout] below threshold — parked for admin review, NOT sent to Monime", {
+          payoutId: payout.id,
+          amountMinor: input.amountMinor,
+          minThreshold: settings?.minimumWithdrawalAmount ?? 50000,
+        });
+
         return payout;
       }
 
       // Continue with existing Monime processing for threshold-compliant payouts
       try {
-        // Helper function to determine mobile money provider based on phone number
-        const getMobileMoneyProvider = (phoneNumber: string): string => {
-          // Remove any leading zeros or country codes
-          const cleanNumber = phoneNumber.replace(/^(\+232|232|0)/, "");
-
-          // Orange Money (Airtel) - starts with 76, 77, 78
-          if (/^7[678]/.test(cleanNumber)) {
-            return "m17"; // Orange Money provider ID
-          }
-
-          // Africell (AfriMoney) - starts with 79, 30, 31, 32, 33, 34
-          if (/^(79|3[0-4])/.test(cleanNumber)) {
-            return "m18"; // AfriMoney provider ID
-          }
-
-          // Default to Orange Money if can't determine
-          return "m17";
-        };
-
         // Prepare Monime payout request
         let destination: MonimePayoutRequest["destination"];
 
@@ -214,9 +328,14 @@ export class PayoutService {
           const phoneNumber =
             (input.method as { type: "mobile_money"; msisdn?: string })
               .msisdn || "";
+          // Operator resolved at request time (KYC step) is stored on method.provider;
+          // fall back to a live lookup so the correct provider (Orange/Africell) is used.
+          const providerId =
+            (input.method as { type: "mobile_money"; provider?: string })
+              .provider || resolveMobileOperator(phoneNumber).providerId;
           destination = {
             type: "momo",
-            providerId: "m17",
+            providerId,
             phoneNumber,
           };
         } else {
@@ -246,22 +365,74 @@ export class PayoutService {
           },
         };
 
+        // Balance was already verified against the real Monime account balance
+        // above (before the payout row was created).
+
         // Create payout with Monime
         const idempotencyKey = randomUUID();
+        console.log("[payout] sending to Monime", {
+          payoutId: payout.id,
+          destinationType: monimeRequest.destination.type,
+          providerId: monimeRequest.destination.providerId,
+          amountMinor: monimeRequest.amount.value,
+          currency: monimeRequest.amount.currency,
+          sourceFinancialAccountId: monimeRequest.source.financialAccountId,
+          idempotencyKey,
+        });
         const monimePayout = await monimeService.createPayout(
           monimeRequest,
           idempotencyKey
         );
 
-        // Update payout with Monime ID
+        // Reflect an immediate terminal status from Monime rather than leaving
+        // the row stuck on "processing".
+        const reconciledStatus = this.mapMonimeStatus(monimePayout.status);
+        console.log("[payout] Monime responded", {
+          payoutId: payout.id,
+          monimePayoutId: monimePayout.id,
+          monimeStatus: monimePayout.status,
+          reconciledStatus,
+        });
         const updatedPayout = await payoutRepository.updateById(
           payout.id,
-          { $set: { monimePayoutId: monimePayout.id } } as never,
+          {
+            $set: {
+              monimePayoutId: monimePayout.id,
+              status: reconciledStatus,
+              ...(reconciledStatus === "failed"
+                ? {
+                    failureReason:
+                      monimePayout.failureReason ||
+                      "Monime rejected the payout",
+                  }
+                : {}),
+            },
+          } as never,
           txn
         );
 
+        // If Monime settled the payout synchronously, apply the completion
+        // side-effects now (idempotent — webhook may also fire later).
+        if (reconciledStatus === "completed") {
+          await this.applyPayoutCompletion(updatedPayout || payout, txn);
+        }
+
         return updatedPayout || payout;
       } catch (monimeError) {
+        const errDetails =
+          monimeError instanceof MonimeApiError
+            ? {
+                code: monimeError.code,
+                statusCode: monimeError.statusCode,
+                details: monimeError.details,
+              }
+            : undefined;
+        console.error("[payout] Monime call failed", {
+          payoutId: payout.id,
+          message:
+            monimeError instanceof Error ? monimeError.message : "Unknown error",
+          ...errDetails,
+        });
         // Update payout status to failed if Monime call fails
         await payoutRepository.updateById(
           payout.id,
@@ -363,30 +534,11 @@ export class PayoutService {
       );
       if (!updated) throw new Error("Failed to update payout status");
 
-      // If completed, update campaign withdrawals and create ledger entry
+      // If completed, apply the one-time withdrawal-counter + ledger side-effects.
+      // Idempotent: a duplicate payout.completed webhook (or a sync disburse that
+      // already applied it) is a no-op and cannot double-count.
       if (newStatus === "completed") {
-        const incUpdate: Record<string, number> = {
-          "withdrawals.totalPaidMinor": payout.amountMinor,
-          "withdrawals.count": 1,
-        };
-        await campaignRepository.updateById(
-          payout.campaignId.toString(),
-          { $inc: incUpdate as never } as never,
-          txn
-        );
-
-        // Ledger entry
-        await ledgerEntryRepository.create(
-          {
-            campaignId: payout.campaignId,
-            refType: "payout",
-            refId: payout._id,
-            direction: "out",
-            amountMinor: payout.amountMinor,
-            currency: "SLE", // Consider storing per-campaign currency
-          } as unknown as Partial<import("../models/LedgerEntry").ILedgerEntry>,
-          txn
-        );
+        await this.applyPayoutCompletion(updated, txn);
       }
 
       return updated;
@@ -637,20 +789,50 @@ export class PayoutService {
           },
         };
 
+        // Verify the real Monime balance of the source account before paying out.
+        await this.assertSufficientBalance(
+          campaign.financial_account.id,
+          payout.amountMinor,
+          campaign.goal?.currency ?? "SLE"
+        );
+
         // Create payout with Monime
         const idempotencyKey = randomUUID();
+        console.log("[payout] processPayout sending to Monime", {
+          payoutId,
+          destinationType: monimeRequest.destination.type,
+          providerId: monimeRequest.destination.providerId,
+          amountMinor: monimeRequest.amount.value,
+          currency: monimeRequest.amount.currency,
+          sourceFinancialAccountId: monimeRequest.source.financialAccountId,
+          idempotencyKey,
+        });
         const monimePayout = await monimeService.createPayout(
           monimeRequest,
           idempotencyKey
         );
 
-        // Update payout with processing status and Monime ID
+        // Reflect an immediate terminal status rather than forcing "processing".
+        const reconciledStatus = this.mapMonimeStatus(monimePayout.status);
+        console.log("[payout] processPayout Monime responded", {
+          payoutId,
+          monimePayoutId: monimePayout.id,
+          monimeStatus: monimePayout.status,
+          reconciledStatus,
+        });
         const updated = await payoutRepository.updateById(
           payoutId,
           {
             $set: {
-              status: "processing",
-              monimePayoutId: monimePayout.id
+              status: reconciledStatus,
+              monimePayoutId: monimePayout.id,
+              ...(reconciledStatus === "failed"
+                ? {
+                    failureReason:
+                      monimePayout.failureReason ||
+                      "Monime rejected the payout",
+                  }
+                : {}),
             }
           } as never,
           txn
@@ -660,8 +842,28 @@ export class PayoutService {
           throw new Error("Failed to update payout with Monime ID");
         }
 
+        // If Monime settled the payout synchronously, apply the completion
+        // side-effects now (idempotent — webhook may also fire later).
+        if (reconciledStatus === "completed") {
+          await this.applyPayoutCompletion(updated, txn);
+        }
+
         return updated;
       } catch (monimeError) {
+        const errDetails =
+          monimeError instanceof MonimeApiError
+            ? {
+                code: monimeError.code,
+                statusCode: monimeError.statusCode,
+                details: monimeError.details,
+              }
+            : undefined;
+        console.error("[payout] processPayout Monime call failed", {
+          payoutId,
+          message:
+            monimeError instanceof Error ? monimeError.message : "Unknown error",
+          ...errDetails,
+        });
         // Update payout status to failed if Monime call fails
         const updated = await payoutRepository.updateById(
           payoutId,

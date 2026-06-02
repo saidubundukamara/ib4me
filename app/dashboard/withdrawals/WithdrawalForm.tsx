@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Smartphone, CreditCard, Ban } from "lucide-react";
+import { Smartphone, CreditCard, Ban, Loader2, CheckCircle2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -63,12 +63,64 @@ export function WithdrawalForm({
   const [selectedCampaign, setSelectedCampaign] = useState<string | undefined>(
     undefined,
   );
-  const [selectedBank, setSelectedBank] = useState<string | undefined>(
-    undefined,
-  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [amount, setAmount] = useState<string>("");
   const formRef = useRef<HTMLFormElement>(null);
+
+  // Mobile-money KYC (holder-name lookup) state
+  const [msisdn, setMsisdn] = useState("");
+  const [kycState, setKycState] = useState<
+    "idle" | "verifying" | "verified" | "error"
+  >("idle");
+  const [kycHolder, setKycHolder] = useState<{
+    holderName: string;
+    providerName: string;
+  } | null>(null);
+  const [kycError, setKycError] = useState<string | null>(null);
+
+  const isMsisdnValid = /^\d{7,15}$/.test(msisdn);
+  const needsKyc = payoutType === "mobile_money";
+  const isKycVerified = kycState === "verified";
+
+  const resetKyc = () => {
+    setKycState("idle");
+    setKycHolder(null);
+    setKycError(null);
+  };
+
+  const handleMsisdnChange = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    setMsisdn(digits);
+    // Any edit invalidates a prior verification — the user must re-verify.
+    if (kycState !== "idle") resetKyc();
+  };
+
+  const handleVerify = async () => {
+    if (!isMsisdnValid) return;
+    setKycState("verifying");
+    setKycError(null);
+    try {
+      const res = await fetch(
+        `/api/payouts/kyc?msisdn=${encodeURIComponent(msisdn)}`,
+      );
+      const data = await res.json();
+      if (res.ok) {
+        setKycHolder({
+          holderName: data.holderName,
+          providerName: data.providerName,
+        });
+        setKycState("verified");
+      } else {
+        setKycHolder(null);
+        setKycError(data.error || "Unable to verify this number.");
+        setKycState("error");
+      }
+    } catch {
+      setKycHolder(null);
+      setKycError("Network error. Please check your connection and try again.");
+      setKycState("error");
+    }
+  };
 
   const hasCampaigns = campaignOptions.length > 0;
   const campaignSelectPlaceholder = hasCampaigns
@@ -100,7 +152,8 @@ export function WithdrawalForm({
     selectedCampaign === "__none" ||
     isWithdrawalsBlocked ||
     !isAmountValid ||
-    hasNoFundsAvailable;
+    hasNoFundsAvailable ||
+    (needsKyc && !isKycVerified);
 
   useEffect(() => {
     if (!hasCampaigns) {
@@ -159,15 +212,28 @@ export function WithdrawalForm({
       const result = await response.json();
 
       if (response.ok) {
-        toast.success("Payout request submitted successfully!", {
-          description:
-            "Your withdrawal is being processed and will be sent to your selected destination.",
-        });
+        if (result.status === "threshold_review") {
+          toast.success("Withdrawal submitted for review", {
+            description:
+              "This amount is below the minimum withdrawal threshold, so it needs admin approval before it can be paid out.",
+          });
+        } else if (result.status === "failed") {
+          toast.error("Withdrawal could not be processed", {
+            description:
+              "We couldn't complete the payout with the provider. Please try again or contact support.",
+          });
+        } else {
+          toast.success("Payout request submitted successfully!", {
+            description:
+              "Your withdrawal is being processed and will be sent to your selected destination.",
+          });
+        }
         formRef.current?.reset();
         setPayoutType("mobile_money");
         setSelectedCampaign(undefined);
-        setSelectedBank(undefined);
         setAmount("");
+        setMsisdn("");
+        resetKyc();
         onSuccess?.();
       } else {
         const errorMessage = result.error || "Failed to submit payout request";
@@ -302,10 +368,10 @@ export function WithdrawalForm({
                   Mobile Money
                 </div>
               </SelectItem>
-              <SelectItem value="bank">
+              <SelectItem value="bank" disabled>
                 <div className="flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
-                  Bank Transfer
+                  Bank Transfer (coming soon)
                 </div>
               </SelectItem>
             </SelectContent>
@@ -317,73 +383,78 @@ export function WithdrawalForm({
       {payoutType === "mobile_money" && (
         <div className="space-y-2 min-w-0">
           <Label htmlFor="msisdn">Mobile Number</Label>
-          <Input
-            name="msisdn"
-            required
-            disabled={isSubmitting}
-            type="tel"
-            inputMode="tel"
-            pattern="^\d{7,15}$"
-            placeholder="Enter digits only (e.g., 76123456)"
-            className="rounded-xl"
-          />
-          <p className="text-xs text-muted-foreground">
-            Enter phone number without country code.
-          </p>
-        </div>
-      )}
-
-      {payoutType === "bank" && (
-        <div className="space-y-4">
-          <div className="space-y-2 min-w-0">
-            <Label htmlFor="bank">Bank</Label>
-            <Select
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              id="msisdn"
+              name="msisdn"
+              required
               disabled={isSubmitting}
-              value={selectedBank}
-              onValueChange={setSelectedBank}
-            >
-              <SelectTrigger className="w-full bg-background justify-between text-left">
-                <SelectValue placeholder="Select a bank" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="slb001">
-                  Sierra Leone Commercial Bank
-                </SelectItem>
-                <SelectItem value="ecobank">Ecobank Sierra Leone</SelectItem>
-                <SelectItem value="gtb">Guaranty Trust Bank</SelectItem>
-                <SelectItem value="rokel">Rokel Commercial Bank</SelectItem>
-              </SelectContent>
-            </Select>
+              type="tel"
+              inputMode="tel"
+              pattern="^\d{7,15}$"
+              value={msisdn}
+              onChange={(e) => handleMsisdnChange(e.target.value)}
+              placeholder="Enter digits only (e.g., 76123456)"
+              className="rounded-xl"
+            />
+            {!isKycVerified && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!isMsisdnValid || kycState === "verifying" || isSubmitting}
+                onClick={handleVerify}
+                className="shrink-0"
+              >
+                {kycState === "verifying" ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Checking…
+                  </>
+                ) : (
+                  "Verify number"
+                )}
+              </Button>
+            )}
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2 min-w-0">
-              <Label htmlFor="accountNumber">Account Number</Label>
-              <Input
-                id="accountNumber"
-                name="accountNumber"
-                type="text"
-                placeholder="Account number"
-                disabled={isSubmitting}
-                required
-                className="bg-background"
-              />
+          {(kycState === "idle" || kycState === "verifying") && (
+            <p className="text-xs text-muted-foreground">
+              We check the name registered to this mobile money wallet before
+              sending funds.
+            </p>
+          )}
+
+          {kycState === "error" && kycError && (
+            <Alert variant="destructive">
+              <Ban className="h-4 w-4" />
+              <AlertDescription>{kycError}</AlertDescription>
+            </Alert>
+          )}
+
+          {isKycVerified && kycHolder && (
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3">
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                <div className="min-w-0 text-sm">
+                  <p className="font-medium text-foreground">
+                    {kycHolder.holderName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Registered on {kycHolder.providerName}. Confirm this is the
+                    correct account before withdrawing.
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="space-y-2 min-w-0">
-              <Label htmlFor="accountName">Account Name</Label>
-              <Input
-                id="accountName"
-                name="accountName"
-                type="text"
-                placeholder="Account holder name"
-                disabled={isSubmitting}
-                required
-                className="bg-background"
-              />
-            </div>
-          </div>
+          )}
         </div>
       )}
+
+        {needsKyc && !isKycVerified && (
+          <p className="text-xs text-muted-foreground">
+            Verify your mobile number to enable withdrawal.
+          </p>
+        )}
 
         <Button
           type="submit"
@@ -392,7 +463,6 @@ export function WithdrawalForm({
         >
           {isSubmitting ? "Processing..." : "Request Payout"}
         </Button>
-        <input type="hidden" name="bank" value={selectedBank ?? ""} />
       </form>
       )}
     </div>

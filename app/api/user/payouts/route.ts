@@ -23,8 +23,10 @@ export async function GET() {
     const campaigns = await campaignService.listByOwner(userId);
     const campaignIds = campaigns.map((c) => c._id as mongoose.Types.ObjectId);
     
+    // Limit is high enough that the dashboard's Total Withdrawn / Pending
+    // Requests aggregates (derived from this list) stay accurate per user.
     const payouts = campaignIds.length
-      ? await payoutRepository.listRecentByCampaignIds(campaignIds, 20)
+      ? await payoutRepository.listRecentByCampaignIds(campaignIds, 200)
       : [];
 
     return NextResponse.json(payouts);

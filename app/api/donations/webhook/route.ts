@@ -6,7 +6,7 @@ import {
   MonimeWebhookCheckoutSessionData,
   MonimePayment,
 } from "@/lib/monime";
-import { donationService, tipService, settingService } from "@/services";
+import { donationService, tipService } from "@/services";
 
 // Simple in-memory cache for webhook event IDs (in production, use Redis or database)
 const processedWebhooks = new Set<string>();
@@ -385,9 +385,8 @@ async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
     }
 
     // Step 1: Mark donation as payment_received (if not already)
-    let donation = existingDonation;
     if (existingDonation.status === "pending") {
-      donation = await donationService.markPaymentReceived(donationId, {
+      await donationService.markPaymentReceived(donationId, {
         paymentId: payment.id,
         paymentMethod: payment.paymentMethod,
         fees: payment.fees,
@@ -398,116 +397,18 @@ async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
       console.log(`[webhook] Donation ${donationId} already in status: ${existingDonation.status}`);
     }
 
-    // Step 2: Get campaign financial account ID from metadata (inside result object)
-    const campaignFinancialAccountId = checkoutSession.result.metadata?.campaignFinancialAccountId;
-    if (typeof campaignFinancialAccountId !== "string" || !campaignFinancialAccountId) {
-      console.error(`No campaignFinancialAccountId in metadata for donation ${donationId}`);
-      // Store error and skip transfer - admin will need to handle manually
-      await donationService.updateTransferStatus(donationId, {
-        status: "failed",
-        failureReason: "Missing campaign financial account ID in metadata",
-        initiatedAt: new Date(),
-        retryCount: 0
-      });
-      return;
-    }
-
-    // Step 3: Get platform account
-    const platformAccount = await settingService.getPlatformAccountSettings();
-    if (!platformAccount?.id) {
-      console.error(`Platform account not configured for donation ${donationId}`);
-      await donationService.updateTransferStatus(donationId, {
-        status: "failed",
-        failureReason: "Platform financial account not configured",
-        initiatedAt: new Date(),
-        retryCount: 0
-      });
-      return;
-    }
-
-    // Step 4: Check if transfer is already in progress or completed
-    // (Success page may have already triggered the transfer)
-    const freshDonation = await donationService.getById(donationId);
-    if (freshDonation?.transfer?.status === "completed") {
-      console.log(`[webhook] Transfer already completed for donation ${donationId}, completing donation`);
-      if (freshDonation.transfer.id) {
-        await donationService.completeWithTransfer(donationId, freshDonation.transfer.id);
-      }
-      return;
-    }
-
-    if (freshDonation?.status === "succeeded") {
-      console.log(`[webhook] Donation ${donationId} already succeeded, skipping transfer`);
-      return;
-    }
-
-    // Step 5: Initiate internal transfer from platform to campaign
-    const transferAmount = donation.amount.minor; // Transfer donation amount only, not fees
-    // Use deterministic idempotency key to prevent duplicate transfers
-    const idempotencyKey = `donation_transfer_${donationId}`;
-
-    try {
-      console.log(`[webhook] Initiating internal transfer of ${transferAmount} from platform to campaign for donation ${donationId}`);
-
-      // Mark transfer as pending
-      await donationService.updateTransferStatus(donationId, {
-        status: "pending",
-        initiatedAt: new Date(),
-        retryCount: 0
-      });
-
-      const transfer = await monimeService.createInternalTransfer({
-        amount: {
-          currency: donation.amount.currency,
-          value: transferAmount,
-        },
-        sourceFinancialAccount: {
-          id: platformAccount.id,
-        },
-        destinationFinancialAccount: {
-          id: campaignFinancialAccountId,
-        },
-        description: `Donation transfer for ${donationId}`,
-        metadata: {
-          donationId,
-          type: "donation_transfer",
-          source: "webhook" // Track that this was triggered from webhook
-        },
-      }, idempotencyKey);
-
-      console.log(`[webhook] Internal transfer created: ${transfer.id}, status: ${transfer.status}`);
-
-      // Step 6: If transfer completed (synchronous), complete the donation
-      if (transfer.status === "completed") {
-        await donationService.completeWithTransfer(donationId, transfer.id);
-        console.log(`[webhook] Successfully completed donation ${donationId} with transfer ${transfer.id}`);
-      } else if (transfer.status === "failed") {
-        // Transfer failed
-        await donationService.updateTransferStatus(donationId, {
-          id: transfer.id,
-          status: "failed",
-          failureReason: transfer.failureReason || "Transfer failed",
-          retryCount: 1
-        });
-        console.error(`Transfer failed for donation ${donationId}: ${transfer.failureReason}`);
-      } else {
-        // Transfer is pending/processing - update status and wait
-        // In practice, internal transfers are usually synchronous
-        await donationService.updateTransferStatus(donationId, {
-          id: transfer.id,
-          status: "pending",
-        });
-        console.log(`Transfer ${transfer.id} is ${transfer.status}, waiting for completion`);
-      }
-    } catch (transferError) {
-      // Transfer API call failed
-      console.error(`Transfer failed for donation ${donationId}:`, transferError);
-      await donationService.updateTransferStatus(donationId, {
-        status: "failed",
-        failureReason: transferError instanceof Error ? transferError.message : "Transfer API error",
-        retryCount: 1
-      });
-    }
+    // Step 2: Move funds from the platform account to the campaign's financial
+    // account and settle the donation. This is the RELIABLE trigger (the
+    // browser success-redirect often never fires for mobile-money donors).
+    // settleTransfer handles account resolution, idempotency, polling, and the
+    // already-completed / already-succeeded short-circuits internally.
+    const result = await donationService.settleTransfer(donationId, {
+      source: "webhook",
+    });
+    console.log(
+      `[webhook] settleTransfer for donation ${donationId}: ${result.status}` +
+        (result.reason ? ` (${result.reason})` : "")
+    );
   } catch (error) {
     console.error(`Error processing payment completed:`, error);
     throw error;

@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { payoutService } from "@/services";
 import mongoose from "mongoose";
 import { z } from "zod";
-
-const processPayoutSchema = z.object({
-  adminId: z.string().min(1, "Admin ID is required"),
-});
+import { getAdminFromToken } from "@/lib/admin-auth-token";
 
 export async function POST(
   request: NextRequest,
@@ -13,7 +10,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: "Invalid payout ID" },
@@ -21,19 +18,18 @@ export async function POST(
       );
     }
 
-    const body = await request.json();
-    const { adminId } = processPayoutSchema.parse(body);
-
-    if (!mongoose.Types.ObjectId.isValid(adminId)) {
+    // Get admin user from token (same pattern as approve/reject routes)
+    const adminUser = await getAdminFromToken();
+    if (!adminUser) {
       return NextResponse.json(
-        { error: "Invalid admin ID" },
-        { status: 400 }
+        { error: "Unauthorized - Admin authentication required" },
+        { status: 401 }
       );
     }
 
     const payout = await payoutService.processPayout(
       id,
-      new mongoose.Types.ObjectId(adminId)
+      adminUser._id
     );
 
     return NextResponse.json({
