@@ -29,10 +29,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("auth_token")
 
-      // Only verify admin session on admin routes
+      // Verify admin session whenever we're in the admin context. On the admin
+      // subdomain the middleware rewrites "/" -> "/s/admin", so the browser path
+      // can be "/" even though we're on an admin page — detect via hostname too.
+      const { hostname, pathname } = window.location
       const isAdminRoute =
-        window.location.pathname.startsWith("/s/admin") ||
-        window.location.pathname.startsWith("/admin")
+        hostname.startsWith("admin.") ||
+        pathname.startsWith("/s/admin") ||
+        pathname.startsWith("/admin")
 
       if (isAdminRoute) {
         verifyAdminSession()
