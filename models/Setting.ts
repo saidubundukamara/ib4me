@@ -48,6 +48,7 @@ export interface ITippingSettings {
 }
 
 export interface IFeatureFlags {
+  maintenanceMode?: boolean;       // When true, block the public site for everyone except admins
   whatsAppAutoPost?: boolean;
   paypalEnabled?: boolean;
   emergencyPoolFund?: boolean;
@@ -173,6 +174,7 @@ const settingSchema = new mongoose.Schema<ISetting>(
       mobileMoneyFeeBps: { type: Number },
     },
     features: {
+      maintenanceMode: { type: Boolean, default: false },
       whatsAppAutoPost: { type: Boolean },
       paypalEnabled: { type: Boolean },
       emergencyPoolFund: { type: Boolean },
