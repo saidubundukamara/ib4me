@@ -135,6 +135,20 @@ export interface MonimePayoutRequest {
   metadata?: Record<string, unknown>;
 }
 
+export interface MonimeProviderKycResult {
+  account: {
+    id: string;
+    name?: string;
+    holderName: string;
+    metadata?: Record<string, unknown>;
+  };
+  provider: {
+    id: string;
+    type: "momo" | "bank" | "wallet";
+    name: string;
+  };
+}
+
 export interface MonimePayoutResponse {
   id: string;
   status: "pending" | "processing" | "completed" | "failed" | "cancelled";
@@ -463,6 +477,21 @@ export class MonimeService {
     return this.makeRequest<MonimePayoutResponse>(`/payouts/${payoutId}`);
   }
 
+  /**
+   * Look up the registered holder name on a mobile-money account before a payout.
+   * `providerId` is the Monime provider id (m17/m18); `accountId` is the phone number.
+   * A 404 from Monime means the number is not registered on that provider's wallet.
+   */
+  async getProviderKyc(
+    providerId: string,
+    accountId: string
+  ): Promise<MonimeProviderKycResult> {
+    const response = await this.makeRequest<
+      MonimeApiResponse<MonimeProviderKycResult>
+    >(`/provider-kyc/${providerId}?accountId=${encodeURIComponent(accountId)}`);
+    return response.result;
+  }
+
   async createInternalTransfer(
     request: MonimeInternalTransferRequest,
     idempotencyKey?: string
@@ -649,6 +678,10 @@ export const monimeService = {
 
   async getPayout(...args: Parameters<MonimeService["getPayout"]>) {
     return this.getInstance().getPayout(...args);
+  },
+
+  async getProviderKyc(...args: Parameters<MonimeService["getProviderKyc"]>) {
+    return this.getInstance().getProviderKyc(...args);
   },
 
   async createInternalTransfer(
