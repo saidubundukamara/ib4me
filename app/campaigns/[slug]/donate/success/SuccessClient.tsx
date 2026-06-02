@@ -11,6 +11,29 @@ import { Separator } from "@/components/ui/separator";
 
 type DonationStatus = "loading" | "pending" | "transferring" | "succeeded" | "failed";
 
+interface DonationDetails {
+  amountMajor: number;
+  currency: string;
+  createdAt: string;
+}
+
+function formatAmount(amount: number, currency: string = "SLE") {
+  return new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
+function formatDate(dateString: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(dateString));
+}
+
 interface Campaign {
   beneficiary?: { name?: string };
   details?: string;
@@ -65,6 +88,7 @@ export default function SuccessClient({
     return donationId ? "loading" : "succeeded";
   });
   const [error, setError] = useState<string | null>(errorMessage || null);
+  const [details, setDetails] = useState<DonationDetails | null>(null);
   const [pollingCount, setPollingCount] = useState(0);
   const MAX_POLLING_ATTEMPTS = 30;
 
@@ -81,6 +105,30 @@ export default function SuccessClient({
       throw err;
     }
   }, [donationId]);
+
+  // Fetch donation details once on mount so Amount/Date show even when polling is skipped
+  useEffect(() => {
+    if (!donationId) return;
+
+    let isMounted = true;
+    checkDonationStatus()
+      .then((donationData) => {
+        if (isMounted && donationData?.amount) {
+          setDetails({
+            amountMajor: donationData.amount.major,
+            currency: donationData.amount.currency,
+            createdAt: donationData.createdAt,
+          });
+        }
+      })
+      .catch(() => {
+        // Non-critical: details simply won't render
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [donationId, checkDonationStatus]);
 
   useEffect(() => {
     if (initialStatus === "succeeded" || initialStatus === "failed" || initialStatus === "error") {
@@ -108,6 +156,14 @@ export default function SuccessClient({
         const donationData = await checkDonationStatus();
 
         if (!isMounted) return;
+
+        if (donationData.amount) {
+          setDetails({
+            amountMajor: donationData.amount.major,
+            currency: donationData.amount.currency,
+            createdAt: donationData.createdAt,
+          });
+        }
 
         if (donationData.status === "succeeded") {
           setStatus("succeeded");
@@ -307,11 +363,21 @@ export default function SuccessClient({
                   <span className="text-muted-foreground">Campaign:</span>
                   <span className="font-medium text-foreground">{campaignName}</span>
                 </div>
-                {donationId && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Donation ID:</span>
-                    <span className="font-mono text-xs text-foreground">{donationId}</span>
-                  </div>
+                {details && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Amount:</span>
+                      <span className="font-medium text-foreground">
+                        {formatAmount(details.amountMajor, details.currency)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Date:</span>
+                      <span className="font-medium text-foreground">
+                        {formatDate(details.createdAt)}
+                      </span>
+                    </div>
+                  </>
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Status:</span>
