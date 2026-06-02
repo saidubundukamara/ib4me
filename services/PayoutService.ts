@@ -33,6 +33,40 @@ export class PayoutService {
   }
 
   /**
+   * Read the REAL available balance of the source financial account from Monime
+   * and throw a clear error if it can't cover the payout. Prevents a payout from
+   * silently sitting on "processing" when the account isn't actually funded.
+   */
+  private async assertSufficientBalance(
+    financialAccountId: string,
+    amountMinor: number,
+    currency: string
+  ): Promise<void> {
+    const account = await monimeService.getFinancialAccount(financialAccountId);
+    const availableMinor = monimeService.getAccountBalanceMinor(account);
+    if (availableMinor < amountMinor) {
+      const fmt = (minor: number) => `${currency} ${(minor / 100).toFixed(2)}`;
+      throw new Error(
+        `Insufficient funds in payout account. Available ${fmt(availableMinor)}, requested ${fmt(amountMinor)}.`
+      );
+    }
+  }
+
+  /** Map a Monime payout status to our payout status enum. */
+  private mapMonimeStatus(status?: string): IPayout["status"] {
+    switch (status) {
+      case "completed":
+        return "completed";
+      case "failed":
+        return "failed";
+      case "cancelled":
+        return "cancelled";
+      default:
+        return "processing";
+    }
+  }
+
+  /**
    * Check if payout amount meets minimum withdrawal threshold
    * Threshold is based on:
    * 1. Fixed minimum amount (e.g., 50,000 SLE)
@@ -233,6 +267,13 @@ export class PayoutService {
           },
         };
 
+        // Verify the real Monime balance of the source account before paying out.
+        await this.assertSufficientBalance(
+          campaign.financial_account.id,
+          input.amountMinor,
+          campaign.goal?.currency ?? "SLE"
+        );
+
         // Create payout with Monime
         const idempotencyKey = randomUUID();
         const monimePayout = await monimeService.createPayout(
@@ -240,10 +281,24 @@ export class PayoutService {
           idempotencyKey
         );
 
-        // Update payout with Monime ID
+        // Reflect an immediate terminal status from Monime rather than leaving
+        // the row stuck on "processing".
+        const reconciledStatus = this.mapMonimeStatus(monimePayout.status);
         const updatedPayout = await payoutRepository.updateById(
           payout.id,
-          { $set: { monimePayoutId: monimePayout.id } } as never,
+          {
+            $set: {
+              monimePayoutId: monimePayout.id,
+              status: reconciledStatus,
+              ...(reconciledStatus === "failed"
+                ? {
+                    failureReason:
+                      monimePayout.failureReason ||
+                      "Monime rejected the payout",
+                  }
+                : {}),
+            },
+          } as never,
           txn
         );
 
@@ -624,6 +679,13 @@ export class PayoutService {
           },
         };
 
+        // Verify the real Monime balance of the source account before paying out.
+        await this.assertSufficientBalance(
+          campaign.financial_account.id,
+          payout.amountMinor,
+          campaign.goal?.currency ?? "SLE"
+        );
+
         // Create payout with Monime
         const idempotencyKey = randomUUID();
         const monimePayout = await monimeService.createPayout(
@@ -631,13 +693,21 @@ export class PayoutService {
           idempotencyKey
         );
 
-        // Update payout with processing status and Monime ID
+        // Reflect an immediate terminal status rather than forcing "processing".
+        const reconciledStatus = this.mapMonimeStatus(monimePayout.status);
         const updated = await payoutRepository.updateById(
           payoutId,
           {
             $set: {
-              status: "processing",
-              monimePayoutId: monimePayout.id
+              status: reconciledStatus,
+              monimePayoutId: monimePayout.id,
+              ...(reconciledStatus === "failed"
+                ? {
+                    failureReason:
+                      monimePayout.failureReason ||
+                      "Monime rejected the payout",
+                  }
+                : {}),
             }
           } as never,
           txn
