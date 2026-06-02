@@ -283,7 +283,8 @@ export class DonationRepository extends BaseRepository<IDonation> {
       paymentReceivedAmount: 0
     };
 
-    const averageDonation = data.totalDonations > 0 ? data.totalAmount / data.totalDonations : 0;
+    // Average over succeeded donations only, matching the dashboard's definition.
+    const averageDonation = data.successfulDonations > 0 ? data.successfulAmount / data.successfulDonations : 0;
     const successRate = data.totalDonations > 0 ? (data.successfulDonations / data.totalDonations) * 100 : 0;
 
     return {
@@ -313,7 +314,10 @@ export class DonationRepository extends BaseRepository<IDonation> {
         $group: {
           _id: "$provider.name",
           count: { $sum: 1 },
-          amount: { $sum: "$amount.minor" },
+          // Money figure reflects succeeded volume only; count/successRate stay over all attempts.
+          amount: {
+            $sum: { $cond: [{ $eq: ["$status", "succeeded"] }, "$amount.minor", 0] }
+          },
           successCount: {
             $sum: { $cond: [{ $eq: ["$status", "succeeded"] }, 1, 0] }
           }
