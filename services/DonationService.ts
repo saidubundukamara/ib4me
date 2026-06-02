@@ -421,6 +421,155 @@ export class DonationService {
     } as never);
   }
 
+  /**
+   * Create (or resume) the internal transfer that moves a settled donation from
+   * the platform account to the campaign's financial account, then poll it to a
+   * terminal state. Idempotent via the deterministic `donation_transfer_<id>`
+   * key — Monime returns the existing transfer if one was already created, so
+   * this both initiates new transfers and finishes ones left pending.
+   *
+   * Shared by the payment webhook, the success-redirect handler, and the
+   * reconciliation sweep so they cannot diverge. The campaign account is read
+   * from the campaign record (authoritative) rather than checkout metadata.
+   */
+  async settleTransfer(
+    donationId: string,
+    opts?: { source?: string; maxAttempts?: number; pollIntervalMs?: number }
+  ): Promise<{
+    status: "completed" | "failed" | "pending";
+    transferId?: string;
+    reason?: string;
+  }> {
+    const donation = await donationRepository.findById(donationId);
+    if (!donation) throw new Error("Donation not found");
+
+    // Already settled — make sure the donation is marked succeeded and stop.
+    if (donation.status === "succeeded") {
+      return { status: "completed", transferId: donation.transfer?.id };
+    }
+    if (donation.transfer?.status === "completed" && donation.transfer.id) {
+      await this.completeWithTransfer(donationId, donation.transfer.id);
+      return { status: "completed", transferId: donation.transfer.id };
+    }
+
+    // Resolve source (platform) and destination (campaign) accounts.
+    const campaign = await campaignRepository.findById(
+      donation.campaignId.toString()
+    );
+    const campaignFinancialAccountId = campaign?.financial_account?.id;
+    if (!campaignFinancialAccountId) {
+      await this.updateTransferStatus(donationId, {
+        status: "failed",
+        failureReason: "Campaign financial account not set",
+        initiatedAt: new Date(),
+      });
+      return { status: "failed", reason: "missing campaign financial account" };
+    }
+    const platformAccount = await settingService.getPlatformAccountSettings();
+    if (!platformAccount?.id) {
+      await this.updateTransferStatus(donationId, {
+        status: "failed",
+        failureReason: "Platform financial account not configured",
+        initiatedAt: new Date(),
+      });
+      return { status: "failed", reason: "platform account not configured" };
+    }
+
+    const source = opts?.source ?? "settle";
+    const maxAttempts = opts?.maxAttempts ?? 10;
+    const pollIntervalMs = opts?.pollIntervalMs ?? 1000;
+    const idempotencyKey = `donation_transfer_${donationId}`;
+    const transferAmount = donation.amount.minor; // fees are charged on top
+
+    try {
+      await this.updateTransferStatus(donationId, {
+        status: "pending",
+        initiatedAt: donation.transfer?.initiatedAt ?? new Date(),
+        retryCount: donation.transfer?.retryCount ?? 0,
+      });
+
+      // createInternalTransfer returns the unwrapped transfer (top-level id/status).
+      const created = await monimeService.createInternalTransfer(
+        {
+          amount: { currency: donation.amount.currency, value: transferAmount },
+          sourceFinancialAccount: { id: platformAccount.id },
+          destinationFinancialAccount: { id: campaignFinancialAccountId },
+          description: `Donation transfer for ${donationId}`,
+          metadata: { donationId, type: "donation_transfer", source },
+        },
+        idempotencyKey
+      );
+
+      let status: string = created.status;
+      let transferId = created.id;
+      let failureReason = created.failureReason;
+
+      // Internal transfers may settle asynchronously — poll to a terminal state.
+      // getInternalTransfer returns the WRAPPED body (read via .result).
+      for (
+        let i = 0;
+        i < maxAttempts && (status === "pending" || status === "processing");
+        i++
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+        const polled = await monimeService.getInternalTransfer(transferId);
+        status = polled.result.status;
+        transferId = polled.result.id;
+        failureReason = polled.result.failureReason;
+      }
+
+      if (status === "completed") {
+        await this.completeWithTransfer(donationId, transferId);
+        return { status: "completed", transferId };
+      }
+      if (status === "failed") {
+        await this.updateTransferStatus(donationId, {
+          id: transferId,
+          status: "failed",
+          failureReason: failureReason || "Transfer failed",
+          retryCount: (donation.transfer?.retryCount ?? 0) + 1,
+        });
+        return { status: "failed", transferId, reason: failureReason };
+      }
+
+      // Still pending after polling — leave it for the next reconciliation tick.
+      await this.updateTransferStatus(donationId, {
+        id: transferId,
+        status: "pending",
+      });
+      return { status: "pending", transferId };
+    } catch (transferError) {
+      const message =
+        transferError instanceof Error
+          ? transferError.message
+          : "Transfer API error";
+      await this.updateTransferStatus(donationId, {
+        status: "failed",
+        failureReason: message,
+        retryCount: (donation.transfer?.retryCount ?? 0) + 1,
+      });
+      return { status: "failed", reason: message };
+    }
+  }
+
+  /**
+   * Donations whose payment has settled but whose transfer to the campaign
+   * account has not completed. Used by the reconciliation sweep to move funds
+   * that are stuck in the platform account.
+   */
+  async getDonationsWithUnsettledTransfer(limit: number = 100): Promise<IDonation[]> {
+    return donationRepository.findMany(
+      {
+        status: "payment_received",
+        $or: [
+          { transfer: { $exists: false } },
+          { "transfer.status": { $ne: "completed" } },
+        ],
+      } as never,
+      { query: { sort: { createdAt: 1 }, limit } as never }
+    );
+  }
+
   async markSucceededWithPaymentDetails(
     donationId: string,
     paymentDetails: {

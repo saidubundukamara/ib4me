@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { monimeService } from "@/lib/monime";
-import { donationService, settingService } from "@/services";
+import { donationService } from "@/services";
 
 /**
  * POST/GET /api/donations/success
@@ -81,100 +81,23 @@ async function handleSuccessRedirect(req: NextRequest) {
       });
     }
 
-    // 6. Get campaign financial account from metadata
-    const campaignFinancialAccountId = session.result.metadata?.campaignFinancialAccountId;
-    if (!campaignFinancialAccountId) {
-      console.error("[api/donations/success] No campaign financial account in metadata:", donationId);
-      return redirectToUI({ donation_id: donationId, status: "error", message: "missing_account" });
-    }
-
-    // 7. Get platform account
-    const platformAccount = await settingService.getPlatformAccountSettings();
-    if (!platformAccount?.id) {
-      console.error("[api/donations/success] Platform account not configured:", donationId);
-      return redirectToUI({ donation_id: donationId, status: "error", message: "platform_error" });
-    }
-
-    // 8. Initiate internal transfer with deterministic idempotency key
-    const idempotencyKey = `donation_transfer_${donationId}`;
-    const transferAmount = donation.amount.minor;
-
-    console.log("[api/donations/success] Initiating transfer:", {
-      donationId,
-      amount: transferAmount,
-      from: platformAccount.id,
-      to: campaignFinancialAccountId,
+    // 6. Move funds to the campaign account and settle the donation. Shared
+    // with the payment webhook so both paths behave identically (account
+    // resolution, idempotency, polling). The webhook is the reliable fallback
+    // when the donor never returns to this redirect.
+    const result = await donationService.settleTransfer(donationId, {
+      source: "success_callback",
     });
+    console.log("[api/donations/success] settleTransfer:", donationId, result.status);
 
-    try {
-      const transfer = await monimeService.createInternalTransfer({
-        amount: {
-          currency: donation.amount.currency,
-          value: transferAmount,
-        },
-        sourceFinancialAccount: {
-          id: platformAccount.id,
-        },
-        destinationFinancialAccount: {
-          id: campaignFinancialAccountId,
-        },
-        description: `Donation transfer for ${donationId}`,
-        metadata: {
-          donationId,
-          type: "donation_transfer",
-          source: "success_callback",
-        },
-      }, idempotencyKey);
-
-      console.log("[api/donations/success] Transfer result:", {
-        id: transfer.id,
-        status: transfer.status,
-      });
-
-      // 9. Poll transfer status until completed or failed (transfers are async)
-      let transferStatus = transfer.status;
-      let transferResult = transfer;
-      const maxAttempts = 10;
-      const pollInterval = 1000; // 1 second
-
-      // Poll if status is pending or processing
-      for (let i = 0; i < maxAttempts && (transferStatus === "processing" || transferStatus === "pending"); i++) {
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
-        transferResult = await monimeService.getInternalTransfer(transfer.id);
-        console.log("6", transferResult)
-        transferStatus = transferResult.result.status;
-        console.log(`[api/donations/success] Transfer poll ${i + 1}/${maxAttempts}: ${transferStatus}`);
-      }
-
-      // 10. Update donation based on final transfer result
-      if (transferResult.result.status === "completed") {
-        await donationService.completeWithTransfer(donationId, transferResult.result.id);
-        console.log("[api/donations/success] Donation completed:", donationId);
-        return redirectToUI({ donation_id: donationId, status: "succeeded" });
-      } else if (transferResult.result.status === "failed") {
-        await donationService.updateTransferStatus(donationId, {
-          id: transferResult.result.id,
-          status: "failed",
-          failureReason: transferResult.result.failureDetails || "Transfer failed",
-          initiatedAt: new Date(),
-        });
-        console.error("[api/donations/success] Transfer failed:", donationId, transferResult.result.failureDetails);
-        return redirectToUI({ donation_id: donationId, status: "error", message: "transfer_failed" });
-      } else {
-        // Transfer still processing after max attempts - client polling will continue
-        await donationService.updateTransferStatus(donationId, {
-          id: transferResult.result.id,
-          status: "pending",
-          initiatedAt: new Date(),
-        });
-        console.log("[api/donations/success] Transfer still processing after polling, client will continue:", donationId);
-        return redirectToUI({ donation_id: donationId, status: "transferring" });
-      }
-    } catch (transferError) {
-      console.error("[api/donations/success] Transfer error:", transferError);
-      // Still redirect to UI, client polling can retry
-      return redirectToUI({ donation_id: donationId, status: "transferring" });
+    if (result.status === "completed") {
+      return redirectToUI({ donation_id: donationId, status: "succeeded" });
     }
+    if (result.status === "failed") {
+      return redirectToUI({ donation_id: donationId, status: "error", message: "transfer_failed" });
+    }
+    // Still processing — client polling / webhook will finish it.
+    return redirectToUI({ donation_id: donationId, status: "transferring" });
   } catch (error) {
     console.error("[api/donations/success] Error:", error);
     return redirectToUI({ donation_id: donationId || "", status: "error", message: "server_error" });
