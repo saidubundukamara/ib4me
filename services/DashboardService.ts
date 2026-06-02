@@ -21,6 +21,17 @@ export interface DashboardStats {
   monthlyRevenue: Array<{month: string; revenue: number}>;
   averageDonationAmount: number;
   totalUsers: number;
+  finance: {
+    grossDonations: number;       // gross succeeded donation volume (sum amount.minor)
+    platformRevenue: number;      // IB4ME net earnings (processing fee only)
+    processorFees: number;        // Monime processor fees (pass-through)
+    totalFees: number;            // platform + processor fees
+    netToCampaigns: number;       // what campaigns receive after fees
+    effectiveTakeRateBps: number; // platformRevenue / grossDonations, in basis points
+    paidOutToCampaigns: number;   // completed payout amount disbursed
+    pendingPayouts: number;       // count of payouts awaiting completion
+    pendingPayoutAmount: number;  // amount awaiting payout
+  };
   platformHealth: {
     campaignHealth: string;
     paymentHealth: string;
@@ -80,6 +91,18 @@ export class DashboardService {
       const monthlyRevenue = await this.getMonthlyRevenue();
       const platformHealth = await this.getPlatformHealth();
 
+      // Real money flow: platform revenue (our fee), fees, campaign payouts, and disbursements.
+      const [revenue, payouts] = await Promise.all([
+        donationRepository.getRevenueAnalytics(),
+        payoutRepository.getAnalyticsByDateRange()
+      ]);
+
+      // Gross donation volume (sum of succeeded amount.minor) — the basis for our take rate.
+      const grossDonations = donationStats.totalRevenue;
+      const effectiveTakeRateBps = grossDonations > 0
+        ? Math.round((revenue.netRevenue / grossDonations) * 10000)
+        : 0;
+
       const stats: DashboardStats = {
         totalCampaigns,
         activeCampaigns,
@@ -95,6 +118,19 @@ export class DashboardService {
         monthlyRevenue,
         averageDonationAmount: donationStats.averageAmount,
         totalUsers,
+        finance: {
+          grossDonations,
+          platformRevenue: revenue.netRevenue,
+          processorFees: revenue.paymentFees,
+          totalFees: revenue.totalFees,
+          netToCampaigns: revenue.campaignPayouts,
+          effectiveTakeRateBps,
+          // Money that has left toward campaigns (incl. in-transit), matching the
+          // platform-wide "withdrawn" definition — payouts rarely reach "completed".
+          paidOutToCampaigns: payouts.disbursedAmount,
+          pendingPayouts: payouts.awaitingPayouts,
+          pendingPayoutAmount: payouts.awaitingAmount
+        },
         platformHealth
       };
 

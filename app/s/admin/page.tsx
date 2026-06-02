@@ -24,6 +24,17 @@ interface DashboardStats {
   monthlyRevenue: Array<{ month: string; revenue: number }>;
   averageDonationAmount: number;
   totalUsers: number;
+  finance: {
+    grossDonations: number;
+    platformRevenue: number;
+    processorFees: number;
+    totalFees: number;
+    netToCampaigns: number;
+    effectiveTakeRateBps: number;
+    paidOutToCampaigns: number;
+    pendingPayouts: number;
+    pendingPayoutAmount: number;
+  };
   platformHealth: {
     campaignHealth: string;
     paymentHealth: string;
@@ -140,9 +151,9 @@ export default function AdminDashboardPage() {
       ),
     },
     {
-      label: "Total Revenue",
+      label: "Total Raised",
       value: formatCurrency(fromMinorUnits(stats.totalRevenue)),
-      sub: `From ${formatNumber(stats.totalDonations)} donations`,
+      sub: "Gross donation volume",
       color: AMBER,
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,13 +162,13 @@ export default function AdminDashboardPage() {
       ),
     },
     {
-      label: "Platform Users",
-      value: formatNumber(stats.totalUsers),
-      sub: "Registered accounts",
-      color: "#8B5CF6",
+      label: "Platform Revenue",
+      value: formatCurrency(fromMinorUnits(stats.finance?.platformRevenue ?? 0)),
+      sub: `${((stats.finance?.effectiveTakeRateBps ?? 0) / 100).toFixed(1)}% effective take`,
+      color: GREEN,
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
         </svg>
       ),
     },
@@ -174,6 +185,17 @@ export default function AdminDashboardPage() {
     { label: "Completed", value: `${formatNumber(stats.donationBreakdown?.completed ?? 0)} donations`, bg: `${GREEN}10`, dot: GREEN, text: `${GREEN}` },
     { label: "Failed", value: `${formatNumber(stats.donationBreakdown?.failed ?? 0)} donations`, bg: "#EF444410", dot: "#EF4444", text: "#EF4444" },
     { label: "Success Rate", value: `${stats.donationBreakdown?.successRate ?? 0}%`, bg: `${ORANGE}10`, dot: ORANGE, text: ORANGE },
+  ];
+
+  const fin = stats.finance;
+  const money = (minor: number) => formatCurrency(fromMinorUnits(minor ?? 0));
+  const financialOverview = [
+    { label: "Platform Revenue", value: money(fin?.platformRevenue ?? 0), sub: "Our net earnings (processing fee)", bg: `${GREEN}10`, dot: GREEN, text: GREEN },
+    { label: "Net to Campaigns", value: money(fin?.netToCampaigns ?? 0), sub: "Owed to campaigns after fees", bg: `${ORANGE}10`, dot: ORANGE, text: ORANGE },
+    { label: "Withdrawn to Campaigns", value: money(fin?.paidOutToCampaigns ?? 0), sub: "Disbursed incl. in-transit", bg: "#8B5CF610", dot: "#8B5CF6", text: "#8B5CF6" },
+    { label: "Awaiting Payout", value: money(fin?.pendingPayoutAmount ?? 0), sub: `${formatNumber(fin?.pendingPayouts ?? 0)} awaiting review`, bg: `${AMBER}15`, dot: AMBER, text: "#B45309" },
+    { label: "Processor Fees (Monime)", value: money(fin?.processorFees ?? 0), sub: "Pass-through, not our revenue", bg: "#64748B10", dot: "#64748B", text: "#475569" },
+    { label: "Total Fees Collected", value: money(fin?.totalFees ?? 0), sub: "Platform + processor fees", bg: "#0EA5E910", dot: "#0EA5E9", text: "#0369A1" },
   ];
 
   const healthItems = [
@@ -287,6 +309,32 @@ export default function AdminDashboardPage() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Financial Overview */}
+      <div className="rounded-2xl border border-border bg-background p-6">
+        <div className="mb-5 flex items-center justify-between">
+          <h3 className="text-base font-bold text-foreground">Financial Overview</h3>
+          <span className="text-xs text-muted-foreground">
+            {formatNumber(stats.totalUsers)} platform users
+          </span>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {financialOverview.map((item) => (
+            <div
+              key={item.label}
+              className="rounded-xl p-4"
+              style={{ backgroundColor: item.bg }}
+            >
+              <div className="flex items-center gap-2">
+                <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.dot }} />
+                <span className="text-sm font-medium" style={{ color: item.text }}>{item.label}</span>
+              </div>
+              <p className="mt-2 text-xl font-bold" style={{ color: item.text }}>{item.value}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{item.sub}</p>
+            </div>
+          ))}
         </div>
       </div>
 

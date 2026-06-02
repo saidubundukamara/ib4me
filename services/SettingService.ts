@@ -310,7 +310,7 @@ export class SettingService {
     const withdrawal = settings.withdrawal || {};
 
     return {
-      maintenanceMode: false,
+      maintenanceMode: features.maintenanceMode || false,
       allowRegistration: true,
       requireEmailVerification: true,
       enableWhatsAppSharing: true,
@@ -353,6 +353,7 @@ export class SettingService {
     const currentWithdrawal = settings.withdrawal || {};
 
     const featureUpdates: Partial<IFeatureFlags> = {};
+    if (updates.maintenanceMode !== undefined) featureUpdates.maintenanceMode = updates.maintenanceMode;
     if (updates.whatsAppAutoPost !== undefined) featureUpdates.whatsAppAutoPost = updates.whatsAppAutoPost;
     if (updates.paypalEnabled !== undefined) featureUpdates.paypalEnabled = updates.paypalEnabled;
     if (updates.emergencyPoolFund !== undefined) featureUpdates.emergencyPoolFund = updates.emergencyPoolFund;

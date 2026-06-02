@@ -247,9 +247,9 @@ export default function AdminDonationsPage() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Total Amount</p>
+                    <p className="text-sm font-medium text-muted-foreground">Total Raised</p>
                     <p className="text-2xl font-bold">
-                      {formatCurrency(fromMinorUnits(analytics.totalAmount))}
+                      {formatCurrency(fromMinorUnits(analytics.successfulAmount))}
                     </p>
                   </div>
                   <DollarSign className="h-8 w-8" style={{ color: "#FF6000" }} />
