@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { payoutService } from "@/services";
 import mongoose from "mongoose";
 import { z } from "zod";
+import { getAdminFromToken, createAdminAuditContext } from "@/lib/admin-auth-token";
 
 const overrideThresholdSchema = z.object({
   reason: z.string().min(1, "Override reason is required"),
-  adminId: z.string().min(1, "Admin ID is required"),
 });
 
 export async function POST(
@@ -22,27 +22,28 @@ export async function POST(
       );
     }
 
-    const body = await request.json();
-    const { reason, adminId } = overrideThresholdSchema.parse(body);
-
-    if (!mongoose.Types.ObjectId.isValid(adminId)) {
+    // Get admin user from token (same pattern as approve/reject routes)
+    const adminUser = await getAdminFromToken();
+    if (!adminUser) {
       return NextResponse.json(
-        { error: "Invalid admin ID" },
-        { status: 400 }
+        { error: "Unauthorized - Admin authentication required" },
+        { status: 401 }
       );
     }
 
-    // Extract audit context from request
-    const auditContext = {
-      ip: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown",
-      userAgent: request.headers.get("user-agent") || "unknown"
-    };
+    const body = await request.json();
+    const { reason } = overrideThresholdSchema.parse(body);
+
+    const auditContext = createAdminAuditContext(adminUser, request);
 
     const payout = await payoutService.overrideThreshold(
       id,
-      new mongoose.Types.ObjectId(adminId),
+      adminUser._id,
       reason,
-      auditContext
+      {
+        ip: auditContext.ip,
+        userAgent: auditContext.userAgent,
+      }
     );
 
     return NextResponse.json({

@@ -37,6 +37,10 @@ export interface IPayout extends mongoose.Document {
   policyCheck?: IPayoutPolicyCheck;
   paymentProofUrl?: string | null;
   failureReason?: string;
+  /** Guard so the "on completed" side-effects (campaign withdrawal counters +
+   *  ledger entry) are applied exactly once, whether the synchronous disburse
+   *  response or the payout.completed webhook gets there first. */
+  completionApplied?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -100,6 +104,7 @@ const payoutSchema = new mongoose.Schema<IPayout>(
     },
     paymentProofUrl: { type: String, default: null },
     failureReason: { type: String },
+    completionApplied: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

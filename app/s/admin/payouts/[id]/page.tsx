@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -103,10 +103,21 @@ const formatCurrency = (amountMinor: number, currency: string = "SLE") => {
   }).format(amount);
 };
 
+const getMethodLabel = (method: string) => {
+  switch (method) {
+    case "mobile_money":
+      return "Mobile Money";
+    case "bank":
+      return "Bank Transfer";
+    default:
+      return method;
+  }
+};
+
 export default function PayoutDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { user, isLoading: authLoading } = useAuth();
   const payoutId = params.id as string;
 
   const [payout, setPayout] = useState<Payout | null>(null);
@@ -119,6 +130,7 @@ export default function PayoutDetailPage() {
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
+  const [showProcessDialog, setShowProcessDialog] = useState(false);
   const [actionNote, setActionNote] = useState("");
 
   const fetchPayoutDetails = useCallback(async () => {
@@ -159,8 +171,8 @@ export default function PayoutDetailPage() {
     }
   }, [payoutId, fetchPayoutDetails]);
 
-  const handleAction = async (action: "approve" | "reject" | "override") => {
-    if (!payout || !session?.user?.id) return;
+  const handleAction = async (action: "approve" | "reject" | "override" | "process") => {
+    if (!payout || !user) return;
 
     try {
       setActionLoading(action);
@@ -180,6 +192,9 @@ export default function PayoutDetailPage() {
         case "override":
           endpoint = `/api/admin/payouts/${payoutId}/override-threshold`;
           body.reason = actionNote.trim() || "Administrative override";
+          break;
+        case "process":
+          endpoint = `/api/admin/payouts/${payoutId}/process`;
           break;
       }
 
@@ -204,10 +219,15 @@ export default function PayoutDetailPage() {
       setShowApproveDialog(false);
       setShowRejectDialog(false);
       setShowOverrideDialog(false);
+      setShowProcessDialog(false);
       setActionNote("");
 
       // Show success message (you might want to use a toast here)
-      alert(`Payout ${action}d successfully!`);
+      const successMessage =
+        action === "process"
+          ? "Payout sent to Monime for disbursement!"
+          : `Payout ${action}d successfully!`;
+      alert(successMessage);
     } catch (err) {
       console.error(`Error ${action}ing payout:`, err);
       alert(err instanceof Error ? err.message : `Failed to ${action} payout`);
@@ -230,7 +250,7 @@ export default function PayoutDetailPage() {
   };
 
   // Show loading state while checking authentication
-  if (status === "loading" || loading) {
+  if (authLoading || loading) {
     return (
       <div className="container mx-auto p-6">
         <div className="text-center py-8">Loading payout details...</div>
@@ -239,7 +259,7 @@ export default function PayoutDetailPage() {
   }
 
   // Redirect if not authenticated or not admin
-  if (!session || !session.user || !["Admin", "SuperAdmin"].some(role => session.user.roles?.includes(role))) {
+  if (!user || !["Admin", "SuperAdmin"].includes(user.role)) {
     return (
       <div className="container mx-auto p-6">
         <div className="text-center py-8 text-red-600">
@@ -268,6 +288,7 @@ export default function PayoutDetailPage() {
   const canApprove = ["processing", "in_review", "threshold_review"].includes(payout.status);
   const canReject = ["processing", "in_review", "approved", "threshold_review"].includes(payout.status);
   const canOverride = payout.status === "threshold_review" && !payout.policyCheck?.minThresholdMet;
+  const canProcess = payout.status === "approved";
 
   return (
     <div className="container mx-auto p-6">
@@ -290,7 +311,7 @@ export default function PayoutDetailPage() {
         </div>
 
         {/* Action Buttons */}
-        {(canApprove || canReject || canOverride) && (
+        {(canApprove || canReject || canOverride || canProcess) && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -419,6 +440,39 @@ export default function PayoutDetailPage() {
                           disabled={!actionNote.trim() || actionLoading === "override"}
                         >
                           {actionLoading === "override" ? "Overriding..." : "Override"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                )}
+
+                {canProcess && (
+                  <Dialog open={showProcessDialog} onOpenChange={setShowProcessDialog}>
+                    <DialogTrigger asChild>
+                      <Button className="bg-green-600 hover:bg-green-700">
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        Disburse to Monime
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Disburse Payout</DialogTitle>
+                        <DialogDescription>
+                          Send {formatCurrency(payout.amountMinor, payout.campaignId.goal?.currency)} to the
+                          beneficiary&apos;s {getMethodLabel(payout.method.type)} account via Monime. This moves
+                          real funds and cannot be undone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowProcessDialog(false)}>
+                          Cancel
+                        </Button>
+                        <Button
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => handleAction("process")}
+                          disabled={actionLoading === "process"}
+                        >
+                          {actionLoading === "process" ? "Disbursing..." : "Disburse to Monime"}
                         </Button>
                       </DialogFooter>
                     </DialogContent>

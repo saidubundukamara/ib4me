@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     // Get withdrawal settings for threshold checks
     const withdrawalSettings = await settingService.getWithdrawalSettings();
 
-    await payoutService.requestPayout(
+    const payout = await payoutService.requestPayout(
       {
         campaignId: new mongoose.Types.ObjectId(campaignIdStr),
         requestedBy: userId,
@@ -115,8 +115,17 @@ export async function POST(request: NextRequest) {
         minimumWithdrawalPercent: withdrawalSettings.minPercent,
       }
     );
-    
-    return NextResponse.json({ success: true });
+
+    console.log("[payout] route responding", {
+      payoutId: payout.id,
+      status: payout.status,
+    });
+
+    return NextResponse.json({
+      success: true,
+      status: payout.status,
+      payoutId: payout.id,
+    });
     
   } catch (error) {
     console.error("Payout request error:", error);

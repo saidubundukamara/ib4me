@@ -103,7 +103,7 @@ export class PayoutRepository extends BaseRepository<IPayout> {
     }
 
     if (filters.requiresApproval) {
-      query.status = { $in: ["processing", "in_review"] };
+      query.status = { $in: ["processing", "in_review", "threshold_review"] };
     }
     
     if (filters.search) {
@@ -170,10 +170,10 @@ export class PayoutRepository extends BaseRepository<IPayout> {
             $sum: { $cond: [{ $in: ["$status", ["completed", "paid"]] }, "$amountMinor", 0] }
           },
           pendingPayouts: {
-            $sum: { $cond: [{ $in: ["$status", ["processing", "in_review", "approved"]] }, 1, 0] }
+            $sum: { $cond: [{ $in: ["$status", ["processing", "in_review", "approved", "threshold_review"]] }, 1, 0] }
           },
           pendingAmount: {
-            $sum: { $cond: [{ $in: ["$status", ["processing", "in_review", "approved"]] }, "$amountMinor", 0] }
+            $sum: { $cond: [{ $in: ["$status", ["processing", "in_review", "approved", "threshold_review"]] }, "$amountMinor", 0] }
           },
           failedPayouts: {
             $sum: { $cond: [{ $in: ["$status", ["failed", "rejected", "cancelled"]] }, 1, 0] }
@@ -298,8 +298,8 @@ export class PayoutRepository extends BaseRepository<IPayout> {
   }
 
   async getPendingApprovals(): Promise<IPayout[]> {
-    return this.findMany({ 
-      status: { $in: ["processing", "in_review"] } 
+    return this.findMany({
+      status: { $in: ["processing", "in_review", "threshold_review"] }
     } as never, {
       query: { sort: { createdAt: 1 } }
     } as any);
