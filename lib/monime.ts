@@ -4,6 +4,9 @@ export interface MonimeConfig {
   accessToken: string;
   spaceId: string;
   baseUrl: string;
+  /** Monime API version, sent as the `Monime-Version` header. Required by the
+   *  payouts API — without it version-gated endpoints silently no-op. */
+  version: string;
 }
 
 export interface MonimeLineItem {
@@ -110,7 +113,9 @@ export interface MonimeFinancialAccountResponse {
   reference?: string;
   description?: string;
   balance: {
-    available: number | null;
+    // Monime returns available as { currency, value } in minor units; older
+    // responses/tests may use a bare number. getAccountBalance handles both.
+    available: { currency: string; value: number } | number | null;
   };
   createTime: string;
   updateTime: string;
@@ -348,6 +353,7 @@ export class MonimeService {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${this.config.accessToken}`,
       "Monime-Space-Id": this.config.spaceId,
+      "Monime-Version": this.config.version,
       "Content-Type": "application/json",
       // "User-Agent": "IB4ME/1.0",
       // ...(options.headers as Record<string, string>),
@@ -455,6 +461,28 @@ export class MonimeService {
     return response.result;
   }
 
+  /**
+   * Fetch a financial account WITH its current balance. `?withBalance=true` is
+   * required for Monime to include the balance in the response.
+   */
+  async getFinancialAccount(
+    accountId: string
+  ): Promise<MonimeFinancialAccountResponse> {
+    const response = await this.makeRequest<
+      MonimeApiResponse<MonimeFinancialAccountResponse>
+    >(`/financial-accounts/${accountId}?withBalance=true`);
+    return response.result;
+  }
+
+  /** Available balance in MINOR units (e.g. cents). Handles both the object and
+   *  bare-number forms of `balance.available`; returns 0 when absent. */
+  getAccountBalanceMinor(account: MonimeFinancialAccountResponse): number {
+    const available = account?.balance?.available;
+    if (available == null) return 0;
+    if (typeof available === "number") return available;
+    return available.value ?? 0;
+  }
+
   async createPayout(
     request: MonimePayoutRequest,
     idempotencyKey?: string
@@ -469,6 +497,14 @@ export class MonimeService {
       },
       idempotencyKey
     );
+
+    // Visibility: the success path was previously silent, so a payout that
+    // Monime accepted but did not execute looked identical to a healthy one.
+    console.log("Monime payout created:", {
+      id: response.result?.id,
+      status: response.result?.status,
+      destinationType: request.destination?.type,
+    });
 
     return response.result;
   }
@@ -613,6 +649,7 @@ export class MonimeService {
       accessToken: process.env.MONIME_ACCESS_TOKEN || "",
       spaceId: process.env.MONIME_SPACE_ID || "",
       baseUrl: process.env.MONIME_BASE_URL || "https://api.monime.io/v1",
+      version: process.env.MONIME_VERSION || "caph.2025-08-23",
     };
 
     if (!config.accessToken) {
@@ -670,6 +707,18 @@ export const monimeService = {
     ...args: Parameters<MonimeService["createFinancialAccount"]>
   ) {
     return this.getInstance().createFinancialAccount(...args);
+  },
+
+  async getFinancialAccount(
+    ...args: Parameters<MonimeService["getFinancialAccount"]>
+  ) {
+    return this.getInstance().getFinancialAccount(...args);
+  },
+
+  getAccountBalanceMinor(
+    ...args: Parameters<MonimeService["getAccountBalanceMinor"]>
+  ) {
+    return this.getInstance().getAccountBalanceMinor(...args);
   },
 
   async createPayout(...args: Parameters<MonimeService["createPayout"]>) {
