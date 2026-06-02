@@ -285,10 +285,15 @@ export default function PayoutDetailPage() {
     );
   }
 
-  const canApprove = ["processing", "in_review", "threshold_review"].includes(payout.status);
-  const canReject = ["processing", "in_review", "approved", "threshold_review"].includes(payout.status);
-  const canOverride = payout.status === "threshold_review" && !payout.policyCheck?.minThresholdMet;
-  const canProcess = payout.status === "approved";
+  // Once a payout has been sent to Monime it carries a monimePayoutId. Such a
+  // payout must never be re-approved, re-rejected, or re-disbursed — even if
+  // Monime reports an async "processing" status (which otherwise overlaps with
+  // the pre-approval "processing" state).
+  const sentToMonime = Boolean(payout.monimePayoutId);
+  const canApprove = !sentToMonime && ["processing", "in_review", "threshold_review"].includes(payout.status);
+  const canReject = !sentToMonime && ["processing", "in_review", "approved", "threshold_review"].includes(payout.status);
+  const canOverride = !sentToMonime && payout.status === "threshold_review" && !payout.policyCheck?.minThresholdMet;
+  const canProcess = !sentToMonime && payout.status === "approved";
 
   return (
     <div className="container mx-auto p-6">
