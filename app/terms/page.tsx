@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import BackToTop from "@/app/_components/BackToTop";
+import { useSettings } from "@/lib/settings-provider";
+import { getFeeDisplay } from "@/lib/feeDisplay";
 
 /* ─── Primitives (same pattern as Privacy page) ──────────────── */
 
@@ -115,6 +117,8 @@ const navItems = [
 /* ─── Page ────────────────────────────────────────────────────── */
 
 export default function TermsAndConditions() {
+    const { fees } = useSettings();
+    const f = getFeeDisplay(fees);
     return (
         <>
         <div className="min-h-screen bg-background font-Sora">
@@ -329,13 +333,13 @@ export default function TermsAndConditions() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div className="rounded-xl bg-background border border-border/40 p-3">
                                     <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Individual Campaigns</p>
-                                    <p className="text-2xl font-bold text-foreground">3.6%</p>
-                                    <p className="text-xs text-muted-foreground mt-1">1% payment processing + 2.6% platform fee</p>
+                                    <p className="text-2xl font-bold text-foreground">{f.individualTotal}%</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{f.payment}% payment processing + {f.individualPlatform}% platform fee</p>
                                 </div>
                                 <div className="rounded-xl bg-background border border-border/40 p-3">
                                     <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Organisation Campaigns</p>
-                                    <p className="text-2xl font-bold text-foreground">3.0%</p>
-                                    <p className="text-xs text-muted-foreground mt-1">1% payment processing + 2.0% platform fee</p>
+                                    <p className="text-2xl font-bold text-foreground">{f.organizationTotal}%</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{f.payment}% payment processing + {f.organizationPlatform}% platform fee</p>
                                 </div>
                             </div>
                             <Callout color="green">Fees are added on top of the donation amount — 100% of what you donate goes directly to the campaign.</Callout>
