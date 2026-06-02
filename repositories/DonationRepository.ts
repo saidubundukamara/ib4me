@@ -210,6 +210,11 @@ export class DonationRepository extends BaseRepository<IDonation> {
     pendingDonations: number;
     pendingAmount: number;
     failedDonations: number;
+    failedAmount: number;
+    refundedDonations: number;
+    refundedAmount: number;
+    paymentReceivedDonations: number;
+    paymentReceivedAmount: number;
     averageDonation: number;
     successRate: number;
   }> {
@@ -242,6 +247,21 @@ export class DonationRepository extends BaseRepository<IDonation> {
           },
           failedDonations: {
             $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] }
+          },
+          failedAmount: {
+            $sum: { $cond: [{ $eq: ["$status", "failed"] }, "$amount.minor", 0] }
+          },
+          refundedDonations: {
+            $sum: { $cond: [{ $eq: ["$status", "refunded"] }, 1, 0] }
+          },
+          refundedAmount: {
+            $sum: { $cond: [{ $eq: ["$status", "refunded"] }, "$amount.minor", 0] }
+          },
+          paymentReceivedDonations: {
+            $sum: { $cond: [{ $eq: ["$status", "payment_received"] }, 1, 0] }
+          },
+          paymentReceivedAmount: {
+            $sum: { $cond: [{ $eq: ["$status", "payment_received"] }, "$amount.minor", 0] }
           }
         }
       }
@@ -255,7 +275,12 @@ export class DonationRepository extends BaseRepository<IDonation> {
       successfulAmount: 0,
       pendingDonations: 0,
       pendingAmount: 0,
-      failedDonations: 0
+      failedDonations: 0,
+      failedAmount: 0,
+      refundedDonations: 0,
+      refundedAmount: 0,
+      paymentReceivedDonations: 0,
+      paymentReceivedAmount: 0
     };
 
     const averageDonation = data.totalDonations > 0 ? data.totalAmount / data.totalDonations : 0;
@@ -356,13 +381,14 @@ export class DonationRepository extends BaseRepository<IDonation> {
 
   async getRevenueAnalytics(dateFrom?: Date, dateTo?: Date): Promise<{
     totalRevenue: number;
+    campaignPayouts: number;
     totalFees: number;
     netRevenue: number;
     platformFees: number;
     paymentFees: number;
   }> {
     const matchStage: Record<string, unknown> = { status: "succeeded" };
-    
+
     if (dateFrom || dateTo) {
       matchStage.createdAt = {};
       if (dateFrom) (matchStage.createdAt as Record<string, unknown>).$gte = dateFrom;
@@ -374,9 +400,15 @@ export class DonationRepository extends BaseRepository<IDonation> {
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: "$amount.minor" },
-          platformFees: { $sum: { $ifNull: ["$fees.platformFeeMinor", 0] } },
-          paymentFees: { $sum: { $ifNull: ["$fees.paymentFeeMinor", 0] } }
+          // Gross amount charged to donors (donation + fees when donor covers them).
+          // Fall back to amount.minor for legacy donations missing totalChargedMinor.
+          totalRevenue: { $sum: { $ifNull: ["$totalChargedMinor", "$amount.minor"] } },
+          // What campaigns actually receive after fees.
+          campaignPayouts: { $sum: { $ifNull: ["$campaignReceivesMinor", "$amount.minor"] } },
+          // Payment processor (Monime) fee = base fee.
+          paymentFees: { $sum: { $ifNull: ["$fees.baseFeeMinor", 0] } },
+          // Platform (IB4ME) fee = processing fee.
+          platformFees: { $sum: { $ifNull: ["$fees.processingFeeMinor", 0] } }
         }
       }
     ];
@@ -384,6 +416,7 @@ export class DonationRepository extends BaseRepository<IDonation> {
     const result = await this.model.aggregate(pipeline);
     const data = result[0] || {
       totalRevenue: 0,
+      campaignPayouts: 0,
       platformFees: 0,
       paymentFees: 0
     };
@@ -391,7 +424,8 @@ export class DonationRepository extends BaseRepository<IDonation> {
     return {
       ...data,
       totalFees: data.platformFees + data.paymentFees,
-      netRevenue: data.totalRevenue - data.platformFees - data.paymentFees
+      // Net platform earnings = the platform's own fee (processor fee passes through to Monime).
+      netRevenue: data.platformFees
     };
   }
 }

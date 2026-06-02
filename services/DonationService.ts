@@ -736,6 +736,11 @@ export class DonationService {
     pendingDonations: number;
     pendingAmount: number;
     failedDonations: number;
+    failedAmount: number;
+    refundedDonations: number;
+    refundedAmount: number;
+    paymentReceivedDonations: number;
+    paymentReceivedAmount: number;
     averageDonation: number;
     successRate: number;
   }> {
@@ -764,6 +769,7 @@ export class DonationService {
 
   async getRevenueReport(dateFrom?: Date, dateTo?: Date): Promise<{
     totalRevenue: number;
+    campaignPayouts: number;
     totalFees: number;
     netRevenue: number;
     platformFees: number;

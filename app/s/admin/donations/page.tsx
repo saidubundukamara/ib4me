@@ -38,6 +38,11 @@ interface DonationAnalytics {
   pendingDonations: number;
   pendingAmount: number;
   failedDonations: number;
+  failedAmount: number;
+  refundedDonations: number;
+  refundedAmount: number;
+  paymentReceivedDonations: number;
+  paymentReceivedAmount: number;
   averageDonation: number;
   successRate: number;
 }
@@ -60,6 +65,7 @@ interface TopDonor {
 
 interface RevenueData {
   totalRevenue: number;
+  campaignPayouts: number;
   totalFees: number;
   netRevenue: number;
   platformFees: number;
@@ -281,7 +287,7 @@ export default function AdminDonationsPage() {
 
         {/* Status Breakdown */}
         {analytics && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle style={{ color: "#00712D" }}>Successful</CardTitle>
@@ -324,6 +330,26 @@ export default function AdminDonationsPage() {
 
             <Card>
               <CardHeader>
+                <CardTitle style={{ color: "#2563EB" }}>Payment Received</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Count:</span>
+                    <span className="font-semibold">{analytics.paymentReceivedDonations.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Amount:</span>
+                    <span className="font-semibold">
+                      {formatCurrency(fromMinorUnits(analytics.paymentReceivedAmount))}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle className="text-red-600">Failed</CardTitle>
               </CardHeader>
               <CardContent>
@@ -331,6 +357,32 @@ export default function AdminDonationsPage() {
                   <div className="flex justify-between">
                     <span>Count:</span>
                     <span className="font-semibold">{analytics.failedDonations.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Amount:</span>
+                    <span className="font-semibold">
+                      {formatCurrency(fromMinorUnits(analytics.failedAmount))}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-muted-foreground">Refunded</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Count:</span>
+                    <span className="font-semibold">{analytics.refundedDonations.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Amount:</span>
+                    <span className="font-semibold">
+                      {formatCurrency(fromMinorUnits(analytics.refundedAmount))}
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -354,30 +406,35 @@ export default function AdminDonationsPage() {
                   <p className="text-xl font-bold" style={{ color: "#00712D" }}>
                     {formatCurrency(fromMinorUnits(revenue.totalRevenue))}
                   </p>
+                  <p className="text-xs text-muted-foreground mt-1">Gross charged to donors</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Platform Fees</p>
-                  <p className="text-xl font-bold" style={{ color: "#FF6000" }}>
-                    {formatCurrency(fromMinorUnits(revenue.platformFees))}
+                  <p className="text-sm text-muted-foreground">Campaign Payouts</p>
+                  <p className="text-xl font-bold" style={{ color: "#80E10A" }}>
+                    {formatCurrency(fromMinorUnits(revenue.campaignPayouts))}
                   </p>
+                  <p className="text-xs text-muted-foreground mt-1">Sent to campaigns</p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Payment Fees</p>
                   <p className="text-xl font-bold" style={{ color: "#FBB03B" }}>
                     {formatCurrency(fromMinorUnits(revenue.paymentFees))}
                   </p>
+                  <p className="text-xs text-muted-foreground mt-1">Payment processor</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Total Fees</p>
-                  <p className="text-xl font-bold text-red-600">
-                    {formatCurrency(fromMinorUnits(revenue.totalFees))}
+                  <p className="text-sm text-muted-foreground">Platform Fees</p>
+                  <p className="text-xl font-bold" style={{ color: "#FF6000" }}>
+                    {formatCurrency(fromMinorUnits(revenue.platformFees))}
                   </p>
+                  <p className="text-xs text-muted-foreground mt-1">IB4ME service fee</p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Net Revenue</p>
-                  <p className="text-xl font-bold" style={{ color: "#80E10A" }}>
+                  <p className="text-xl font-bold" style={{ color: "#00712D" }}>
                     {formatCurrency(fromMinorUnits(revenue.netRevenue))}
                   </p>
+                  <p className="text-xs text-muted-foreground mt-1">Platform earnings</p>
                 </div>
               </div>
             </CardContent>

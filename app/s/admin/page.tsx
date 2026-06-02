@@ -60,6 +60,9 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const fromMinorUnits = (amountMinor: number, currency = "SLE") =>
+    amountMinor / Math.pow(10, currency === "SLE" ? 2 : 2);
+
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("en-SL", { style: "currency", currency: "SLE" }).format(amount);
 
@@ -128,7 +131,7 @@ export default function AdminDashboardPage() {
     {
       label: "Total Donations",
       value: formatNumber(stats.totalDonations),
-      sub: `Avg: ${formatCurrency(stats.averageDonationAmount)}`,
+      sub: `Avg: ${formatCurrency(fromMinorUnits(stats.averageDonationAmount))}`,
       color: ORANGE,
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,7 +141,7 @@ export default function AdminDashboardPage() {
     },
     {
       label: "Total Revenue",
-      value: formatCurrency(stats.totalRevenue),
+      value: formatCurrency(fromMinorUnits(stats.totalRevenue)),
       sub: `From ${formatNumber(stats.totalDonations)} donations`,
       color: AMBER,
       icon: (
