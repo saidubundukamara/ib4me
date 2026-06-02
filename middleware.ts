@@ -19,6 +19,30 @@ function hasAdminToken(req: NextRequest): boolean {
   return Boolean(adminToken);
 }
 
+// Cached maintenance-mode flag. Edge middleware can't use Mongoose, so we read
+// the flag from the already-public settings endpoint and cache it briefly to
+// avoid hitting the DB on every request. Admin toggles propagate within the TTL.
+let maintenanceCache: { value: boolean; expires: number } = { value: false, expires: 0 };
+
+async function isMaintenanceMode(req: NextRequest): Promise<boolean> {
+  const now = Date.now();
+  if (now < maintenanceCache.expires) return maintenanceCache.value;
+  try {
+    const url = new URL("/api/admin/settings?category=features", req.url);
+    const res = await fetch(url, { headers: { "x-maintenance-probe": "1" } });
+    if (res.ok) {
+      const data = await res.json();
+      const value = Boolean(data?.settings?.maintenanceMode);
+      maintenanceCache = { value, expires: now + 30_000 };
+      return value;
+    }
+  } catch {
+    // Network/transient error: keep the last known value (fail open) and retry soon.
+  }
+  maintenanceCache = { value: maintenanceCache.value, expires: now + 5_000 };
+  return maintenanceCache.value;
+}
+
 // Helper function to extract subdomain from request
 function extractSubdomain(req: NextRequest): string | null {
   const url = req.nextUrl.clone();
@@ -71,6 +95,25 @@ export default async function middleware(req: NextRequest) {
     }
   }
   
+  // Maintenance mode: block the public/main domain for everyone except admins
+  // (who keep full access via the admin subdomain). Runs on every request — full
+  // loads and RSC navigations — so it can't be bypassed by the client router
+  // cache. Skip API routes, static assets, and the maintenance page itself.
+  if (
+    subdomain !== "admin" &&
+    !pathname.startsWith("/api") &&
+    pathname !== "/maintenance" &&
+    !/\.[a-zA-Z0-9]+$/.test(pathname)
+  ) {
+    if (await isMaintenanceMode(req)) {
+      const requestHeaders = new Headers(req.headers);
+      requestHeaders.set("x-maintenance", "1");
+      return NextResponse.rewrite(new URL("/maintenance", req.url), {
+        request: { headers: requestHeaders },
+      });
+    }
+  }
+
   // Block access to admin routes from main domain (redirect to admin subdomain)
   if (!subdomain && (pathname.startsWith("/admin") || pathname.startsWith("/s/admin"))) {
     const adminUrl = new URL(req.url);
