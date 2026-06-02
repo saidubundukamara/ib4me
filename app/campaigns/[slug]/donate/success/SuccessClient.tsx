@@ -363,11 +363,21 @@ export default function SuccessClient({
                   <span className="text-muted-foreground">Campaign:</span>
                   <span className="font-medium text-foreground">{campaignName}</span>
                 </div>
-                {donationId && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Donation ID:</span>
-                    <span className="font-mono text-xs text-foreground">{donationId}</span>
-                  </div>
+                {details && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Amount:</span>
+                      <span className="font-medium text-foreground">
+                        {formatAmount(details.amountMajor, details.currency)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Date:</span>
+                      <span className="font-medium text-foreground">
+                        {formatDate(details.createdAt)}
+                      </span>
+                    </div>
+                  </>
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Status:</span>
