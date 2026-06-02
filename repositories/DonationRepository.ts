@@ -210,6 +210,7 @@ export class DonationRepository extends BaseRepository<IDonation> {
     pendingDonations: number;
     pendingAmount: number;
     failedDonations: number;
+    refundedDonations: number;
     averageDonation: number;
     successRate: number;
   }> {
@@ -242,6 +243,9 @@ export class DonationRepository extends BaseRepository<IDonation> {
           },
           failedDonations: {
             $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] }
+          },
+          refundedDonations: {
+            $sum: { $cond: [{ $eq: ["$status", "refunded"] }, 1, 0] }
           }
         }
       }
@@ -255,7 +259,8 @@ export class DonationRepository extends BaseRepository<IDonation> {
       successfulAmount: 0,
       pendingDonations: 0,
       pendingAmount: 0,
-      failedDonations: 0
+      failedDonations: 0,
+      refundedDonations: 0
     };
 
     const averageDonation = data.totalDonations > 0 ? data.totalAmount / data.totalDonations : 0;
