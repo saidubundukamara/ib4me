@@ -60,7 +60,9 @@ export async function PUT(request: NextRequest) {
     // Build update object with only provided fields
     const updateData: Record<string, unknown> = {};
     if (name !== undefined) updateData.name = name;
-    if (email !== undefined) updateData.email = email || null;
+    if (typeof email === "string" && email.trim() !== "") {
+      updateData.email = email.trim().toLowerCase();
+    }
     if (phone !== undefined) updateData.phone = phone || null;
     if (photoUrl !== undefined) updateData.photoUrl = photoUrl || null;
     if (whatsappOptIn !== undefined) updateData.whatsappOptIn = Boolean(whatsappOptIn);

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { generateAvatarDataUri } from "@/lib/avatar";
 
 type TestimonialItem = {
   id: string;
@@ -14,8 +15,7 @@ type TestimonialItem = {
   quote: string;
 };
 
-const getAvatarUrl = (name: string) =>
-  `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
+const getAvatarUrl = (name: string) => generateAvatarDataUri(name);
 
 export default function TestimonialsSection() {
   const [testimonials, setTestimonials] = useState<TestimonialItem[]>([]);

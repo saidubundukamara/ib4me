@@ -113,7 +113,7 @@ export default function DonationsUI({
                   <p className="text-sm text-muted-foreground mb-1">
                     Total Raised
                   </p>
-                  <p className="text-xs text-muted-foreground">Last 6 months</p>
+                  <p className="text-xs text-muted-foreground">All time</p>
                 </div>
               </div>
               <p className="text-3xl font-bold text-primary">

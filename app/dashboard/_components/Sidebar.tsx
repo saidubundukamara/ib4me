@@ -17,7 +17,7 @@ import {
   Building,
   MessageSquareQuote,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import Ib4meLogo from "@/public/assets/ib4melogo.png";
 import { cn } from "@/lib/utils";
 
@@ -47,8 +47,8 @@ export function Sidebar({ className, onNavigate, variant = "desktop" }: SidebarP
 
   const name = session?.user?.name ?? "Your ib4me space";
   const email = session?.user?.email ?? "Manage your impact";
-  const avatarUrl = session?.user?.image ?? undefined;
-  const initial = name.trim().charAt(0).toUpperCase();
+  const avatarUrl = session?.user?.image ?? null;
+  const avatarSeed = session?.user?.id ?? name;
 
   const filteredMenuItems = menuItems.filter((item) => {
     if (item.path === "/dashboard/organization") {
@@ -147,14 +147,13 @@ export function Sidebar({ className, onNavigate, variant = "desktop" }: SidebarP
         )}
       >
         <div className="flex items-center gap-3">
-          <Avatar className={cn("h-10 w-10", isMobileVariant && "h-9 w-9")}>
-            <AvatarImage
-              src={avatarUrl}
-              alt={name || "User avatar"}
-              className="object-cover"
-            />
-            <AvatarFallback>{initial}</AvatarFallback>
-          </Avatar>
+          <UserAvatar
+            photoUrl={avatarUrl}
+            seed={avatarSeed}
+            name={name}
+            className={cn("h-10 w-10", isMobileVariant && "h-9 w-9")}
+            imgClassName="object-cover"
+          />
           <div className="min-w-0">
             <p
               className={cn(

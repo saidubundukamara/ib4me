@@ -524,13 +524,13 @@ export default function UserCampaignDetailPage() {
                     <div className="text-center break-words">
                       <p className="text-xs sm:text-sm text-muted-foreground">Raised</p>
                       <p className="text-base sm:text-lg font-semibold text-primary tabular-nums break-words">
-                        {compactCurrency(campaign.totals?.raisedMinor, campaign.goal?.currency || "SLL")}
+                        {compactCurrency((campaign.totals?.raisedMinor ?? 0) / 100, campaign.goal?.currency || "SLL")}
                       </p>
                     </div>
                     <div className="text-center break-words">
                       <p className="text-xs sm:text-sm text-muted-foreground">Goal</p>
                       <p className="text-base sm:text-lg font-semibold text-foreground tabular-nums break-words">
-                        {compactCurrency(campaign.goal?.amountMinor, campaign.goal?.currency || "SLL")}
+                        {compactCurrency((campaign.goal?.amountMinor ?? 0) / 100, campaign.goal?.currency || "SLL")}
                       </p>
                     </div>
                     <div className="text-center break-words">
@@ -547,7 +547,7 @@ export default function UserCampaignDetailPage() {
                   <div className="flex flex-col gap-1.5 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:text-sm text-muted-foreground">
                     <span className="break-words">{progress}% of goal reached</span>
                     <span className="break-words">
-                      {compactCurrency(campaign.goal?.amountMinor, campaign.goal?.currency || "SLL")} goal
+                      {compactCurrency((campaign.goal?.amountMinor ?? 0) / 100, campaign.goal?.currency || "SLL")} goal
                     </span>
                   </div>
                 </div>
@@ -585,7 +585,7 @@ export default function UserCampaignDetailPage() {
                   <div>
                     <dt className="text-blaze-orange">Goal amount</dt>
                     <dd className="font-medium text-foreground text-sm sm:text-xs break-words">
-                      {compactCurrency(campaign.goal?.amountMinor, campaign.goal?.currency || "SLL")}
+                      {compactCurrency((campaign.goal?.amountMinor ?? 0) / 100, campaign.goal?.currency || "SLL")}
                     </dd>
                   </div>
                   <div>

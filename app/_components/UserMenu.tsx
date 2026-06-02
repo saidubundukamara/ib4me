@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { logout } from "@/lib/authClient";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button"
 import {
     DropdownMenu,
@@ -49,33 +49,29 @@ const UserMenu = () => {
 
     const avatarUrl = session?.user?.image ?? null;
     const name = session?.user?.name ?? "User";
-    const initial = name.trim().charAt(0).toUpperCase();
+    const avatarSeed = session?.user?.id ?? name;
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button size="icon" variant="outline" aria-label="Open account menu" className="rounded-full p-0">
-                    <Avatar>
-                        <AvatarImage
-                            src={avatarUrl ?? undefined}
-                            alt={name || "User avatar"}
-                            className="h-full w-full object-cover"
-                        />
-                        <AvatarFallback>{initial}</AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                        photoUrl={avatarUrl}
+                        seed={avatarSeed}
+                        name={name}
+                        imgClassName="h-full w-full object-cover"
+                    />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="max-w-64">
                 <DropdownMenuLabel className="flex items-start gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full overflow-hidden">
-                        <Avatar>
-                            <AvatarImage
-                                src={avatarUrl ?? undefined}
-                                alt={name || "User avatar"}
-                                className="h-full w-full object-cover"
-                            />
-                            <AvatarFallback>{initial}</AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                            photoUrl={avatarUrl}
+                            seed={avatarSeed}
+                            name={name}
+                            imgClassName="h-full w-full object-cover"
+                        />
                     </div>
                     <div className="flex min-w-0 flex-col">
                         <span className="text-sm font-medium">

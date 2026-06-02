@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { generateAvatarDataUri } from "@/lib/avatar";
 import {
   Card,
   CardContent,
@@ -186,8 +187,7 @@ export default function TestimonialsPage() {
     }
   };
 
-  const getAvatarUrl = (name: string) =>
-    `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
+  const getAvatarUrl = (name: string) => generateAvatarDataUri(name);
 
   if (loading) {
     return (

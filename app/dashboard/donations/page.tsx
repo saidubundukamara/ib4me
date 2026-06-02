@@ -45,14 +45,21 @@ export default async function UserDonationsPage() {
     userDonationsMadeRaw?.[0]?.amount.currency ??
     "LE";
 
-  const totalDonatedMinor = succeededDonations.reduce(
-    (sum, d) => sum + (d.amount?.minor ?? 0),
+  // Source "Total Raised" stats from campaign.totals — the single source of
+  // truth used everywhere else (campaign cards, dashboard, admin). This is the
+  // net amount the campaign receives (campaignReceivesMinor) and includes
+  // payment_received donations, so it stays aligned with the campaign "Raised".
+  const totalRaisedMinor = userCampaigns.reduce(
+    (sum, c) => sum + (c.totals?.raisedMinor ?? 0),
     0,
   );
-  const totalRaised = totalDonatedMinor / 100;
-  const donationCount = succeededDonations.length;
+  const totalRaised = totalRaisedMinor / 100;
+  const donationCount = userCampaigns.reduce(
+    (sum, c) => sum + (c.totals?.donationCount ?? 0),
+    0,
+  );
   const averageDonationMinor = donationCount
-    ? Math.round(totalDonatedMinor / donationCount)
+    ? Math.round(totalRaisedMinor / donationCount)
     : 0;
   const avgDonation = averageDonationMinor / 100;
 
@@ -73,9 +80,9 @@ export default async function UserDonationsPage() {
     Math.round((averageDonationMinor / Math.max(1, maxMinor)) * 100),
   );
 
-  const uniqueReceivingCampaigns = new Set(
-    succeededDonations.map((d) => String(d.campaignId)),
-  ).size;
+  const uniqueReceivingCampaigns = userCampaigns.filter(
+    (c) => (c.totals?.donationCount ?? 0) > 0,
+  ).length;
 
   const donationsReceived = succeededDonations.slice(0, 20).map((d) => ({
     id: String(d._id),
@@ -88,7 +95,7 @@ export default async function UserDonationsPage() {
     }),
     donorName: d.donorSnapshot?.name,
     status: d.status,
-    amountMinor: d.amount.minor,
+    amountMinor: d.campaignReceivesMinor ?? d.amount.minor,
     currency: d.amount.currency ?? primaryCurrency,
   }));
 
@@ -152,7 +159,7 @@ export default async function UserDonationsPage() {
     ],
     ...succeededDonations.map((d) => [
       new Date(d.createdAt).toISOString(),
-      String(d.amount.minor / 100),
+      String((d.campaignReceivesMinor ?? d.amount.minor) / 100),
       d.amount.currency,
       campaignIdToMeta.get(String(d.campaignId))?.title ??
         String(d.campaignId),
