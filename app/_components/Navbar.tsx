@@ -7,7 +7,7 @@ import {
     LogOutIcon, Search,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import {
     Accordion,
     AccordionContent,
@@ -145,9 +145,9 @@ const Navbar = ({
             setSearchOpen(false);
         }
     };
-    const avatarUrl = session?.user?.image ?? undefined;
+    const avatarUrl = session?.user?.image ?? null;
     const name = session?.user?.name ?? "User";
-    const initial = name.trim().charAt(0).toUpperCase();
+    const avatarSeed = session?.user?.id ?? name;
     return (
         <section data-testid="navbar" className={`sticky top-0 z-40 w-full bg-background transition-all duration-200 ${hasScrolled ? "py-1.5 border-b border-border shadow-sm" : "py-3 border-b-0"}`}>
             <div className="container max-w-screen-xl px-5 mx-auto">
@@ -224,14 +224,13 @@ const Navbar = ({
                                 {status === "authenticated" && (
                                     <Card className="border-none shadow-none">
                                         <CardContent className="flex flex-col items-center text-center">
-                                            <Avatar className="h-20 w-20">
-                                                <AvatarImage
-                                                    src={avatarUrl ?? undefined}
-                                                    alt={name || "User avatar"}
-                                                    className="h-full w-full object-cover"
-                                                />
-                                                <AvatarFallback>{initial}</AvatarFallback>
-                                            </Avatar>
+                                            <UserAvatar
+                                                photoUrl={avatarUrl}
+                                                seed={avatarSeed}
+                                                name={name}
+                                                className="h-20 w-20"
+                                                imgClassName="h-full w-full object-cover"
+                                            />
 
                                             <h2 className="mt-2 text-sm sm:text-lg font-Sora font-semibold">{name}</h2>
                                             <div className="w-full mt-4 space-y-2">

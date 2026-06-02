@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { generateAvatarDataUri } from "@/lib/avatar";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -361,7 +362,8 @@ export default function UserSettingsPage() {
       .slice(0, 2) || "U";
   }, [heroName]);
 
-  const heroAvatar = avatarPreview ?? user?.photoUrl ?? null;
+  const avatarSeed = user?._id ?? session?.user?.id ?? heroName;
+  const heroAvatar = avatarPreview ?? user?.photoUrl ?? generateAvatarDataUri(avatarSeed);
   const isProfileBusy = loading || profileLoading || avatarUploading;
 
   const primaryEmail = user?.email || session?.user?.email || "Add an email address";
@@ -374,11 +376,8 @@ export default function UserSettingsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 flex-wrap">
             <div className="flex items-start gap-4 sm:items-center sm:gap-6 min-w-0 w-full sm:w-auto">
               <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-2 border-blaze-orange bg-background shadow-lg flex-shrink-0">
-                {heroAvatar ? (
-                  <AvatarImage src={heroAvatar} alt={heroName} />
-                ) : (
-                  <AvatarFallback className="text-lg sm:text-xl">{initials}</AvatarFallback>
-                )}
+                <AvatarImage src={heroAvatar} alt={heroName} />
+                <AvatarFallback className="text-lg sm:text-xl">{initials}</AvatarFallback>
               </Avatar>
               <div className="space-y-2 min-w-0 flex-1">
                 <p className="text-xs font-semibold uppercase tracking-[0.3rem] text-primary">Dashboard - Settings</p>
@@ -479,11 +478,8 @@ export default function UserSettingsPage() {
                   <div className="flex flex-col gap-4 rounded-2xl border border-border/50 bg-muted/10 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4">
                       <Avatar className="h-16 w-16 border border-blaze-orange bg-background shadow">
-                        {avatarPreview ? (
-                          <AvatarImage src={avatarPreview} alt={heroName} />
-                        ) : (
-                          <AvatarFallback className="text-base">{initials}</AvatarFallback>
-                        )}
+                        <AvatarImage src={heroAvatar} alt={heroName} />
+                        <AvatarFallback className="text-base">{initials}</AvatarFallback>
                       </Avatar>
                       <div className="space-y-1 text-sm">
                         <p className="font-semibold text-foreground">Profile photo</p>
