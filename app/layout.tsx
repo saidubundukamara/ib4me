@@ -5,7 +5,9 @@ import Providers from "./providers";
 import HideOnRoutes from "./HideOnRoutes";
 import { Navbar } from "./_components/Navbar";
 import Footer from "./_components/Footer";
+import MaintenanceScreen from "./_components/MaintenanceScreen";
 import { headers } from "next/headers";
+import { settingService } from "@/services/SettingService";
 
 export const geistSans = Geist({
 variable: "--font-geist-sans",
@@ -89,6 +91,29 @@ export default async function RootLayout({
   const headersList = await headers();
   const host = headersList.get('host') || '';
   const isAdminSubdomain = host.startsWith('admin.');
+
+  // Maintenance mode: block the public/main domain for everyone while admins
+  // retain full access via the admin subdomain. Fail open so a settings/DB
+  // hiccup can never take the whole site down.
+  if (!isAdminSubdomain) {
+    let maintenanceMode = false;
+    try {
+      const features = await settingService.getFeatureSettings();
+      maintenanceMode = features.maintenanceMode ?? false;
+    } catch (error) {
+      console.error("Maintenance mode check failed:", error);
+    }
+
+    if (maintenanceMode) {
+      return (
+        <html lang="en">
+          <body className={`${geistSans.variable} ${geistMono.variable} ${sora.variable} antialiased`}>
+            <MaintenanceScreen />
+          </body>
+        </html>
+      );
+    }
+  }
 
   return (
     <html lang="en">
