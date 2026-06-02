@@ -10,7 +10,7 @@ export function ProgressBar({ value, className = "" }: ProgressBarProps) {
   return (
     <div className={`h-2 rounded-full bg-gray-200 overflow-hidden ${className}`}>
       <div
-        className="h-full bg-gradient-to-r from-primary to-primary/70 animate-progress"
+        className="h-full bg-primary animate-progress"
         style={{ width: `${safe}%` }}
       />
     </div>
