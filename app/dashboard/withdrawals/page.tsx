@@ -22,6 +22,18 @@ function formatCurrency(minor: number, currency: string): string {
   }
 }
 
+// Statuses where the payout funds never left the campaign account or were
+// returned to it. Everything else (processing, approved, completed, paid)
+// represents money that has left / is leaving the account.
+const NON_WITHDRAWN_STATUSES = [
+  "failed",
+  "cancelled",
+  "rejected",
+  "threshold_review",
+  "in_review",
+  "pending",
+];
+
 interface CampaignOption {
   id: string;
   title: string;
@@ -139,8 +151,12 @@ export default function UserWithdrawalsPage() {
 
   const isLoading = loading;
   const totalAvailable = campaignOptions.reduce((sum, c) => sum + c.availableMinor, 0);
+  // Money that has left / is leaving the campaign account counts as withdrawn.
+  // Excludes statuses where funds never left the account or were returned.
+  // Keeps Total Withdrawn consistent with the live Total Available balance,
+  // which drops the moment a payout is dispatched (status "processing").
   const totalWithdrawnMinor = payouts
-    .filter((p) => ["completed", "paid"].includes(p.status))
+    .filter((p) => !NON_WITHDRAWN_STATUSES.includes(p.status))
     .reduce((sum, p) => sum + p.amountMinor, 0);
   const pendingRequests = payouts.filter((p) =>
     ["pending", "processing", "approved"].includes(p.status)
