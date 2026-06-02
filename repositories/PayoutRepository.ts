@@ -145,6 +145,13 @@ export class PayoutRepository extends BaseRepository<IPayout> {
     pendingAmount: number;
     failedPayouts: number;
     failedAmount: number;
+    // Money that has left the platform toward campaigns (incl. in-transit "processing"),
+    // matching the platform-wide "withdrawn" definition (excludes funds never dispatched).
+    disbursedPayouts: number;
+    disbursedAmount: number;
+    // Payouts still awaiting dispatch (review/threshold), money not yet sent.
+    awaitingPayouts: number;
+    awaitingAmount: number;
     averagePayout: number;
     successRate: number;
   }> {
@@ -180,6 +187,18 @@ export class PayoutRepository extends BaseRepository<IPayout> {
           },
           failedAmount: {
             $sum: { $cond: [{ $in: ["$status", ["failed", "rejected", "cancelled"]] }, "$amountMinor", 0] }
+          },
+          disbursedPayouts: {
+            $sum: { $cond: [{ $in: ["$status", ["processing", "approved", "completed", "paid"]] }, 1, 0] }
+          },
+          disbursedAmount: {
+            $sum: { $cond: [{ $in: ["$status", ["processing", "approved", "completed", "paid"]] }, "$amountMinor", 0] }
+          },
+          awaitingPayouts: {
+            $sum: { $cond: [{ $in: ["$status", ["pending", "in_review", "threshold_review"]] }, 1, 0] }
+          },
+          awaitingAmount: {
+            $sum: { $cond: [{ $in: ["$status", ["pending", "in_review", "threshold_review"]] }, "$amountMinor", 0] }
           }
         }
       }
@@ -194,7 +213,11 @@ export class PayoutRepository extends BaseRepository<IPayout> {
       pendingPayouts: 0,
       pendingAmount: 0,
       failedPayouts: 0,
-      failedAmount: 0
+      failedAmount: 0,
+      disbursedPayouts: 0,
+      disbursedAmount: 0,
+      awaitingPayouts: 0,
+      awaitingAmount: 0
     };
 
     const averagePayout = data.totalPayouts > 0 ? data.totalAmount / data.totalPayouts : 0;
