@@ -81,6 +81,54 @@ function wrapText(
   return currentY + lineHeight;
 }
 
+/** Like wrapText, but stops after maxLines and appends an ellipsis if truncated. Returns ending Y. */
+function wrapTextClamped(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  lineHeight: number,
+  maxLines: number
+): number {
+  const clean = (text || "").replace(/\s+/g, " ").trim();
+  if (!clean || maxLines < 1) return y;
+
+  const words = clean.split(" ");
+  const lines: string[] = [];
+  let line = "";
+
+  for (let n = 0; n < words.length; n++) {
+    const testLine = line ? `${line} ${words[n]}` : words[n];
+    if (ctx.measureText(testLine).width > maxWidth && line) {
+      lines.push(line);
+      line = words[n];
+      if (lines.length === maxLines) break;
+    } else {
+      line = testLine;
+    }
+  }
+
+  const truncated = lines.length === maxLines; // more words remained than fit
+  if (lines.length < maxLines) lines.push(line);
+
+  let currentY = y;
+  for (let i = 0; i < lines.length; i++) {
+    let lineText = lines[i];
+    const isLast = i === lines.length - 1;
+    if (isLast && truncated) {
+      // Trim until the line plus an ellipsis fits the width
+      while (lineText && ctx.measureText(`${lineText}…`).width > maxWidth) {
+        lineText = lineText.replace(/\s*\S$/, "").trimEnd();
+      }
+      lineText = `${lineText}…`;
+    }
+    ctx.fillText(lineText, x, currentY);
+    currentY += lineHeight;
+  }
+  return currentY;
+}
+
 /** Trace a rounded rectangle path */
 function roundRect(
   ctx: CanvasRenderingContext2D,
@@ -347,20 +395,34 @@ export async function generateCampaignImage(
   const FOOTER_LINE_Y = CH + CARD_M - 170; // y=862 (where footer divider goes)
   const SUB_H = FOOTER_LINE_Y - 32 - SUB_Y; // available height for this sub-row
 
-  // Left zone: story / details
+  // Left zone: details line + a clamped excerpt of the campaign story
   const STORY_W = Math.floor(IMG_W * 0.52); // 52% for text
+  const ZONE_BOTTOM = SUB_Y + SUB_H;
   ctx.save();
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.font = "16px 'Sora', sans-serif";
-  ctx.fillStyle = BRAND.textMid;
+  let textY = SUB_Y;
+
+  // 1. Short details / institution summary
   if (campaign.details || campaign.institution?.name) {
     const parts: string[] = [];
     if (campaign.details) parts.push(campaign.details);
     if (campaign.institution?.name) parts.push(`At ${campaign.institution.name}`);
-    wrapText(ctx, parts.join(" • "), IMG_X, SUB_Y, STORY_W, 24);
-  } else if (campaign.story) {
-    wrapText(ctx, campaign.story.slice(0, 130).replace(/\s\S+$/, "..."), IMG_X, SUB_Y, STORY_W, 24);
+    ctx.font = "16px 'Sora', sans-serif";
+    ctx.fillStyle = BRAND.textMid;
+    textY = wrapTextClamped(ctx, parts.join(" • "), IMG_X, textY, STORY_W, 24, 2);
+    textY += 8; // gap before the story excerpt
+  }
+
+  // 2. Story excerpt (the campaign description) — fills the remaining space
+  if (campaign.story) {
+    const storyLineH = 22;
+    const maxLines = Math.floor((ZONE_BOTTOM - textY) / storyLineH);
+    if (maxLines > 0) {
+      ctx.font = "15px 'Sora', sans-serif";
+      ctx.fillStyle = BRAND.textLight;
+      wrapTextClamped(ctx, campaign.story, IMG_X, textY, STORY_W, storyLineH, maxLines);
+    }
   }
   ctx.restore();
 
