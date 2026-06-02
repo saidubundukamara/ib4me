@@ -72,11 +72,21 @@ export default function UserWithdrawalsPage() {
 
   async function fetchData() {
     try {
-      const [campaignsRes, payoutsRes, settingsRes] = await Promise.all([
+      const [campaignsRes, payoutsRes, settingsRes, balancesRes] = await Promise.all([
         fetch("/api/campaigns"),
         fetch("/api/user/payouts"),
         fetch("/api/admin/settings?category=withdrawal"),
+        fetch("/api/payouts/balance"),
       ]);
+
+      // Live available balances read from each campaign's Monime financial
+      // account (authoritative). Falls back to the MongoDB estimate only if the
+      // balance lookup is unavailable.
+      let balances: Record<string, { availableMinor: number; currency: string }> = {};
+      if (balancesRes.ok) {
+        const balancesData = await balancesRes.json();
+        balances = balancesData.balances ?? {};
+      }
 
       if (campaignsRes.ok) {
         const campaignsData = await campaignsRes.json();
@@ -84,13 +94,17 @@ export default function UserWithdrawalsPage() {
 
         // Transform campaigns into options
         const options = campaignsData.map((c: Campaign) => {
-          const raised = c.totals?.raisedMinor ?? 0;
-          const paid = c.withdrawals?.totalPaidMinor ?? 0;
-          const available = Math.max(0, raised - paid);
+          const id = c.id || String(c._id);
           const currency = c.goal?.currency ?? "SLE";
+          const liveBalance = balances[id]?.availableMinor;
+          const fallback = Math.max(
+            0,
+            (c.totals?.raisedMinor ?? 0) - (c.withdrawals?.totalPaidMinor ?? 0)
+          );
+          const available = liveBalance ?? fallback;
           const title = c.beneficiary?.name || c.details || c.slug;
           return {
-            id: c.id || String(c._id),
+            id,
             title,
             currency,
             availableMinor: available,

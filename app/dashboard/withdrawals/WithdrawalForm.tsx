@@ -212,10 +212,22 @@ export function WithdrawalForm({
       const result = await response.json();
 
       if (response.ok) {
-        toast.success("Payout request submitted successfully!", {
-          description:
-            "Your withdrawal is being processed and will be sent to your selected destination.",
-        });
+        if (result.status === "threshold_review") {
+          toast.success("Withdrawal submitted for review", {
+            description:
+              "This amount is below the minimum withdrawal threshold, so it needs admin approval before it can be paid out.",
+          });
+        } else if (result.status === "failed") {
+          toast.error("Withdrawal could not be processed", {
+            description:
+              "We couldn't complete the payout with the provider. Please try again or contact support.",
+          });
+        } else {
+          toast.success("Payout request submitted successfully!", {
+            description:
+              "Your withdrawal is being processed and will be sent to your selected destination.",
+          });
+        }
         formRef.current?.reset();
         setPayoutType("mobile_money");
         setSelectedCampaign(undefined);
