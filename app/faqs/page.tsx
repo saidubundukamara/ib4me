@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { ChevronDown, HelpCircle, CreditCard, Shield, Users, Heart, Building2, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import BackToTop from "@/app/_components/BackToTop";
+import { useSettings } from "@/lib/settings-provider";
+import { getFeeDisplay, type FeeDisplay } from "@/lib/feeDisplay";
 
 interface FAQItem {
     question: string;
@@ -18,7 +20,7 @@ interface FAQCategory {
     faqs: FAQItem[];
 }
 
-const faqCategories: FAQCategory[] = [
+const buildFaqCategories = (f: FeeDisplay): FAQCategory[] => [
     {
         title: "Getting Started",
         icon: HelpCircle,
@@ -35,7 +37,7 @@ const faqCategories: FAQCategory[] = [
             },
             {
                 question: "Is it free to create a campaign?",
-                answer: "Yes, creating a campaign on ib4me is completely free. Campaign organizers pay nothing. The small fees (3.6% for individuals, 3.0% for organizations) are covered by donors and added on top of their donation amount.",
+                answer: `Yes, creating a campaign on ib4me is completely free. Campaign organizers pay nothing. The small fees (${f.individualTotal}% for individuals, ${f.organizationTotal}% for organizations) are covered by donors and added on top of their donation amount.`,
             },
             {
                 question: "How long does campaign verification take?",
@@ -55,11 +57,11 @@ const faqCategories: FAQCategory[] = [
             },
             {
                 question: "How much of my donation goes to the campaign?",
-                answer: "100% of your donation amount goes directly to the campaign. Fees are added on top of your donation and covered by you as the donor. For example, if you donate SLE 100 to an individual campaign, you'll pay SLE 103.60 total, and the full SLE 100 goes to the campaign.",
+                answer: `100% of your donation amount goes directly to the campaign. Fees are added on top of your donation and covered by you as the donor. For example, if you donate SLE 100 to an individual campaign, you'll pay SLE ${f.exampleTotal(100)} total, and the full SLE 100 goes to the campaign.`,
             },
             {
                 question: "What are the fees?",
-                answer: "Total fees are 3.6% for individual campaigns and 3.0% for organization campaigns. This includes a 1% payment processing fee (Monime) and a platform fee (2.6% for individuals, 2.0% for organizations). Fees are added on top of the donation amount.",
+                answer: `Total fees are ${f.individualTotal}% for individual campaigns and ${f.organizationTotal}% for organization campaigns. This includes a ${f.payment}% payment processing fee (Monime) and a platform fee (${f.individualPlatform}% for individuals, ${f.organizationPlatform}% for organizations). Fees are added on top of the donation amount.`,
             },
             {
                 question: "Can I donate anonymously?",
@@ -83,7 +85,7 @@ const faqCategories: FAQCategory[] = [
             },
             {
                 question: "Why do organizations pay lower fees?",
-                answer: "Verified organizations receive a reduced platform fee of 2.0% (vs 2.6% for individuals), bringing their total fee to 3.0%. This helps established organizations maximize the impact of donations they receive.",
+                answer: `Verified organizations receive a reduced platform fee of ${f.organizationPlatform}% (vs ${f.individualPlatform}% for individuals), bringing their total fee to ${f.organizationTotal}%. This helps established organizations maximize the impact of donations they receive.`,
             },
             {
                 question: "How do I verify my organization?",
@@ -197,6 +199,9 @@ export default function FAQsPage() {
     const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
     const [searchQuery, setSearchQuery] = useState("");
 
+    const { fees } = useSettings();
+    const faqCategories = useMemo(() => buildFaqCategories(getFeeDisplay(fees)), [fees]);
+
     const toggleItem = (categoryIndex: number, faqIndex: number) => {
         const key = `${categoryIndex}-${faqIndex}`;
         setOpenItems((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -213,7 +218,7 @@ export default function FAQsPage() {
                 ),
             }))
             .filter((cat) => cat.faqs.length > 0);
-    }, [searchQuery]);
+    }, [searchQuery, faqCategories]);
 
     const totalResults = filteredCategories.reduce((sum, c) => sum + c.faqs.length, 0);
 
