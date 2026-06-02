@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { generateAvatarDataUri } from "@/lib/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -458,11 +459,11 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                     <Link href={`/creators/${String(campaign.ownerId)}`}>
                       <div className="flex items-center gap-3 rounded-2xl bg-muted/40 p-3 hover:bg-muted/60 transition-colors cursor-pointer">
                         <Avatar className="h-12 w-12">
-                          {organizerPhoto ? (
-                            <AvatarImage src={organizerPhoto} alt={organizerName} />
-                          ) : (
-                            <AvatarFallback>{organizerInitials}</AvatarFallback>
-                          )}
+                          <AvatarImage
+                            src={organizerPhoto ?? generateAvatarDataUri(String(campaign.ownerId))}
+                            alt={organizerName}
+                          />
+                          <AvatarFallback>{organizerInitials}</AvatarFallback>
                         </Avatar>
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">

@@ -4,6 +4,7 @@ import Link from "next/link";
 import mongoose from "mongoose";
 import { MapPin, Calendar, Globe, Building2, Heart } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { generateAvatarDataUri } from "@/lib/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { userService, campaignService, mediaAssetService } from "@/services";
@@ -192,11 +193,11 @@ export default async function CreatorProfilePage({ params }: PageParams) {
             <CardContent className="p-6 sm:p-8">
               <div className="flex flex-col sm:flex-row items-center gap-6">
                 <Avatar className="h-24 w-24">
-                  {profile.photoUrl ? (
-                    <AvatarImage src={profile.photoUrl} alt={displayName} />
-                  ) : (
-                    <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
-                  )}
+                  <AvatarImage
+                    src={profile.photoUrl ?? generateAvatarDataUri(id)}
+                    alt={displayName}
+                  />
+                  <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="text-center sm:text-left flex-1">
                   <h1 className="text-2xl font-bold">{displayName}</h1>
