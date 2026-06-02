@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { generateAvatarDataUri } from "@/lib/avatar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   MessageSquareQuote,
@@ -210,8 +211,7 @@ export default function AdminTestimonialsPage() {
     );
   };
 
-  const getAvatarUrl = (name: string) =>
-    `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`;
+  const getAvatarUrl = (name: string) => generateAvatarDataUri(name);
 
   if (loading) {
     return (
