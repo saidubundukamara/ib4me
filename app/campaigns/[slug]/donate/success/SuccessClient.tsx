@@ -13,6 +13,7 @@ type DonationStatus = "loading" | "pending" | "transferring" | "succeeded" | "fa
 
 interface DonationDetails {
   amountMajor: number;
+  campaignReceivesMajor: number | null;
   currency: string;
   createdAt: string;
 }
@@ -116,6 +117,7 @@ export default function SuccessClient({
         if (isMounted && donationData?.amount) {
           setDetails({
             amountMajor: donationData.amount.major,
+            campaignReceivesMajor: donationData.amount.campaignReceivesMajor ?? null,
             currency: donationData.amount.currency,
             createdAt: donationData.createdAt,
           });
@@ -160,6 +162,7 @@ export default function SuccessClient({
         if (donationData.amount) {
           setDetails({
             amountMajor: donationData.amount.major,
+            campaignReceivesMajor: donationData.amount.campaignReceivesMajor ?? null,
             currency: donationData.amount.currency,
             createdAt: donationData.createdAt,
           });
@@ -366,11 +369,20 @@ export default function SuccessClient({
                 {details && (
                   <>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Amount:</span>
+                      <span className="text-muted-foreground">Your donation:</span>
                       <span className="font-medium text-foreground">
                         {formatAmount(details.amountMajor, details.currency)}
                       </span>
                     </div>
+                    {details.campaignReceivesMajor != null &&
+                      details.campaignReceivesMajor !== details.amountMajor && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Goes to campaign:</span>
+                          <span className="font-medium text-foreground">
+                            {formatAmount(details.campaignReceivesMajor, details.currency)}
+                          </span>
+                        </div>
+                      )}
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Date:</span>
                       <span className="font-medium text-foreground">

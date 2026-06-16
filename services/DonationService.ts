@@ -479,7 +479,9 @@ export class DonationService {
     const maxAttempts = opts?.maxAttempts ?? 10;
     const pollIntervalMs = opts?.pollIntervalMs ?? 1000;
     const idempotencyKey = `donation_transfer_${donationId}`;
-    const transferAmount = donation.amount.minor; // fees are charged on top
+    // Transfer only what the campaign is entitled to receive; falls back to
+    // amount.minor for legacy donations created before campaignReceivesMinor existed.
+    const transferAmount = donation.campaignReceivesMinor ?? donation.amount.minor;
 
     try {
       await this.updateTransferStatus(donationId, {
@@ -606,8 +608,9 @@ export class DonationService {
         platformFeeMinor: existingFees.platformFeeMinor || existingFees.totalFeeMinor || 0,
       };
 
-      // Net amount = donation amount (campaign receives full amount since fees are added on top)
-      const netAmountMinor = donation.amount.minor;
+      // Use campaignReceivesMinor (net after fees) — falls back to amount.minor for
+      // legacy donations created before the fee-choice field existed.
+      const netAmountMinor = donation.campaignReceivesMinor ?? donation.amount.minor;
 
       const updated = await donationRepository.updateById(
         donation.id,
@@ -627,7 +630,7 @@ export class DonationService {
 
       // Update campaign totals
       const incUpdate: Record<string, number> = {
-        "totals.raisedMinor": donation.amount.minor,
+        "totals.raisedMinor": netAmountMinor,
         "totals.donationCount": 1,
       };
       const setUpdate: Record<string, unknown> = {
@@ -647,7 +650,7 @@ export class DonationService {
           refType: "donation",
           refId: donation._id,
           direction: "in",
-          amountMinor: donation.amount.minor,
+          amountMinor: netAmountMinor,
           currency: donation.amount.currency,
         } as unknown as Partial<import("../models/LedgerEntry").ILedgerEntry>,
         txn
@@ -1101,9 +1104,13 @@ export class DonationService {
         throw new Error("Failed to mark donation as refunded");
       }
 
+      // Mirror exactly what was originally credited: campaignReceivesMinor (net after
+      // fees), falling back to amount.minor for legacy donations without that field.
+      const campaignReceivedAmount = donation.campaignReceivesMinor ?? donation.amount.minor;
+
       // Reverse campaign totals
       const decUpdate: Record<string, number> = {
-        "totals.raisedMinor": -donation.amount.minor,
+        "totals.raisedMinor": -campaignReceivedAmount,
         "totals.donationCount": -1,
       };
 
@@ -1131,7 +1138,7 @@ export class DonationService {
           donationId,
           campaignId: donation.campaignId?.toString(),
           donorId: donation.donorId?.toString(),
-          refundAmount: donation.amount?.minor,
+          refundAmount: campaignReceivedAmount,
           currency: donation.amount?.currency,
           originalDonationDate: donation.createdAt?.toISOString(),
           refundedAt: new Date().toISOString()
@@ -1147,7 +1154,7 @@ export class DonationService {
           refType: "donation_refund",
           refId: donation._id,
           direction: "out",
-          amountMinor: donation.amount.minor,
+          amountMinor: campaignReceivedAmount,
           currency: donation.amount.currency,
           description: `Refund for donation ${donationId}: ${refundReason}`,
         } as unknown as Partial<import("../models/LedgerEntry").ILedgerEntry>,

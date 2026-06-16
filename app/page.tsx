@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Heart, DollarSign, Search, UserPlus } from "lucide-react";
+import { ArrowRight, Heart, DollarSign, Search, UserPlus, Settings, Smartphone, Share2, FileText, Shield, Wallet, Headphones, Globe } from "lucide-react";
 import Logo from "@/public/assets/ib4melogowhite.png";
 import StatsSection from "./_components/StatsSection";
 import CategoriesSection from "./_components/CategoriesSection";
@@ -16,6 +16,7 @@ export default function Home() {
       <CategoriesSection />
       <StatsSection />
       <GetStartedSection />
+      <WhyIb4meSection />
       <TestimonialsSection />
       <FundraiseSection />
     </div>
@@ -218,6 +219,50 @@ function GetStartedSection() {
                     {step.description}
                   </p>
                 </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   Why ib4me?
+   ───────────────────────────────────────────────────────── */
+function WhyIb4meSection() {
+  const features = [
+    { icon: Settings, title: "Easy set up and management", color: "text-primary", bg: "bg-primary/10" },
+    { icon: Smartphone, title: "Mobile money donations", color: "text-blaze-orange", bg: "bg-blaze-orange/10" },
+    { icon: Share2, title: "Share campaign with a single click", color: "text-chartereuse-dark", bg: "bg-chartereuse/10" },
+    { icon: FileText, title: "Automated campaign reports", color: "text-primary", bg: "bg-primary/10" },
+    { icon: Shield, title: "Enhance donations security", color: "text-blaze-orange", bg: "bg-blaze-orange/10" },
+    { icon: Wallet, title: "Flexible withdrawal options", color: "text-chartereuse-dark", bg: "bg-chartereuse/10" },
+    { icon: Headphones, title: "Live customer care", color: "text-primary", bg: "bg-primary/10" },
+    { icon: Globe, title: "Global & Monthly donation options", color: "text-blaze-orange", bg: "bg-blaze-orange/10" },
+  ];
+
+  return (
+    <section className="bg-muted/30 py-14 px-4 sm:py-18 sm:px-6 lg:py-24 lg:px-8 font-Sora">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-10 space-y-3 text-center sm:mb-14">
+          <h2 className="text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl">
+            Why <span className="text-blaze-orange">ib4me</span>?
+          </h2>
+          <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
+            Everything you need to raise funds and support causes that matter.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-6 sm:grid-cols-2 md:grid-cols-4">
+          {features.map((f, i) => {
+            const Icon = f.icon;
+            return (
+              <div key={i} className="flex flex-col items-center gap-3 rounded-3xl border border-border bg-card p-6 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]">
+                <div className={`flex h-16 w-16 items-center justify-center rounded-full ${f.bg}`}>
+                  <Icon className={`h-8 w-8 ${f.color}`} aria-hidden="true" />
+                </div>
+                <p className="text-sm font-semibold text-foreground leading-snug">{f.title}</p>
               </div>
             );
           })}

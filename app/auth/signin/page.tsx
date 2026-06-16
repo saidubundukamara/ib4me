@@ -44,7 +44,7 @@ export default function SignInPage() {
 
       if (response?.ok) {
         toast.success("Signed in successfully!");
-        router.push(response.url ?? "/dashboard");
+        router.push("/dashboard");
       }
     } catch (submitError) {
       console.error(submitError);

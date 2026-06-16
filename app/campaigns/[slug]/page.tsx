@@ -25,9 +25,12 @@ import {
   donationRepository,
   campaignUpdateRepository,
   userRepository,
+  campaignRepository,
 } from "@/repositories";
 import CampaignTabs, { type CampaignUpdateItem } from "./Tabs";
 import DonorsTicker from "./DonorsTicker";
+import WordsOfSupportSection from "./WordsOfSupportSection";
+import SimilarCampaignsSection, { type SimilarCampaign } from "./SimilarCampaignsSection";
 import { timeAgo } from "@/lib/utils";
 import ShareImageButton from "./ShareImageButton";
 
@@ -61,10 +64,21 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     return { title: 'Campaign Not Found' };
   }
 
-  // Get beneficiary photo URL if available
-  let imageUrl = 'https://ib4me.org/assets/Hero.png';
+  // Collect asset IDs: beneficiary photo first, then first document image as fallback
+  const ogAssetIds: mongoose.Types.ObjectId[] = [];
   if (campaign.beneficiary?.photoAssetId) {
-    const assets = await mediaAssetService.listByIds([campaign.beneficiary.photoAssetId as mongoose.Types.ObjectId]);
+    ogAssetIds.push(campaign.beneficiary.photoAssetId as mongoose.Types.ObjectId);
+  }
+  const firstDocImage = (campaign.documents || []).find((d) =>
+    d.type?.startsWith("image/")
+  );
+  if (firstDocImage?.assetId) {
+    ogAssetIds.push(firstDocImage.assetId as unknown as mongoose.Types.ObjectId);
+  }
+
+  let imageUrl = 'https://ib4me.org/assets/Hero.png';
+  if (ogAssetIds.length > 0) {
+    const assets = await mediaAssetService.listByIds(ogAssetIds);
     const asset = assets[0];
     if (asset?.storage?.key) {
       imageUrl = CloudinaryService.generateTransformationUrl(asset.storage.key, {
@@ -231,6 +245,46 @@ export default async function CampaignDetailPage({ params }: PageParams) {
     .toUpperCase();
   const organizerPhoto = organizer?.photoUrl ?? null;
   const createdLabel = campaign.createdAt ? formatDate(campaign.createdAt) : null;
+
+  // Fetch similar campaigns (other active campaigns, excluding this one)
+  const similarRaw = await campaignRepository.findMany({
+    status: "active",
+    _id: { $ne: campaign._id },
+  } as never, { query: { sort: { createdAt: -1 }, limit: 3 } });
+
+  const similarAssetIds: mongoose.Types.ObjectId[] = [];
+  for (const c of similarRaw) {
+    const docs = (c.documents as unknown as { type?: string; assetId?: mongoose.Types.ObjectId }[]) || [];
+    const img = docs.find((d) => d.type?.startsWith("image/"));
+    if (img?.assetId) similarAssetIds.push(img.assetId);
+  }
+  const similarAssets = similarAssetIds.length
+    ? await mediaAssetService.listByIds(similarAssetIds)
+    : [];
+  const similarAssetMap = new Map(similarAssets.map((a) => [String(a._id), a]));
+
+  const similarCampaigns: SimilarCampaign[] = similarRaw.map((c) => {
+    const docs = (c.documents as unknown as { type?: string; assetId?: mongoose.Types.ObjectId }[]) || [];
+    const img = docs.find((d) => d.type?.startsWith("image/"));
+    const asset = img?.assetId ? similarAssetMap.get(String(img.assetId)) : null;
+    const imgUrl = asset?.storage?.key
+      ? CloudinaryService.generateTransformationUrl(asset.storage.key, { width: 768, crop: "fill", gravity: "auto", aspect_ratio: "16:9", fetch_format: "auto", quality: "auto" })
+      : asset?.url || "/assets/Hero.png";
+    const raisedMinor = (c.totals as unknown as { raisedMinor?: number })?.raisedMinor ?? 0;
+    const goalMinor = (c.goal as unknown as { amountMinor?: number })?.amountMinor ?? 0;
+    const cur = (c.goal as unknown as { currency?: string })?.currency || "SLE";
+    return {
+      id: String(c._id),
+      slug: c.slug,
+      title: (c.beneficiary as unknown as { name?: string })?.name || (c as { details?: string }).details || c.slug,
+      amountRaised: Math.floor(raisedMinor) / 100,
+      goalAmount: Math.floor(goalMinor) / 100,
+      donationsCount: (c.totals as unknown as { donationCount?: number })?.donationCount ?? 0,
+      currency: cur,
+      ownerVerified: (c as { ownerVerification?: { verified?: boolean } }).ownerVerification?.verified ?? false,
+      imageUrl: imgUrl,
+    };
+  });
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ib4me.org";
   const absoluteUrl = `${siteUrl}/campaigns/${campaign.slug}`;
@@ -517,6 +571,14 @@ export default async function CampaignDetailPage({ params }: PageParams) {
               </div>
             </aside>
           </div>
+
+          {/* Words of Support — full width below main grid */}
+          <div className="mt-8">
+            <WordsOfSupportSection campaignId={String(campaign._id)} />
+          </div>
+
+          {/* Similar Campaigns */}
+          <SimilarCampaignsSection campaigns={similarCampaigns} />
         </div>
       </div>
     </div>

@@ -48,7 +48,7 @@ export default async function UserDashboardPage() {
   const totalRaisedMinor = campaigns.reduce((sum, c) => sum + (c.totals?.raisedMinor ?? 0), 0);
   const totalDonations = campaigns.reduce((sum, c) => sum + (c.totals?.donationCount ?? 0), 0);
   const campaignsSupported = donations.length;
-  const avgDonationMinor = donations.length ? Math.round(donations.reduce((sum, d) => sum + d.amount.minor, 0) / donations.length) : 0;
+  const avgDonationMinor = donations.length ? Math.round(donations.reduce((sum, d) => sum + (d.campaignReceivesMinor ?? d.amount.minor), 0) / donations.length) : 0;
 
   const averageProgressPct = (() => {
     const progressValues = campaigns
@@ -85,7 +85,7 @@ export default async function UserDashboardPage() {
     const dt = new Date(d.createdAt);
     const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
     const bucket = months.find((m) => m.key === key);
-    if (bucket) bucket.totalMinor += d.amount.minor;
+    if (bucket) bucket.totalMinor += d.campaignReceivesMinor ?? d.amount.minor;
   }
   const maxMinor = Math.max(1, ...months.map((m) => m.totalMinor));
 
@@ -339,7 +339,7 @@ export default async function UserDashboardPage() {
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="text-base font-bold text-blaze-orange">{formatCurrency(d.amount.minor, d.amount.currency)}</div>
+                    <div className="text-base font-bold text-blaze-orange">{formatCurrency(d.campaignReceivesMinor ?? d.amount.minor, d.amount.currency)}</div>
                   </div>
                 </div>
               );

@@ -48,6 +48,7 @@ const Footer = ({
       links: [
         { text: "Browse Campaigns", url: "/campaigns" },
         { text: "Start Fundraising", url: "/dashboard" },
+        { text: "Mobile Fundraisers", url: "/mobile-fundraisers" },
         { text: "How ib4me Works", url: "/how-ib4me-works" },
         { text: "About Us", url: "/about" },
         { text: "Pricing & Fees", url: "/pricing" },

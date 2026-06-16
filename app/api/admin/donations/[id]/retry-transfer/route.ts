@@ -86,8 +86,9 @@ export async function POST(
       );
     }
 
-    // Attempt transfer
-    const transferAmount = donation.amount.minor;
+    // Transfer only what campaign is entitled to receive after fees.
+    // Falls back to amount.minor for legacy donations created before campaignReceivesMinor existed.
+    const transferAmount = donation.campaignReceivesMinor ?? donation.amount.minor;
     const idempotencyKey = `transfer_retry_${donationId}_${Date.now()}`;
 
     try {

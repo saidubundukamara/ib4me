@@ -67,6 +67,7 @@ export default function DonateClient({
   const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState("");
   const [coverFee, setCoverFee] = useState(false); // Default: fees from donation
+  const [tipPercent, setTipPercent] = useState(0); // Tip to ib4me (0-20%)
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -114,10 +115,19 @@ export default function DonateClient({
     return amount;
   }, [amount, totalFee, coverFee, donorFeeChoiceEnabled]);
 
+  // Optional tip to ib4me platform
+  const tipAmount = useMemo(
+    () => Math.round(amount * tipPercent) / 100,
+    [amount, tipPercent]
+  );
+
   const baseFeePercent = (BASE_FEE_BPS / 100).toFixed(1);
   const processingFeePercent = (processingFeeBps / 100).toFixed(1);
 
-  const donateLabel = amount > 0 ? `Donate ${formatAmount(amount, currency)}` : "Enter amount";
+  const donateLabel =
+    amount > 0
+      ? `Donate ${formatAmount(totalCharged + tipAmount, currency)}`
+      : "Enter amount";
 
   const handleDonateSubmit = async () => {
     setError(null);
@@ -153,6 +163,7 @@ export default function DonateClient({
         isAnonymous: anonymous,
         message: message.trim() || undefined,
         donorCoversFee: donorFeeChoiceEnabled ? coverFee : undefined,
+        tipAmountMinor: tipAmount > 0 ? Math.round(tipAmount * 100) : undefined,
       };
 
       const response = await fetch("/api/donations/create", {
@@ -391,6 +402,42 @@ export default function DonateClient({
 
               <Separator />
 
+              {/* Tip to ib4me */}
+              <section className="space-y-3">
+                <div className="rounded-2xl border border-border/50 bg-muted/30 px-4 py-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        Tip ib4me to keep us running
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Optional. Goes to ib4me, not the campaign — helps make sure more of every campaign reaches the organiser.
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold text-primary shrink-0 ml-4">
+                      {tipPercent}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={20}
+                    step={5}
+                    value={tipPercent}
+                    onChange={(e) => setTipPercent(Number(e.target.value))}
+                    className="w-full h-2 rounded-full appearance-none bg-muted cursor-pointer accent-primary"
+                    aria-label="Tip percentage"
+                  />
+                  {tipAmount > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {formatAmount(tipAmount, currency)} tip added to your total.
+                    </p>
+                  )}
+                </div>
+              </section>
+
+              <Separator />
+
               <section className="space-y-2">
                 <Label htmlFor="support-message">Message of support (optional)</Label>
                 <Textarea
@@ -503,10 +550,16 @@ export default function DonateClient({
                     {formatAmount(campaignReceives, currency)}
                   </span>
                 </div>
+                {tipAmount > 0 && (
+                  <div className="flex items-center justify-between text-primary">
+                    <span>Tip to ib4me ({tipPercent}%)</span>
+                    <span className="font-medium">+{formatAmount(tipAmount, currency)}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between border-t border-border/40 pt-2">
                   <span className="font-semibold text-foreground">You pay</span>
                   <span className="font-semibold text-foreground">
-                    {formatAmount(totalCharged, currency)}
+                    {formatAmount(totalCharged + tipAmount, currency)}
                   </span>
                 </div>
               </div>
