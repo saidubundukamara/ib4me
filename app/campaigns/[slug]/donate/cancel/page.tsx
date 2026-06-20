@@ -6,7 +6,7 @@ import { FaFacebookF, FaWhatsapp } from "react-icons/fa6";
 import { campaignService } from "@/services";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import ProgressBar from "@/app/_components/ProgressBar";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -89,7 +89,7 @@ async function DonationCancelContent({ params }: PageProps) {
                     <span>Raised so far</span>
                     <span className="font-medium text-foreground">{formatAmount(amountRaised, currency)}</span>
                   </div>
-                  <Progress value={progress} className="h-2" />
+                  <ProgressBar value={progress} className="h-2" />
                   <div className="flex items-center justify-between">
                     <span>Goal</span>
                     <span className="font-medium text-foreground">{formatAmount(goalAmount, currency)}</span>

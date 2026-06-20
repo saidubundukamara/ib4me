@@ -128,7 +128,7 @@ export default function CampaignsGrid({ items, categories }: Props) {
         </div>
 
         {/* Category Pills */}
-        <div className="flex w-full max-w-4xl flex-wrap justify-center gap-2 overflow-x-auto scrollbar-hide">
+        <div className="flex w-full max-w-4xl flex-nowrap gap-2 overflow-x-auto px-1 pb-1 scrollbar-hide sm:flex-wrap sm:justify-center">
           <button
             onClick={() => setSelectedCategory("All")}
             className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
@@ -179,16 +179,18 @@ export default function CampaignsGrid({ items, categories }: Props) {
         <section className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {displayed.map((c, idx) => {
             const handleShare = () => {
-              const url =
+              const base =
                 typeof window === "undefined"
                   ? `/campaigns/${c.slug}`
                   : `${window.location.origin}/campaigns/${c.slug}`;
+              const waUrl = `${base}?ref=whatsapp`;
+              const shareText =
+                c.description ||
+                `${formatAmount(c.amountRaised, c.currency)} raised of ${formatAmount(c.goalAmount, c.currency)} goal`;
               const shareData = {
                 title: c.title,
-                text:
-                  c.description ||
-                  `${formatAmount(c.amountRaised, c.currency)} raised of ${formatAmount(c.goalAmount, c.currency)} goal`,
-                url,
+                text: shareText,
+                url: `${base}?ref=share`,
               };
 
               if (typeof navigator !== "undefined" && navigator.share) {
@@ -198,14 +200,9 @@ export default function CampaignsGrid({ items, categories }: Props) {
                 return;
               }
 
-              if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-                navigator.clipboard
-                  .writeText(url)
-                  .then(() => toast.success("Campaign link copied"))
-                  .catch(() => toast.error("Unable to copy link"));
-              } else {
-                toast.info("Share not supported on this device");
-              }
+              // Desktop fallback: open WhatsApp with pre-filled message
+              const waLink = `https://wa.me/?text=${encodeURIComponent(`${c.title} — ${shareText}\n${waUrl}`)}`;
+              window.open(waLink, "_blank", "noopener,noreferrer");
             };
 
             return (

@@ -156,8 +156,8 @@ function GetStartedSection() {
       title: "Make a Donation",
       description:
         "Choose your amount and securely contribute to a cause that matters.",
-      color: "text-orange-blaze",
-      bgColor: "bg-orange-blaze/10",
+      color: "text-blaze-orange",
+      bgColor: "bg-blaze-orange/10",
     },
     {
       icon: Heart,

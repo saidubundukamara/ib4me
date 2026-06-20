@@ -11,7 +11,7 @@ import {
 } from "react-icons/fa6";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import ProgressBar from "@/app/_components/ProgressBar";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { generateAvatarDataUri } from "@/lib/avatar";
@@ -29,7 +29,7 @@ import {
 } from "@/repositories";
 import CampaignTabs, { type CampaignUpdateItem } from "./Tabs";
 import DonorsTicker from "./DonorsTicker";
-import WordsOfSupportSection from "./WordsOfSupportSection";
+
 import SimilarCampaignsSection, { type SimilarCampaign } from "./SimilarCampaignsSection";
 import { timeAgo } from "@/lib/utils";
 import ShareImageButton from "./ShareImageButton";
@@ -64,36 +64,6 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     return { title: 'Campaign Not Found' };
   }
 
-  // Collect asset IDs: beneficiary photo first, then first document image as fallback
-  const ogAssetIds: mongoose.Types.ObjectId[] = [];
-  if (campaign.beneficiary?.photoAssetId) {
-    ogAssetIds.push(campaign.beneficiary.photoAssetId as mongoose.Types.ObjectId);
-  }
-  const firstDocImage = (campaign.documents || []).find((d) =>
-    d.type?.startsWith("image/")
-  );
-  if (firstDocImage?.assetId) {
-    ogAssetIds.push(firstDocImage.assetId as unknown as mongoose.Types.ObjectId);
-  }
-
-  let imageUrl = 'https://ib4me.org/assets/Hero.png';
-  if (ogAssetIds.length > 0) {
-    const assets = await mediaAssetService.listByIds(ogAssetIds);
-    const asset = assets[0];
-    if (asset?.storage?.key) {
-      imageUrl = CloudinaryService.generateTransformationUrl(asset.storage.key, {
-        width: 1200,
-        crop: 'fill',
-        gravity: 'auto',
-        aspect_ratio: '1.91:1',
-        fetch_format: 'jpg',
-        quality: 'auto',
-      });
-    } else if (asset?.url) {
-      imageUrl = asset.url;
-    }
-  }
-
   const beneficiaryName = campaign.beneficiary?.name || 'a beneficiary';
   const goalAmount = campaign.goal?.amountMinor ? (campaign.goal.amountMinor / 100).toLocaleString() : '0';
   const raisedAmount = campaign.totals?.raisedMinor ? (campaign.totals.raisedMinor / 100).toLocaleString() : '0';
@@ -103,6 +73,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
   const description = `Help ${beneficiaryName} raise ${currency} ${goalAmount} for ${campaign.details || 'their cause'}. ${currency} ${raisedAmount} raised so far.`;
   const pageUrl = `https://ib4me.org/campaigns/${slug}`;
 
+  // opengraph-image.tsx in this folder handles og:image and twitter:image automatically.
   return {
     title,
     description,
@@ -110,7 +81,6 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
       title,
       description,
       url: pageUrl,
-      images: [{ url: imageUrl, width: 1200, height: 630, alt: beneficiaryName }],
       type: 'website',
       siteName: 'ib4me',
     },
@@ -118,7 +88,6 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
       card: 'summary_large_image',
       title,
       description,
-      images: [imageUrl],
     },
   };
 }
@@ -293,33 +262,39 @@ export default async function CampaignDetailPage({ params }: PageParams) {
   const shareLinks = [
     {
       name: "Facebook",
-      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(absoluteUrl)}`,
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(absoluteUrl + "?ref=facebook")}`,
       icon: FaFacebookF,
       bgColor: "bg-blue-50 dark:bg-blue-950/20",
       hoverBg: "hover:bg-blue-100 dark:hover:bg-blue-950/40 hover:border-blue-300",
     },
     {
       name: "X",
-      href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(absoluteUrl)}&text=${encodeURIComponent(shareText)}`,
+      href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(absoluteUrl + "?ref=twitter")}&text=${encodeURIComponent(shareText)}`,
       icon: FaXTwitter,
       bgColor: "bg-muted",
       hoverBg: "hover:bg-muted/80 hover:border-foreground/30",
     },
     {
       name: "WhatsApp",
-      href: `https://wa.me/?text=${encodeURIComponent(`${shareText}\n${absoluteUrl}`)}`,
+      href: `https://wa.me/?text=${encodeURIComponent(`${shareText}\n${absoluteUrl}?ref=whatsapp`)}`,
       icon: FaWhatsapp,
       bgColor: "bg-green-50 dark:bg-green-950/20",
       hoverBg: "hover:bg-green-100 dark:hover:bg-green-950/40 hover:border-green-300",
     },
     {
       name: "LinkedIn",
-      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(absoluteUrl)}`,
+      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(absoluteUrl + "?ref=linkedin")}`,
       icon: FaLinkedinIn,
       bgColor: "bg-blue-50 dark:bg-blue-950/20",
       hoverBg: "hover:bg-blue-100 dark:hover:bg-blue-950/40 hover:border-blue-400",
     },
   ];
+
+  // Social proof: count donations from the last 24 hours
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const donationsLast24h = donations.filter(
+    (d) => d.status === "succeeded" && new Date(d.createdAt) > oneDayAgo,
+  ).length;
 
   return (
     <div className="min-h-dvh overflow-x-hidden bg-gradient-to-b from-background to-muted/20 font-Sora pb-20 md:pb-0">
@@ -430,7 +405,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                           of {formatAmount(goalAmount, currency)} goal
                         </span>
                       </div>
-                      <Progress value={progress} className="mt-4 h-3" />
+                      <ProgressBar value={progress} className="mt-4 h-3" />
                       <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                         <span className="inline-flex items-center gap-2">
                           <Heart className="h-4 w-4 text-primary" />
@@ -439,6 +414,21 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                         <span className="font-semibold text-primary">{progress}%</span>
                       </div>
                     </div>
+
+                    {/* Goal reached banner */}
+                    {progress >= 100 && (
+                      <div className="rounded-2xl bg-gradient-to-r from-primary to-chartereuse-dark text-white px-5 py-4 text-center space-y-1">
+                        <p className="text-base font-bold">Goal Reached!</p>
+                        <p className="text-xs opacity-90">This campaign has been fully funded. Thank you to all donors!</p>
+                      </div>
+                    )}
+
+                    {/* Social proof: last-24h donations */}
+                    {donationsLast24h > 0 && (
+                      <p className="text-center text-sm font-semibold text-primary">
+                        {donationsLast24h} {donationsLast24h === 1 ? "person" : "people"} donated in the last 24 hours
+                      </p>
+                    )}
 
                     <div className="space-y-3">
                       <Button
@@ -570,11 +560,6 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                 </Card>
               </div>
             </aside>
-          </div>
-
-          {/* Words of Support — full width below main grid */}
-          <div className="mt-8">
-            <WordsOfSupportSection campaignId={String(campaign._id)} />
           </div>
 
           {/* Similar Campaigns */}

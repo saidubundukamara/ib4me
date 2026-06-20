@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { WithdrawalForm } from "./WithdrawalForm";
 import Card from "../_components/Card";
-import { Calendar, TrendingUp, Wallet } from "lucide-react";
+import { AlertTriangle, Calendar, TrendingUp, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -166,6 +167,15 @@ export default function UserWithdrawalsPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+      {withdrawalBlockStatus.blocked && (
+        <Alert className="border-destructive/50 bg-destructive/5 rounded-2xl">
+          <AlertTriangle className="h-4 w-4 text-destructive" />
+          <AlertDescription className="text-destructive text-sm font-medium">
+            Withdrawals are currently paused.
+            {withdrawalBlockStatus.reason ? ` ${withdrawalBlockStatus.reason}` : " Please check back later or contact support."}
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card className="border-border bg-card p-6 transition-all hover:shadow-lg">
           <div className="flex items-center gap-4">
@@ -206,7 +216,7 @@ export default function UserWithdrawalsPage() {
         <Card className="border-border bg-card p-6 transition-all hover:shadow-lg">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-chartereuse/10">
-              <Calendar className="w-6 h-6 text-chartereuse-foreground" />
+              <Calendar className="w-6 h-6 text-chartereuse-dark" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Pending Requests</p>

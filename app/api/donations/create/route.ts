@@ -16,6 +16,7 @@ const createDonationSchema = z.object({
   message: z.string().optional(),
   paymentMethods: z.array(z.string()).optional(), // ['mobile_money', 'card']
   donorCoversFee: z.boolean().optional(), // Whether donor wants to cover the fee
+  tipAmountMinor: z.number().int().min(0).optional(), // Optional tip to ib4me (minor units)
 });
 
 export async function POST(req: NextRequest) {
@@ -86,7 +87,9 @@ export async function POST(req: NextRequest) {
     );
 
     // Total amount to charge donor depends on fee choice
-    const totalChargedMinor = calculatedFees.totalChargedMinor;
+    // tipAmountMinor (optional platform tip) is added on top of the calculated total
+    const tipAmountMinor = validatedData.tipAmountMinor ?? 0;
+    const totalChargedMinor = calculatedFees.totalChargedMinor + tipAmountMinor;
 
     // Generate unique reference for this donation
     const reference = `donation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

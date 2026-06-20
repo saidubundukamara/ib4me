@@ -250,15 +250,26 @@ export default function SuccessClient({
                   Your payment is being processed. This usually takes just a few seconds.
                 </p>
               </div>
-              <div className="rounded-2xl border border-border/40 bg-muted/30 p-4">
+              <div className="rounded-2xl border border-border/40 bg-muted/30 p-4 space-y-3">
                 <p className="text-sm text-muted-foreground">
                   {pollingCount > 0 && pollingCount < MAX_POLLING_ATTEMPTS && (
-                    <span>Checking status... ({Math.min(pollingCount * 2, 60)}s)</span>
+                    <span>Checking status… ({Math.min(pollingCount * 2, 60)}s elapsed)</span>
                   )}
                   {pollingCount >= MAX_POLLING_ATTEMPTS && (
-                    <span>This is taking longer than expected. You can refresh the page to check again.</span>
+                    <span>This is taking longer than expected. Your donation is safe — please refresh to check again.</span>
                   )}
                 </p>
+                {pollingCount >= MAX_POLLING_ATTEMPTS && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full rounded-xl"
+                    onClick={() => window.location.reload()}
+                  >
+                    Refresh Page
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>

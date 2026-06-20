@@ -5,6 +5,7 @@ import Providers from "./providers";
 import HideOnRoutes from "./HideOnRoutes";
 import { Navbar } from "./_components/Navbar";
 import Footer from "./_components/Footer";
+import { OfflineBanner } from "./_components/OfflineBanner";
 import { headers } from "next/headers";
 
 export const geistSans = Geist({
@@ -99,17 +100,18 @@ export default async function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} ${sora.variable} antialiased`}>
         <Providers>
+          <OfflineBanner />
           {isAdminSubdomain || isMaintenance ? (
             // Admin subdomain / maintenance screen: minimal layout, no chrome.
             <main>{children}</main>
           ) : (
             // Main domain: full layout with navbar/footer
             <>
-              <HideOnRoutes hidePrefixes={["/user", "/admin", "/dashboard", "/s"]}>
+              <HideOnRoutes hidePrefixes={["/user", "/admin", "/dashboard", "/s", "/auth"]}>
                 <Navbar/>
               </HideOnRoutes>
               <main>{children}</main>
-              <HideOnRoutes hidePrefixes={["/user", "/admin", "/dashboard", "/s"]}>
+              <HideOnRoutes hidePrefixes={["/user", "/admin", "/dashboard", "/s", "/auth"]}>
                <Footer/>
               </HideOnRoutes>
             </>

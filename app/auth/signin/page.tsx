@@ -72,19 +72,22 @@ export default function SignInPage() {
       }
       lead={
         <div className="space-y-4 sm:space-y-5">
-          <div className="grid w-full gap-3 sm:grid-cols-3">
-            {SOCIAL_PROVIDERS.map(({ id, icon: Icon, hover, iconColor }) => (
-              <Button
-                key={id}
-                type="button"
-                variant="outline"
-                className={`h-12 border-border/50 transition-all ${hover}`}
-                onClick={handleSocialLogin}
-                disabled={isLoading}
-              >
-                <Icon className={`h-5 w-5 ${iconColor ?? ""}`} />
-              </Button>
-            ))}
+          <div className="space-y-2">
+            <div className="grid w-full gap-3 sm:grid-cols-3">
+              {SOCIAL_PROVIDERS.map(({ id, icon: Icon, iconColor }) => (
+                <Button
+                  key={id}
+                  type="button"
+                  variant="outline"
+                  className="h-12 border-border/50 opacity-50 cursor-not-allowed"
+                  disabled
+                  title="Coming soon"
+                >
+                  <Icon className={`h-5 w-5 ${iconColor ?? ""}`} />
+                </Button>
+              ))}
+            </div>
+            <p className="text-center text-xs text-muted-foreground">Social login coming soon</p>
           </div>
 
           <ContinueDivider label="Or continue with email" />
@@ -107,7 +110,7 @@ export default function SignInPage() {
           </Label>
           <Input
             id="identifier"
-            placeholder="m@example.com or +232..."
+            placeholder="Email or phone number"
             value={identifier}
             onChange={(event) => setIdentifier(event.target.value)}
             autoComplete="username"
@@ -144,7 +147,7 @@ export default function SignInPage() {
           </div>
         </div>
         <Link href="/auth/forgot-password" className="text-sm font-medium  text-primary hover:underline">
-          Forget password?
+          Forgot password?
         </Link>
 
         {error ? <p className="text-sm text-destructive">{error}</p> : null}

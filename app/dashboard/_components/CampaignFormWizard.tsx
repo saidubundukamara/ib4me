@@ -353,6 +353,11 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
         </div>
       </div>
 
+      {/* Mobile step label */}
+      <p className="text-center text-xs text-muted-foreground md:hidden">
+        Step {currentStep} of {steps.length} — {steps[currentStep - 1].label}
+      </p>
+
       {/* Step content */}
       <div className="min-h-[280px] sm:min-h-[300px] space-y-4">
         {currentStep === 1 && (

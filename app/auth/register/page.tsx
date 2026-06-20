@@ -7,6 +7,19 @@ import { FormEvent, useState } from "react";
 import { ArrowRight, Eye, EyeOff, Sparkles, Building, User } from "lucide-react";
 import { toast } from "sonner";
 
+function getPasswordStrength(pwd: string): { score: number; label: string } {
+  if (!pwd) return { score: 0, label: "" };
+  let score = 0;
+  if (pwd.length >= 8) score++;
+  if (pwd.length >= 12) score++;
+  if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score++;
+  if (/[0-9]/.test(pwd)) score++;
+  if (/[^A-Za-z0-9]/.test(pwd)) score++;
+  const capped = Math.min(4, score) as 0 | 1 | 2 | 3 | 4;
+  const labels = ["Too short", "Weak", "Fair", "Good", "Strong"];
+  return { score: capped, label: labels[capped] };
+}
+
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -28,6 +41,27 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const validateField = (field: string, value: string) => {
+    const next = { ...fieldErrors };
+    if (field === "email" && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      next.email = "Please enter a valid email address.";
+    } else if (field === "email") {
+      delete next.email;
+    }
+    if (field === "password" && value && value.length < 8) {
+      next.password = "Password must be at least 8 characters.";
+    } else if (field === "password") {
+      delete next.password;
+    }
+    if (field === "name" && !value.trim()) {
+      next.name = "Full name is required.";
+    } else if (field === "name") {
+      delete next.name;
+    }
+    setFieldErrors(next);
+  };
 
   // Organization fields
   const [accountType, setAccountType] = useState<"individual" | "organization">("individual");
@@ -136,19 +170,22 @@ export default function RegisterPage() {
       }
       lead={
         <div className="space-y-4 sm:space-y-5">
-          <div className="grid w-full gap-3 sm:grid-cols-3">
-            {SOCIAL_PROVIDERS.map(({ id, icon: Icon, hover, iconColor }) => (
-              <Button
-                key={id}
-                type="button"
-                variant="outline"
-                className={`h-12 border-border/50 transition-all ${hover}`}
-                onClick={handleSocialLogin}
-                disabled={isLoading}
-              >
-                <Icon className={`h-5 w-5 ${iconColor ?? ""}`} />
-              </Button>
-            ))}
+          <div className="space-y-2">
+            <div className="grid w-full gap-3 sm:grid-cols-3">
+              {SOCIAL_PROVIDERS.map(({ id, icon: Icon, iconColor }) => (
+                <Button
+                  key={id}
+                  type="button"
+                  variant="outline"
+                  className="h-12 border-border/50 opacity-50 cursor-not-allowed"
+                  disabled
+                  title="Coming soon"
+                >
+                  <Icon className={`h-5 w-5 ${iconColor ?? ""}`} />
+                </Button>
+              ))}
+            </div>
+            <p className="text-center text-xs text-muted-foreground">Social login coming soon</p>
           </div>
 
           <ContinueDivider label="Or continue with email" />
@@ -206,9 +243,11 @@ export default function RegisterPage() {
             placeholder={accountType === "organization" ? "Contact person name" : "John Doe"}
             value={name}
             onChange={(event) => setName(event.target.value)}
+            onBlur={(e) => validateField("name", e.target.value)}
             required
             className="h-12 rounded-xl text-base"
           />
+          {fieldErrors.name && <p className="text-xs text-destructive">{fieldErrors.name}</p>}
         </div>
 
         {/* Organization Fields */}
@@ -290,8 +329,10 @@ export default function RegisterPage() {
               placeholder="you@example.com"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              onBlur={(e) => validateField("email", e.target.value)}
               className="h-12 rounded-xl text-base"
             />
+            {fieldErrors.email && <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>}
           </div>
 
           <div className="space-y-2">
@@ -322,6 +363,7 @@ export default function RegisterPage() {
               placeholder="Create a strong password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
+              onBlur={(e) => validateField("password", e.target.value)}
               required
               className="h-12 rounded-xl pr-12 text-base"
             />
@@ -336,6 +378,31 @@ export default function RegisterPage() {
               <span className="sr-only">Toggle password visibility</span>
             </Button>
           </div>
+          {password && (() => {
+            const { score, label } = getPasswordStrength(password);
+            const barColor =
+              score <= 1 ? "bg-destructive" :
+              score === 2 ? "bg-amber-400" :
+              score === 3 ? "bg-lime-500" :
+              "bg-primary";
+            const textColor =
+              score <= 1 ? "text-destructive" :
+              score === 2 ? "text-amber-500" :
+              "text-primary";
+            return (
+              <div className="mt-2 space-y-1.5">
+                <div className="flex gap-1.5">
+                  {[1, 2, 3, 4].map((bar) => (
+                    <div
+                      key={bar}
+                      className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${bar <= score ? barColor : "bg-muted"}`}
+                    />
+                  ))}
+                </div>
+                <p className={`text-xs font-medium ${textColor}`}>{label}</p>
+              </div>
+            );
+          })()}
         </div>
 
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
