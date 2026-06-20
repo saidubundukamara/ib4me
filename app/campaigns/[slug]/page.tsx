@@ -73,7 +73,33 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
   const description = `Help ${beneficiaryName} raise ${currency} ${goalAmount} for ${campaign.details || 'their cause'}. ${currency} ${raisedAmount} raised so far.`;
   const pageUrl = `https://ib4me.org/campaigns/${slug}`;
 
-  // opengraph-image.tsx in this folder handles og:image and twitter:image automatically.
+  // Build og:image from Cloudinary — fast, CDN-cached, no server timeout
+  let imageUrl = 'https://ib4me.org/assets/Hero.png';
+  const ogAssetIds: mongoose.Types.ObjectId[] = [];
+  if (campaign.beneficiary?.photoAssetId) {
+    ogAssetIds.push(campaign.beneficiary.photoAssetId as mongoose.Types.ObjectId);
+  }
+  const firstDocImage = (campaign.documents || []).find((d) => d.type?.startsWith('image/'));
+  if (firstDocImage?.assetId) {
+    ogAssetIds.push(firstDocImage.assetId as unknown as mongoose.Types.ObjectId);
+  }
+  if (ogAssetIds.length > 0) {
+    const assets = await mediaAssetService.listByIds(ogAssetIds);
+    const asset = assets[0];
+    if (asset?.storage?.key) {
+      imageUrl = CloudinaryService.generateTransformationUrl(asset.storage.key, {
+        width: 1200,
+        height: 630,
+        crop: 'fill',
+        gravity: 'face',
+        fetch_format: 'jpg',
+        quality: 'auto',
+      });
+    } else if (asset?.url) {
+      imageUrl = asset.url;
+    }
+  }
+
   return {
     title,
     description,
@@ -83,11 +109,13 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
       url: pageUrl,
       type: 'website',
       siteName: 'ib4me',
+      images: [{ url: imageUrl, width: 1200, height: 630, alt: `Help ${beneficiaryName} on ib4me` }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
+      images: [imageUrl],
     },
   };
 }
