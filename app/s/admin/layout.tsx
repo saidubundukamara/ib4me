@@ -8,10 +8,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/assets/ib4mefavicon.png", sizes: "48x48", type: "image/png" },
+      { url: '/assets/ib4mefavicon.png', sizes: '48x48', type: 'image/png' },
     ],
     apple: [
-      { url: "/assets/ib4mefavicon.png", sizes: "180x180", type: "image/png" },
+      { url: '/assets/ib4mefavicon.png', sizes: '180x180', type: 'image/png' },
     ],
   },
 };

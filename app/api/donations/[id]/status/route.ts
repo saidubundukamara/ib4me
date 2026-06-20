@@ -110,7 +110,11 @@ export async function GET(
         amount: {
           currency: currentDonation.amount.currency,
           minor: currentDonation.amount.minor,
-          major: currentDonation.amount.minor / 100, // Convert to major units for display
+          major: currentDonation.amount.minor / 100,
+          // Net amount the campaign receives after fees (null for legacy donations)
+          campaignReceivesMajor: currentDonation.campaignReceivesMinor != null
+            ? currentDonation.campaignReceivesMinor / 100
+            : null,
         },
         donor: currentDonation.isAnonymous ? null : currentDonation.donorSnapshot,
         message: currentDonation.message,

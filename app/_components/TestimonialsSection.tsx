@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Quote } from "lucide-react";
+import { Quote, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ type TestimonialItem = {
   authorName: string;
   authorRole: string;
   quote: string;
+  verified?: boolean;
 };
 
 const getAvatarUrl = (name: string) => generateAvatarDataUri(name);
@@ -147,8 +148,16 @@ export default function TestimonialsSection() {
                   <AvatarFallback>{testimonial.authorName[0]}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <div className="text-sm font-bold text-foreground sm:text-base">
-                    {testimonial.authorName}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-sm font-bold text-foreground sm:text-base">
+                      {testimonial.authorName}
+                    </span>
+                    {testimonial.verified && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700">
+                        <CheckCircle className="h-3 w-3" aria-hidden="true" />
+                        Verified Donor
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-muted-foreground sm:text-sm">
                     {testimonial.authorRole}

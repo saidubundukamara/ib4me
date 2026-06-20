@@ -84,8 +84,6 @@ export default function ForgotPasswordPage() {
           </Link>
         </>
       }
-      backHref="/auth/signin"
-      backLabel="← Back to sign in"
     >
       <form onSubmit={onSubmit} className="space-y-5">
         <div className="space-y-2">

@@ -83,6 +83,10 @@ const Navbar = ({
             url: "/campaigns",
         },
         {
+            title: "Mobile Fundraisers",
+            url: "/mobile-fundraisers",
+        },
+        {
             title: "About",
             url: "",
             items: [
@@ -157,12 +161,28 @@ const Navbar = ({
                         <a href={logo.url} className="flex items-center gap-2 shrink-0">
                             <Image src={logo.src} className={`object-contain transition-all duration-200 ${hasScrolled ? "w-28 h-14" : "w-36 h-16"}`} alt={logo.alt} />
                         </a>
-                        <div className="flex items-center font-Sora text-neutral-900">
-                            <NavigationMenu>
-                                <NavigationMenuList>
-                                    {menu.map((item) => renderMenuItem(item, pathname))}
-                                </NavigationMenuList>
-                            </NavigationMenu>
+                        <div className="flex items-center font-Sora text-neutral-900 gap-1">
+                            {menu.map((item) => {
+                                if (item.items) {
+                                    return (
+                                        <NavigationMenu key={item.title}>
+                                            <NavigationMenuList>
+                                                {renderMenuItem(item, pathname)}
+                                            </NavigationMenuList>
+                                        </NavigationMenu>
+                                    );
+                                }
+                                const isActive = item.url ? pathname === item.url || pathname.startsWith(item.url + "/") : false;
+                                return (
+                                    <a
+                                        key={item.title}
+                                        href={item.url}
+                                        className={`inline-flex h-10 items-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-accent-foreground ${isActive ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground"}`}
+                                    >
+                                        {item.title}
+                                    </a>
+                                );
+                            })}
                         </div>
                     </div>
                     <div className="flex items-center gap-2 font-Sora">
@@ -308,17 +328,18 @@ const renderMenuItem = (item: MenuItem, pathname: string) => {
     }
 
     return (
-        <a
-            key={item.title}
-            className={`group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-accent-foreground ${
-                isActive
-                    ? "bg-primary/10 text-primary font-semibold"
-                    : "bg-background text-muted-foreground"
-            }`}
-            href={item.url}
-        >
-            {item.title}
-        </a>
+        <NavigationMenuItem key={item.title}>
+            <a
+                className={`group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-accent-foreground ${
+                    isActive
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "bg-background text-muted-foreground"
+                }`}
+                href={item.url}
+            >
+                {item.title}
+            </a>
+        </NavigationMenuItem>
     );
 };
 
@@ -344,9 +365,10 @@ const renderMobileMenuItem = (item: MenuItem, pathname: string) => {
         <a
             key={item.title}
             href={item.url}
-            className={`text-md font-semibold transition-colors ${isActive ? "text-primary" : ""}`}
+            className={`flex items-center justify-between py-2 text-base font-semibold transition-colors border-b border-border/40 last:border-0 ${isActive ? "text-primary" : "text-foreground hover:text-primary"}`}
         >
             {item.title}
+            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
         </a>
     );
 };

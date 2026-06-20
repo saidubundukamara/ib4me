@@ -113,8 +113,9 @@ export async function POST(
       }, { status: 500 });
     }
 
-    // Initiate internal transfer from platform to campaign
-    const transferAmount = donation.amount.minor; // Transfer donation amount only, not fees
+    // Transfer only what campaign is entitled to receive after fees.
+    // Falls back to amount.minor for legacy donations created before campaignReceivesMinor existed.
+    const transferAmount = donation.campaignReceivesMinor ?? donation.amount.minor;
     // Use deterministic idempotency key to prevent duplicate transfers
     const idempotencyKey = `donation_transfer_${donationId}`;
 

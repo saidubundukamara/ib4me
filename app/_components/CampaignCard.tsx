@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Share2, CheckCircle, ShieldAlert } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { Share2, CheckCircle, ShieldAlert, Heart } from "lucide-react";
+import ProgressBar from "@/app/_components/ProgressBar";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -76,8 +76,12 @@ const CampaignCard = ({
           unoptimized
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        {/* Urgency / days-left badge */}
-        {showDaysLeft ? (
+        {/* Goal reached / urgency / days-left badge */}
+        {percentage >= 100 ? (
+          <div className="absolute top-3 left-3 bg-fun-green text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+            Goal Reached!
+          </div>
+        ) : showDaysLeft ? (
           <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold shadow-lg ${daysLeft! <= 3 ? "bg-red-500 text-white animate-pulse" : daysLeft! <= 7 ? "bg-red-500 text-white" : "bg-amber-500 text-white"}`}>
             {daysLeft === 0 ? "Last day!" : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`}
           </div>
@@ -132,10 +136,7 @@ const CampaignCard = ({
 
         {/* Progress Bar with Gradient */}
         <div className="space-y-2">
-          <Progress
-            value={percentage}
-            className="h-3 bg-muted"
-          />
+          <ProgressBar value={percentage} className="h-3" />
           <div className="flex justify-between items-center text-sm">
             <div>
               <span className="font-bold text-blaze-orange text-lg">
@@ -151,11 +152,20 @@ const CampaignCard = ({
         <div className="flex items-center justify-between pt-4 border-t border-border">
           <div className="flex items-center gap-1.5 text-sm">
             <div className="flex -space-x-1">
-              {[0,1,2].map(i => (
-                <div key={i} className="h-5 w-5 rounded-full bg-primary/20 border-2 border-card flex items-center justify-center">
-                  <span className="text-[8px] text-primary font-bold">♥</span>
-                </div>
-              ))}
+              {[0, 1, 2].map((i) => {
+                const filledHearts = donors >= 50 ? 3 : donors >= 10 ? 2 : donors >= 1 ? 1 : 0;
+                const filled = i < filledHearts;
+                return (
+                  <div key={i} className="h-5 w-5 rounded-full bg-primary/20 border-2 border-card flex items-center justify-center">
+                    <Heart
+                      className={`h-2.5 w-2.5 transition-colors ${filled ? "fill-red-600 text-red-600" : "text-red-700/40"}`}
+                      strokeWidth={1.5}
+                      style={filled ? undefined : { fill: "none" }}
+                      aria-hidden="true"
+                    />
+                  </div>
+                );
+              })}
             </div>
             <span className="font-bold text-card-foreground">{donors.toLocaleString()}</span>
             <span className="text-muted-foreground">donor{donors !== 1 ? "s" : ""}</span>

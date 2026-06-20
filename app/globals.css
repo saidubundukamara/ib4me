@@ -139,6 +139,22 @@
   animation: progress-stripes 1s linear infinite;
 }
 
+/* Hide scrollbar cross-browser while keeping scroll behaviour */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Respect user motion preference for DonorsTicker fade transition */
+@media (prefers-reduced-motion: reduce) {
+  .donors-ticker-item {
+    transition: none !important;
+  }
+}
+
 .dark {
 --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.985 0 0);

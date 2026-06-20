@@ -274,8 +274,8 @@ export default function DiscoverCampaigns() {
                       raised={c.amountRaised}
                       goal={c.goalAmount}
                       donors={c.donationsCount}
-                      verified={false}
-                      ownerVerified={c.ownerVerified ?? true}
+                      verified={c.ownerVerified ?? false}
+                      ownerVerified={c.ownerVerified ?? false}
                       urgency={c.urgency}
                       urgent={c.urgency === "high"}
                       href={`/campaigns/${c.slug}`}

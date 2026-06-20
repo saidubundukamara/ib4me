@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Heart } from "lucide-react";
 
 
@@ -14,10 +14,12 @@ interface DonorEntry {
 export default function DonorsTicker({ donors }: { donors: DonorEntry[] }) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [visible, setVisible] = useState(true);
+  const paused = useRef(false);
 
   useEffect(() => {
     if (donors.length <= 1) return;
     const interval = setInterval(() => {
+      if (paused.current) return;
       setVisible(false);
       setTimeout(() => {
         setCurrentIdx((prev) => (prev + 1) % donors.length);
@@ -32,9 +34,17 @@ export default function DonorsTicker({ donors }: { donors: DonorEntry[] }) {
   const donor = donors[currentIdx];
 
   return (
-    <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+    <div
+      className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3"
+      aria-live="polite"
+      aria-atomic="true"
+      onMouseEnter={() => { paused.current = true; }}
+      onMouseLeave={() => { paused.current = false; }}
+      onFocus={() => { paused.current = true; }}
+      onBlur={() => { paused.current = false; }}
+    >
       <div
-        className={`flex items-start gap-3 transition-all duration-400 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"}`}
+        className={`donors-ticker-item flex items-start gap-3 transition-all duration-400 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"}`}
       >
         <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15">
           <Heart className="h-4 w-4 text-primary" />

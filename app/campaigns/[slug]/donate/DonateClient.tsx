@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import ProgressBar from "@/app/_components/ProgressBar";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -67,9 +67,31 @@ export default function DonateClient({
   const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState("");
   const [coverFee, setCoverFee] = useState(false); // Default: fees from donation
+  const [tipPercent, setTipPercent] = useState(0); // Tip to ib4me (0-20%)
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; firstName?: string }>({});
+
+  const validateDonorField = (field: string, value: string) => {
+    if (anonymous) return;
+    const next = { ...fieldErrors };
+    if (field === "email") {
+      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        next.email = "Please enter a valid email address.";
+      } else {
+        delete next.email;
+      }
+    }
+    if (field === "firstName") {
+      if (!value.trim()) {
+        next.firstName = "First name is required.";
+      } else {
+        delete next.firstName;
+      }
+    }
+    setFieldErrors(next);
+  };
 
   const amount = useMemo(() => {
     if (selectedPreset === "custom") {
@@ -114,10 +136,19 @@ export default function DonateClient({
     return amount;
   }, [amount, totalFee, coverFee, donorFeeChoiceEnabled]);
 
+  // Optional tip to ib4me platform
+  const tipAmount = useMemo(
+    () => Math.round(amount * tipPercent) / 100,
+    [amount, tipPercent]
+  );
+
   const baseFeePercent = (BASE_FEE_BPS / 100).toFixed(1);
   const processingFeePercent = (processingFeeBps / 100).toFixed(1);
 
-  const donateLabel = amount > 0 ? `Donate ${formatAmount(amount, currency)}` : "Enter amount";
+  const donateLabel =
+    amount > 0
+      ? `Donate ${formatAmount(totalCharged + tipAmount, currency)}`
+      : "Enter amount";
 
   const handleDonateSubmit = async () => {
     setError(null);
@@ -153,6 +184,7 @@ export default function DonateClient({
         isAnonymous: anonymous,
         message: message.trim() || undefined,
         donorCoversFee: donorFeeChoiceEnabled ? coverFee : undefined,
+        tipAmountMinor: tipAmount > 0 ? Math.round(tipAmount * 100) : undefined,
       };
 
       const response = await fetch("/api/donations/create", {
@@ -231,7 +263,7 @@ export default function DonateClient({
                 </span>
               </div>
               <div>
-                <Progress value={progressPercent} className="h-3" />
+                <ProgressBar value={progressPercent} className="h-3" />
                 <div className="mt-2 flex justify-between text-xs font-medium text-muted-foreground">
                   <span>{progressPercent}% funded</span>
                   <span>Goal {formatAmount(goalAmount, currency)}</span>
@@ -314,10 +346,14 @@ export default function DonateClient({
                       id="first-name"
                       value={firstName}
                       onChange={(event) => setFirstName(event.target.value)}
+                      onBlur={(e) => validateDonorField("firstName", e.target.value)}
                       disabled={anonymous}
                       placeholder="Jane"
                       className="rounded-2xl border-border/50"
                     />
+                    {fieldErrors.firstName && !anonymous && (
+                      <p className="text-xs text-destructive">{fieldErrors.firstName}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="last-name">Last name</Label>
@@ -338,13 +374,18 @@ export default function DonateClient({
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
+                    onBlur={(e) => validateDonorField("email", e.target.value)}
                     disabled={anonymous}
                     placeholder="you@example.com"
                     className="rounded-2xl border-border/50"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    We&#39;ll send your receipt to this email.
-                  </p>
+                  {fieldErrors.email && !anonymous ? (
+                    <p className="text-xs text-destructive">{fieldErrors.email}</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      We&#39;ll send your receipt to this email.
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center justify-between rounded-2xl border border-border/50 bg-muted/30 px-4 py-3">
                   <div>
@@ -388,6 +429,42 @@ export default function DonateClient({
                   </section>
                 </>
               )}
+
+              <Separator />
+
+              {/* Tip to ib4me */}
+              <section className="space-y-3">
+                <div className="rounded-2xl border border-border/50 bg-muted/30 px-4 py-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        Tip ib4me to keep us running
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Optional. Goes to ib4me, not the campaign — helps make sure more of every campaign reaches the organiser.
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold text-primary shrink-0 ml-4">
+                      {tipPercent}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={20}
+                    step={5}
+                    value={tipPercent}
+                    onChange={(e) => setTipPercent(Number(e.target.value))}
+                    className="w-full h-2 rounded-full appearance-none bg-muted cursor-pointer accent-primary"
+                    aria-label="Tip percentage"
+                  />
+                  {tipAmount > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {formatAmount(tipAmount, currency)} tip added to your total.
+                    </p>
+                  )}
+                </div>
+              </section>
 
               <Separator />
 
@@ -454,7 +531,7 @@ export default function DonateClient({
                   <span>Campaign progress</span>
                   <span className="font-semibold text-foreground">{progressPercent}%</span>
                 </div>
-                <Progress value={progressPercent} className="h-2" />
+                <ProgressBar value={progressPercent} className="h-2" />
                 <div className="flex items-center justify-between">
                   <span className="text-xs">Raised</span>
                   <span className="font-medium text-foreground">
@@ -503,10 +580,16 @@ export default function DonateClient({
                     {formatAmount(campaignReceives, currency)}
                   </span>
                 </div>
+                {tipAmount > 0 && (
+                  <div className="flex items-center justify-between text-primary">
+                    <span>Tip to ib4me ({tipPercent}%)</span>
+                    <span className="font-medium">+{formatAmount(tipAmount, currency)}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between border-t border-border/40 pt-2">
                   <span className="font-semibold text-foreground">You pay</span>
                   <span className="font-semibold text-foreground">
-                    {formatAmount(totalCharged, currency)}
+                    {formatAmount(totalCharged + tipAmount, currency)}
                   </span>
                 </div>
               </div>
