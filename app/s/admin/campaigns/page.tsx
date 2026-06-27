@@ -306,7 +306,7 @@ export default function AdminCampaignsPage() {
                       <div className="flex items-center space-x-4">
                         <div>
                           <Link 
-                            href={`/campaigns/${campaign._id}`}
+                            href={`/s/admin/campaigns/${campaign._id}`}
                             className="font-medium hover:underline" style={{ color: "#00712D" }}
                           >
                             {campaign.beneficiary?.name || campaign.details || campaign.slug}
@@ -367,7 +367,7 @@ export default function AdminCampaignsPage() {
                         </Button>
                       )}
                       
-                      <Link href={`/campaigns/${campaign._id}`}>
+                      <Link href={`/s/admin/campaigns/${campaign._id}`}>
                         <Button size="sm" variant="default">
                           View Details
                         </Button>

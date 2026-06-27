@@ -583,7 +583,7 @@ export default function AdminDonationsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-4">
-              <Button variant="outline" onClick={() => window.location.href = "/donations/list"}>
+              <Button variant="outline" onClick={() => window.location.href = "/s/admin/donations/list"}>
                 <PieChart className="h-4 w-4 mr-2" />
                 View All Donations
               </Button>

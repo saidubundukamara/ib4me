@@ -33,8 +33,17 @@ export default async function CampaignDonatePage({ params }: PageParams) {
     ? feeSettings.processingFee.organizationBps
     : feeSettings.processingFee.individualBps;
 
-  // Get feature settings to check if donor fee choice is enabled
-  const donorFeeChoiceEnabled = await settingService.isDonorFeeChoiceEnabled();
+  // Get feature settings (donor fee choice + donation presets)
+  const featureSettings = await settingService.getFeatureSettings();
+  const donorFeeChoiceEnabled = featureSettings.donorFeeChoiceEnabled ?? false;
+  const donationPresets = featureSettings.donationPresets ?? [50, 250, 500];
+
+  // Tip is only active when the feature is enabled AND a tip financial account is configured
+  const [tippingSettings, tipAccount] = await Promise.all([
+    settingService.getTippingSettings(),
+    settingService.getTipFinancialAccountSettings(),
+  ]);
+  const tipEnabled = tippingSettings.enabled && Boolean(tipAccount.id) && Boolean(tipAccount.uvan);
 
   // Collect asset IDs: beneficiary photo (priority) and first document image (fallback)
   const assetIds: mongoose.Types.ObjectId[] = [];
@@ -107,6 +116,8 @@ export default async function CampaignDonatePage({ params }: PageParams) {
         processingFeeBps={processingFeeBps}
         isOwnerVerified={isOwnerVerified}
         donorFeeChoiceEnabled={donorFeeChoiceEnabled}
+        tipEnabled={tipEnabled}
+        presetAmounts={donationPresets}
       />
     </main>
   );

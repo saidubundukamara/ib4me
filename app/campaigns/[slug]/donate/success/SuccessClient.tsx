@@ -215,6 +215,7 @@ export default function SuccessClient({
 
   // Loading state
   if (status === "loading") {
+    const timedOut = pollingCount >= MAX_POLLING_ATTEMPTS;
     return (
       <main className="container mx-auto max-w-2xl px-4 py-8 font-Sora">
         <Card className="rounded-3xl border border-border/40 bg-card/80 shadow-2xl backdrop-blur">
@@ -227,6 +228,16 @@ export default function SuccessClient({
                 <h1 className="text-2xl font-semibold text-foreground">Checking donation status...</h1>
                 <p className="text-muted-foreground mt-2">Please wait while we verify your payment.</p>
               </div>
+              {timedOut && (
+                <div className="rounded-2xl border border-border/40 bg-muted/30 p-4 space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Your donation is taking longer than expected. It&apos;s safe — check your email for a confirmation or contact support.
+                  </p>
+                  <Button variant="outline" size="sm" className="w-full rounded-xl" onClick={() => window.location.reload()}>
+                    Refresh Page
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -280,6 +291,7 @@ export default function SuccessClient({
 
   // Transferring state
   if (status === "transferring") {
+    const timedOut = pollingCount >= MAX_POLLING_ATTEMPTS;
     return (
       <main className="container mx-auto max-w-2xl px-4 py-8 font-Sora">
         <Card className="rounded-3xl border border-border/40 bg-card/80 shadow-2xl backdrop-blur">
@@ -301,6 +313,21 @@ export default function SuccessClient({
                     <strong>Note:</strong> {error}. The transfer will be completed automatically.
                   </AlertDescription>
                 </Alert>
+              )}
+              {timedOut && (
+                <div className="rounded-2xl border border-border/40 bg-muted/30 p-4 space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    This is taking longer than expected. Your payment was received — the transfer to {campaignName} will complete automatically. Check your email for updates.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 rounded-xl" onClick={() => window.location.reload()}>
+                      Refresh
+                    </Button>
+                    <Button asChild size="sm" className="flex-1 rounded-xl">
+                      <Link href={`/campaigns/${slug}`}>View Campaign</Link>
+                    </Button>
+                  </div>
+                </div>
               )}
             </div>
           </CardContent>

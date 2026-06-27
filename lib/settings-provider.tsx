@@ -43,6 +43,9 @@ interface FeatureSettings {
   paypalEnabled?: boolean;
   emergencyPoolFund?: boolean;
   donorFeeChoiceEnabled?: boolean;
+  donationPresets?: number[];
+  dailyWithdrawalLimitMinor?: number;
+  monthlyWithdrawalLimitMinor?: number;
 }
 
 interface ContactSettings {

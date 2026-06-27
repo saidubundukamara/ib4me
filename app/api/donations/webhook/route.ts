@@ -7,6 +7,8 @@ import {
   MonimePayment,
 } from "@/lib/monime";
 import { donationService, tipService } from "@/services";
+import { createUserNotification, createAdminNotification } from "@/lib/createNotification";
+import CampaignModel from "@/models/Campaign";
 
 // Simple in-memory cache for webhook event IDs (in production, use Redis or database)
 const processedWebhooks = new Set<string>();
@@ -409,6 +411,38 @@ async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
       `[webhook] settleTransfer for donation ${donationId}: ${result.status}` +
         (result.reason ? ` (${result.reason})` : "")
     );
+
+    // Fire in-app notifications (non-blocking, fire-and-forget)
+    if (result.status === "completed") {
+      const amountSLE = (existingDonation.amount.minor / 100).toFixed(2);
+      const donorName = existingDonation.isAnonymous
+        ? "An anonymous donor"
+        : (existingDonation.donorSnapshot?.name ?? "A donor");
+
+      // Notify campaign owner
+      try {
+        const campaign = await CampaignModel.findById(existingDonation.campaignId)
+          .select("ownerId title")
+          .lean<{ ownerId: unknown; title?: string }>();
+        if (campaign?.ownerId) {
+          await createUserNotification({
+            recipientId: campaign.ownerId as import("mongoose").Types.ObjectId,
+            type: "donation",
+            title: "New donation received!",
+            message: `${donorName} donated SLE ${amountSLE} to your campaign.`,
+            link: `/dashboard/campaigns/${String(existingDonation.campaignId)}`,
+          });
+        }
+        await createAdminNotification({
+          type: "donation",
+          title: "New donation",
+          message: `${donorName} donated SLE ${amountSLE} to "${campaign?.title ?? "a campaign"}".`,
+          link: `/s/admin/donations`,
+        });
+      } catch (notifErr) {
+        console.error("[webhook] notification creation failed:", notifErr);
+      }
+    }
   } catch (error) {
     console.error(`Error processing payment completed:`, error);
     throw error;

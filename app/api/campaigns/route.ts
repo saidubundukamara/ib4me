@@ -7,6 +7,7 @@ import CampaignModel from "@/models/Campaign";
 import MediaAssetModel from "@/models/MediaAsset";
 import CloudinaryService from "@/lib/cloudinary";
 import { campaignService } from "@/services/CampaignService";
+import { verificationService } from "@/services/VerificationService";
 
 async function ensureUniqueSlug(baseSlug: string): Promise<string> {
   await connectDB();
@@ -141,6 +142,16 @@ export async function POST(req: NextRequest) {
 
   await connectDB();
   const ownerId = new mongoose.Types.ObjectId(session.user.id);
+
+  // Server-side enforcement of KYC/KYB requirement — cannot be bypassed by calling the API directly
+  const verificationCheck = await verificationService.isUserVerifiedForCampaigns(session.user.id);
+  if (!verificationCheck.verified) {
+    return NextResponse.json(
+      { error: verificationCheck.reason ?? "Identity verification required to create campaigns" },
+      { status: 403 }
+    );
+  }
+
   const slug = await ensureUniqueSlug(rawSlug);
 
   const goalAmountMinor = Math.max(

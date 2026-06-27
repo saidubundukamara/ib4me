@@ -9,6 +9,8 @@ export interface IWithdrawalSetting {
   blockedReason?: string;
   blockedBy?: mongoose.Types.ObjectId;
   blockedAt?: Date;
+  dailyLimitMinor?: number;    // Max per user per 24h (minor units, 0 = unlimited)
+  monthlyLimitMinor?: number;  // Max per user per 30 days (minor units, 0 = unlimited)
 }
 
 export interface ITieredFeeRate {
@@ -53,6 +55,7 @@ export interface IFeatureFlags {
   paypalEnabled?: boolean;
   emergencyPoolFund?: boolean;
   donorFeeChoiceEnabled?: boolean; // Allow donors to choose whether to cover fees
+  donationPresets?: number[];      // Quick-pick amounts on donate page (major units, e.g. [50,250,500])
 }
 
 export interface IWebsiteSettings {
@@ -162,6 +165,8 @@ const settingSchema = new mongoose.Schema<ISetting>(
       blockedReason: { type: String },
       blockedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
       blockedAt: { type: Date },
+      dailyLimitMinor: { type: Number },
+      monthlyLimitMinor: { type: Number },
     },
     fees: {
       baseFeeMinor: { type: Number, default: 0 },  // Set to 0 - Monime deducts 1% automatically
@@ -179,6 +184,7 @@ const settingSchema = new mongoose.Schema<ISetting>(
       paypalEnabled: { type: Boolean },
       emergencyPoolFund: { type: Boolean },
       donorFeeChoiceEnabled: { type: Boolean, default: false },
+      donationPresets: [{ type: Number }],
     },
     website: {
       siteName: { type: String },

@@ -72,7 +72,7 @@ export default function AdminLayoutClient({
     return () => document.removeEventListener("click", handleClickOutside);
   }, [userDropdownOpen, notifOpen]);
 
-  // Fetch recent notifications
+  // Fetch recent notifications + poll every 60 s
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
@@ -86,7 +86,11 @@ export default function AdminLayoutClient({
         // silent fail — notifications are non-critical
       }
     };
-    if (!isPublicAdminRoute && user) fetchNotifications();
+    if (!isPublicAdminRoute && user) {
+      fetchNotifications();
+      const intervalId = setInterval(fetchNotifications, 60_000);
+      return () => clearInterval(intervalId);
+    }
   }, [user, isPublicAdminRoute]);
 
   const handleLogout = async () => {

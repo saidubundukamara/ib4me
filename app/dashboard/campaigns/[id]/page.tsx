@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -126,6 +126,7 @@ export default function UserCampaignDetailPage() {
   const [statusValue, setStatusValue] = useState<AllowedStatus | "">("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<CampaignTabValue>("overview");
+  const lastDonationCountRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -143,6 +144,7 @@ export default function UserCampaignDetailPage() {
           if (campaignRes.ok) {
             const data = (await campaignRes.json()) as CampaignResponse;
             setCampaign(data);
+            lastDonationCountRef.current = data.totals?.donationCount ?? 0;
           }
 
           if (updatesRes.ok) {
@@ -163,6 +165,33 @@ export default function UserCampaignDetailPage() {
     return () => {
       cancelled = true;
     };
+  }, [id]);
+
+  // Poll every 60 seconds for new donations and notify the campaign owner
+  useEffect(() => {
+    if (!id) return;
+
+    const intervalId = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/campaigns/${id}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as CampaignResponse;
+        const newCount = data.totals?.donationCount ?? 0;
+        const prevCount = lastDonationCountRef.current;
+        if (prevCount !== null && newCount > prevCount) {
+          const diff = newCount - prevCount;
+          toast.success(`${diff} new donation${diff > 1 ? "s" : ""} received!`, {
+            description: "Your campaign just received new support.",
+          });
+          setCampaign(data);
+        }
+        lastDonationCountRef.current = newCount;
+      } catch {
+        // Silently ignore polling errors
+      }
+    }, 60_000);
+
+    return () => clearInterval(intervalId);
   }, [id]);
 
   const progress = useMemo(() => {
