@@ -7,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Eye, EyeOff, BarChart2, Users, ShieldCheck, ArrowRight } from "lucide-react";
 import Logo from "@/public/assets/ib4melogowhite.png";
+import MainLogo from "@/public/assets/ib4melogo.png";
 
 export default function AdminLoginPage() {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -34,7 +35,7 @@ export default function AdminLoginPage() {
       setUser(data.user);
       setAccessToken(data.token);
       toast.success("Welcome back!");
-      window.location.href = "/";
+      window.location.href = "/s/admin";
     } catch (error) {
       toast.error("Login Failed", {
         description: error instanceof Error ? error.message : "Please try again.",
@@ -108,18 +109,20 @@ export default function AdminLoginPage() {
       {/* ── Right panel ── */}
       <div className="flex flex-1 items-center justify-center bg-background p-6 sm:p-10">
         <div className="w-full max-w-md">
-          {/* Mobile logo */}
-          <div className="mb-8 flex justify-center lg:hidden">
-            <div className="rounded-2xl p-3" style={{ backgroundColor: "#00712D" }}>
-              <Image src={Logo} alt="ib4me" className="h-12 w-auto" />
-            </div>
+          {/* Mobile logo — hidden on desktop where the sidebar shows the logo */}
+          <div className="mb-6 flex justify-center lg:hidden">
+            <Image src={MainLogo} alt="ib4me" className="h-16 w-auto" priority />
           </div>
 
           {/* Heading */}
           <div className="mb-8 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
-              style={{ backgroundColor: "#00712D20" }}>
-              <ShieldCheck className="h-8 w-8" style={{ color: "#00712D" }} />
+            <div className="mx-auto mb-6 flex justify-center">
+              <Image
+                src={MainLogo}
+                alt="ib4me"
+                className="h-20 w-auto sm:h-24 drop-shadow-sm"
+                priority
+              />
             </div>
             <h2 className="text-2xl font-bold text-foreground">Admin Login</h2>
             <p className="mt-1 text-sm text-muted-foreground">

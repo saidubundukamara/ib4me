@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { MessageCircle, Send, Loader2, UserCircle2 } from "lucide-react";
+import { MessageCircle, Send, Loader2, UserCircle2, ChevronDown, ChevronUp } from "lucide-react";
 
 export type CampaignUpdateItem = {
   id: string;
@@ -33,6 +33,7 @@ type TabsProps = {
 };
 
 const MAX_COMMENT = 500;
+const STORY_COLLAPSE_PX = 200; // height in px before "See more" appears
 
 const tabItems: Array<{ key: "story" | "updates" | "comments"; label: string }> = [
   { key: "story", label: "Story" },
@@ -58,12 +59,28 @@ export default function CampaignTabs({ story, updates, campaignId }: TabsProps) 
   const [commentsLoaded, setCommentsLoaded] = useState(false);
   const [commentsLoading, setCommentsLoading] = useState(false);
 
+  // Story expand/collapse
+  const [storyExpanded, setStoryExpanded] = useState(false);
+  const [storyOverflows, setStoryOverflows] = useState(false);
+  const storyRef = useRef<HTMLDivElement>(null);
+
   // Form state
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [justPosted, setJustPosted] = useState(false);
+
+  // Detect whether the story content is taller than the collapsed height
+  useEffect(() => {
+    const el = storyRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      setStoryOverflows(el.scrollHeight > STORY_COLLAPSE_PX + 10);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [story]);
 
   const loadComments = useCallback(async () => {
     if (commentsLoaded) return;
@@ -80,9 +97,14 @@ export default function CampaignTabs({ story, updates, campaignId }: TabsProps) 
     }
   }, [campaignId, commentsLoaded]);
 
+  // Preload comments in the background so the tab feels instant
+  useEffect(() => {
+    loadComments();
+  }, [loadComments]);
+
   const handleTabChange = (key: "story" | "updates" | "comments") => {
     setActive(key);
-    if (key === "comments") loadComments();
+    if (key === "comments" && !commentsLoaded) loadComments();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -150,8 +172,46 @@ export default function CampaignTabs({ story, updates, campaignId }: TabsProps) 
 
       {/* Story */}
       {active === "story" && (
-        <div className="rounded-2xl border border-border/50 bg-background/80 p-5 text-sm leading-relaxed text-muted-foreground whitespace-pre-line md:text-base">
-          {story ? story : "This campaign has not added a story yet."}
+        <div className="rounded-2xl border border-border/50 bg-background/80 overflow-hidden">
+          {story ? (
+            <>
+              {/* Content area — height clamped when collapsed */}
+              <div
+                ref={storyRef}
+                style={!storyExpanded ? { maxHeight: STORY_COLLAPSE_PX } : undefined}
+                className="relative overflow-hidden p-5 text-sm leading-relaxed text-muted-foreground whitespace-pre-line md:text-base transition-[max-height] duration-500 ease-in-out"
+              >
+                {story}
+
+                {/* Gradient fade-out at the bottom when collapsed */}
+                {storyOverflows && !storyExpanded && (
+                  <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-background/95 to-transparent pointer-events-none" />
+                )}
+              </div>
+
+              {/* See more / See less button */}
+              {storyOverflows && (
+                <div className="border-t border-border/40 px-5 py-3">
+                  <button
+                    type="button"
+                    onClick={() => setStoryExpanded((v) => !v)}
+                    className="flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded"
+                    aria-expanded={storyExpanded}
+                  >
+                    {storyExpanded ? (
+                      <><ChevronUp className="w-4 h-4" /> See less</>
+                    ) : (
+                      <><ChevronDown className="w-4 h-4" /> See more</>
+                    )}
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="p-5 text-sm text-muted-foreground">
+              This campaign has not added a story yet.
+            </div>
+          )}
         </div>
       )}
 

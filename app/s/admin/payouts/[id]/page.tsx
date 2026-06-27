@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertTriangle, CheckCircle, Clock, XCircle, ArrowLeft, User, CreditCard, History, ShieldCheck, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 
 interface PayoutMethod {
   type: "mobile_money" | "bank";
@@ -222,15 +223,14 @@ export default function PayoutDetailPage() {
       setShowProcessDialog(false);
       setActionNote("");
 
-      // Show success message (you might want to use a toast here)
       const successMessage =
         action === "process"
           ? "Payout sent to Monime for disbursement!"
           : `Payout ${action}d successfully!`;
-      alert(successMessage);
+      toast.success(successMessage);
     } catch (err) {
       console.error(`Error ${action}ing payout:`, err);
-      alert(err instanceof Error ? err.message : `Failed to ${action} payout`);
+      toast.error(err instanceof Error ? err.message : `Failed to ${action} payout`);
     } finally {
       setActionLoading(null);
     }
@@ -264,7 +264,7 @@ export default function PayoutDetailPage() {
       <div className="container mx-auto p-6">
         <div className="text-center py-8 text-red-600">
           <p>Access denied. Admin authentication required.</p>
-          <Button onClick={() => router.push("/login")} className="mt-4">
+          <Button onClick={() => router.push("/s/admin/login")} className="mt-4">
             Go to Login
           </Button>
         </div>

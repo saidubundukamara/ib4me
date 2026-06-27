@@ -5,9 +5,11 @@ import React from "react";
 export type DashboardNotification = {
   id: string;
   type: string;
+  title?: string;
   message: string;
   date: string;
   read: boolean;
+  link?: string | null;
 };
 
 type NotificationsContextValue = {

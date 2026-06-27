@@ -32,6 +32,8 @@ export type DonateClientProps = {
   processingFeeBps?: number; // Processing fee in basis points (e.g., 260 = 2.6%)
   isOwnerVerified?: boolean; // Whether organizer has completed KYC
   donorFeeChoiceEnabled?: boolean; // Whether donor can choose to cover fees
+  tipEnabled?: boolean; // Whether platform tip is configured and active
+  presetAmounts?: number[]; // Quick-pick donation amounts (major units)
 };
 
 function formatAmount(amount: number, currency: string = "SLE") {
@@ -42,8 +44,6 @@ function formatAmount(amount: number, currency: string = "SLE") {
     maximumFractionDigits: 0,
   }).format(amount);
 }
-
-const PRESET_AMOUNTS = [50, 250, 500];
 
 export default function DonateClient({
   slug,
@@ -57,8 +57,10 @@ export default function DonateClient({
   processingFeeBps = 260, // Default 2.6%
   isOwnerVerified = true,
   donorFeeChoiceEnabled = false,
+  tipEnabled = false,
+  presetAmounts = [50, 250, 500],
 }: DonateClientProps) {
-  const [selectedPreset, setSelectedPreset] = useState<number | "custom">(PRESET_AMOUNTS[1]);
+  const [selectedPreset, setSelectedPreset] = useState<number | "custom">(presetAmounts[1] ?? presetAmounts[0] ?? 50);
   const [customAmount, setCustomAmount] = useState("");
 
   const [firstName, setFirstName] = useState("");
@@ -276,8 +278,8 @@ export default function DonateClient({
                 <h2 className="text-lg font-semibold text-foreground">
                   Choose your donation
                 </h2>
-                <div className="grid gap-3 sm:grid-cols-4">
-                  {PRESET_AMOUNTS.map((preset) => (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {presetAmounts.map((preset) => (
                     <Button
                       key={preset}
                       type="button"
@@ -341,7 +343,7 @@ export default function DonateClient({
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="first-name">First name</Label>
+                    <Label htmlFor="first-name">First name <span className="text-destructive">*</span></Label>
                     <Input
                       id="first-name"
                       value={firstName}
@@ -368,7 +370,7 @@ export default function DonateClient({
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="donor-email">Email address</Label>
+                  <Label htmlFor="donor-email">Email address <span className="text-destructive">*</span></Label>
                   <Input
                     id="donor-email"
                     type="email"
@@ -434,31 +436,48 @@ export default function DonateClient({
 
               {/* Tip to ib4me */}
               <section className="space-y-3">
-                <div className="rounded-2xl border border-border/50 bg-muted/30 px-4 py-4 space-y-3">
+                <div className={cn(
+                  "rounded-2xl border px-4 py-4 space-y-3 transition-opacity",
+                  tipEnabled
+                    ? "border-border/50 bg-muted/30"
+                    : "border-border/30 bg-muted/10 opacity-50 cursor-not-allowed select-none"
+                )}>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-foreground">
+                      <p className={cn("text-sm font-medium", tipEnabled ? "text-foreground" : "text-muted-foreground")}>
                         Tip ib4me to keep us running
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Optional. Goes to ib4me, not the campaign — helps make sure more of every campaign reaches the organiser.
+                        {tipEnabled
+                          ? "Optional. Goes to ib4me, not the campaign — helps make sure more of every campaign reaches the organiser."
+                          : "Tipping is not available at the moment."}
                       </p>
                     </div>
-                    <span className="text-sm font-semibold text-primary shrink-0 ml-4">
-                      {tipPercent}%
+                    <span className={cn("text-sm font-semibold shrink-0 ml-4", tipEnabled ? "text-primary" : "text-muted-foreground")}>
+                      {tipEnabled ? `${tipPercent}%` : "—"}
                     </span>
                   </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={20}
-                    step={5}
-                    value={tipPercent}
-                    onChange={(e) => setTipPercent(Number(e.target.value))}
-                    className="w-full h-2 rounded-full appearance-none bg-muted cursor-pointer accent-primary"
-                    aria-label="Tip percentage"
-                  />
-                  {tipAmount > 0 && (
+                  <div className="flex gap-2 flex-wrap">
+                    {[0, 5, 10, 15, 20].map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        disabled={!tipEnabled}
+                        onClick={() => tipEnabled && setTipPercent(pct)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
+                          !tipEnabled
+                            ? "border-border/30 text-muted-foreground/40 cursor-not-allowed"
+                            : tipPercent === pct
+                              ? "bg-primary text-white border-primary shadow-sm"
+                              : "border-border/60 text-foreground hover:border-primary/60"
+                        )}
+                      >
+                        {pct === 0 ? "No tip" : `${pct}%`}
+                      </button>
+                    ))}
+                  </div>
+                  {tipEnabled && tipAmount > 0 && (
                     <p className="text-xs text-muted-foreground">
                       {formatAmount(tipAmount, currency)} tip added to your total.
                     </p>

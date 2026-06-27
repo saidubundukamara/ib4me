@@ -185,8 +185,8 @@ export default async function UserDashboardPage() {
 
         <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-orange-blaze/10 rounded-full flex items-center justify-center shrink-0">
-              <TrendingUp className="w-6 h-6 sm:w-7 sm:h-7 text-orange-blaze" aria-hidden />
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-blaze-orange/10 rounded-full flex items-center justify-center shrink-0">
+              <TrendingUp className="w-6 h-6 sm:w-7 sm:h-7 text-blaze-orange" aria-hidden />
             </div>
             <div>
               <div className="text-xs sm:text-sm text-muted-foreground">Total Donations</div>

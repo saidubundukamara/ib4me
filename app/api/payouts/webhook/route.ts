@@ -6,6 +6,7 @@ import {
   MonimePayoutResponse,
 } from "@/lib/monime";
 import { payoutService } from "@/services/PayoutService";
+import { createUserNotification } from "@/lib/createNotification";
 
 // Simple in-memory cache for webhook event IDs (in production, use Redis or database)
 const processedWebhooks = new Set<string>();
@@ -132,6 +133,14 @@ async function handlePayoutCompleted(payload: MonimeWebhookPayload) {
       console.log(
         `Successfully updated payout ${updatedPayout.id} to completed status`
       );
+      const amountSLE = (updatedPayout.amountMinor / 100).toFixed(2);
+      createUserNotification({
+        recipientId: updatedPayout.requestedBy,
+        type: "payout",
+        title: "Payout completed",
+        message: `Your withdrawal of SLE ${amountSLE} has been sent to your mobile money account.`,
+        link: "/dashboard/withdrawals",
+      }).catch(() => {});
     } else {
       console.warn(`Payout with Monime ID ${payout.id} not found in database`);
     }
@@ -172,6 +181,14 @@ async function handlePayoutFailed(payload: MonimeWebhookPayload) {
       console.log(
         `Successfully updated payout ${updatedPayout.id} to failed status: ${failureReason}`
       );
+      const amountSLE = (updatedPayout.amountMinor / 100).toFixed(2);
+      createUserNotification({
+        recipientId: updatedPayout.requestedBy,
+        type: "payout",
+        title: "Payout failed",
+        message: `Your withdrawal of SLE ${amountSLE} could not be processed. ${failureReason}`,
+        link: "/dashboard/withdrawals",
+      }).catch(() => {});
     } else {
       console.warn(`Payout with Monime ID ${payout.id} not found in database`);
     }

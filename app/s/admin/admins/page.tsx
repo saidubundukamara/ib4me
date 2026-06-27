@@ -174,13 +174,13 @@ export default function AdminManagementPage() {
 
   const handleCreateUser = () => {
     if (isSuperAdmin) {
-      router.push("/admins/create");
+      router.push("/s/admin/admins/create");
     }
   };
 
   const handleEditUser = (userId: string) => {
     if (isSuperAdmin) {
-      router.push(`/admins/${userId}`);
+      router.push(`/s/admin/admins/${userId}`);
     }
   };
 

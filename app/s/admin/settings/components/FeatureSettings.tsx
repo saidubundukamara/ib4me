@@ -28,11 +28,17 @@ export default function FeatureSettings() {
     minimumWithdrawalAmount: features.minimumWithdrawalAmount || 50000,
     minimumWithdrawalPercent: features.minimumWithdrawalPercent || 10,
     allowEmergencyOverride: features.allowEmergencyOverride ?? true,
+    dailyWithdrawalLimitMinor: features.dailyWithdrawalLimitMinor ?? 0,
+    monthlyWithdrawalLimitMinor: features.monthlyWithdrawalLimitMinor ?? 0,
     whatsAppAutoPost: features.whatsAppAutoPost ?? false,
     paypalEnabled: features.paypalEnabled ?? false,
     emergencyPoolFund: features.emergencyPoolFund ?? false,
     donorFeeChoiceEnabled: features.donorFeeChoiceEnabled ?? false,
   });
+
+  const [donationPresetsInput, setDonationPresetsInput] = useState(
+    (features.donationPresets ?? [50, 250, 500]).join(", ")
+  );
 
   const [withdrawalBlockData, setWithdrawalBlockData] = useState({
     withdrawalsBlocked: features.withdrawalsBlocked ?? false,
@@ -56,7 +62,12 @@ export default function FeatureSettings() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const success = await updateFeatureSettings(formData);
+    const donationPresets = donationPresetsInput
+      .split(",")
+      .map((s: string) => Number(s.trim()))
+      .filter((n: number) => Number.isFinite(n) && n > 0);
+
+    const success = await updateFeatureSettings({ ...formData, donationPresets });
     if (success) {
       setHasChanges(false);
       toast.success("Feature settings updated successfully");
@@ -104,11 +115,14 @@ export default function FeatureSettings() {
       minimumWithdrawalAmount: features.minimumWithdrawalAmount || 50000,
       minimumWithdrawalPercent: features.minimumWithdrawalPercent || 10,
       allowEmergencyOverride: features.allowEmergencyOverride ?? true,
+      dailyWithdrawalLimitMinor: features.dailyWithdrawalLimitMinor ?? 0,
+      monthlyWithdrawalLimitMinor: features.monthlyWithdrawalLimitMinor ?? 0,
       whatsAppAutoPost: features.whatsAppAutoPost ?? false,
       paypalEnabled: features.paypalEnabled ?? false,
       emergencyPoolFund: features.emergencyPoolFund ?? false,
       donorFeeChoiceEnabled: features.donorFeeChoiceEnabled ?? false,
     });
+    setDonationPresetsInput((features.donationPresets ?? [50, 250, 500]).join(", "));
     setHasChanges(false);
   };
 
@@ -418,6 +432,46 @@ export default function FeatureSettings() {
             </div>
           </div>
         )}
+
+        {/* Per-User Withdrawal Limits */}
+        <div className="space-y-4 p-4 border rounded-lg">
+          <div className="space-y-1">
+            <Label className="font-medium">Per-User Withdrawal Limits</Label>
+            <p className="text-sm text-muted-foreground">
+              Limit how much any single user can withdraw in a given period. Set to 0 to disable the limit.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="dailyWithdrawalLimitMinor">Daily Limit (SLE minor units)</Label>
+              <Input
+                id="dailyWithdrawalLimitMinor"
+                type="number"
+                min="0"
+                step="10000"
+                value={formData.dailyWithdrawalLimitMinor}
+                onChange={(e) => handleChange("dailyWithdrawalLimitMinor", parseInt(e.target.value) || 0)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Max per user per 24h. {formData.dailyWithdrawalLimitMinor > 0 ? `= SLE ${(formData.dailyWithdrawalLimitMinor / 100).toFixed(2)}` : "Unlimited"}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="monthlyWithdrawalLimitMinor">Monthly Limit (SLE minor units)</Label>
+              <Input
+                id="monthlyWithdrawalLimitMinor"
+                type="number"
+                min="0"
+                step="100000"
+                value={formData.monthlyWithdrawalLimitMinor}
+                onChange={(e) => handleChange("monthlyWithdrawalLimitMinor", parseInt(e.target.value) || 0)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Max per user per 30 days. {formData.monthlyWithdrawalLimitMinor > 0 ? `= SLE ${(formData.monthlyWithdrawalLimitMinor / 100).toFixed(2)}` : "Unlimited"}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Financial Features */}
@@ -467,6 +521,26 @@ export default function FeatureSettings() {
               onCheckedChange={(checked) => handleChange("donorFeeChoiceEnabled", checked)}
             />
           </div>
+        </div>
+      </div>
+
+      {/* Donation Presets */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <DollarSign className="h-5 w-5" />
+          <h3 className="text-lg font-medium">Donation Presets</h3>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="donationPresets">Quick-pick amounts on donate page</Label>
+          <Input
+            id="donationPresets"
+            value={donationPresetsInput}
+            onChange={(e) => { setDonationPresetsInput(e.target.value); setHasChanges(true); }}
+            placeholder="50, 250, 500"
+          />
+          <p className="text-sm text-muted-foreground">
+            Comma-separated amounts in major units (e.g. <code>50, 250, 500</code> for SLE 50, SLE 250 and SLE 500).
+          </p>
         </div>
       </div>
 
