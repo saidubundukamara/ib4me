@@ -154,9 +154,7 @@ export default function RegisterPage() {
     }
   };
 
-  const handleSocialLogin = () => {
-    toast.info("Coming soon! Social login will be available shortly.");
-  };
+
 
   return (
     <AuthLayout

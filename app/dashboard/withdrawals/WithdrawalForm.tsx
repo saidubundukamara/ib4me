@@ -223,9 +223,10 @@ export function WithdrawalForm({
               "We couldn't complete the payout with the provider. Please try again or contact support.",
           });
         } else {
-          toast.success("Payout request submitted successfully!", {
-            description:
-              "Your withdrawal is being processed and will be sent to your selected destination.",
+          toast.success("Withdrawal request submitted!", {
+            description: result.payoutId
+              ? `Reference: #${String(result.payoutId).slice(-8).toUpperCase()} — Your withdrawal is being processed.`
+              : "Your withdrawal is being processed and will be sent to your selected destination.",
           });
         }
         formRef.current?.reset();

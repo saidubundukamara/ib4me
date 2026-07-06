@@ -10,9 +10,11 @@ import Link from "next/link";
 interface Notification {
   id: string;
   type: string;
+  title?: string;
   message: string;
   date: string;
   read: boolean;
+  link?: string | null;
 }
 
 interface NotificationPopoverProps {
@@ -37,8 +39,10 @@ const NotificationPopover = ({
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'donation': return '💰';
-      case 'milestone': return '🎯';
-      case 'update': return '📢';
+      case 'payout': return '💸';
+      case 'campaign': return '📢';
+      case 'verification': return '✅';
+      case 'system': return '🔔';
       default: return '🔔';
     }
   };
@@ -108,10 +112,21 @@ const NotificationPopover = ({
                   <div className="flex items-start gap-3">
                     <div className="text-2xl mt-1">{getTypeIcon(notification.type)}</div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm ${!notification.read ? 'font-semibold' : ''} text-foreground`}>
-                        {notification.message}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">{notification.date}</p>
+                      {notification.title ? (
+                        <>
+                          <p className={`text-sm ${!notification.read ? 'font-semibold' : 'font-medium'} text-foreground`}>
+                            {notification.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                            {notification.message}
+                          </p>
+                        </>
+                      ) : (
+                        <p className={`text-sm ${!notification.read ? 'font-semibold' : ''} text-foreground line-clamp-2`}>
+                          {notification.message}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1">{new Date(notification.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
                     </div>
                     <div className="flex items-center gap-1">
                       {!notification.read && (

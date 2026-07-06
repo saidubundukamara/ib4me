@@ -284,7 +284,7 @@ export default function AdminPayoutsPage() {
               <Download className="h-4 w-4" />
               Export Data
             </Button>
-            <Button onClick={() => window.location.href = "/payouts/list"}>
+            <Button onClick={() => window.location.href = "/s/admin/payouts/list"}>
               <Eye className="h-4 w-4 mr-2" />
               View All
             </Button>
@@ -492,7 +492,7 @@ export default function AdminPayoutsPage() {
                   </div>
                 ))}
                 {pendingPayouts.length > 5 && (
-                  <Button variant="outline" onClick={() => window.location.href = "/payouts/list?requiresApproval=true"} className="w-full">
+                  <Button variant="outline" onClick={() => window.location.href = "/s/admin/payouts/list?requiresApproval=true"} className="w-full">
                     View All {pendingPayouts.length} Pending Payouts
                   </Button>
                 )}
@@ -586,11 +586,11 @@ export default function AdminPayoutsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-4">
-              <Button variant="outline" onClick={() => window.location.href = "/payouts/list"}>
+              <Button variant="outline" onClick={() => window.location.href = "/s/admin/payouts/list"}>
                 <FileText className="h-4 w-4 mr-2" />
                 View All Payouts
               </Button>
-              <Button variant="outline" onClick={() => window.location.href = "/payouts/list?requiresApproval=true"}>
+              <Button variant="outline" onClick={() => window.location.href = "/s/admin/payouts/list?requiresApproval=true"}>
                 <Clock className="h-4 w-4 mr-2" />
                 Pending Approvals
               </Button>

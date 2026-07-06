@@ -7,6 +7,8 @@ import { connectDB } from "@/lib/db";
 import { campaignService } from "@/services/CampaignService";
 import { payoutService } from "@/services/PayoutService";
 import { settingService } from "@/services/SettingService";
+import PayoutModel from "@/models/Payout";
+import { createAdminNotification } from "@/lib/createNotification";
 import {
   lookupMobileMoneyHolder,
   InvalidMobileNumberError,
@@ -103,6 +105,40 @@ export async function POST(request: NextRequest) {
     // Get withdrawal settings for threshold checks
     const withdrawalSettings = await settingService.getWithdrawalSettings();
 
+    // Enforce daily and monthly withdrawal limits per user
+    const now = new Date();
+    const countableStatuses = { $nin: ["failed", "cancelled", "rejected"] };
+
+    if (withdrawalSettings.dailyLimitMinor && withdrawalSettings.dailyLimitMinor > 0) {
+      const past24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const dailyAgg = await PayoutModel.aggregate([
+        { $match: { requestedBy: userId, status: countableStatuses, createdAt: { $gte: past24h } } },
+        { $group: { _id: null, total: { $sum: "$amountMinor" } } },
+      ]);
+      const dailyTotal = dailyAgg[0]?.total ?? 0;
+      if (dailyTotal + amountMinor > withdrawalSettings.dailyLimitMinor) {
+        const remaining = Math.max(0, withdrawalSettings.dailyLimitMinor - dailyTotal);
+        return NextResponse.json({
+          error: `Daily withdrawal limit reached. You have ${(remaining / 100).toFixed(2)} SLE remaining today.`,
+        }, { status: 429 });
+      }
+    }
+
+    if (withdrawalSettings.monthlyLimitMinor && withdrawalSettings.monthlyLimitMinor > 0) {
+      const past30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const monthlyAgg = await PayoutModel.aggregate([
+        { $match: { requestedBy: userId, status: countableStatuses, createdAt: { $gte: past30d } } },
+        { $group: { _id: null, total: { $sum: "$amountMinor" } } },
+      ]);
+      const monthlyTotal = monthlyAgg[0]?.total ?? 0;
+      if (monthlyTotal + amountMinor > withdrawalSettings.monthlyLimitMinor) {
+        const remaining = Math.max(0, withdrawalSettings.monthlyLimitMinor - monthlyTotal);
+        return NextResponse.json({
+          error: `Monthly withdrawal limit reached. You have ${(remaining / 100).toFixed(2)} SLE remaining this month.`,
+        }, { status: 429 });
+      }
+    }
+
     const payout = await payoutService.requestPayout(
       {
         campaignId: new mongoose.Types.ObjectId(campaignIdStr),
@@ -120,6 +156,17 @@ export async function POST(request: NextRequest) {
       payoutId: payout.id,
       status: payout.status,
     });
+
+    // Notify admins when a withdrawal needs manual review
+    if (payout.status === "threshold_review" || payout.status === "in_review") {
+      const amountSLE = (amountMinor / 100).toFixed(2);
+      createAdminNotification({
+        type: "payout",
+        title: "Withdrawal requires review",
+        message: `A withdrawal request for SLE ${amountSLE} is pending ${payout.status === "threshold_review" ? "threshold" : "manual"} review.`,
+        link: "/s/admin/payouts",
+      }).catch(() => {});
+    }
 
     return NextResponse.json({
       success: true,

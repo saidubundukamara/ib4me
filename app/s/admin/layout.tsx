@@ -6,14 +6,6 @@ export const metadata: Metadata = {
     default: "Admin Panel | ib4me",
     template: "%s | ib4me Admin",
   },
-  icons: {
-    icon: [
-      { url: '/assets/ib4mefavicon.png', sizes: '48x48', type: 'image/png' },
-    ],
-    apple: [
-      { url: '/assets/ib4mefavicon.png', sizes: '180x180', type: 'image/png' },
-    ],
-  },
 };
 
 export default function AdminLayout({

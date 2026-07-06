@@ -183,7 +183,7 @@ export default function EditAdminPage({ params }: { params: Promise<{ id: string
       const confirmed = window.confirm("You have unsaved changes. Are you sure you want to leave?");
       if (!confirmed) return;
     }
-    router.push('/admins');
+    router.push('/s/admin/admins');
   };
 
   const getRoleIcon = (role: string) => {
@@ -224,7 +224,7 @@ export default function EditAdminPage({ params }: { params: Promise<{ id: string
               <Shield className="h-12 w-12 text-muted-foreground/60 mx-auto mb-4" />
               <h2 className="text-lg font-medium text-foreground mb-2">Access Restricted</h2>
               <p className="text-muted-foreground mb-4">Only Super Administrators can edit admin users.</p>
-              <Button onClick={() => router.push('/admins')} variant="outline">
+              <Button onClick={() => router.push('/s/admin/admins')} variant="outline">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Admin Users
               </Button>
@@ -255,7 +255,7 @@ export default function EditAdminPage({ params }: { params: Promise<{ id: string
               <Shield className="h-12 w-12 text-muted-foreground/60 mx-auto mb-4" />
               <h2 className="text-lg font-medium text-foreground mb-2">Admin User Not Found</h2>
               <p className="text-muted-foreground mb-4">The requested admin user could not be found.</p>
-              <Button onClick={() => router.push('/admins')} variant="outline">
+              <Button onClick={() => router.push('/s/admin/admins')} variant="outline">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Admin Users
               </Button>

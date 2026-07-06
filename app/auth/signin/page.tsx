@@ -56,10 +56,6 @@ export default function SignInPage() {
     }
   };
 
-  const handleSocialLogin = () => {
-    toast.info("Coming soon! Social login will be available shortly.");
-  };
-
   return (
     <AuthLayout
       title="Welcome back"

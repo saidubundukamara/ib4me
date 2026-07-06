@@ -28,7 +28,11 @@ export async function GET(request: NextRequest) {
     const filters: Record<string, unknown> = {};
     
     if (status !== "all") {
-      filters.status = status;
+      if (status.includes(",")) {
+        filters.status = { $in: status.split(",").map((s: string) => s.trim()) };
+      } else {
+        filters.status = status;
+      }
     }
     
     if (method !== "all") {

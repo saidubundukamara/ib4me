@@ -159,7 +159,7 @@ const Navbar = ({
                 <nav className="hidden justify-between lg:flex items-center">
                     <div className="flex items-center gap-6">
                         <a href={logo.url} className="flex items-center gap-2 shrink-0">
-                            <Image src={logo.src} className={`object-contain transition-all duration-200 ${hasScrolled ? "w-28 h-14" : "w-36 h-16"}`} alt={logo.alt} />
+                            <Image src={logo.src} className="object-contain h-12 w-auto max-w-[180px]" alt={logo.alt} />
                         </a>
                         <div className="flex items-center font-Sora text-neutral-900 gap-1">
                             {menu.map((item) => {
@@ -225,7 +225,7 @@ const Navbar = ({
                 <div className="block lg:hidden">
                     <div className="flex items-center justify-between">
                         <a href={logo.url} className="flex items-center gap-2">
-                            <Image src={logo.src} className="w-32 h-12 object-contain" alt={logo.alt} />
+                            <Image src={logo.src} className="h-10 w-auto max-w-[160px] object-contain" alt={logo.alt} />
                         </a>
                         <Sheet>
                             <SheetTrigger asChild>
@@ -237,7 +237,7 @@ const Navbar = ({
                                 <SheetHeader>
                                     <SheetTitle>
                                         <a href={logo.url} className="flex items-center gap-2">
-                                            <Image src={logo.src} className="w-36 h-16 object-contain" alt={logo.alt} />
+                                            <Image src={logo.src} className="h-14 w-auto max-w-[200px] object-contain" alt={logo.alt} />
                                         </a>
                                     </SheetTitle>
                                 </SheetHeader>

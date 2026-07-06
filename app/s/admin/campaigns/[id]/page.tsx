@@ -99,7 +99,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
         const data = await response.json();
         setCampaign(data.data);
       } else if (response.status === 404) {
-        router.push("/campaigns");
+        router.push("/s/admin/campaigns");
       }
     } catch (error) {
       console.error("Error fetching campaign:", error);
@@ -219,7 +219,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
         <p className="text-muted-foreground">Campaign not found</p>
         <Button 
           variant="outline" 
-          onClick={() => router.push("/campaigns")}
+          onClick={() => router.push("/s/admin/campaigns")}
           className="mt-4"
         >
           Back to Campaigns
@@ -234,8 +234,8 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center space-x-2 mb-2">
-            <Link 
-              href="/campaigns"
+            <Link
+              href="/s/admin/campaigns"
               className="text-sm text-blue-600 hover:text-blue-800"
             >
               ← Back to Campaigns

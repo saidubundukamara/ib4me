@@ -128,8 +128,8 @@ export default function TestimonialsSection() {
           {testimonials.map((testimonial, index) => (
             <Card
               key={testimonial.id}
-              className="flex h-full flex-col rounded-3xl border-0 p-6 shadow-[var(--shadow-soft)] transition-all hover:shadow-[var(--shadow-lift)] sm:p-8"
-              style={{ animationDelay: `${index * 0.1}s` }}
+              className="flex h-full flex-col rounded-3xl border-0 p-6 shadow-[var(--shadow-soft)] transition-all hover:shadow-[var(--shadow-lift)] sm:p-8 animate-fade-up"
+              style={{ animationDelay: `${index * 0.1}s`, animationFillMode: "both" }}
             >
               <Quote
                 className="mb-3 h-8 w-8 text-blaze-orange sm:mb-4 sm:h-10 sm:w-10"

@@ -39,7 +39,7 @@ interface VerificationStatus {
 type DocumentType = "idDocument" | "addressProof" | "registrationCertificate" | "representativeId" | "taxCertificate";
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
-  not_started: { label: "Not Started", color: "bg-muted text-foreground", icon: Clock },
+  not_started: { label: "Not Started", color: "bg-muted text-foreground", icon: AlertCircle },
   pending: { label: "Pending Review", color: "bg-yellow-100 text-yellow-800", icon: Clock },
   under_review: { label: "Under Review", color: "bg-blue-100 text-blue-800", icon: ShieldCheck },
   approved: { label: "Approved", color: "bg-green-100 text-green-800", icon: CheckCircle },
@@ -354,16 +354,31 @@ export default function VerificationPage() {
             <StatusBadge status={verification.status} />
           </div>
 
-          {/* Rejection Reason */}
-          {verification.status === "rejected" && verification.rejectionReason && (
-            <div className="mt-4 p-4 bg-red-100 rounded-lg">
-              <div className="flex items-start">
-                <AlertCircle className="w-5 h-5 text-red-600 mr-2 mt-0.5" />
-                <div>
-                  <p className="font-medium text-red-800">Rejection Reason:</p>
-                  <p className="text-red-700">{verification.rejectionReason}</p>
+          {/* Rejection Reason + inline resubmit */}
+          {verification.status === "rejected" && (
+            <div className="mt-4 space-y-3">
+              {verification.rejectionReason && (
+                <div className="p-4 bg-red-100 rounded-lg">
+                  <div className="flex items-start">
+                    <AlertCircle className="w-5 h-5 text-red-600 mr-2 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-medium text-red-800">Rejection Reason:</p>
+                      <p className="text-red-700">{verification.rejectionReason}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
+              <Button
+                onClick={handleResubmit}
+                disabled={submitting}
+                className="w-full sm:w-auto"
+              >
+                {submitting ? (
+                  <><RefreshCw className="w-4 h-4 mr-2 animate-spin" />Submitting...</>
+                ) : (
+                  "Resubmit for Review"
+                )}
+              </Button>
             </div>
           )}
 

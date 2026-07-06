@@ -1,7 +1,6 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { toast } from "sonner";
 import { Filter, Search, SearchX } from "lucide-react";
 import CampaignCard from "../_components/CampaignCard";
 import { Button } from "@/components/ui/button";
@@ -46,6 +45,8 @@ type Props = { items: CampaignGridItem[]; categories: CategoryInfo[] };
 
 export default function CampaignsGrid({ items, categories }: Props) {
   const [query, setQuery] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedUrgency, setSelectedUrgency] = useState("All");
   const [visibleCount, setVisibleCount] = useState(9);
@@ -67,6 +68,25 @@ export default function CampaignsGrid({ items, categories }: Props) {
   useEffect(() => {
     setVisibleCount(ITEMS_PER_PAGE);
   }, [query, selectedCategory, selectedUrgency, items]);
+
+  // Close suggestions when clicking outside the search box
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const suggestions = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return items
+      .filter((c) => c.title.toLowerCase().includes(q))
+      .slice(0, 5);
+  }, [query, items]);
 
   const filtered = useMemo(() => {
     return items.filter((c) => {
@@ -99,16 +119,42 @@ export default function CampaignsGrid({ items, categories }: Props) {
       <div className="flex flex-col items-center space-y-5">
         {/* Search + Urgency Row */}
         <div className="flex w-full max-w-2xl items-center gap-3">
-          <div className="relative flex-1">
+          <div className="relative flex-1" ref={searchRef}>
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="search"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => { setQuery(e.target.value); setShowSuggestions(true); }}
+              onFocus={() => setShowSuggestions(true)}
               placeholder="Search campaigns..."
               className="w-full rounded-full border border-border bg-background py-3 pl-11 pr-4 text-sm shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+              role="combobox"
               aria-label="Search campaigns"
+              aria-autocomplete="list"
+              aria-expanded={showSuggestions && suggestions.length > 0}
+              aria-controls="search-suggestions"
+              aria-haspopup="listbox"
             />
+            {showSuggestions && suggestions.length > 0 && (
+              <ul id="search-suggestions" role="listbox" className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-2xl border border-border bg-background shadow-lg">
+                {suggestions.map((s) => (
+                  <li key={s.id}>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-muted transition-colors"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setQuery(s.title);
+                        setShowSuggestions(false);
+                      }}
+                    >
+                      <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span className="truncate">{s.title}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -127,8 +173,11 @@ export default function CampaignsGrid({ items, categories }: Props) {
           </DropdownMenu>
         </div>
 
-        {/* Category Pills */}
-        <div className="flex w-full max-w-4xl flex-nowrap gap-2 overflow-x-auto px-1 pb-1 scrollbar-hide sm:flex-wrap sm:justify-center">
+        {/* Category Pills — scrollable on mobile with fade hint */}
+        <div className="relative w-full max-w-4xl">
+          {/* right-edge fade — visible only on mobile to hint at scroll */}
+          <div className="pointer-events-none absolute right-0 top-0 bottom-1 w-10 bg-gradient-to-l from-background to-transparent z-10 sm:hidden" />
+        <div className="flex w-full flex-nowrap gap-2 overflow-x-auto px-1 pb-1 scrollbar-hide sm:flex-wrap sm:justify-center">
           <button
             onClick={() => setSelectedCategory("All")}
             className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
@@ -156,6 +205,7 @@ export default function CampaignsGrid({ items, categories }: Props) {
               </button>
             );
           })}
+        </div>
         </div>
       </div>
 
@@ -256,7 +306,7 @@ export default function CampaignsGrid({ items, categories }: Props) {
             className="rounded-full"
             onClick={handleLoadMore}
           >
-            Load More ({remaining > ITEMS_PER_PAGE ? ITEMS_PER_PAGE : remaining} more)
+            Load More Campaigns ({remaining} remaining)
           </Button>
         </div>
       )}

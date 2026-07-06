@@ -44,6 +44,9 @@ interface FeatureSettings {
   paypalEnabled?: boolean;
   emergencyPoolFund?: boolean;
   donorFeeChoiceEnabled?: boolean;
+  donationPresets?: number[];
+  dailyWithdrawalLimitMinor?: number;
+  monthlyWithdrawalLimitMinor?: number;
 }
 
 interface WithdrawalSettings {
@@ -55,6 +58,8 @@ interface WithdrawalSettings {
   blockedReason?: string;
   blockedBy?: string;
   blockedAt?: string;
+  dailyLimitMinor?: number;
+  monthlyLimitMinor?: number;
 }
 
 interface ContactSettings {
@@ -327,7 +332,10 @@ export class SettingService {
       whatsAppAutoPost: features.whatsAppAutoPost || false,
       paypalEnabled: features.paypalEnabled || false,
       emergencyPoolFund: features.emergencyPoolFund || false,
-      donorFeeChoiceEnabled: features.donorFeeChoiceEnabled || false
+      donorFeeChoiceEnabled: features.donorFeeChoiceEnabled || false,
+      donationPresets: features.donationPresets?.length ? features.donationPresets : [50, 250, 500],
+      dailyWithdrawalLimitMinor: withdrawal.dailyLimitMinor,
+      monthlyWithdrawalLimitMinor: withdrawal.monthlyLimitMinor,
     };
   }
 
@@ -343,7 +351,9 @@ export class SettingService {
       withdrawalsBlocked: withdrawal.withdrawalsBlocked || false,
       blockedReason: withdrawal.blockedReason,
       blockedBy: withdrawal.blockedBy?.toString(),
-      blockedAt: withdrawal.blockedAt?.toISOString()
+      blockedAt: withdrawal.blockedAt?.toISOString(),
+      dailyLimitMinor: withdrawal.dailyLimitMinor,
+      monthlyLimitMinor: withdrawal.monthlyLimitMinor,
     };
   }
 
@@ -358,12 +368,15 @@ export class SettingService {
     if (updates.paypalEnabled !== undefined) featureUpdates.paypalEnabled = updates.paypalEnabled;
     if (updates.emergencyPoolFund !== undefined) featureUpdates.emergencyPoolFund = updates.emergencyPoolFund;
     if (updates.donorFeeChoiceEnabled !== undefined) featureUpdates.donorFeeChoiceEnabled = updates.donorFeeChoiceEnabled;
+    if (updates.donationPresets !== undefined) featureUpdates.donationPresets = updates.donationPresets;
 
     const withdrawalUpdates: Partial<IWithdrawalSetting> = {};
     if (updates.thresholdEnabled !== undefined) withdrawalUpdates.thresholdEnabled = updates.thresholdEnabled;
     if (updates.minimumWithdrawalAmount !== undefined) withdrawalUpdates.minAmountMinor = updates.minimumWithdrawalAmount;
     if (updates.minimumWithdrawalPercent !== undefined) withdrawalUpdates.minPercent = updates.minimumWithdrawalPercent;
     if (updates.allowEmergencyOverride !== undefined) withdrawalUpdates.allowEmergencyOverride = updates.allowEmergencyOverride;
+    if (updates.dailyWithdrawalLimitMinor !== undefined) withdrawalUpdates.dailyLimitMinor = updates.dailyWithdrawalLimitMinor;
+    if (updates.monthlyWithdrawalLimitMinor !== undefined) withdrawalUpdates.monthlyLimitMinor = updates.monthlyWithdrawalLimitMinor;
 
     await this.updatePlatformSettings({
       features: { ...currentFeatures, ...featureUpdates },

@@ -210,6 +210,7 @@ export default function UserCampaignsPage() {
   const [deletingCampaign, setDeletingCampaign] = React.useState<CampaignItem | null>(null);
   const [limitInfo, setLimitInfo] = React.useState<CampaignLimitInfo | null>(null);
   const [showVerificationModal, setShowVerificationModal] = React.useState(false);
+  const [verificationModalContext, setVerificationModalContext] = React.useState<"gate" | "post">("gate");
 
   const refreshLimitInfo = React.useCallback(async () => {
     try {
@@ -344,11 +345,6 @@ export default function UserCampaignsPage() {
           form: formValues,
         });
         setIsCreateOpen(false);
-
-        // Show verification modal if user is not verified
-        if (data.ownerVerification && !data.ownerVerification.verified) {
-          setShowVerificationModal(true);
-        }
 
         // Refresh limit info after successful creation
         await refreshLimitInfo();
@@ -606,7 +602,15 @@ export default function UserCampaignsPage() {
             if (isCreateOpen) {
               handleCancelCreate();
             } else {
-              // Check limit before opening form
+              // Block creation if KYC/KYB not submitted or was rejected
+              const vStatus = limitInfo?.verification?.status;
+              const isBlocked = vStatus === "not_started" || vStatus === "rejected";
+              if (limitInfo?.verification && !limitInfo.verification.verified && isBlocked) {
+                setVerificationModalContext("gate");
+                setShowVerificationModal(true);
+                return;
+              }
+              // Check campaign count limit
               if (limitInfo && !limitInfo.allowed) {
                 toast.error(
                   `Campaign limit reached. You can have up to ${limitInfo.maxAllowed} active campaigns.`
@@ -848,12 +852,16 @@ export default function UserCampaignsPage() {
         />
       )}
 
-      {/* Verification Required Modal - shown after campaign creation for unverified users */}
       <VerificationRequiredModal
         open={showVerificationModal}
         onOpenChange={setShowVerificationModal}
-        verificationStatus={(limitInfo?.verification?.status === "approved" ? "not_started" : limitInfo?.verification?.status) ?? "not_started"}
+        verificationStatus={
+          (limitInfo?.verification?.status === "approved"
+            ? "not_started"
+            : limitInfo?.verification?.status) ?? "not_started"
+        }
         verificationType={limitInfo?.verification?.type ?? "kyc"}
+        context={verificationModalContext}
         onGoToVerification={() => {
           setShowVerificationModal(false);
           router.push("/dashboard/verification");

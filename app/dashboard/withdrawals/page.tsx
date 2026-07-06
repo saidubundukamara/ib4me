@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { WithdrawalForm } from "./WithdrawalForm";
 import Card from "../_components/Card";
-import { AlertTriangle, Calendar, TrendingUp, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, Calendar, TrendingUp, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -159,9 +159,10 @@ export default function UserWithdrawalsPage() {
   const totalWithdrawnMinor = payouts
     .filter((p) => !NON_WITHDRAWN_STATUSES.includes(p.status))
     .reduce((sum, p) => sum + p.amountMinor, 0);
-  const pendingRequests = payouts.filter((p) =>
-    ["pending", "processing", "approved"].includes(p.status)
-  ).length;
+  // In Transit = payouts actively being processed or awaiting execution
+  const inTransitMinor = payouts
+    .filter((p) => ["processing", "approved"].includes(p.status))
+    .reduce((sum, p) => sum + p.amountMinor, 0);
   const primaryCurrency =
     campaignOptions[0]?.currency ?? campaigns[0]?.goal?.currency ?? "SLE";
 
@@ -191,6 +192,7 @@ export default function UserWithdrawalsPage() {
                   formatCurrency(totalAvailable, primaryCurrency)
                 )}
               </div>
+              <p className="text-xs text-muted-foreground mt-0.5">Live balance, ready to withdraw</p>
             </div>
           </div>
         </Card>
@@ -216,17 +218,18 @@ export default function UserWithdrawalsPage() {
         <Card className="border-border bg-card p-6 transition-all hover:shadow-lg">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-chartereuse/10">
-              <Calendar className="w-6 h-6 text-chartereuse-dark" />
+              <ArrowUpRight className="w-6 h-6 text-chartereuse-dark" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Pending Requests</p>
+              <p className="text-sm text-muted-foreground">In Transit</p>
               <div className="text-2xl font-bold text-foreground">
                 {isLoading ? (
-                  <Skeleton className="h-6 w-12 rounded-md" />
+                  <Skeleton className="h-6 w-24 rounded-md" />
                 ) : (
-                  pendingRequests
+                  formatCurrency(inTransitMinor, primaryCurrency)
                 )}
               </div>
+              <p className="text-xs text-muted-foreground mt-0.5">Being processed</p>
             </div>
           </div>
         </Card>
@@ -322,10 +325,10 @@ export default function UserWithdrawalsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Badge variant="outline" className={statusColor}>
-                          <span className="sr-only">{displayStatus.replace("_", " ")}</span>
+                        <Badge variant="outline" className={`${statusColor} capitalize`}>
+                          {displayStatus.replace(/_/g, " ")}
                         </Badge>
-                        <span className="text-foreground">{formatCurrency(p.amountMinor, currency)}</span>
+                        <span className="font-medium text-foreground">{formatCurrency(p.amountMinor, currency)}</span>
                       </div>
                     </div>
                   );

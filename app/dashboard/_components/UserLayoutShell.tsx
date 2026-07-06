@@ -10,9 +10,11 @@ import { NotificationsContext } from "./NotificationsContext";
 export type DashboardNotification = {
   id: string;
   type: string;
+  title?: string;
   message: string;
   date: string;
   read: boolean;
+  link?: string | null;
 };
 
 type UserLayoutShellProps = {
@@ -24,30 +26,43 @@ export default function UserLayoutShell({ children }: UserLayoutShellProps) {
   const [notifications, setNotifications] = React.useState<DashboardNotification[]>([]);
   const pathname = usePathname();
 
-  // Fetch notifications on mount
-  React.useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const res = await fetch("/api/user/notifications");
-        if (res.ok) {
-          const data = await res.json();
-          setNotifications(data.notifications || []);
-        }
-      } catch {
-        // silent — non-critical
+  const fetchNotifications = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/user/notifications?limit=20");
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
       }
-    };
-    fetchNotifications();
+    } catch {
+      // silent — non-critical
+    }
   }, []);
 
-  const handleMarkAsRead = (id: string) =>
+  // Initial fetch
+  React.useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  // Poll every 60 seconds for new notifications
+  React.useEffect(() => {
+    const intervalId = setInterval(fetchNotifications, 60_000);
+    return () => clearInterval(intervalId);
+  }, [fetchNotifications]);
+
+  const handleMarkAsRead = (id: string) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    fetch(`/api/user/notifications/${id}`, { method: "PUT" }).catch(() => {});
+  };
 
-  const handleMarkAllAsRead = () =>
+  const handleMarkAllAsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    fetch("/api/user/notifications/mark-all-read", { method: "PUT" }).catch(() => {});
+  };
 
-  const handleDelete = (id: string) =>
+  const handleDelete = (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
+    fetch(`/api/user/notifications/${id}`, { method: "DELETE" }).catch(() => {});
+  };
 
   React.useEffect(() => {
     setSidebarOpen(false);
