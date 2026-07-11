@@ -101,11 +101,10 @@ export default function DiscoverCampaigns() {
 
   const handleShare = (campaign: CampaignItem) => {
     if (typeof window === "undefined") return;
-    const url = `${window.location.origin}/campaigns/${campaign.slug}`;
-    const shareText = `Help ${campaign.title} — ${formatAmount(campaign.amountRaised, campaign.currency)} raised of ${formatAmount(campaign.goalAmount, campaign.currency)} goal`;
+    const url = `${window.location.origin}/campaigns/${campaign.slug}?ref=discover`;
     const shareData = {
       title: campaign.title,
-      text: shareText,
+      text: `Help ${campaign.title} — ${formatAmount(campaign.amountRaised, campaign.currency)} raised of ${formatAmount(campaign.goalAmount, campaign.currency)} goal`,
       url,
     };
     if (navigator.share) {

@@ -34,10 +34,8 @@ type Props = {
 
 export default function CreatorCampaignsGrid({ campaigns }: Props) {
   const handleShare = (campaign: CreatorCampaignItem) => {
-    const url =
-      typeof window === "undefined"
-        ? `/campaigns/${campaign.slug}`
-        : `${window.location.origin}/campaigns/${campaign.slug}`;
+    if (typeof window === "undefined") return;
+    const url = `${window.location.origin}/campaigns/${campaign.slug}?ref=creator`;
     const shareData = {
       title: campaign.title,
       text: `Help ${campaign.title} — ${formatAmount(campaign.amountRaised, campaign.currency)} raised of ${formatAmount(campaign.goalAmount, campaign.currency)} goal`,
@@ -45,9 +43,7 @@ export default function CreatorCampaignsGrid({ campaigns }: Props) {
     };
 
     if (typeof navigator !== "undefined" && navigator.share) {
-      navigator.share(shareData).catch(() => {
-        /* user cancelled */
-      });
+      navigator.share(shareData).catch(() => {});
       return;
     }
 

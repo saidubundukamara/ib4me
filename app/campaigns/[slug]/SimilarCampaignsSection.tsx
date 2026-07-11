@@ -28,10 +28,8 @@ function formatAmount(amount: number, currency: string = "SLE") {
 }
 
 function handleShare(c: SimilarCampaign) {
-  const url =
-    typeof window === "undefined"
-      ? `/campaigns/${c.slug}`
-      : `${window.location.origin}/campaigns/${c.slug}`;
+  if (typeof window === "undefined") return;
+  const url = `${window.location.origin}/campaigns/${c.slug}?ref=similar`;
   const shareData = {
     title: c.title,
     text: `Help ${c.title} — ${formatAmount(c.amountRaised, c.currency)} raised of ${formatAmount(c.goalAmount, c.currency)} goal`,
