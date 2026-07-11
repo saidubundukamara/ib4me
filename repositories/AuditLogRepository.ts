@@ -92,13 +92,10 @@ export class AuditLogRepository extends BaseRepository<IAuditLog> {
     }
 
     if (filters.dateFrom || filters.dateTo) {
-      query.at = {} as any;
-      if (filters.dateFrom) {
-        (query.at as any).$gte = filters.dateFrom;
-      }
-      if (filters.dateTo) {
-        (query.at as any).$lte = filters.dateTo;
-      }
+      const dateRange: Record<string, Date> = {};
+      if (filters.dateFrom) dateRange.$gte = filters.dateFrom;
+      if (filters.dateTo) dateRange.$lte = filters.dateTo;
+      query.at = dateRange;
     }
 
     if (filters.ip) {
@@ -146,13 +143,10 @@ export class AuditLogRepository extends BaseRepository<IAuditLog> {
     const baseQuery: Record<string, unknown> = {};
 
     if (filters.dateFrom || filters.dateTo) {
-      baseQuery.at = {} as any;
-      if (filters.dateFrom) {
-        (baseQuery.at as any).$gte = filters.dateFrom;
-      }
-      if (filters.dateTo) {
-        (baseQuery.at as any).$lte = filters.dateTo;
-      }
+      const dateRange: Record<string, Date> = {};
+      if (filters.dateFrom) dateRange.$gte = filters.dateFrom;
+      if (filters.dateTo) dateRange.$lte = filters.dateTo;
+      baseQuery.at = dateRange;
     }
 
     if (filters.targetType) {

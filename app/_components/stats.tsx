@@ -1,9 +1,9 @@
-import { Users, Heart, DollarSign, TrendingUp } from "lucide-react";
+import { Users, Heart, Banknote, TrendingUp } from "lucide-react";
 
 export const statDefinitions = [
   {
     key: "totalRaised" as const,
-    icon: DollarSign,
+    icon: Banknote,
     label: "Funds Raised",
     color: "#FF6000",
   },

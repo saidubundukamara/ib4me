@@ -190,7 +190,7 @@ export class DonationRepository extends BaseRepository<IDonation> {
     const [donations, total] = await Promise.all([
       this.findMany(query as never, {
         query: { sort, skip, limit }
-      } as any),
+      } as never),
       this.count(query as never)
     ]);
 

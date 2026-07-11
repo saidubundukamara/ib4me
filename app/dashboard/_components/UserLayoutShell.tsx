@@ -49,20 +49,20 @@ export default function UserLayoutShell({ children }: UserLayoutShellProps) {
     return () => clearInterval(intervalId);
   }, [fetchNotifications]);
 
-  const handleMarkAsRead = (id: string) => {
+  const handleMarkAsRead = React.useCallback((id: string) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     fetch(`/api/user/notifications/${id}`, { method: "PUT" }).catch(() => {});
-  };
+  }, []);
 
-  const handleMarkAllAsRead = () => {
+  const handleMarkAllAsRead = React.useCallback(() => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     fetch("/api/user/notifications/mark-all-read", { method: "PUT" }).catch(() => {});
-  };
+  }, []);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = React.useCallback((id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
     fetch(`/api/user/notifications/${id}`, { method: "DELETE" }).catch(() => {});
-  };
+  }, []);
 
   React.useEffect(() => {
     setSidebarOpen(false);
@@ -76,7 +76,7 @@ export default function UserLayoutShell({ children }: UserLayoutShellProps) {
       deleteNotification: handleDelete,
       unreadCount: notifications.filter((n) => !n.read).length,
     }),
-    [notifications],
+    [notifications, handleMarkAsRead, handleMarkAllAsRead, handleDelete],
   );
 
   return (

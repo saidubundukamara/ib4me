@@ -33,6 +33,7 @@ type CampaignItem = {
   title: string;
   currency: string;
   description?: string;
+  category?: string;
   amountRaised: number;
   goalAmount: number;
   donationsCount: number;
@@ -95,12 +96,16 @@ export default function DiscoverCampaigns() {
     setActiveFilter((prev) => (prev === key ? "" : key));
   };
 
+  const formatAmount = (amount: number, currency: string = "SLE") =>
+    new Intl.NumberFormat("en-GB", { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+
   const handleShare = (campaign: CampaignItem) => {
     if (typeof window === "undefined") return;
     const url = `${window.location.origin}/campaigns/${campaign.slug}`;
+    const shareText = `Help ${campaign.title} — ${formatAmount(campaign.amountRaised, campaign.currency)} raised of ${formatAmount(campaign.goalAmount, campaign.currency)} goal`;
     const shareData = {
       title: campaign.title,
-      text: campaign.description || "Support this campaign on ib4me",
+      text: shareText,
       url,
     };
     if (navigator.share) {
@@ -278,6 +283,7 @@ export default function DiscoverCampaigns() {
                       ownerVerified={c.ownerVerified ?? false}
                       urgency={c.urgency}
                       urgent={c.urgency === "high"}
+                      category={c.category}
                       href={`/campaigns/${c.slug}`}
                       currency={c.currency || "SLE"}
                       onShare={() => handleShare(c)}

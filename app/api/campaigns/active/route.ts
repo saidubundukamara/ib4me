@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { slugToTitle } from "@/lib/utils";
 import mongoose from "mongoose";
 import { connectDB } from "@/lib/db";
 import CampaignModel from "@/models/Campaign";
@@ -98,7 +99,7 @@ export async function GET(req: NextRequest) {
     const donationCount = (c.totals as unknown as { donationCount?: number })?.donationCount ?? 0;
     const goalMinor = (c.goal as unknown as { amountMinor?: number })?.amountMinor ?? 0;
     const currency = (c.goal as unknown as { currency?: string })?.currency || "SLE";
-    const titleBase = ((c.beneficiary as unknown as { name?: string })?.name || (c.institution as unknown as { name?: string })?.name || (c as { details?: string }).details || c.slug || "").trim();
+    const titleBase = (c as { title?: string }).title?.trim() || slugToTitle(c.slug || "");
     const imageAssetId = campaignIdToFirstImageAssetId.get(String(c._id));
     const imageUrl = (imageAssetId && assetIdToUrl.get(imageAssetId)) || "/assets/Hero.png";
     return {
@@ -111,6 +112,7 @@ export async function GET(req: NextRequest) {
       donationsCount: donationCount,
       imageUrl,
       urgency: (c as { urgency?: string }).urgency ?? null,
+      category: (c as { category?: string }).category ?? null,
       ownerVerified: (c as { ownerVerification?: { verified?: boolean } }).ownerVerification?.verified ?? false,
       description: (c as { story?: string }).story
         ? ((c as { story?: string }).story!).replace(/<[^>]+>/g, "").slice(0, 160).trim() || null

@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { categoryService } from "@/services/CategoryService";
+import { getAdminFromToken } from "@/lib/admin-auth-token";
 
 export async function GET(request: NextRequest) {
   try {
+    const adminUser = await getAdminFromToken();
+    if (!adminUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { searchParams } = new URL(request.url);
 
     const isActiveParam = searchParams.get("isActive");
@@ -48,6 +53,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const adminUser = await getAdminFromToken();
+    if (!adminUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const body = await request.json();
     const { name, description, icon, displayOrder, isActive } = body;
 

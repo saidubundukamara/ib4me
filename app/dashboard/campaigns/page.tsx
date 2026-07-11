@@ -99,6 +99,7 @@ interface ApiCampaign {
   id?: string;
   _id?: string;
   slug?: string;
+  title?: string;
   status?: string;
   urgency?: UrgencyValue | string | null;
   goal?: {
@@ -133,7 +134,7 @@ const normalizeFromApi = (campaign: ApiCampaign): CampaignItem => {
   return {
     id: String(campaign?.id ?? campaign?._id ?? `campaign-${Date.now()}`),
     slug: campaign?.slug ?? `campaign-${Date.now()}`,
-    title: toTitleCase(campaign?.slug ?? "untitled-campaign"),
+    title: campaign?.title || toTitleCase(campaign?.slug ?? "untitled-campaign"),
     status: campaign?.status ?? "draft",
     urgency: resolveUrgency(campaign?.urgency) ?? null,
     goalAmount: goalAmountMinor > 0 ? goalAmountMinor / 100 : 0,
@@ -283,6 +284,7 @@ export default function UserCampaignsPage() {
       const formData = new FormData();
       const slug = generateSlug(formValues.title || `campaign-${Date.now()}`);
       formData.set("slug", slug);
+      if (formValues.title) formData.set("title", formValues.title);
       if (formValues.details) formData.set("details", formValues.details);
       formData.set("urgency", formValues.urgency);
       formData.set("beneficiary.name", formValues.beneficiary.name);
@@ -368,6 +370,7 @@ export default function UserCampaignsPage() {
       const formData = new FormData();
 
       // Basic text fields
+      if (values.title) formData.set("title", values.title);
       if (values.details) formData.set("details", values.details);
       formData.set("urgency", values.urgency);
       if (values.category) formData.set("category", values.category);

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
-    Menu, ChevronRight, PhoneCall, Heart, MessageCircleQuestion, DollarSign,
+    Menu, ChevronRight, PhoneCall, Heart, MessageCircleQuestion, Banknote,
     LogOutIcon, Search,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -99,7 +99,7 @@ const Navbar = ({
                 {
                     title: "Pricing",
                     description: "Explore our pricing.",
-                    icon: <DollarSign className="size-5 shrink-0" />,
+                    icon: <Banknote className="size-5 shrink-0" />,
                     url: "/pricing",
                 },
                 {

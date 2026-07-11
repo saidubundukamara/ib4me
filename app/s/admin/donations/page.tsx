@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +19,7 @@ const formatCurrency = (amount: number, currency: string = "SLE"): string => {
   }).format(amount);
 };
 import { 
-  DollarSign, 
+  Banknote, 
   TrendingUp, 
   AlertTriangle,
   Users,
@@ -307,7 +307,7 @@ export default function AdminDonationsPage() {
                       {formatCurrency(fromMinorUnits(analytics.successfulAmount))}
                     </p>
                   </div>
-                  <DollarSign className="h-8 w-8" style={{ color: "#FF6000" }} />
+                  <Banknote className="h-8 w-8" style={{ color: "#FF6000" }} />
                 </div>
               </CardContent>
             </Card>
@@ -450,7 +450,7 @@ export default function AdminDonationsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
+                <Banknote className="h-4 w-4" />
                 Revenue Report
               </CardTitle>
             </CardHeader>

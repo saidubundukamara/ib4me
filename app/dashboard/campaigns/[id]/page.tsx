@@ -51,6 +51,7 @@ import {
 type CampaignResponse = {
   id: string;
   slug: string;
+  title?: string;
   urgency: string;
   details?: string;
   beneficiary?: { name?: string; age?: number; photoUrl?: string | null };
@@ -282,7 +283,7 @@ export default function UserCampaignDetailPage() {
     setShareLoading(true);
     try {
       const sharePayload: ShareData = {
-        title: campaign.beneficiary?.name || campaign.slug,
+        title: campaign.title || campaign.beneficiary?.name || campaign.slug,
         text: campaign.story ? campaign.story.slice(0, 140) : "Support this campaign",
         url,
       };
@@ -493,7 +494,7 @@ export default function UserCampaignDetailPage() {
             </div>
             <div className="space-y-3">
               <h1 className="text-balance text-2xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
-                {campaign.beneficiary?.name ?? campaign.slug}
+                {campaign.title || campaign.beneficiary?.name || campaign.slug}
               </h1>
               <p className="text-pretty text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 Manage every detail of your campaign, update stories, review progress, and keep supporters engaged.

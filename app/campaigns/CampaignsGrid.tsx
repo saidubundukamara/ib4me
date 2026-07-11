@@ -234,9 +234,7 @@ export default function CampaignsGrid({ items, categories }: Props) {
                   ? `/campaigns/${c.slug}`
                   : `${window.location.origin}/campaigns/${c.slug}`;
               const waUrl = `${base}?ref=whatsapp`;
-              const shareText =
-                c.description ||
-                `${formatAmount(c.amountRaised, c.currency)} raised of ${formatAmount(c.goalAmount, c.currency)} goal`;
+              const shareText = `Help ${c.title} — ${formatAmount(c.amountRaised, c.currency)} raised of ${formatAmount(c.goalAmount, c.currency)} goal`;
               const shareData = {
                 title: c.title,
                 text: shareText,
@@ -251,7 +249,7 @@ export default function CampaignsGrid({ items, categories }: Props) {
               }
 
               // Desktop fallback: open WhatsApp with pre-filled message
-              const waLink = `https://wa.me/?text=${encodeURIComponent(`${c.title} — ${shareText}\n${waUrl}`)}`;
+              const waLink = `https://wa.me/?text=${encodeURIComponent(`${shareText}\n${waUrl}`)}`;
               window.open(waLink, "_blank", "noopener,noreferrer");
             };
 

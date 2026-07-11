@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import CountUp from "react-countup";
-import { Users, Heart, DollarSign, TrendingUp } from "lucide-react";
+import { Users, Heart, Banknote, TrendingUp } from "lucide-react";
 
 interface PlatformStats {
   totalCampaigns: number;
@@ -35,7 +35,7 @@ export function getStatItems(data: PlatformStats | null) {
 
   return [
     {
-      icon: DollarSign,
+      icon: Banknote,
       value: totalRaised,
       label: "Funds Raised",
       color: "#FF6000",

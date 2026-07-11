@@ -4,6 +4,7 @@ import Link from "next/link";
 import mongoose from "mongoose";
 import { ArrowRight } from "lucide-react";
 import { campaignService, mediaAssetService, categoryService } from "@/services";
+import { slugToTitle } from "@/lib/utils";
 import { CloudinaryService } from "@/lib/cloudinary";
 import { getOGImageFromCampaigns, buildPageMetadata } from "@/lib/metadata";
 import CampaignsGrid from "@/app/campaigns/CampaignsGrid";
@@ -113,7 +114,7 @@ async function getActiveCampaigns(): Promise<CampaignListItem[]> {
     const raisedMinor = c.totals?.raisedMinor ?? 0;
     const goalMinor = c.goal?.amountMinor ?? 0;
     const currency = c.goal?.currency || "SLE";
-    const titleBase = c.beneficiary?.name?.trim() || c.institution?.name?.trim() || c.details?.trim() || c.slug;
+    const titleBase = c.title?.trim() || slugToTitle(c.slug);
 
     // Priority: beneficiary photo > document image > fallback
     const beneficiaryPhotoId = campaignToBeneficiaryPhotoId.get(campaignId);

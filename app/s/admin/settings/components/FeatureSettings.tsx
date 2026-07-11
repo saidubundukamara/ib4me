@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useSettings } from "@/lib/settings-provider";
-import { Loader2, Save, AlertTriangle, MessageCircle, Smartphone, Mail, DollarSign, Users, Shield, Banknote, Ban, Lock } from "lucide-react";
+import { Loader2, Save, AlertTriangle, MessageCircle, Smartphone, Mail, Users, Shield, Banknote, Ban, Lock } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 
@@ -477,7 +477,7 @@ export default function FeatureSettings() {
       {/* Financial Features */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <DollarSign className="h-5 w-5" />
+          <Banknote className="h-5 w-5" />
           <h3 className="text-lg font-medium">Other Financial Settings</h3>
         </div>
 
@@ -527,7 +527,7 @@ export default function FeatureSettings() {
       {/* Donation Presets */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <DollarSign className="h-5 w-5" />
+          <Banknote className="h-5 w-5" />
           <h3 className="text-lg font-medium">Donation Presets</h3>
         </div>
         <div className="space-y-2">

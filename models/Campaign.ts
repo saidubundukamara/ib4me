@@ -66,6 +66,7 @@ export interface ICampaignOwnerVerification {
 export interface ICampaign extends mongoose.Document {
   ownerId: mongoose.Types.ObjectId;
   slug: string;
+  title?: string;
   beneficiary?: ICampaignBeneficiary;
   details?: string;
   institution?: {
@@ -106,6 +107,7 @@ const campaignSchema = new mongoose.Schema<ICampaign>(
       trim: true,
       lowercase: true,
     },
+    title: { type: String, trim: true },
     beneficiary: {
       name: { type: String, trim: true },
       age: { type: Number, min: 0 },

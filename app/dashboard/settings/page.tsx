@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { generateAvatarDataUri } from "@/lib/avatar";
@@ -22,6 +23,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   Eye,
   EyeOff,
+  ExternalLink,
   KeyRound,
   MapPin,
   Phone,
@@ -29,6 +31,7 @@ import {
   UserRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import Link from "next/link";
 
 type User = {
   _id: string;
@@ -36,6 +39,7 @@ type User = {
   email?: string;
   phone?: string;
   photoUrl?: string;
+  bio?: string | null;
   whatsappOptIn?: boolean;
   address?: {
     country?: string;
@@ -226,6 +230,7 @@ export default function UserSettingsPage() {
           name: formData.get("name"),
           email: formData.get("email"),
           phone: formData.get("phone"),
+          bio: formData.get("bio"),
           whatsappOptIn,
           photoUrl,
         }),
@@ -406,6 +411,19 @@ export default function UserSettingsPage() {
                   Remove
                 </Button>
               )}
+              {session?.user?.id && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="rounded-2xl w-full sm:w-auto gap-1.5 text-primary"
+                  asChild
+                >
+                  <Link href={`/creators/${session.user.id}`} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                    View Public Profile
+                  </Link>
+                </Button>
+              )}
             </div>
           </div>
 
@@ -551,6 +569,20 @@ export default function UserSettingsPage() {
                         className="rounded-2xl"
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bio">About you</Label>
+                    <Textarea
+                      id="bio"
+                      name="bio"
+                      placeholder="Share a short bio — who you are, what drives you to fundraise, or how funds will be used."
+                      defaultValue={user?.bio ?? ""}
+                      disabled={isProfileBusy}
+                      className="rounded-2xl min-h-[100px] resize-none"
+                      maxLength={300}
+                    />
+                    <p className="text-xs text-muted-foreground">Shown publicly on your organiser profile. Max 300 characters.</p>
                   </div>
 
                   <div className="flex flex-col gap-4 rounded-2xl border border-border/50 bg-muted/10 p-4 sm:flex-row sm:items-center sm:justify-between">

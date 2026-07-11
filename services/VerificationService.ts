@@ -308,9 +308,6 @@ export class VerificationService {
 
     if (filters.status && filters.status !== "all") {
       query.status = filters.status;
-    } else {
-      // Default to pending/under_review for admin view
-      query.status = { $in: ["pending", "under_review"] };
     }
 
     if (filters.type && filters.type !== "all") {

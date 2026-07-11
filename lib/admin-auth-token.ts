@@ -61,7 +61,7 @@ export async function getAdminFromToken(): Promise<AdminUser | null> {
       _id: new mongoose.Types.ObjectId(user._id as string),
       name: user.name || "",
       email: user.email || "",
-      role: user.roles?.[0] || "user", // Take first role or default to user
+      role: user.roles || "user",
       isActive: user.status === 'active'
     };
 

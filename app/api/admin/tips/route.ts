@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { tipService } from "@/services";
+import { getAdminFromToken } from "@/lib/admin-auth-token";
 
 export async function GET(req: NextRequest) {
   try {
+    const adminUser = await getAdminFromToken();
+    if (!adminUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const searchParams = req.nextUrl.searchParams;
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "20", 10);

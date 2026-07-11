@@ -12,6 +12,9 @@ export type SimilarCampaign = {
   currency: string;
   ownerVerified: boolean;
   imageUrl: string;
+  category?: string;
+  description?: string;
+  urgency?: "low" | "medium" | "high";
 };
 
 export default function SimilarCampaignsSection({
@@ -31,6 +34,7 @@ export default function SimilarCampaignsSection({
           <CampaignCard
             key={c.id}
             title={c.title}
+            description={c.description}
             imageUrl={c.imageUrl}
             raised={c.amountRaised}
             goal={c.goalAmount}
@@ -38,6 +42,8 @@ export default function SimilarCampaignsSection({
             verified={c.ownerVerified}
             ownerVerified={c.ownerVerified}
             currency={c.currency}
+            category={c.category}
+            urgency={c.urgency}
             href={`/campaigns/${c.slug}`}
           />
         ))}

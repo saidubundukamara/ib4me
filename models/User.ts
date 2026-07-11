@@ -47,6 +47,7 @@ export interface IUser extends mongoose.Document {
       accountName?: string | null;
     } | null;
   } | null;
+  bio?: string | null;
   address?: {
     country?: string | null;
     city?: string | null;
@@ -124,6 +125,7 @@ const userSchema = new mongoose.Schema<IUser>(
         accountName: { type: String, default: null },
       },
     },
+    bio: { type: String, default: null, trim: true },
     address: {
       country: { type: String, default: null },
       city: { type: String, default: null },

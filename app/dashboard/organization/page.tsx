@@ -14,8 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building, Globe, FileText, MapPin, Save, RefreshCw } from "lucide-react";
+import { Building, Globe, FileText, MapPin, Save, RefreshCw, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import Link from "next/link";
 
 interface OrganizationProfile {
   name?: string | null;
@@ -140,11 +141,21 @@ export default function OrganizationProfilePage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Organization Profile</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage your organization&apos;s information and details
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Organization Profile</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage your organization&apos;s information and details
+          </p>
+        </div>
+        {session?.user?.id && (
+          <Button variant="outline" className="rounded-2xl gap-1.5 text-primary shrink-0" asChild>
+            <Link href={`/creators/${session.user.id}`} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-4 w-4" />
+              View Public Profile
+            </Link>
+          </Button>
+        )}
       </div>
 
       <form onSubmit={handleSubmit}>
