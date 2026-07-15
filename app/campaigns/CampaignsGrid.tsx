@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Filter, Search, SearchX } from "lucide-react";
+import { toast } from "sonner";
 import CampaignCard from "../_components/CampaignCard";
 import { Button } from "@/components/ui/button";
 import {
@@ -229,30 +230,27 @@ export default function CampaignsGrid({ items, categories }: Props) {
         <section className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {displayed.map((c, idx) => {
             const handleShare = () => {
-              const base =
-                typeof window === "undefined"
-                  ? `/campaigns/${c.slug}`
-                  : `${window.location.origin}/campaigns/${c.slug}`;
-              const waUrl = `${base}?ref=whatsapp`;
-              const shareText =
-                c.description ||
-                `${formatAmount(c.amountRaised, c.currency)} raised of ${formatAmount(c.goalAmount, c.currency)} goal`;
+              if (typeof window === "undefined") return;
+              const url = `${window.location.origin}/campaigns/${c.slug}?ref=campaigns`;
               const shareData = {
                 title: c.title,
-                text: shareText,
-                url: `${base}?ref=share`,
+                text: `Help ${c.title} — ${formatAmount(c.amountRaised, c.currency)} raised of ${formatAmount(c.goalAmount, c.currency)} goal`,
+                url,
               };
 
               if (typeof navigator !== "undefined" && navigator.share) {
-                navigator.share(shareData).catch(() => {
-                  /* user cancelled */
-                });
+                navigator.share(shareData).catch(() => {});
                 return;
               }
 
-              // Desktop fallback: open WhatsApp with pre-filled message
-              const waLink = `https://wa.me/?text=${encodeURIComponent(`${c.title} — ${shareText}\n${waUrl}`)}`;
-              window.open(waLink, "_blank", "noopener,noreferrer");
+              if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+                navigator.clipboard
+                  .writeText(url)
+                  .then(() => toast.success("Campaign link copied"))
+                  .catch(() => toast.error("Unable to copy link"));
+              } else {
+                toast.info("Share not supported on this device");
+              }
             };
 
             return (

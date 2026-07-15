@@ -14,6 +14,9 @@ export type CreatorCampaignItem = {
   imageUrl: string;
   verified: boolean;
   ownerVerified?: boolean;
+  category?: string;
+  description?: string;
+  urgency?: "low" | "medium" | "high";
 };
 
 function formatAmount(amount: number, currency: string = "SLE") {
@@ -31,20 +34,16 @@ type Props = {
 
 export default function CreatorCampaignsGrid({ campaigns }: Props) {
   const handleShare = (campaign: CreatorCampaignItem) => {
-    const url =
-      typeof window === "undefined"
-        ? `/campaigns/${campaign.slug}`
-        : `${window.location.origin}/campaigns/${campaign.slug}`;
+    if (typeof window === "undefined") return;
+    const url = `${window.location.origin}/campaigns/${campaign.slug}?ref=creator`;
     const shareData = {
       title: campaign.title,
-      text: `${formatAmount(campaign.amountRaised, campaign.currency)} raised of ${formatAmount(campaign.goalAmount, campaign.currency)} goal`,
+      text: `Help ${campaign.title} — ${formatAmount(campaign.amountRaised, campaign.currency)} raised of ${formatAmount(campaign.goalAmount, campaign.currency)} goal`,
       url,
     };
 
     if (typeof navigator !== "undefined" && navigator.share) {
-      navigator.share(shareData).catch(() => {
-        /* user cancelled */
-      });
+      navigator.share(shareData).catch(() => {});
       return;
     }
 
@@ -64,6 +63,7 @@ export default function CreatorCampaignsGrid({ campaigns }: Props) {
         <CampaignCard
           key={item.id}
           title={item.title}
+          description={item.description}
           imageUrl={item.imageUrl}
           raised={item.amountRaised}
           goal={item.goalAmount}
@@ -71,6 +71,8 @@ export default function CreatorCampaignsGrid({ campaigns }: Props) {
           currency={item.currency}
           verified={item.verified}
           ownerVerified={item.ownerVerified ?? true}
+          category={item.category}
+          urgency={item.urgency}
           href={`/campaigns/${item.slug}`}
           onShare={() => handleShare(item)}
         />

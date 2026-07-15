@@ -865,7 +865,7 @@ export class PayoutService {
           ...errDetails,
         });
         // Update payout status to failed if Monime call fails
-        const updated = await payoutRepository.updateById(
+        await payoutRepository.updateById(
           payoutId,
           {
             $set: {

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import {
   Gift,
-  DollarSign,
+  Banknote,
   TrendingUp,
   AlertTriangle,
   Users,
@@ -265,7 +265,7 @@ export default function AdminTipsPage() {
                     {formatCurrency(fromMinorUnits(analytics.totalAmountMinor))}
                   </p>
                 </div>
-                <DollarSign className="h-8 w-8" style={{ color: "#00712D" }} />
+                <Banknote className="h-8 w-8" style={{ color: "#00712D" }} />
               </div>
             </CardContent>
           </Card>
@@ -471,3 +471,4 @@ export default function AdminTipsPage() {
     </div>
   );
 }
+

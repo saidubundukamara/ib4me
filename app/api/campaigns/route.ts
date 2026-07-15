@@ -95,6 +95,7 @@ export async function GET() {
       return {
         id: campaignId,
         slug: c.slug,
+        title: c.title,
         status: c.status,
         urgency: c.urgency,
         goal: c.goal,
@@ -126,6 +127,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "slug is required" }, { status: 400 });
   }
 
+  const title = (form.get("title") as string | null) || undefined;
   const details = (form.get("details") as string | null) || undefined;
   const campaignType =
     (form.get("campaignType") as string | null) || undefined;
@@ -167,6 +169,7 @@ export async function POST(req: NextRequest) {
     const result = await campaignService.createCampaign({
       ownerId,
       slug,
+      title: title || undefined,
       details: details || undefined,
       campaignType: campaignType || undefined,
       urgency,

@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button";
+﻿import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Heart, DollarSign, Search, UserPlus, Settings, Smartphone, Share2, FileText, Shield, Wallet, Headphones, Globe } from "lucide-react";
+import { ArrowRight, Heart, Banknote, Search, UserPlus, Settings, Smartphone, Share2, FileText, Shield, Wallet, Headphones, Globe } from "lucide-react";
 import Logo from "@/public/assets/ib4melogowhite.png";
 import StatsSection from "./_components/StatsSection";
 import CategoriesSection from "./_components/CategoriesSection";
@@ -152,7 +152,7 @@ function GetStartedSection() {
       bgColor: "bg-blaze-orange/10",
     },
     {
-      icon: DollarSign,
+      icon: Banknote,
       title: "Make a Donation",
       description:
         "Choose your amount and securely contribute to a cause that matters.",
@@ -317,3 +317,4 @@ function FundraiseSection() {
     </section>
   );
 }
+

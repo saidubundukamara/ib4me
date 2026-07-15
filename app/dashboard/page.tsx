@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+﻿import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import Link from "next/link";
 import { authConfig } from "@/lib/auth-config";
@@ -7,7 +7,7 @@ import { campaignService } from "@/services/CampaignService";
 import { donationRepository } from "@/repositories/DonationRepository";
 import Card from "./_components/Card";
 import ProgressBar from "./_components/ProgressBar";
-import { DollarSign, Heart, Users, TrendingUp, MoreVertical, Eye, Pencil, Share2 } from "lucide-react";
+import { Banknote, Heart, Users, TrendingUp, MoreVertical, Eye, Pencil, Share2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -113,7 +113,7 @@ export default async function UserDashboardPage() {
         <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 sm:w-14 sm:h-14 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-              <DollarSign className="w-6 h-6 sm:w-7 sm:h-7 text-primary" aria-hidden />
+              <Banknote className="w-6 h-6 sm:w-7 sm:h-7 text-primary" aria-hidden />
             </div>
             <div className="min-w-0">
               <div className="text-xs sm:text-sm text-muted-foreground">Total Raised</div>
@@ -266,7 +266,7 @@ export default async function UserDashboardPage() {
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link href={`/dashboard/donations?campaign=${campaignId}`} className="flex items-center gap-2">
-                          <DollarSign className="h-4 w-4" /> View Donations
+                          <Banknote className="h-4 w-4" /> View Donations
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
@@ -350,3 +350,4 @@ export default async function UserDashboardPage() {
     </div>
   );
 }
+

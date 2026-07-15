@@ -3,6 +3,7 @@ import { partnerService } from "@/services/PartnerService";
 import { PartnerType, PartnerStatus } from "@/models/Partner";
 import MediaAsset from "@/models/MediaAsset";
 import CloudinaryService from "@/lib/cloudinary";
+import { getAdminFromToken } from "@/lib/admin-auth-token";
 
 async function getLogoUrl(
   logoAssetId: unknown
@@ -26,6 +27,10 @@ async function getLogoUrl(
 
 export async function GET(request: NextRequest) {
   try {
+    const adminUser = await getAdminFromToken();
+    if (!adminUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { searchParams } = new URL(request.url);
 
     const partnerTypeParam = searchParams.get("partnerType");
@@ -94,6 +99,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const adminUser = await getAdminFromToken();
+    if (!adminUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const contentType = request.headers.get("content-type") || "";
 
     let name: string;

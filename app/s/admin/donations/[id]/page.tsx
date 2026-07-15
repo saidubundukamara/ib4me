@@ -40,7 +40,7 @@ import {
   RefreshCw,
   ExternalLink,
   Calendar,
-  DollarSign,
+  Banknote,
   CreditCard,
   User,
   MessageSquare,
@@ -332,7 +332,7 @@ export default function AdminDonationDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
+                <Banknote className="h-4 w-4" />
                 Payment Information
               </CardTitle>
             </CardHeader>

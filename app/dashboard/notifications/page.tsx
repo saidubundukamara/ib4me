@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { Bell, Check, CheckCheck, Trash2, Info, Heart, DollarSign, ShieldCheck } from "lucide-react";
+import { Bell, Check, CheckCheck, Trash2, Info, Heart, Banknote, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/app/dashboard/_components/NotificationsContext";
 
@@ -24,7 +24,7 @@ function timeAgo(dateStr: string): string {
 }
 
 const typeIcon: Record<string, React.ReactNode> = {
-  donation: <DollarSign className="w-4 h-4" style={{ color: "#FF6000" }} />,
+  donation: <Banknote className="w-4 h-4" style={{ color: "#FF6000" }} />,
   campaign: <Heart className="w-4 h-4" style={{ color: "#00712D" }} />,
   verification: <ShieldCheck className="w-4 h-4" style={{ color: "#80E10A" }} />,
   system: <Info className="w-4 h-4" style={{ color: "#FBB03B" }} />,
@@ -187,3 +187,4 @@ function NotificationRow({
     </div>
   );
 }
+

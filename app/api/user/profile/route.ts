@@ -3,7 +3,7 @@ import type { Session } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authConfig } from "@/lib/auth-config";
 import { connectDB } from "@/lib/db";
-import { userRepository } from "@/repositories/UserRepository";
+import UserModel from "@/models/User";
 
 // GET /api/user/profile - Get current user's profile
 export async function GET() {
@@ -16,7 +16,7 @@ export async function GET() {
     }
 
     await connectDB();
-    const user = await userRepository.findById(userId);
+    const user = (await UserModel.findById(userId).lean().exec()) as unknown as Record<string, unknown> | null;
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -29,6 +29,7 @@ export async function GET() {
       email: user.email,
       phone: user.phone,
       photoUrl: user.photoUrl,
+      bio: user.bio ?? null,
       whatsappOptIn: user.whatsappOptIn,
       address: user.address,
       payoutPreferences: user.payoutPreferences,
@@ -53,7 +54,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, email, phone, photoUrl, whatsappOptIn } = body;
+    const { name, email, phone, photoUrl, bio, whatsappOptIn } = body;
 
     await connectDB();
 
@@ -65,11 +66,16 @@ export async function PUT(request: NextRequest) {
     }
     if (phone !== undefined) updateData.phone = phone || null;
     if (photoUrl !== undefined) updateData.photoUrl = photoUrl || null;
+    if (bio !== undefined) updateData.bio = typeof bio === "string" && bio.trim() ? bio.trim() : null;
     if (whatsappOptIn !== undefined) updateData.whatsappOptIn = Boolean(whatsappOptIn);
 
-    const updatedUser = await userRepository.updateById(userId, {
-      $set: updateData,
-    } as never);
+    // Use strict: false so fields like `bio` are persisted even when the
+    // cached Mongoose model schema predates this field being added.
+    const updatedUser = (await UserModel.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true, strict: false }
+    ).lean()) as unknown as Record<string, unknown> | null;
 
     if (!updatedUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -82,6 +88,7 @@ export async function PUT(request: NextRequest) {
       email: updatedUser.email,
       phone: updatedUser.phone,
       photoUrl: updatedUser.photoUrl,
+      bio: updatedUser.bio ?? null,
       whatsappOptIn: updatedUser.whatsappOptIn,
       address: updatedUser.address,
       payoutPreferences: updatedUser.payoutPreferences,

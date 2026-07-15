@@ -29,10 +29,10 @@ import {
 } from "@/repositories";
 import CampaignTabs, { type CampaignUpdateItem } from "./Tabs";
 import DonorsTicker from "./DonorsTicker";
-
 import SimilarCampaignsSection, { type SimilarCampaign } from "./SimilarCampaignsSection";
-import { timeAgo } from "@/lib/utils";
+import { timeAgo, slugToTitle } from "@/lib/utils";
 import ShareImageButton from "./ShareImageButton";
+import CopyUrlButton from "./CopyUrlButton";
 
 function buildResponsiveHero(key: string) {
   const widths = [320, 480, 640, 768, 1024, 1280];
@@ -64,13 +64,13 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     return { title: 'Campaign Not Found' };
   }
 
-  const beneficiaryName = campaign.beneficiary?.name || 'a beneficiary';
+  const campaignTitle = campaign.title?.trim() || slugToTitle(campaign.slug);
   const goalAmount = campaign.goal?.amountMinor ? (campaign.goal.amountMinor / 100).toLocaleString() : '0';
   const raisedAmount = campaign.totals?.raisedMinor ? (campaign.totals.raisedMinor / 100).toLocaleString() : '0';
   const currency = campaign.goal?.currency || 'SLE';
 
-  const title = `Help ${beneficiaryName} - Fundraiser on ib4me`;
-  const description = `Help ${beneficiaryName} raise ${currency} ${goalAmount} for ${campaign.details || 'their cause'}. ${currency} ${raisedAmount} raised so far.`;
+  const title = `${campaignTitle} - Fundraiser on ib4me`;
+  const description = `${campaignTitle}: ${currency} ${raisedAmount} raised of ${currency} ${goalAmount} goal. Support this campaign on ib4me.`;
   const pageUrl = `https://ib4me.org/campaigns/${slug}`;
 
   // Build og:image from Cloudinary — fast, CDN-cached, no server timeout
@@ -109,7 +109,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
       url: pageUrl,
       type: 'website',
       siteName: 'ib4me',
-      images: [{ url: imageUrl, width: 1200, height: 630, alt: `Help ${beneficiaryName} on ib4me` }],
+      images: [{ url: imageUrl, width: 1200, height: 630, alt: `${campaignTitle} on ib4me` }],
     },
     twitter: {
       card: 'summary_large_image',
@@ -150,7 +150,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
   const progress =
     goalAmount > 0 ? Math.min(100, Math.round((amountRaised / goalAmount) * 100)) : 0;
 
-  const title = campaign.beneficiary?.name || campaign.details || campaign.slug;
+  const title = campaign.title?.trim() || slugToTitle(campaign.slug);
 
   // Collect asset IDs: beneficiary photo (priority) and first document image (fallback)
   const assetIds: mongoose.Types.ObjectId[] = [];
@@ -270,14 +270,18 @@ export default async function CampaignDetailPage({ params }: PageParams) {
     const raisedMinor = (c.totals as unknown as { raisedMinor?: number })?.raisedMinor ?? 0;
     const goalMinor = (c.goal as unknown as { amountMinor?: number })?.amountMinor ?? 0;
     const cur = (c.goal as unknown as { currency?: string })?.currency || "SLE";
+    const storyText = (c as { story?: string }).story;
     return {
       id: String(c._id),
       slug: c.slug,
-      title: (c.beneficiary as unknown as { name?: string })?.name || (c as { details?: string }).details || c.slug,
+      title: (c as { title?: string }).title?.trim() || slugToTitle(c.slug),
+      description: storyText ? storyText.replace(/<[^>]+>/g, "").slice(0, 160).trim() || undefined : undefined,
       amountRaised: Math.floor(raisedMinor) / 100,
       goalAmount: Math.floor(goalMinor) / 100,
       donationsCount: (c.totals as unknown as { donationCount?: number })?.donationCount ?? 0,
       currency: cur,
+      category: (c as { category?: string }).category || undefined,
+      urgency: (c as { urgency?: "low" | "medium" | "high" }).urgency || undefined,
       ownerVerified: (c as { ownerVerification?: { verified?: boolean } }).ownerVerification?.verified ?? false,
       imageUrl: imgUrl,
     };
@@ -499,6 +503,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                             </a>
                           </Button>
                         ))}
+                        <CopyUrlButton url={absoluteUrl} />
                       </div>
                       <ShareImageButton
                         campaign={{

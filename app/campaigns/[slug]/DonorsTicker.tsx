@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Heart } from "lucide-react";
 
-
 interface DonorEntry {
   name: string;
   amount: string;
@@ -24,7 +23,7 @@ export default function DonorsTicker({ donors }: { donors: DonorEntry[] }) {
       setTimeout(() => {
         setCurrentIdx((prev) => (prev + 1) % donors.length);
         setVisible(true);
-      }, 400);
+      }, 300);
     }, 3500);
     return () => clearInterval(interval);
   }, [donors.length]);
@@ -34,8 +33,15 @@ export default function DonorsTicker({ donors }: { donors: DonorEntry[] }) {
   const donor = donors[currentIdx];
 
   return (
+    /*
+     * Fixed height + overflow-hidden: the container never grows or shrinks
+     * regardless of content length, preventing any layout shift / shaking.
+     * The inner content is absolutely positioned so it never participates
+     * in normal flow and cannot push siblings around.
+     */
     <div
-      className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 cursor-default"
+      className="relative rounded-xl border border-primary/20 bg-primary/5 cursor-default overflow-hidden"
+      style={{ height: "5.5rem" }}
       aria-live="polite"
       aria-atomic="true"
       title="Hover to pause"
@@ -45,28 +51,38 @@ export default function DonorsTicker({ donors }: { donors: DonorEntry[] }) {
       onBlur={() => { paused.current = false; }}
     >
       <div
-        className={`donors-ticker-item flex items-center gap-3 transition-all duration-400 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"}`}
+        className={`absolute inset-0 flex items-center gap-3 px-4 transition-opacity duration-300 ${
+          visible ? "opacity-100" : "opacity-0"
+        }`}
       >
+        {/* Heart icon — fixed size, never changes */}
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15">
           <Heart className="h-4 w-4 text-primary" />
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-foreground leading-snug">
+
+        {/* Text block — all lines are clamped to 1 line so height is deterministic */}
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <p className="truncate text-sm font-semibold text-foreground leading-tight">
             {donor.name}{" "}
             <span className="font-normal text-muted-foreground">donated</span>{" "}
             <span className="text-primary">{donor.amount}</span>
           </p>
-          <p className="mt-0.5 text-xs text-muted-foreground italic line-clamp-1 min-h-[1rem]">
+          {/* Always reserve space for the message line even when empty */}
+          <p className="mt-0.5 text-xs text-muted-foreground italic truncate h-4 leading-tight">
             {donor.message ? <>&ldquo;{donor.message}&rdquo;</> : null}
           </p>
-          <p className="text-xs text-muted-foreground leading-snug">{donor.timeAgo}</p>
+          <p className="text-xs text-muted-foreground leading-tight">{donor.timeAgo}</p>
         </div>
+
+        {/* Dot indicators — fixed layout, won't shift */}
         {donors.length > 1 && (
           <div className="flex shrink-0 items-center gap-1">
             {donors.map((_, i) => (
               <div
                 key={i}
-                className={`h-1.5 w-1.5 rounded-full transition-colors ${i === currentIdx ? "bg-primary" : "bg-primary/25"}`}
+                className={`h-1.5 w-1.5 rounded-full transition-colors duration-300 ${
+                  i === currentIdx ? "bg-primary" : "bg-primary/25"
+                }`}
               />
             ))}
           </div>
@@ -76,4 +92,3 @@ export default function DonorsTicker({ donors }: { donors: DonorEntry[] }) {
   );
 }
 
-export { timeAgo } from "@/lib/utils";

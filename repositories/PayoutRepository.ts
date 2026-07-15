@@ -124,7 +124,7 @@ export class PayoutRepository extends BaseRepository<IPayout> {
     const [payouts, total] = await Promise.all([
       this.findMany(query as never, {
         query: { sort, skip, limit }
-      } as any),
+      } as never),
       this.count(query as never)
     ]);
 
@@ -325,7 +325,7 @@ export class PayoutRepository extends BaseRepository<IPayout> {
       status: { $in: ["processing", "in_review", "threshold_review"] }
     } as never, {
       query: { sort: { createdAt: 1 } }
-    } as any);
+    } as never);
   }
 
   async getPayoutsByStatus(): Promise<Array<{

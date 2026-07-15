@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { campaignService } from "@/services/CampaignService";
 import { connectDB } from "@/lib/db";
+import { getAdminFromToken } from "@/lib/admin-auth-token";
 
 export async function GET() {
   try {
+    const adminUser = await getAdminFromToken();
+    if (!adminUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     await connectDB();
 
     const analytics = await campaignService.getCampaignAnalytics();

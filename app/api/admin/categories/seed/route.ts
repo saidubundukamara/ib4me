@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { categoryService } from "@/services/CategoryService";
 import { connectDB } from "@/lib/db";
+import { getAdminFromToken } from "@/lib/admin-auth-token";
 
 export async function POST() {
   try {
+    const adminUser = await getAdminFromToken();
+    if (!adminUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     await connectDB();
 
     const result = await categoryService.seedInitialCategories();

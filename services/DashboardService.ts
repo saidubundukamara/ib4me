@@ -40,9 +40,11 @@ export interface DashboardStats {
 }
 
 export class DashboardService {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private cache: Map<string, {data: any; timestamp: number}> = new Map();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private getCachedData(key: string): any | null {
     const cached = this.cache.get(key);
     if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
@@ -52,6 +54,7 @@ export class DashboardService {
     return null;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private setCachedData(key: string, data: any): void {
     this.cache.set(key, { data, timestamp: Date.now() });
   }

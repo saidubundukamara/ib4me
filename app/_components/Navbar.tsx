@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
-    Menu, ChevronRight, PhoneCall, Heart, MessageCircleQuestion, DollarSign,
+    Menu, ChevronRight, PhoneCall, Heart, MessageCircleQuestion, Banknote,
     LogOutIcon, Search,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -99,7 +99,7 @@ const Navbar = ({
                 {
                     title: "Pricing",
                     description: "Explore our pricing.",
-                    icon: <DollarSign className="size-5 shrink-0" />,
+                    icon: <Banknote className="size-5 shrink-0" />,
                     url: "/pricing",
                 },
                 {
@@ -126,11 +126,14 @@ const Navbar = ({
     const [hasScrolled, setHasScrolled] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchOpen, setSearchOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const searchRef = useRef<HTMLInputElement>(null);
     const { data: session, status } = useSession();
     const isAuthenticated = status === "authenticated";
     const router = useRouter();
     const pathname = usePathname();
+
+    useEffect(() => { setMounted(true); }, []);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -207,7 +210,7 @@ const Navbar = ({
                                 aria-label="Search campaigns"
                             />
                         </form>
-                        {isAuthenticated ? (
+                        {mounted && isAuthenticated ? (
                             <Userprofile />
                         ) : (
                             <>
@@ -241,7 +244,7 @@ const Navbar = ({
                                         </a>
                                     </SheetTitle>
                                 </SheetHeader>
-                                {status === "authenticated" && (
+                                {mounted && status === "authenticated" && (
                                     <Card className="border-none shadow-none">
                                         <CardContent className="flex flex-col items-center text-center">
                                             <UserAvatar
@@ -281,7 +284,7 @@ const Navbar = ({
                                         {menu.map((item) => renderMobileMenuItem(item, pathname))}
                                     </Accordion>
                                     <div className="flex flex-col gap-3">
-                                        {status !== "authenticated" && (
+                                        {(!mounted || status !== "authenticated") && (
                                             <>
                                                 <Button asChild variant="outline" size="sm">
                                                     <a href={auth.login.url}>{auth.login.text}</a>

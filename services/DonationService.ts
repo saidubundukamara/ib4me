@@ -990,7 +990,7 @@ export class DonationService {
         id: new mongoose.Types.ObjectId(donationId)
       },
       diff: {
-        previouslyFlagged: (donation as any).isFlagged || false,
+        previouslyFlagged: (donation as unknown as Record<string, unknown>).isFlagged ?? false,
         flagReason: reason,
         donationId,
         campaignId: donation.campaignId?.toString(),
@@ -1048,9 +1048,11 @@ export class DonationService {
         id: new mongoose.Types.ObjectId(donationId)
       },
       diff: {
-        previouslyFlagged: (donation as any).isFlagged || false,
-        previousFlagReason: (donation as any).flagReason,
-        previousFlaggedBy: (donation as any).flaggedBy?.toString(),
+        previouslyFlagged: (donation as unknown as Record<string, unknown>).isFlagged ?? false,
+        previousFlagReason: (donation as unknown as Record<string, unknown>).flagReason,
+        previousFlaggedBy: (donation as unknown as Record<string, unknown>).flaggedBy != null
+          ? String((donation as unknown as Record<string, unknown>).flaggedBy)
+          : undefined,
         donationId,
         campaignId: donation.campaignId?.toString(),
         donorId: donation.donorId?.toString(),

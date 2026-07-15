@@ -67,13 +67,14 @@ const CampaignCard = ({
   const cardContent = (
     <Card className="overflow-hidden rounded-3xl bg-card hover:shadow-[var(--shadow-lift)] transition-all duration-300 hover:-translate-y-1 border-0 cursor-pointer group">
       {/* Image */}
-      <div className="relative aspect-video overflow-hidden">
+      <div className="relative aspect-video overflow-hidden bg-muted">
         <Image
           src={imageUrl}
           alt={title}
           width={800}
           height={450}
           unoptimized
+          loading="lazy"
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         {/* Goal reached / urgency / days-left badge */}
@@ -139,9 +140,16 @@ const CampaignCard = ({
           <ProgressBar value={percentage} className="h-3" />
           <div className="flex justify-between items-center text-sm">
             <div>
-              <span className="font-bold text-blaze-orange text-lg">
-                {raisedLabel}
-              </span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="font-bold text-blaze-orange text-lg cursor-default">
+                    {raisedLabel}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  Sierra Leone Leone (SLE)
+                </TooltipContent>
+              </Tooltip>
               <span className="text-muted-foreground"> raised of {goalLabel}</span>
             </div>
             <span className="font-semibold text-primary">{Math.round(percentage)}%</span>
@@ -170,7 +178,7 @@ const CampaignCard = ({
             <span className="font-bold text-card-foreground">{donors.toLocaleString()}</span>
             <span className="text-muted-foreground">donor{donors !== 1 ? "s" : ""}</span>
           </div>
-          <span className="text-xs text-muted-foreground font-medium">{Math.round(percentage)}% funded</span>
+          <span className="text-xs font-medium text-primary">{Math.round(percentage)}% funded</span>
         </div>
 
         {/* Actions */}
