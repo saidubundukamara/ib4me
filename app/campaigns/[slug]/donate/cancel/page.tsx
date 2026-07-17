@@ -44,10 +44,10 @@ async function DonationCancelContent({ params }: PageProps) {
   return (
     <main className="container mx-auto max-w-2xl px-4 py-8 font-Sora">
       <Card className="rounded-3xl border border-border/40 bg-card/80 shadow-2xl backdrop-blur">
-        <CardContent className="p-8">
+        <CardContent className="p-4 sm:p-8">
           <div className="text-center space-y-6">
             {/* Cancel Icon */}
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-950/30">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-orange-100">
               <XCircle className="h-10 w-10 text-blaze-orange" />
             </div>
 
@@ -172,7 +172,7 @@ export default function DonationCancelPage({ params }: PageProps) {
     <Suspense fallback={
       <div className="container mx-auto max-w-2xl px-4 py-8 font-Sora">
         <Card className="rounded-3xl border border-border/40 bg-card/80 shadow-2xl backdrop-blur">
-          <CardContent className="p-8">
+          <CardContent className="p-4 sm:p-8">
             <div className="text-center space-y-6">
               <Skeleton className="mx-auto h-16 w-16 rounded-full" />
               <div className="space-y-3">

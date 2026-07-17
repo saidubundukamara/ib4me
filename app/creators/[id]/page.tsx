@@ -305,36 +305,36 @@ export default async function CreatorProfilePage({ params }: PageParams) {
           {/* Stats */}
           <div className="mt-6 grid grid-cols-3 gap-3 sm:gap-4">
             <Card className="rounded-2xl border border-border/50 bg-card hover:shadow-md transition-shadow">
-              <CardContent className="p-4 sm:p-5 text-center">
-                <div className="flex justify-center mb-2">
-                  <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+              <CardContent className="p-3 sm:p-5 text-center">
+                <div className="flex justify-center mb-1.5 sm:mb-2">
+                  <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-primary/10 flex items-center justify-center">
                     <Award className="h-4 w-4 text-primary" />
                   </div>
                 </div>
-                <p className="text-2xl sm:text-3xl font-bold text-primary">{campaigns.length}</p>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Campaign{campaigns.length === 1 ? "" : "s"}</p>
+                <p className="text-xl sm:text-3xl font-bold text-primary">{campaigns.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">Campaign{campaigns.length === 1 ? "" : "s"}</p>
               </CardContent>
             </Card>
             <Card className="rounded-2xl border border-border/50 bg-card hover:shadow-md transition-shadow">
-              <CardContent className="p-4 sm:p-5 text-center">
-                <div className="flex justify-center mb-2">
-                  <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+              <CardContent className="p-3 sm:p-5 text-center">
+                <div className="flex justify-center mb-1.5 sm:mb-2">
+                  <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-primary/10 flex items-center justify-center">
                     <TrendingUp className="h-4 w-4 text-primary" />
                   </div>
                 </div>
-                <p className="text-xl sm:text-2xl font-bold text-primary leading-tight">{formatAmount(totalRaised)}</p>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Total Raised</p>
+                <p className="text-sm sm:text-xl font-bold text-primary leading-tight break-all">{formatAmount(totalRaised)}</p>
+                <p className="text-xs text-muted-foreground mt-1">Total Raised</p>
               </CardContent>
             </Card>
             <Card className="rounded-2xl border border-border/50 bg-card hover:shadow-md transition-shadow">
-              <CardContent className="p-4 sm:p-5 text-center">
-                <div className="flex justify-center mb-2">
-                  <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+              <CardContent className="p-3 sm:p-5 text-center">
+                <div className="flex justify-center mb-1.5 sm:mb-2">
+                  <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-primary/10 flex items-center justify-center">
                     <Users className="h-4 w-4 text-primary" />
                   </div>
                 </div>
-                <p className="text-2xl sm:text-3xl font-bold text-primary">{totalSupporters}</p>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Supporter{totalSupporters === 1 ? "" : "s"}</p>
+                <p className="text-xl sm:text-3xl font-bold text-primary">{totalSupporters}</p>
+                <p className="text-xs text-muted-foreground mt-1">Supporter{totalSupporters === 1 ? "" : "s"}</p>
               </CardContent>
             </Card>
           </div>

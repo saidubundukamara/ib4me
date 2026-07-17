@@ -148,7 +148,7 @@ const About = () => {
                                     unoptimized
                                     className="h-auto w-full rounded-3xl object-cover shadow-2xl"
                                 />
-                                <div className="absolute -bottom-6 left-1/2 w-max -translate-x-1/2 rounded-2xl bg-accent px-6 py-3 text-accent-foreground shadow-xl sm:left-auto sm:translate-x-0 sm:px-8 sm:py-4">
+                                <div className="absolute -bottom-6 left-1/2 max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-2xl bg-accent px-4 py-3 text-accent-foreground shadow-xl sm:left-auto sm:max-w-none sm:translate-x-0 sm:px-8 sm:py-4">
                                     <div className="text-2xl font-bold leading-none sm:text-3xl">{platformData ? stats.find(s => s.label === "Donations Made")?.value.toLocaleString() : "—"}</div>
                                     <div className="text-xs sm:text-sm">Donations Made</div>
                                 </div>

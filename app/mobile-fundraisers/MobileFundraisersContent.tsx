@@ -351,7 +351,7 @@ export default function MobileFundraisersContent() {
           </motion.div>
 
           <motion.div
-            className="grid gap-6 sm:grid-cols-3 max-w-4xl mx-auto"
+            className="grid gap-6 min-[480px]:grid-cols-2 sm:grid-cols-3 max-w-4xl mx-auto"
             {...anim({ variants: stagger, initial: "hidden", whileInView: "visible", viewport: { once: true, margin: "-60px" } })}
           >
             {steps.map((step, i) => (
@@ -399,7 +399,7 @@ export default function MobileFundraisersContent() {
           </motion.div>
 
           <motion.div
-            className="grid grid-cols-2 gap-5 sm:grid-cols-2 lg:grid-cols-4"
+            className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
             {...anim({ variants: stagger, initial: "hidden", whileInView: "visible", viewport: { once: true, margin: "-60px" } })}
           >
             {features.map((f, i) => (

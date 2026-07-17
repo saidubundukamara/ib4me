@@ -309,22 +309,22 @@ export default function VerificationPage() {
               : ""
       }>
         <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center space-x-4">
               {verification.status === "approved" ? (
-                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center shrink-0">
                   <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
               ) : verification.status === "rejected" ? (
-                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
                   <XCircle className="w-6 h-6 text-red-600" />
                 </div>
               ) : verification.status === "pending" || verification.status === "under_review" ? (
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
                   <Clock className="w-6 h-6 text-blue-600" />
                 </div>
               ) : (
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center shrink-0">
                   <ShieldAlert className="w-6 h-6 text-muted-foreground" />
                 </div>
               )}
@@ -476,7 +476,7 @@ export default function VerificationPage() {
       {(canSubmit || canResubmit) && (
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="font-medium">
                   {canResubmit ? "Ready to resubmit?" : "Ready to submit?"}
@@ -490,7 +490,7 @@ export default function VerificationPage() {
               <Button
                 onClick={canResubmit ? handleResubmit : handleSubmit}
                 disabled={!allDocumentsUploaded || submitting}
-                className="min-w-[150px]"
+                className="w-full sm:w-auto sm:min-w-[150px]"
               >
                 {submitting ? (
                   <>

@@ -160,23 +160,25 @@ function NotificationRow({
         <p className="mt-1 text-xs text-muted-foreground">{relativeTime}</p>
       </div>
 
-      {/* Actions */}
-      <div className="flex flex-shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Actions — always visible on touch, hover-reveal on desktop */}
+      <div className="flex flex-shrink-0 items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 sm:transition-opacity">
         {!notification.read && (
           <button
             onClick={() => onMarkAsRead(notification.id)}
-            className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="rounded-lg p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             title="Mark as read"
+            aria-label="Mark as read"
           >
-            <Check className="w-3.5 h-3.5" />
+            <Check className="w-4 h-4" />
           </button>
         )}
         <button
           onClick={() => onDelete(notification.id)}
-          className="rounded-lg p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+          className="rounded-lg p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
           title="Delete"
+          aria-label="Delete notification"
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 className="w-4 h-4" />
         </button>
       </div>
 

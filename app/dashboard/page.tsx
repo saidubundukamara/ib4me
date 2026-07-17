@@ -227,7 +227,7 @@ export default async function UserDashboardPage() {
       </div>
 
       {/* Your Campaigns */}
-      <Card className="p-8 rounded-3xl border-0 shadow-[var(--shadow-lift)]">
+      <Card className="p-4 sm:p-8 rounded-3xl border-0 shadow-[var(--shadow-lift)]">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg sm:text-2xl font-bold text-foreground">Your Campaigns</h2>
           <Link href="/dashboard/campaigns" className="text-sm text-primary">View all</Link>
@@ -296,7 +296,7 @@ export default async function UserDashboardPage() {
       </Card>
 
       {/* Recent Donations */}
-      <Card className="p-8 rounded-3xl border-0 shadow-[var(--shadow-lift)]">
+      <Card className="p-4 sm:p-8 rounded-3xl border-0 shadow-[var(--shadow-lift)]">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg sm:text-2xl font-bold text-foreground">Recent Donations</h2>
           <a href="/dashboard/donations" className="text-sm text-primary">View all</a>

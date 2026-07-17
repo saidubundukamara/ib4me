@@ -292,7 +292,7 @@ const HowItWorks = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
+            <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 sm:grid-cols-3 sm:gap-6">
               {trustItems.map((item, index) => {
                 const TrustIcon = item.icon;
                 return (

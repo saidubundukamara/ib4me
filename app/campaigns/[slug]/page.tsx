@@ -346,8 +346,8 @@ export default async function CampaignDetailPage({ params }: PageParams) {
       {/* Non-dismissible unverified banner — shown at very top of page */}
       {!isOwnerVerified && (
         <div className="w-full bg-amber-500 text-white px-4 py-2.5">
-          <div className="mx-auto max-w-6xl flex items-center gap-2 text-sm font-medium">
-            <ShieldAlert className="h-4 w-4 shrink-0" />
+          <div className="mx-auto max-w-6xl flex items-start gap-2 text-sm font-medium">
+            <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
             <span>This campaign organizer has not been verified. Review carefully before contributing.</span>
           </div>
         </div>
@@ -364,7 +364,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
             <span className="truncate text-foreground font-medium">{title}</span>
           </nav>
 
-          <div className="grid gap-8 lg:grid-cols-12">
+          <div className="grid gap-8 md:grid-cols-[1fr_340px] lg:grid-cols-12">
             <section className="animate-fade-up min-w-0 space-y-6 lg:col-span-8">
               <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border/40 bg-muted shadow-lg">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -424,7 +424,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
             </section>
 
             <aside className="animate-fade-up delay-200 space-y-6 lg:col-span-4">
-              <div className="space-y-6 lg:sticky lg:top-6">
+              <div className="space-y-6 md:sticky md:top-6">
                 <Card className="overflow-hidden rounded-3xl border border-border/50 shadow-xl">
                   <div className="h-1 bg-gradient-to-r from-primary via-primary/80 to-primary/40" />
                   <CardContent className="space-y-6 p-5 sm:p-6">
@@ -490,7 +490,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                             key={name}
                             variant="outline"
                             size="icon"
-                            className={`${bgColor} ${hoverBg} flex-1 min-w-12 transition-colors`}
+                            className={`${bgColor} ${hoverBg} flex-1 min-w-[44px] h-11 transition-colors`}
                             asChild
                           >
                             <a
