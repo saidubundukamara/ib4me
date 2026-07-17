@@ -124,7 +124,7 @@ async function DonationCancelContent({ params }: PageProps) {
                 <Button
                   asChild
                   variant="outline"
-                  className="h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-950/40"
+                  className="h-10 rounded-2xl bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
                 >
                   <a
                     href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(absoluteUrl)}`}
@@ -139,7 +139,7 @@ async function DonationCancelContent({ params }: PageProps) {
                 <Button
                   asChild
                   variant="outline"
-                  className="h-10 rounded-2xl bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-950/40"
+                  className="h-10 rounded-2xl bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
                 >
                   <a
                     href={`https://wa.me/?text=${encodeURIComponent(`${shareText}\n${absoluteUrl}`)}`}

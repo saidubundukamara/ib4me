@@ -27,9 +27,12 @@ function DocEditor({ docType, initial }: DocEditorProps) {
   const [showPreview, setShowPreview] = useState(false);
   const [showTips, setShowTips] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(
+    initial.lastUpdatedAt ?? null
+  );
 
-  const lastUpdated = initial.lastUpdatedAt
-    ? new Date(initial.lastUpdatedAt).toLocaleDateString("en-GB", {
+  const lastUpdated = lastSavedAt
+    ? new Date(lastSavedAt).toLocaleDateString("en-GB", {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -48,6 +51,9 @@ function DocEditor({ docType, initial }: DocEditorProps) {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to save");
+      const saved: string | undefined =
+        json.settings?.[docType]?.lastUpdatedAt;
+      setLastSavedAt(saved ?? new Date().toISOString());
       toast.success("Document saved successfully");
       setHasChanges(false);
     } catch (err) {
