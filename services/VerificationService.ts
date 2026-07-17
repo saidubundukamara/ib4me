@@ -4,6 +4,7 @@ import { IVerification } from "../models/Verification";
 import { IUser } from "../models/User";
 import { auditLogService } from "./AuditLogService";
 import type { AuditContext } from "../lib/admin-auth";
+import { createUserNotification } from "../lib/createNotification";
 
 interface KycDocuments {
   idDocument?: string;
@@ -447,6 +448,15 @@ export class VerificationService {
         console.error(`Failed to update campaigns for user ${verification.userId}:`, error);
       }
 
+      // Notify the user their verification was approved
+      await createUserNotification({
+        recipientId: verification.userId,
+        type: "verification",
+        title: "Verification approved",
+        message: `Your ${verification.type.toUpperCase()} verification has been approved. You can now create campaigns.`,
+        link: "/dashboard/verification",
+      });
+
       if (auditContext) {
         await auditLogService.record({
           actor: { userId: new mongoose.Types.ObjectId(adminId), role: "Admin" },
@@ -491,15 +501,26 @@ export class VerificationService {
       reason
     );
 
-    if (updated && auditContext) {
-      await auditLogService.record({
-        actor: { userId: new mongoose.Types.ObjectId(adminId), role: "Admin" },
-        action: "verification.reject",
-        target: { type: "Verification", id: new mongoose.Types.ObjectId(verificationId) },
-        diff: { reason },
-        ip: auditContext.ip,
-        userAgent: auditContext.userAgent,
+    if (updated) {
+      // Notify the user their verification was rejected
+      await createUserNotification({
+        recipientId: verification.userId,
+        type: "verification",
+        title: "Verification requires attention",
+        message: `Your ${verification.type.toUpperCase()} verification was not approved. Please review the feedback and resubmit.`,
+        link: "/dashboard/verification",
       });
+
+      if (auditContext) {
+        await auditLogService.record({
+          actor: { userId: new mongoose.Types.ObjectId(adminId), role: "Admin" },
+          action: "verification.reject",
+          target: { type: "Verification", id: new mongoose.Types.ObjectId(verificationId) },
+          diff: { reason },
+          ip: auditContext.ip,
+          userAgent: auditContext.userAgent,
+        });
+      }
     }
 
     return updated;

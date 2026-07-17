@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 interface Campaign {
   _id: string;
   slug: string;
+  title?: string;
   beneficiary?: { name?: string; age?: number; photoUrls?: string[] };
   details?: string;
   institution?: { name?: string };
@@ -242,7 +243,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
             </Link>
           </div>
           <h1 className="text-3xl font-bold text-foreground">
-            {campaign.beneficiary?.name || campaign.details || campaign.slug}
+            {campaign.title || campaign.beneficiary?.name || campaign.details || campaign.slug}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Campaign ID: {campaign._id}
