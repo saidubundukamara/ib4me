@@ -768,7 +768,7 @@ export default function UserCampaignsPage() {
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 overflow-hidden">
                       <div className="flex-1 min-w-0 overflow-hidden">
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1.5 sm:mb-2 overflow-hidden">
-                          <h3 className="font-bold text-xs sm:text-sm lg:text-lg text-foreground truncate max-w-full">
+                          <h3 className="font-bold text-sm sm:text-base lg:text-lg text-foreground truncate max-w-full">
                             {campaign.title}
                           </h3>
                           <Badge className="bg-primary/10 text-primary border-primary flex-shrink-0 whitespace-nowrap hover:bg-primary/20">

@@ -53,6 +53,9 @@ export async function GET(request: NextRequest) {
       case "cookieConsent":
         settings = await settingService.getCookieConsentSettings();
         break;
+      case "legalDocuments":
+        settings = await settingService.getLegalDocuments();
+        break;
       default:
         // Return all categories when no specific category is requested
         const [website, payment, features, contact, social, seo, campaignLimits] =
@@ -205,6 +208,22 @@ export async function PUT(request: NextRequest) {
           adminContext.adminId.toString()
         );
         break;
+      case "legalDocuments": {
+        const { docType, content, effectiveDate } = body as {
+          docType: "privacyPolicy" | "termsOfService";
+          content?: string;
+          effectiveDate?: string;
+        };
+        if (!docType || !["privacyPolicy", "termsOfService"].includes(docType)) {
+          return NextResponse.json({ error: "Invalid docType" }, { status: 400 });
+        }
+        updatedSettings = await settingService.updateLegalDocument(
+          docType,
+          { content, effectiveDate },
+          adminContext.adminId.toString()
+        );
+        break;
+      }
       default:
         return NextResponse.json(
           { error: "Invalid category" },

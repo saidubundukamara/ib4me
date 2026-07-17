@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { campaignService, mediaAssetService, settingService } from "@/services";
 import { CloudinaryService } from "@/lib/cloudinary";
 import { userRepository } from "@/repositories";
+import { slugToTitle } from "@/lib/utils";
 import DonateClient from "./DonateClient";
 
 type PageParams = {
@@ -20,7 +21,7 @@ export default async function CampaignDonatePage({ params }: PageParams) {
   const amountRaised = Math.max(0, Math.floor(raisedMinor) / 100);
   const goalAmount = Math.max(0, Math.floor(goalMinor) / 100);
   const progress = goalAmount > 0 ? Math.min(100, Math.round((amountRaised / goalAmount) * 100)) : 0;
-  const title = campaign.beneficiary?.name || campaign.details || campaign.slug;
+  const title = campaign.title || slugToTitle(slug);
 
   const organizer = campaign.ownerId ? await userRepository.findById(String(campaign.ownerId)) : null;
   const isOwnerVerified = campaign.ownerVerification?.verified ?? false;

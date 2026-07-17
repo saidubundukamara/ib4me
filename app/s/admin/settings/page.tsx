@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSettings } from "@/lib/settings-provider";
-import { Loader2, Settings, CreditCard, ToggleLeft, Phone, Share2, Search, BarChart3, Percent, Wallet, Cookie } from "lucide-react";
+import { Loader2, Settings, CreditCard, ToggleLeft, Phone, Share2, Search, BarChart3, Percent, Wallet, Cookie, Scale } from "lucide-react";
 // import { toast } from "sonner";
 
 // Import setting components (we'll create these)
@@ -19,6 +19,7 @@ import CampaignLimitsSettings from "./components/CampaignLimitsSettings";
 import FeeSettings from "./components/FeeSettings";
 import PlatformAccountSettings from "./components/PlatformAccountSettings";
 import CookieConsentSettings from "./components/CookieConsentSettings";
+import LegalDocumentsSettings from "./components/LegalDocumentsSettings";
 
 export default function AdminSettingsPage() {
   const { loading, error, clearError } = useSettings();
@@ -62,7 +63,7 @@ export default function AdminSettingsPage() {
 
       {/* Settings Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-10">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-11">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">General</span>
@@ -102,6 +103,10 @@ export default function AdminSettingsPage() {
           <TabsTrigger value="cookies" className="flex items-center gap-2">
             <Cookie className="h-4 w-4" />
             <span className="hidden sm:inline">Cookies</span>
+          </TabsTrigger>
+          <TabsTrigger value="legal" className="flex items-center gap-2">
+            <Scale className="h-4 w-4" />
+            <span className="hidden sm:inline">Legal</span>
           </TabsTrigger>
         </TabsList>
 
@@ -241,6 +246,20 @@ export default function AdminSettingsPage() {
             </CardHeader>
             <CardContent>
               <CookieConsentSettings />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="legal">
+          <Card>
+            <CardHeader>
+              <CardTitle>Legal Documents</CardTitle>
+              <CardDescription>
+                Manage the content of your Privacy Policy and Terms of Service pages. Write HTML directly or paste from a word processor.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LegalDocumentsSettings />
             </CardContent>
           </Card>
         </TabsContent>

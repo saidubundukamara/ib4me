@@ -123,6 +123,17 @@ export interface ICookieCategory {
   description?: string;
 }
 
+export interface ILegalDocumentEntry {
+  content?: string;
+  effectiveDate?: string;
+  lastUpdatedAt?: Date;
+}
+
+export interface ILegalDocuments {
+  privacyPolicy?: ILegalDocumentEntry;
+  termsOfService?: ILegalDocumentEntry;
+}
+
 export interface ICookieConsentSettings {
   enabled?: boolean;
   banner?: ICookieConsentBanner;
@@ -150,6 +161,7 @@ export interface ISetting extends mongoose.Document {
   tipFinancialAccount?: ITipFinancialAccount;            // For receiving tips
   tipping?: ITippingSettings;
   cookieConsent?: ICookieConsentSettings;
+  legalDocuments?: ILegalDocuments;
   updatedAt: Date;
 }
 
@@ -279,6 +291,18 @@ const settingSchema = new mongoose.Schema<ISetting>(
         },
       ],
       consentExpiryDays: { type: Number, default: 365 },
+    },
+    legalDocuments: {
+      privacyPolicy: {
+        content: { type: String },
+        effectiveDate: { type: String },
+        lastUpdatedAt: { type: Date },
+      },
+      termsOfService: {
+        content: { type: String },
+        effectiveDate: { type: String },
+        lastUpdatedAt: { type: Date },
+      },
     },
   },
   { timestamps: { createdAt: false, updatedAt: true }, _id: false }

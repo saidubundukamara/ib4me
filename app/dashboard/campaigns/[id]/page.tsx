@@ -530,14 +530,14 @@ export default function UserCampaignDetailPage() {
             setActiveTab(value as CampaignTabValue);
           }
         }}
-        className="mt-8 space-y-24 sm:space-y-12 lg:space-y-16"
+        className="mt-8 space-y-4"
       >
-        <TabsList className="grid w-full grid-cols-2 gap-2 rounded-2xl bg-muted/50 p-1 sm:flex sm:flex-wrap sm:gap-2 md:flex-nowrap md:overflow-x-auto lg:overflow-visible">
+        <TabsList className="flex w-full flex-wrap gap-2 rounded-2xl bg-muted/50 p-1">
           {CAMPAIGN_TABS.map(({ value, label, icon: Icon }) => (
             <TabsTrigger
               key={value}
               value={value}
-              className="flex w-full items-center gap-2 whitespace-nowrap rounded-2xl px-3 py-2 text-xs font-medium transition focus-visible:outline-none data-[state=active]:bg-blaze-orange data-[state=active]:text-white data-[state=active]:shadow sm:flex-auto sm:px-4 sm:py-2 sm:text-sm md:w-auto"
+              className="flex flex-1 min-w-[calc(50%-4px)] items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none data-[state=active]:bg-blaze-orange data-[state=active]:text-white data-[state=active]:shadow sm:flex-auto sm:min-w-0"
             >
               <Icon className="h-4 w-4" />
               <span>{label}</span>

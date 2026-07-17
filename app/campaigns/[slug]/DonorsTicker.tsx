@@ -24,7 +24,7 @@ export default function DonorsTicker({ donors }: { donors: DonorEntry[] }) {
         setCurrentIdx((prev) => (prev + 1) % donors.length);
         setVisible(true);
       }, 300);
-    }, 3500);
+    }, 4000);
     return () => clearInterval(interval);
   }, [donors.length]);
 
@@ -32,16 +32,17 @@ export default function DonorsTicker({ donors }: { donors: DonorEntry[] }) {
 
   const donor = donors[currentIdx];
 
+  /*
+   * Fixed height + overflow-hidden: the container never grows or shrinks
+   * regardless of message length, preventing any layout shift.
+   * Inner content is absolutely positioned so it never participates in
+   * normal flow. 8rem (128px) accommodates name+amount, up to 2 message
+   * lines, and the timestamp without truncation.
+   */
   return (
-    /*
-     * Fixed height + overflow-hidden: the container never grows or shrinks
-     * regardless of content length, preventing any layout shift / shaking.
-     * The inner content is absolutely positioned so it never participates
-     * in normal flow and cannot push siblings around.
-     */
     <div
       className="relative rounded-xl border border-primary/20 bg-primary/5 cursor-default overflow-hidden"
-      style={{ height: "5.5rem" }}
+      style={{ height: "8rem" }}
       aria-live="polite"
       aria-atomic="true"
       title="Hover to pause"
@@ -55,28 +56,37 @@ export default function DonorsTicker({ donors }: { donors: DonorEntry[] }) {
           visible ? "opacity-100" : "opacity-0"
         }`}
       >
-        {/* Heart icon — fixed size, never changes */}
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15">
+        {/* Icon */}
+        <div className="flex h-9 w-9 shrink-0 self-start mt-3 items-center justify-center rounded-full bg-primary/15">
           <Heart className="h-4 w-4 text-primary" />
         </div>
 
-        {/* Text block — all lines are clamped to 1 line so height is deterministic */}
-        <div className="min-w-0 flex-1 overflow-hidden">
-          <p className="truncate text-sm font-semibold text-foreground leading-tight">
+        {/* Text block */}
+        <div className="min-w-0 flex-1 overflow-hidden py-3">
+          <p className="truncate text-sm font-semibold text-foreground leading-snug">
             {donor.name}{" "}
             <span className="font-normal text-muted-foreground">donated</span>{" "}
             <span className="text-primary">{donor.amount}</span>
           </p>
-          {/* Always reserve space for the message line even when empty */}
-          <p className="mt-0.5 text-xs text-muted-foreground italic truncate h-4 leading-tight">
+          {/* Message: up to 2 lines — space is always reserved to prevent shift */}
+          <p
+            className="mt-1 text-xs text-muted-foreground italic leading-snug"
+            style={{
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical" as never,
+              overflow: "hidden",
+              minHeight: "2.5em",
+            }}
+          >
             {donor.message ? <>&ldquo;{donor.message}&rdquo;</> : null}
           </p>
-          <p className="text-xs text-muted-foreground leading-tight">{donor.timeAgo}</p>
+          <p className="mt-1 text-xs text-muted-foreground leading-tight">{donor.timeAgo}</p>
         </div>
 
-        {/* Dot indicators — fixed layout, won't shift */}
+        {/* Dot indicators */}
         {donors.length > 1 && (
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex shrink-0 self-end mb-3 flex-col items-center gap-1">
             {donors.map((_, i) => (
               <div
                 key={i}
@@ -91,4 +101,3 @@ export default function DonorsTicker({ donors }: { donors: DonorEntry[] }) {
     </div>
   );
 }
-

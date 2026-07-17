@@ -254,7 +254,7 @@ function WhyIb4meSection() {
             Everything you need to raise funds and support causes that matter.
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-6 sm:grid-cols-2 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 min-[480px]:grid-cols-2 md:grid-cols-4">
           {features.map((f, i) => {
             const Icon = f.icon;
             return (
