@@ -508,6 +508,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                       <ShareImageButton
                         campaign={{
                           slug: campaign.slug,
+                          title: campaign.title ?? undefined,
                           beneficiary: campaign.beneficiary
                             ? { name: campaign.beneficiary.name ?? undefined, age: campaign.beneficiary.age ?? undefined }
                             : undefined,
