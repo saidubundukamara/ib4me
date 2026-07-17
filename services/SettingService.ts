@@ -185,6 +185,17 @@ const DEFAULT_COOKIE_CONSENT_SETTINGS: CookieConsentSettings = {
   consentExpiryDays: 365,
 };
 
+export interface LegalDocumentEntry {
+  content?: string;
+  effectiveDate?: string;
+  lastUpdatedAt?: string;
+}
+
+export interface LegalDocumentsSettings {
+  privacyPolicy: LegalDocumentEntry;
+  termsOfService: LegalDocumentEntry;
+}
+
 export class SettingService {
   async getPlatform(): Promise<ISetting | null> {
     return settingRepository.getPlatformSettings();
@@ -807,6 +818,52 @@ export class SettingService {
           trackingId: s.trackingId!,
         })),
     };
+  }
+
+  // ==================== Legal Documents ====================
+
+  async getLegalDocuments(): Promise<LegalDocumentsSettings> {
+    const settings = await this.getOrCreatePlatform();
+    const legal = settings.legalDocuments || {};
+    return {
+      privacyPolicy: {
+        content: legal.privacyPolicy?.content,
+        effectiveDate: legal.privacyPolicy?.effectiveDate,
+        lastUpdatedAt: legal.privacyPolicy?.lastUpdatedAt?.toISOString(),
+      },
+      termsOfService: {
+        content: legal.termsOfService?.content,
+        effectiveDate: legal.termsOfService?.effectiveDate,
+        lastUpdatedAt: legal.termsOfService?.lastUpdatedAt?.toISOString(),
+      },
+    };
+  }
+
+  async updateLegalDocument(
+    docType: "privacyPolicy" | "termsOfService",
+    updates: Pick<LegalDocumentEntry, "content" | "effectiveDate">,
+    adminUserId?: string
+  ): Promise<LegalDocumentsSettings> {
+    const settings = await this.getOrCreatePlatform();
+    const currentLegal = settings.legalDocuments || {};
+    const currentDoc = currentLegal[docType] || {};
+
+    await this.updatePlatformSettings(
+      {
+        legalDocuments: {
+          ...currentLegal,
+          [docType]: {
+            ...currentDoc,
+            content: updates.content,
+            effectiveDate: updates.effectiveDate,
+            lastUpdatedAt: new Date(),
+          },
+        },
+      } as Parameters<typeof this.updatePlatformSettings>[0],
+      adminUserId
+    );
+
+    return this.getLegalDocuments();
   }
 }
 
