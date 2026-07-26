@@ -338,7 +338,13 @@ export default function UserCampaignsPage() {
         }
 
         const data = await res.json().catch(() => ({}));
-        toast.success("Campaign created successfully!");
+        if (data.failedUploads?.length) {
+          toast.warning(
+            `Campaign created, but ${data.failedUploads.length} document${data.failedUploads.length !== 1 ? "s" : ""} failed to upload. You can add them again by editing the campaign.`
+          );
+        } else {
+          toast.success("Campaign created successfully!");
+        }
         handleCreateCampaign({
           id: data.id ?? `campaign-${Date.now()}`,
           slug: data.slug ?? slug,

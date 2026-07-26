@@ -666,7 +666,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
                   setRemovedDocumentIds(removedIds);
                 }}
               />
-              <p className="text-xs text-muted-foreground mt-2">Supported: images and PDFs. Max 5 files.</p>
+              <p className="text-xs text-muted-foreground mt-2">Supported: images and PDFs. Max 5 files, 5 MB each.</p>
             </div>
           </div>
         )}
