@@ -13,9 +13,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import ProgressBar from "@/app/_components/ProgressBar";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { generateAvatarDataUri } from "@/lib/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ShieldAlert } from "lucide-react";
@@ -30,6 +27,7 @@ import {
 import CampaignTabs, { type CampaignUpdateItem } from "./Tabs";
 import DonorsTicker from "./DonorsTicker";
 import SimilarCampaignsSection, { type SimilarCampaign } from "./SimilarCampaignsSection";
+import OrganizerBio from "./OrganizerBio";
 import { timeAgo, slugToTitle } from "@/lib/utils";
 import ShareImageButton from "./ShareImageButton";
 import CopyUrlButton from "./CopyUrlButton";
@@ -329,10 +327,10 @@ export default async function CampaignDetailPage({ params }: PageParams) {
   ).length;
 
   return (
-    <div className="min-h-dvh overflow-x-hidden bg-gradient-to-b from-background to-muted/20 font-Sora pb-20 md:pb-0">
-      {/* Mobile sticky donate bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg">
-        <div className="flex items-center gap-3">
+    <div className="min-h-dvh overflow-x-hidden bg-gradient-to-b from-background to-muted/20 font-Sora pb-[72px] lg:pb-0">
+      {/* Sticky donate bar — visible on all screens except large (where sidebar has the button) */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-card/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg">
+        <div className="flex items-center gap-3 max-w-2xl mx-auto">
           <div className="min-w-0">
             <p className="text-[11px] text-muted-foreground leading-none mb-0.5">Raised so far</p>
             <p className="text-sm font-bold text-primary truncate">{formatAmount(amountRaised, currency)} <span className="text-muted-foreground font-normal text-xs">of {formatAmount(goalAmount, currency)}</span></p>
@@ -534,37 +532,15 @@ export default async function CampaignDetailPage({ params }: PageParams) {
 
                     <Separator />
 
-                    <Link href={`/creators/${String(campaign.ownerId)}`}>
-                      <div className="flex items-center gap-3 rounded-2xl bg-muted/40 p-3 hover:bg-muted/60 transition-colors cursor-pointer">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage
-                            src={organizerPhoto ?? generateAvatarDataUri(String(campaign.ownerId))}
-                            alt={organizerName}
-                          />
-                          <AvatarFallback>{organizerInitials}</AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="truncate text-sm font-semibold text-foreground hover:text-primary transition-colors">
-                              {organizerName}
-                            </p>
-                            {!isOwnerVerified && (
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800"
-                                title="This organizer has not completed identity verification"
-                              >
-                                Unverified Organizer
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            Campaign organizer
-                            {createdLabel ? ` • Created ${createdLabel}` : ""}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
+                    <OrganizerBio
+                      organizerId={String(campaign.ownerId)}
+                      organizerName={organizerName}
+                      organizerInitials={organizerInitials}
+                      organizerPhoto={organizerPhoto}
+                      isOwnerVerified={isOwnerVerified}
+                      createdLabel={createdLabel}
+                      bio={organizer?.bio ?? null}
+                    />
 
                     <Separator />
 
