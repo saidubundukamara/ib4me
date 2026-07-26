@@ -287,7 +287,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ib4me.org";
   const absoluteUrl = `${siteUrl}/campaigns/${campaign.slug}`;
-  const shareText = `Help ${title} — ${formatAmount(amountRaised, currency)} raised of ${formatAmount(goalAmount, currency)} goal`;
+  const shareText = `Help ${title.replace(/^help\s+/i, "")} — ${formatAmount(amountRaised, currency)} raised of ${formatAmount(goalAmount, currency)} goal`;
 
   const shareLinks = [
     {

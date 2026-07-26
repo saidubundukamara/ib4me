@@ -234,7 +234,7 @@ export default function CampaignsGrid({ items, categories }: Props) {
               const url = `${window.location.origin}/campaigns/${c.slug}?ref=campaigns`;
               const shareData = {
                 title: c.title,
-                text: `Help ${c.title} — ${formatAmount(c.amountRaised, c.currency)} raised of ${formatAmount(c.goalAmount, c.currency)} goal`,
+                text: `Help ${c.title.replace(/^help\s+/i, "")} — ${formatAmount(c.amountRaised, c.currency)} raised of ${formatAmount(c.goalAmount, c.currency)} goal`,
                 url,
               };
 

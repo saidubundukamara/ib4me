@@ -38,7 +38,7 @@ export default function CreatorCampaignsGrid({ campaigns }: Props) {
     const url = `${window.location.origin}/campaigns/${campaign.slug}?ref=creator`;
     const shareData = {
       title: campaign.title,
-      text: `Help ${campaign.title} — ${formatAmount(campaign.amountRaised, campaign.currency)} raised of ${formatAmount(campaign.goalAmount, campaign.currency)} goal`,
+      text: `Help ${campaign.title.replace(/^help\s+/i, "")} — ${formatAmount(campaign.amountRaised, campaign.currency)} raised of ${formatAmount(campaign.goalAmount, campaign.currency)} goal`,
       url,
     };
 
