@@ -401,15 +401,18 @@ export default function UserSettingsPage() {
                 {avatarUploading ? "Uploading..." : "Update photo"}
               </Button>
               {avatarFile && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="rounded-2xl w-full sm:w-auto"
-                  onClick={handleRemoveAvatar}
-                  disabled={isProfileBusy}
-                >
-                  Remove
-                </Button>
+                <>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="rounded-2xl w-full sm:w-auto"
+                    onClick={handleRemoveAvatar}
+                    disabled={isProfileBusy}
+                  >
+                    Remove
+                  </Button>
+                  <p className="text-xs text-muted-foreground w-full sm:w-auto">Save profile below to apply your new photo.</p>
+                </>
               )}
               {session?.user?.id && (
                 <Button
@@ -554,7 +557,7 @@ export default function UserSettingsPage() {
                         className="rounded-2xl bg-muted/50 cursor-not-allowed"
                       />
                       <p className="text-xs text-muted-foreground">
-                        Contact support to change your email address
+                        <a href="mailto:support@ib4me.com" className="font-medium text-primary hover:underline">Contact support</a> to change your email address.
                       </p>
                     </div>
                     <div className="space-y-2">
@@ -864,7 +867,7 @@ export default function UserSettingsPage() {
                   Send an email to <a href="mailto:support@ib4me.com" className="font-semibold text-primary hover:underline">support@ib4me.com</a> and we will respond within 24 hours. For urgent payout questions call <span className="font-semibold">+232 30 000 000</span>.
                 </p>
                 <Button variant="outline" className="w-full rounded-2xl" asChild>
-                  <a href="mailto:ib4me.organisation@gmail.com">Contact support</a>
+                  <a href="mailto:support@ib4me.com">Contact support</a>
                 </Button>
               </CardContent>
             </Card>

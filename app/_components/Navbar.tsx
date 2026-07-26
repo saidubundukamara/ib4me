@@ -195,7 +195,7 @@ const Navbar = ({
                                 type="button"
                                 onClick={() => { setSearchOpen((v) => !v); setTimeout(() => searchRef.current?.focus(), 50); }}
                                 className="absolute left-0 z-10 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
-                                aria-label="Search campaigns"
+                                aria-label="Open search"
                             >
                                 <Search className="h-4 w-4" />
                             </button>
@@ -368,10 +368,9 @@ const renderMobileMenuItem = (item: MenuItem, pathname: string) => {
         <a
             key={item.title}
             href={item.url}
-            className={`flex items-center justify-between py-2 text-base font-semibold transition-colors border-b border-border/40 last:border-0 ${isActive ? "text-primary" : "text-foreground hover:text-primary"}`}
+            className={`flex items-center py-2 text-base font-semibold transition-colors border-b border-border/40 last:border-0 ${isActive ? "text-primary" : "text-foreground hover:text-primary"}`}
         >
             {item.title}
-            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
         </a>
     );
 };

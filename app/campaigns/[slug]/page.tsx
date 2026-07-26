@@ -327,7 +327,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
   ).length;
 
   return (
-    <div className="min-h-dvh overflow-x-hidden bg-gradient-to-b from-background to-muted/20 font-Sora pb-[72px] lg:pb-0">
+    <div className="min-h-dvh overflow-x-hidden bg-gradient-to-b from-background to-muted/20 font-Sora pb-[calc(72px+env(safe-area-inset-bottom))] lg:pb-0">
       {/* Sticky donate bar — visible on all screens except large (where sidebar has the button) */}
       <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-card/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg">
         <div className="flex items-center gap-3 max-w-2xl mx-auto">
@@ -341,15 +341,6 @@ export default async function CampaignDetailPage({ params }: PageParams) {
         </div>
       </div>
 
-      {/* Non-dismissible unverified banner — shown at very top of page */}
-      {!isOwnerVerified && (
-        <div className="w-full bg-amber-500 text-white px-4 py-2.5">
-          <div className="mx-auto max-w-6xl flex items-start gap-2 text-sm font-medium">
-            <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
-            <span>This campaign organizer has not been verified. Review carefully before contributing.</span>
-          </div>
-        </div>
-      )}
 
       <div className="py-8 md:py-12">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">

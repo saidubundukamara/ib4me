@@ -634,7 +634,7 @@ export default function UserCampaignsPage() {
           <span className="mr-2">
             <Plus />
           </span>
-          {isCreateOpen ? "Close Form" : "Create Campaign"}
+          {isCreateOpen ? "Cancel" : "Create Campaign"}
         </Button>
       </div>
 
@@ -730,7 +730,19 @@ export default function UserCampaignsPage() {
       <div className="grid gap-6">
         {items.length === 0 ? (
           <Card className="p-4 sm:p-6 border-0 shadow-[var(--shadow-soft)] rounded-3xl col-span-full">
-            <div className="text-sm text-muted-foreground">No campaigns yet. Create your first campaign.</div>
+            <div className="flex flex-col items-center py-6 text-center gap-3">
+              <p className="text-sm text-muted-foreground">No campaigns yet.</p>
+              <Button
+                size="sm"
+                className="rounded-xl"
+                onClick={() => {
+                  handleCancelEdit();
+                  setIsCreateOpen(true);
+                }}
+              >
+                Create your first campaign
+              </Button>
+            </div>
           </Card>
         ) : (
           items.map((campaign) => {
@@ -777,7 +789,17 @@ export default function UserCampaignsPage() {
                           <h3 className="font-bold text-sm sm:text-base lg:text-lg text-foreground truncate max-w-full">
                             {campaign.title}
                           </h3>
-                          <Badge className="bg-primary/10 text-primary border-primary flex-shrink-0 whitespace-nowrap hover:bg-primary/20">
+                          <Badge
+                            className={`flex-shrink-0 whitespace-nowrap border ${
+                              campaign.status === "active"
+                                ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                                : campaign.status === "pending"
+                                ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                                : campaign.status === "rejected"
+                                ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                                : "bg-muted text-muted-foreground border-border hover:bg-muted/80"
+                            }`}
+                          >
                             {statusLabel}
                           </Badge>
                         </div>
