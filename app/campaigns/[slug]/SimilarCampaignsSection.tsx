@@ -32,7 +32,7 @@ function handleShare(c: SimilarCampaign) {
   const url = `${window.location.origin}/campaigns/${c.slug}?ref=similar`;
   const shareData = {
     title: c.title,
-    text: `Help ${c.title} — ${formatAmount(c.amountRaised, c.currency)} raised of ${formatAmount(c.goalAmount, c.currency)} goal`,
+    text: `Help ${c.title.replace(/^help\s+/i, "")} — ${formatAmount(c.amountRaised, c.currency)} raised of ${formatAmount(c.goalAmount, c.currency)} goal`,
     url,
   };
 

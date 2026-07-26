@@ -64,8 +64,13 @@ const CampaignCard = ({
   const isEndingSoon = !isUrgent && urgency === "medium";
   const showDaysLeft = typeof daysLeft === "number" && daysLeft >= 0;
 
-  const cardContent = (
-    <Card className="overflow-hidden rounded-3xl bg-card hover:shadow-[var(--shadow-lift)] transition-all duration-300 hover:-translate-y-1 border-0 cursor-pointer group">
+  return (
+    <Card className="overflow-hidden rounded-3xl bg-card hover:shadow-[var(--shadow-lift)] transition-all duration-300 hover:-translate-y-1 border-0 cursor-pointer group relative">
+      {/* Invisible full-card link — screen readers use "Learn More" button below */}
+      {href && (
+        <Link href={href} className="absolute inset-0 z-0" aria-hidden tabIndex={-1} />
+      )}
+
       {/* Image */}
       <div className="relative aspect-video overflow-hidden bg-muted">
         <Image
@@ -147,7 +152,7 @@ const CampaignCard = ({
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs">
-                  Sierra Leone Leone (SLE)
+                  {currencyCode} — {currency === "SLE" ? "Sierra Leone Leone" : currency}
                 </TooltipContent>
               </Tooltip>
               <span className="text-muted-foreground"> raised of {goalLabel}</span>
@@ -178,12 +183,17 @@ const CampaignCard = ({
             <span className="font-bold text-card-foreground">{donors.toLocaleString()}</span>
             <span className="text-muted-foreground">donor{donors !== 1 ? "s" : ""}</span>
           </div>
-          <span className="text-xs font-medium text-primary">{Math.round(percentage)}% funded</span>
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-3 pt-2">
-          <Button className="flex-1">Learn More</Button>
+        {/* Actions — z-10 so they sit above the invisible overlay link */}
+        <div className="flex gap-3 pt-2 relative z-10">
+          {href ? (
+            <Button asChild className="flex-1">
+              <Link href={href}>Learn More</Link>
+            </Button>
+          ) : (
+            <Button className="flex-1">Learn More</Button>
+          )}
           <Button
             variant="outline"
             size="icon"
@@ -194,6 +204,7 @@ const CampaignCard = ({
               onShare?.();
             }}
             type="button"
+            aria-label="Share campaign"
           >
             <Share2 className="w-4 h-4" />
           </Button>
@@ -201,16 +212,6 @@ const CampaignCard = ({
       </div>
     </Card>
   );
-
-  if (href) {
-    return (
-      <Link href={href} className="block group">
-        {cardContent}
-      </Link>
-    );
-  }
-
-  return cardContent;
 };
 
 export default CampaignCard;

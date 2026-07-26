@@ -12,6 +12,8 @@ import type { AuditContext } from "../lib/admin-auth";
 import type { ILedgerEntry } from "../models/LedgerEntry";
 import { monimeService } from "../lib/monime";
 import { settingService } from "./SettingService";
+import { createUserNotification, createAdminNotification } from "../lib/createNotification";
+import CampaignModel from "../models/Campaign";
 
 export type ReconcileAction =
   | "advanced_to_succeeded"
@@ -292,7 +294,7 @@ export class DonationService {
     transferId: string,
     session?: ServiceSession
   ): Promise<IDonation> {
-    return runInTransaction<IDonation>(async (txn) => {
+    const completed = await runInTransaction<IDonation>(async (txn) => {
       const donation = await donationRepository.findById(donationId);
       if (!donation) throw new Error("Donation not found");
 
@@ -398,6 +400,36 @@ export class DonationService {
 
       return updated;
     }, session);
+
+    // Fire in-app notifications after the transaction commits (non-blocking).
+    try {
+      const campaign = await CampaignModel.findById(completed.campaignId)
+        .select("ownerId title")
+        .lean<{ ownerId: unknown; title?: string }>();
+      if (campaign?.ownerId) {
+        const amountSLE = (completed.amount.minor / 100).toFixed(2);
+        const donorName = completed.isAnonymous
+          ? "An anonymous donor"
+          : (completed.donorSnapshot?.name ?? "A donor");
+        await createUserNotification({
+          recipientId: campaign.ownerId as mongoose.Types.ObjectId,
+          type: "donation",
+          title: "New donation received!",
+          message: `${donorName} donated SLE ${amountSLE} to your campaign.`,
+          link: `/dashboard/campaigns/${String(completed.campaignId)}`,
+        });
+        await createAdminNotification({
+          type: "donation",
+          title: "New donation",
+          message: `${donorName} donated SLE ${amountSLE} to "${campaign.title ?? "a campaign"}".`,
+          link: `/s/admin/donations`,
+        });
+      }
+    } catch (notifErr) {
+      console.error("[DonationService.completeWithTransfer] notification failed:", notifErr);
+    }
+
+    return completed;
   }
 
   /**

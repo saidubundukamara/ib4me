@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Smartphone, CreditCard, Ban, Loader2, CheckCircle2 } from "lucide-react";
+import { Smartphone, Ban, Loader2, CheckCircle2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -334,7 +334,7 @@ export function WithdrawalForm({
           />
           {isAmountExceeded && selectedCampaignOption && (
             <p className="text-sm text-red-500">
-              Maximum withdrawable is {formatCurrency(maxWithdrawableMinor, selectedCampaignOption.currency)} (1% buffer reserved)
+              Maximum withdrawable: {formatCurrency(maxWithdrawableMinor, selectedCampaignOption.currency)}. A small buffer is reserved for transfer fees.
             </p>
           )}
           {selectedCampaignOption && !isAmountExceeded && maxWithdrawable > 0 && (
@@ -369,15 +369,10 @@ export function WithdrawalForm({
                   Mobile Money
                 </div>
               </SelectItem>
-              <SelectItem value="bank" disabled>
-                <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  Bank Transfer (coming soon)
-                </div>
-              </SelectItem>
             </SelectContent>
           </Select>
           <input type="hidden" name="payoutType" value={payoutType} />
+          <p className="text-xs text-muted-foreground">More payout methods coming soon.</p>
         </div>
       </div>
 

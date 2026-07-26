@@ -39,7 +39,7 @@ async function DonationCancelContent({ params }: PageProps) {
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ib4me.org";
   const absoluteUrl = `${siteUrl}/campaigns/${slug}`;
-  const shareText = `Help support ${campaignName} on ib4me`;
+  const shareText = `Help support ${campaignName.replace(/^help\s+/i, "")} on ib4me`;
 
   return (
     <main className="container mx-auto max-w-2xl px-4 py-8 font-Sora">

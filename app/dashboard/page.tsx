@@ -47,7 +47,7 @@ export default async function UserDashboardPage() {
 
   const totalRaisedMinor = campaigns.reduce((sum, c) => sum + (c.totals?.raisedMinor ?? 0), 0);
   const totalDonations = campaigns.reduce((sum, c) => sum + (c.totals?.donationCount ?? 0), 0);
-  const campaignsSupported = donations.length;
+  const campaignsSupported = new Set(donations.map((d) => String(d.campaignId))).size;
   const avgDonationMinor = donations.length ? Math.round(donations.reduce((sum, d) => sum + (d.campaignReceivesMinor ?? d.amount.minor), 0) / donations.length) : 0;
 
   const averageProgressPct = (() => {
@@ -216,13 +216,6 @@ export default async function UserDashboardPage() {
               <div className="text-xl sm:text-2xl font-bold text-foreground">{campaignsSupported}</div>
             </div>
           </div>
-
-          <div className="mt-3 sm:mt-4">
-            <ProgressBar value={averageProgressPct} className="w-full" aria-label="Average progress" />
-            <div className="mt-1.5 sm:mt-2 text-[11px] sm:text-xs text-muted-foreground">
-              {averageProgressPct}% average progress
-            </div>
-          </div>
         </Card>
       </div>
 
@@ -232,6 +225,21 @@ export default async function UserDashboardPage() {
           <h2 className="text-lg sm:text-2xl font-bold text-foreground">Your Campaigns</h2>
           <Link href="/dashboard/campaigns" className="text-sm text-primary">View all</Link>
         </div>
+        {campaigns.length === 0 && (
+          <div className="flex flex-col items-center py-10 text-center">
+            <div className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-4">
+              <Heart className="w-7 h-7 text-muted-foreground/40" />
+            </div>
+            <p className="text-sm font-medium text-foreground mb-1">No campaigns yet</p>
+            <p className="text-xs text-muted-foreground mb-4">Start your first campaign and reach donors.</p>
+            <Link
+              href="/dashboard/campaigns"
+              className="inline-flex items-center rounded-full bg-primary px-4 py-2 text-xs font-medium text-white hover:bg-primary/90 transition-colors"
+            >
+              Create your first campaign
+            </Link>
+          </div>
+        )}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {campaigns.slice(0, 6).map((c) => {
             const raised = c.totals?.raisedMinor ?? 0;
@@ -270,14 +278,9 @@ export default async function UserDashboardPage() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <a
-                          href={`https://wa.me/?text=${encodeURIComponent(`Support this campaign: ${process.env.NEXT_PUBLIC_SITE_URL || "https://ib4me.org"}/campaigns/${c.slug}`)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2"
-                        >
+                        <Link href={`/campaigns/${c.slug}#share`} className="flex items-center gap-2">
                           <Share2 className="h-4 w-4" /> Share
-                        </a>
+                        </Link>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

@@ -13,7 +13,6 @@ import { Label } from "@/components/ui/label";
 import { AuthLayout } from "../_components/AuthLayout";
 import { ContinueDivider } from "../_components/ContinueDivider";
 import { SignInAside } from "../_components/AuthSidePanels";
-import { SOCIAL_PROVIDERS } from "../_components/social-providers";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -68,23 +67,7 @@ export default function SignInPage() {
       }
       lead={
         <div className="space-y-4 sm:space-y-5">
-          <div className="space-y-2">
-            <div className="grid w-full gap-3 sm:grid-cols-3">
-              {SOCIAL_PROVIDERS.map(({ id, icon: Icon, iconColor }) => (
-                <Button
-                  key={id}
-                  type="button"
-                  variant="outline"
-                  className="h-12 border-border/50 opacity-50 cursor-not-allowed"
-                  disabled
-                  title="Coming soon"
-                >
-                  <Icon className={`h-5 w-5 ${iconColor ?? ""}`} />
-                </Button>
-              ))}
-            </div>
-            <p className="text-center text-xs text-muted-foreground">Social login coming soon</p>
-          </div>
+          <p className="text-center text-xs text-muted-foreground">Social login coming soon</p>
 
           <ContinueDivider label="Or continue with email" />
         </div>
@@ -146,7 +129,7 @@ export default function SignInPage() {
           Forgot password?
         </Link>
 
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
 
         <Button
           type="submit"

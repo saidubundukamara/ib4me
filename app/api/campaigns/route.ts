@@ -190,30 +190,34 @@ export async function POST(req: NextRequest) {
     // Extract document files - form sends them as documents[0], documents[1], etc.
     const files: File[] = [];
     for (const [key, value] of form.entries()) {
-      if (key.startsWith("documents[") && value instanceof File) {
+      if (key.startsWith("documents[") && value instanceof File && value.size > 0) {
         files.push(value);
       }
     }
-    const uploadedAssets: { type: string; assetId: mongoose.Types.ObjectId }[] =
-      [];
+
+    const uploadedAssets: { type: string; assetId: mongoose.Types.ObjectId }[] = [];
+    const failedUploads: string[] = [];
+
     for (const f of files) {
-       
-      const buffer = Buffer.from(await f.arrayBuffer());
-       
-      const result = await CloudinaryService.uploadBuffer(buffer, {
-        folder: `campaigns/${session.user.id}`,
-        resource_type: "auto",
-      });
-       
-      const asset = await MediaAssetModel.create({
-        ownerId,
-        campaignId: created._id,
-        type: f.type || "file",
-        storage: { provider: "cloudinary", key: result.public_id },
-        url: result.secure_url,
-        size: (f as unknown as { size?: number }).size ?? result.bytes,
-      });
-      uploadedAssets.push({ type: f.type || "file", assetId: asset._id });
+      try {
+        const buffer = Buffer.from(await f.arrayBuffer());
+        const uploadResult = await CloudinaryService.uploadBuffer(buffer, {
+          folder: `campaigns/${session.user.id}`,
+          resource_type: "auto",
+        });
+        const asset = await MediaAssetModel.create({
+          ownerId,
+          campaignId: created._id,
+          type: f.type || "file",
+          storage: { provider: "cloudinary", key: uploadResult.public_id },
+          url: uploadResult.secure_url,
+          size: (f as unknown as { size?: number }).size ?? uploadResult.bytes,
+        });
+        uploadedAssets.push({ type: f.type || "file", assetId: asset._id });
+      } catch (uploadErr) {
+        console.error(`Failed to upload document "${f.name}":`, uploadErr);
+        failedUploads.push(f.name);
+      }
     }
 
     if (uploadedAssets.length > 0) {
@@ -250,6 +254,7 @@ export async function POST(req: NextRequest) {
         id: String(created._id),
         slug: created.slug,
         ownerVerification: result.ownerVerification,
+        ...(failedUploads.length > 0 && { failedUploads }),
       },
       { status: 201 }
     );

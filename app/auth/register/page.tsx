@@ -29,7 +29,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { AuthLayout } from "../_components/AuthLayout";
 import { RegisterAside } from "../_components/AuthSidePanels";
 import { ContinueDivider } from "../_components/ContinueDivider";
-import { SOCIAL_PROVIDERS } from "../_components/social-providers";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -168,24 +167,7 @@ export default function RegisterPage() {
       }
       lead={
         <div className="space-y-4 sm:space-y-5">
-          <div className="space-y-2">
-            <div className="grid w-full gap-3 sm:grid-cols-3">
-              {SOCIAL_PROVIDERS.map(({ id, icon: Icon, iconColor }) => (
-                <Button
-                  key={id}
-                  type="button"
-                  variant="outline"
-                  className="h-12 border-border/50 opacity-50 cursor-not-allowed"
-                  disabled
-                  title="Coming soon"
-                >
-                  <Icon className={`h-5 w-5 ${iconColor ?? ""}`} />
-                </Button>
-              ))}
-            </div>
-            <p className="text-center text-xs text-muted-foreground">Social login coming soon</p>
-          </div>
-
+          <p className="text-center text-xs text-muted-foreground">Social login coming soon</p>
           <ContinueDivider label="Or continue with email" />
         </div>
       }
@@ -347,6 +329,9 @@ export default function RegisterPage() {
               className="h-12 rounded-xl text-base"
             />
           </div>
+          <p className="text-xs text-muted-foreground sm:col-span-2">
+            At least one of email or phone is required.
+          </p>
         </div>
 
         <div className="space-y-2">
@@ -397,13 +382,13 @@ export default function RegisterPage() {
                     />
                   ))}
                 </div>
-                <p className={`text-xs font-medium ${textColor}`}>{label}</p>
+                <p aria-live="polite" className={`text-xs font-medium ${textColor}`}>{label}</p>
               </div>
             );
           })()}
         </div>
 
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
 
         <div className="flex items-start gap-3 rounded-xl border border-dashed border-border/60 p-3">
           <Checkbox
@@ -412,7 +397,7 @@ export default function RegisterPage() {
             onCheckedChange={(checked) => setAcceptedTerms(Boolean(checked))}
             className="mt-1"
           />
-          <Label htmlFor="terms" className="text-sm text-blaze-orange">
+          <Label htmlFor="terms" className="text-sm text-foreground">
             I agree to the{" "}
             <Link href="/terms" className="font-semibold text-primary hover:underline">
               terms &amp; conditions

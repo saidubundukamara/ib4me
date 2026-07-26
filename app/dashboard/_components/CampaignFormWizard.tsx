@@ -639,11 +639,17 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
         {currentStep === 4 && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="story">Story</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="story">Story</Label>
+                <span className={`text-xs tabular-nums ${story.length > 5000 ? "text-destructive" : "text-muted-foreground"}`}>
+                  {story.length}/5000
+                </span>
+              </div>
               <Textarea
                 id="story"
                 value={story}
                 onChange={(e) => setStory(e.target.value)}
+                maxLength={5000}
                 placeholder="Explain the situation, how funds will be used, and timelines."
                 className="rounded-2xl min-h-[180px] sm:min-h-[200px] my-2"
               />
@@ -666,7 +672,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
                   setRemovedDocumentIds(removedIds);
                 }}
               />
-              <p className="text-xs text-muted-foreground mt-2">Supported: images and PDFs. Max 5 files.</p>
+              <p className="text-xs text-muted-foreground mt-2">Supported: images and PDFs. Max 5 files, 5 MB each.</p>
             </div>
           </div>
         )}
@@ -683,6 +689,16 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
                   </p>
                 </div>
               ))}
+              <div>
+                <p className="text-sm text-muted-foreground">Story:</p>
+                <p className="font-semibold text-foreground">
+                  {story.trim()
+                    ? story.length > 200
+                      ? story.slice(0, 200) + "…"
+                      : story
+                    : "-"}
+                </p>
+              </div>
             </div>
           </div>
         )}
