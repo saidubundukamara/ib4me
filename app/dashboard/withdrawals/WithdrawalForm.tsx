@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Smartphone, CreditCard, Ban, Loader2, CheckCircle2 } from "lucide-react";
+import { Smartphone, Ban, Loader2, CheckCircle2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
   Select,
