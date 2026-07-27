@@ -25,7 +25,23 @@ interface TippingSettings {
   maxAmountMinor: number;
 }
 
-export default function TipPage() {
+export type TipClientProps = {
+  /**
+   * Preselected amount in MINOR units, from `?amount=` on the URL.
+   *
+   * Advisory only. It is validated against the configured min/max below, and
+   * `/api/tips/create` re-validates server-side regardless, so a tampered value can only
+   * fail closed. Nothing about the donor is ever passed through the URL.
+   */
+  initialAmountMinor?: number | null;
+  /** Which surface sent the donor here. Sent with the tip so the CTA can be measured. */
+  source?: "tip_page" | "donation_success";
+};
+
+export default function TipClient({
+  initialAmountMinor = null,
+  source = "tip_page",
+}: TipClientProps) {
   const [settings, setSettings] = useState<TippingSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,8 +77,23 @@ export default function TipPage() {
 
         setSettings(data);
 
-        // Set default selected amount to first suggested amount
-        if (data.suggestedAmounts?.length > 0) {
+        // Honour ?amount= when it is within the configured bounds — this is how the
+        // thank-you-page CTA hands a donor over with their chosen amount intact. Anything
+        // out of range falls back to the default rather than being silently clamped.
+        const withinBounds =
+          initialAmountMinor !== null &&
+          Number.isFinite(initialAmountMinor) &&
+          initialAmountMinor >= data.minAmountMinor &&
+          initialAmountMinor <= data.maxAmountMinor;
+
+        if (withinBounds) {
+          if (data.suggestedAmounts?.includes(initialAmountMinor)) {
+            setSelectedPreset(initialAmountMinor as number);
+          } else {
+            setSelectedPreset("custom");
+            setCustomAmount(((initialAmountMinor as number) / 100).toFixed(2));
+          }
+        } else if (data.suggestedAmounts?.length > 0) {
           setSelectedPreset(data.suggestedAmounts[1] || data.suggestedAmounts[0]);
         }
       } catch (err) {
@@ -73,7 +104,7 @@ export default function TipPage() {
     }
 
     fetchSettings();
-  }, []);
+  }, [initialAmountMinor]);
 
   // Calculate the amount in minor units
   const amountMinor = (() => {
@@ -126,6 +157,7 @@ export default function TipPage() {
             },
         isAnonymous: anonymous,
         message: message.trim() || undefined,
+        source,
       };
 
       const response = await fetch("/api/tips/create", {

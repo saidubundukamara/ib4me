@@ -1,6 +1,11 @@
 import type { MetadataRoute } from 'next';
+import { getTippingState } from '@/lib/tipping';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // Only advertise /tip when tipping is actually live — indexing a page that tells
+  // visitors the feature is disabled is worse than not indexing it.
+  const { enabled: tippingEnabled } = await getTippingState();
+
   return [
     {
       url: 'https://ib4me.org',
@@ -32,5 +37,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'hourly',
       priority: 0.9,
     },
+    ...(tippingEnabled
+      ? [
+          {
+            url: 'https://ib4me.org/tip',
+            lastModified: new Date(),
+            changeFrequency: 'monthly' as const,
+            priority: 0.5,
+          },
+        ]
+      : []),
   ];
 }

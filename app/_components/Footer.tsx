@@ -29,6 +29,12 @@ interface FooterProps {
     alt: string;
   };
   menuItems?: MenuItem[];
+  /**
+   * Whether platform tipping is live. Resolved server-side in the root layout — the
+   * settings provider this component already uses is admin-authenticated, so it reports
+   * nothing useful to a logged-out visitor.
+   */
+  tippingEnabled?: boolean;
   copyright?: string;
   bottomLinks?: {
     text: string;
@@ -36,39 +42,49 @@ interface FooterProps {
   }[];
 }
 
+/**
+ * Built as a function rather than a literal default so the tip link can be omitted when
+ * tipping is off — linking to a page that will only announce it is disabled is worse than
+ * not linking at all.
+ */
+const buildDefaultMenuItems = (tippingEnabled: boolean): MenuItem[] => [
+  {
+    title: "Quick Links",
+    links: [
+      { text: "Browse Campaigns", url: "/campaigns" },
+      { text: "Start Fundraising", url: "/dashboard" },
+      { text: "How ib4me Works", url: "/how-ib4me-works" },
+      { text: "About Us", url: "/about" },
+      { text: "Pricing & Fees", url: "/pricing" },
+    ],
+  },
+  {
+    title: "Support",
+    links: [
+      ...(tippingEnabled ? [{ text: "Support ib4me", url: "/tip" }] : []),
+      { text: "FAQs", url: "/faqs" },
+      { text: "Contact Us", url: "/contact" },
+      { text: "Privacy Policy", url: "/privacy" },
+      { text: "Terms of Service", url: "/terms" },
+    ],
+  },
+];
+
 const Footer = ({
   logo = {
     src: Ib4meLogo,
     alt: "Ib4me Logo",
     url: "/",
   },
-  menuItems = [
-    {
-      title: "Quick Links",
-      links: [
-        { text: "Browse Campaigns", url: "/campaigns" },
-        { text: "Start Fundraising", url: "/dashboard" },
-        { text: "How ib4me Works", url: "/how-ib4me-works" },
-        { text: "About Us", url: "/about" },
-        { text: "Pricing & Fees", url: "/pricing" },
-      ],
-    },
-    {
-      title: "Support",
-      links: [
-        { text: "FAQs", url: "/faqs" },
-        { text: "Contact Us", url: "/contact" },
-        { text: "Privacy Policy", url: "/privacy" },
-        { text: "Terms of Service", url: "/terms" },
-      ],
-    },
-  ],
+  menuItems,
+  tippingEnabled = false,
   copyright = `\u00A9 ${new Date().getFullYear()} ib4me. All rights reserved.`,
   bottomLinks = [
     { text: "Terms and Conditions", url: "/terms" },
     { text: "Privacy Policy", url: "/privacy" },
   ],
 }: FooterProps) => {
+  const resolvedMenuItems = menuItems ?? buildDefaultMenuItems(tippingEnabled);
   const { config, openSettings } = useCookieConsent();
   const { social, contact } = useSettings();
 
@@ -137,7 +153,7 @@ const Footer = ({
           </div>
 
           {/* Link columns */}
-          {menuItems.map((section, sectionIdx) => (
+          {resolvedMenuItems.map((section, sectionIdx) => (
             <div key={sectionIdx}>
               <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-white/90">
                 {section.title}

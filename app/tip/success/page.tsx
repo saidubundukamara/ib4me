@@ -61,9 +61,16 @@ async function TipSuccessContent({ searchParams }: PageProps) {
                 <span className="inline-block h-2 w-2 rounded-full bg-blue-500 mt-2" />
                 Your tip is being processed and will be confirmed shortly
               </li>
+              {/*
+                This used to promise "you'll receive a confirmation receipt". There is no
+                email infrastructure in this codebase at all — no tip receipt, and
+                DonationService.resendReceipt is still a console.log TODO — so it was a
+                straightforward false promise. Point at the reference shown above instead,
+                which is real. Restore a receipt line only when something actually sends one.
+              */}
               <li className="flex items-start gap-2">
                 <span className="inline-block h-2 w-2 rounded-full bg-blue-500 mt-2" />
-                If you provided an email, you&apos;ll receive a confirmation receipt
+                Keep the reference above if you need to ask us about this tip
               </li>
               <li className="flex items-start gap-2">
                 <span className="inline-block h-2 w-2 rounded-full bg-blue-500 mt-2" />
