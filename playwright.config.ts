@@ -2,6 +2,9 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
+  // Only the browser specs. Vitest owns `tests/unit/**`, which must not be handed to
+  // Playwright — it would try to boot a dev server for pure-function tests.
+  testMatch: /.*\.e2e\.spec\.ts$/,
   timeout: 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: true,

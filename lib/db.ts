@@ -24,8 +24,13 @@ let memoryServer: { getUri: () => string; stop: () => Promise<boolean> } | null 
 async function ensureMemoryServer(): Promise<string> {
   if (memoryServer) return memoryServer.getUri();
   // Dynamically import to avoid bundling in production
-  const { MongoMemoryServer } = await import("mongodb-memory-server");
-  const server = await MongoMemoryServer.create();
+  //
+  // A REPLICA SET, not a standalone server: MongoDB only supports transactions on a
+  // replica set, and every money path in this codebase runs inside `runInTransaction`.
+  // With a standalone `MongoMemoryServer` those paths throw in the test environment, so
+  // nothing that moves money could ever be covered by a test.
+  const { MongoMemoryReplSet } = await import("mongodb-memory-server");
+  const server = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   memoryServer = server;
   g.__memoryMongo = server;
   return server.getUri();
