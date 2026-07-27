@@ -5,11 +5,11 @@ import {
   MonimeWebhookPayload,
   MonimeWebhookCheckoutSessionData,
   MonimePayment,
+  resolveCheckoutSessionId,
 } from "@/lib/monime";
 import { donationService, tipService } from "@/services";
-
-// Simple in-memory cache for webhook event IDs (in production, use Redis or database)
-const processedWebhooks = new Set<string>();
+import { webhookEventRepository } from "@/repositories";
+import { sumMonimeFees } from "@/lib/fees";
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,9 +36,17 @@ export async function POST(req: NextRequest) {
     //   timestamp: webhookPayload.timestamp,
     // });
 
-    // Idempotency check - prevent processing the same webhook event twice
+    // Durable idempotency. This was an in-memory Set, which on serverless is
+    // per-instance and lost on cold start — it never deduplicated anything across the
+    // instances Monime's retries actually land on.
     const eventId = webhookPayload.event.id;
-    if (processedWebhooks.has(eventId)) {
+    const idempotencyKey = `monime:${eventId}`;
+    const claimed = await webhookEventRepository.claim(
+      idempotencyKey,
+      "monime",
+      webhookPayload.event.name
+    );
+    if (!claimed) {
       console.log(`Webhook event ${eventId} already processed, skipping`);
       return NextResponse.json({
         success: true,
@@ -46,6 +54,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    try {
     // Handle different event types
     switch (webhookPayload.event.name) {
       case "checkout_session.completed":
@@ -64,6 +73,10 @@ export async function POST(req: NextRequest) {
         await handleCheckoutSessionExpired(webhookPayload);
         break;
 
+      // `payment.processing_completed` is the documented settlement event and the only
+      // one that carries `fees[]`. `payment.completed` is what this integration
+      // originally assumed; both are handled until a live payment settles which fires.
+      case "payment.processing_completed":
       case "payment.completed":
         await handlePaymentCompleted(webhookPayload);
         break;
@@ -75,16 +88,16 @@ export async function POST(req: NextRequest) {
       default:
         console.log(`Unhandled webhook event: ${webhookPayload.event.name}`);
     }
-
-    // Mark event as processed
-    processedWebhooks.add(eventId);
-
-    // Clean up old processed events (keep last 1000 to prevent memory leaks)
-    if (processedWebhooks.size > 1000) {
-      const eventsArray = Array.from(processedWebhooks);
-      processedWebhooks.clear();
-      eventsArray.slice(-500).forEach((id) => processedWebhooks.add(id));
+    } catch (handlerError) {
+      // Release the claim so Monime's retry can succeed, then fail loudly.
+      await webhookEventRepository.markFailed(
+        idempotencyKey,
+        handlerError instanceof Error ? handlerError.message : String(handlerError)
+      );
+      throw handlerError;
     }
+
+    await webhookEventRepository.markProcessed(idempotencyKey);
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -152,16 +165,23 @@ async function handleCheckoutSessionCompleted(payload: MonimeWebhookPayload) {
     }
 
     if (checkoutSessionData.status === "completed") {
-      if (donation.status === "pending") {
-        // Mark payment as received (updates campaign totals).
-        // The full transfer + succeeded flow is handled by handlePaymentCompleted.
-        await donationService.markPaymentReceived(donationId, {
-          paymentId: checkoutSessionId,
-          paymentMethod: { type: "checkout_session", provider: "MONIME" },
-          completedAt: new Date().toISOString(),
-        });
-        console.log(`Marked donation ${donationId} as payment_received`);
-      }
+      // This event carries NO fee data, so it settles on an estimate.
+      //
+      // `monimeFeeMinor: null` is the load-bearing part. It means UNKNOWN. This used to
+      // pass no fee at all, which wrote `paymentFeeMinor: 0` — and since either event can
+      // arrive first, that destroyed the real fee roughly half the time (R6). Passing
+      // null makes applySettlement return without writing when the payment event has
+      // already recorded the true figure.
+      //
+      // Note `checkoutSessionId` is no longer written into `provider.paymentId`: that
+      // field holds Monime's `spm-…` payment id, which is the per-capture correction key.
+      await donationService.applySettlement(donationId, {
+        source: "webhook_session",
+        monimeFeeMinor: null,
+        paymentMethod: { type: "checkout_session", provider: "MONIME" },
+        completedAt: new Date().toISOString(),
+      });
+      console.log(`Settled donation ${donationId} from checkout session (fee unknown)`);
     }
   } catch (error) {
     console.error(`Error processing checkout session completed for donation ${donationId}:`, error);
@@ -320,16 +340,23 @@ async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
 
   const payment = payload.data as MonimePayment;
 
-  if (!payment?.checkoutSessionId) {
-    console.error("No checkoutSessionId found in payment data");
+  // The live API puts the session id at `data.ownershipGraph.owner`, not at
+  // `data.checkoutSessionId` — resolveCheckoutSessionId tries both.
+  const checkoutSessionId = resolveCheckoutSessionId(payment);
+  if (!checkoutSessionId) {
+    console.error("No checkout session id found in payment data (checked ownershipGraph)");
     return;
   }
 
+  // Monime's cut, netted out BEFORE the money reached us. `null` means it wasn't
+  // reported — never coerce that to zero.
+  const monimeFeeMinor = sumMonimeFees(payment.fees);
+
   try {
-    console.log(`Processing payment completed for checkout session ${payment.checkoutSessionId}`);
+    console.log(`Processing payment completed for checkout session ${checkoutSessionId}`);
 
     // Get checkout session to determine type (donation or tip)
-    const checkoutSession = await monimeService.getCheckoutSession(payment.checkoutSessionId);
+    const checkoutSession = await monimeService.getCheckoutSession(checkoutSessionId);
 
     // Check if this is a platform tip (metadata is inside result object)
     if (checkoutSession.result.metadata?.type === "platform_tip") {
@@ -369,33 +396,31 @@ async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
       return;
     }
 
-    // Idempotency check: If donation already succeeded, skip processing
-    if (existingDonation.status === "succeeded") {
-      console.log(`[webhook] Donation ${donationId} already succeeded, skipping`);
-      return;
-    }
-
-    // Idempotency check: If transfer already completed, skip transfer initiation
-    if (existingDonation.transfer?.status === "completed") {
-      console.log(`[webhook] Transfer already completed for donation ${donationId}, completing donation`);
-      if (existingDonation.transfer.id) {
-        await donationService.completeWithTransfer(donationId, existingDonation.transfer.id);
-      }
-      return;
-    }
-
-    // Step 1: Mark donation as payment_received (if not already)
-    if (existingDonation.status === "pending") {
-      await donationService.markPaymentReceived(donationId, {
-        paymentId: payment.id,
-        paymentMethod: payment.paymentMethod,
-        fees: payment.fees,
-        completedAt: payment.completedAt,
-      });
-      console.log(`[webhook] Marked donation ${donationId} as payment_received`);
-    } else {
-      console.log(`[webhook] Donation ${donationId} already in status: ${existingDonation.status}`);
-    }
+    // NOTE: there is deliberately no "already succeeded, skip" guard here.
+    //
+    // This event is the ONLY one that carries Monime's actual fee, and it can arrive
+    // after the fee-less checkout-session event has already settled and transferred the
+    // donation. Returning early in that case is precisely how the real fee got lost
+    // roughly half the time (MONIME-FEE-MODEL.md R6). `applySettlement` knows how to
+    // correct an already-settled donation — and when the money has already moved, it
+    // books the difference as a platform variance rather than rewriting history (R14).
+    //
+    // Step 1: settle, or correct, with the AUTHORITATIVE fee.
+    await donationService.applySettlement(donationId, {
+      source: "webhook_payment",
+      monimeFeeMinor,
+      monimePaymentId: payment.id,
+      financialTransactionReference: payment.financialTransactionReference,
+      channelReference: payment.channel?.reference,
+      paymentMethod: payment.paymentMethod,
+      completedAt: payment.completedAt,
+    });
+    console.log(
+      `[webhook] Settled donation ${donationId} with ` +
+        (monimeFeeMinor === null
+          ? "NO reported Monime fee (estimated)"
+          : `reported Monime fee ${monimeFeeMinor}`)
+    );
 
     // Step 2: Move funds from the platform account to the campaign's financial
     // account and settle the donation. This is the RELIABLE trigger (the
