@@ -334,15 +334,15 @@ export default function TermsAndConditions() {
                                 <div className="rounded-xl bg-background border border-border/40 p-3">
                                     <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Individual Campaigns</p>
                                     <p className="text-2xl font-bold text-foreground">{f.individualTotal}%</p>
-                                    <p className="text-xs text-muted-foreground mt-1">{f.payment}% payment processing + {f.individualPlatform}% platform fee</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{f.payment}% payment processing + {f.individualPlatform}% platform fee, deducted from each donation</p>
                                 </div>
                                 <div className="rounded-xl bg-background border border-border/40 p-3">
                                     <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Organisation Campaigns</p>
                                     <p className="text-2xl font-bold text-foreground">{f.organizationTotal}%</p>
-                                    <p className="text-xs text-muted-foreground mt-1">{f.payment}% payment processing + {f.organizationPlatform}% platform fee</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{f.payment}% payment processing + {f.organizationPlatform}% platform fee, deducted from each donation</p>
                                 </div>
                             </div>
-                            <Callout color="green">Fees are added on top of the donation amount — 100% of what you donate goes directly to the campaign.</Callout>
+                            <Callout color="green">You are charged exactly the amount you enter — there is no surcharge at checkout. Fees are deducted from the donation before it reaches the campaign.</Callout>
                         </Sub>
 
                         <Sub title="Processing Times">

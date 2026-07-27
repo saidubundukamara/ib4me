@@ -1,6 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { formatMinor, formatBps, toMinor } from "@/lib/currency";
+import { computeDonationSplit } from "@/lib/fees";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,23 +20,28 @@ const Pricing = () => {
     // Get fee settings from context (fetched from API)
     const { fees, loading } = useSettings();
 
-    // Fee constants (in basis points) - use API values with fallbacks
-    const BASE_FEE_BPS = 100; // Monime's 1% - always fixed
+    // Every rate comes from the DB — no percentage is hardcoded in this page.
+    const monimeFeeBps = fees?.monimeCollectionFeeBpsEstimate ?? 100;
     const PLATFORM_FEE_INDIVIDUAL_BPS = fees?.processingFee?.individualBps ?? 260;
     const PLATFORM_FEE_ORGANIZATION_BPS = fees?.processingFee?.organizationBps ?? 200;
 
-    const amount = Math.max(0, Number(donationAmount) || 0);
-
     const platformFeeBps = campaignType === "individual" ? PLATFORM_FEE_INDIVIDUAL_BPS : PLATFORM_FEE_ORGANIZATION_BPS;
 
-    const paymentFee = useMemo(() => Math.round(amount * BASE_FEE_BPS / 10000 * 100) / 100, [amount]);
-    const platformFee = useMemo(() => Math.round(amount * platformFeeBps / 10000 * 100) / 100, [amount, platformFeeBps]);
-    const totalFee = paymentFee + platformFee;
-    const totalCharged = amount + totalFee;
+    // Minor units, and the SAME function the server runs. This used to do its own
+    // major-unit arithmetic, which disagreed with the server on most amounts.
+    const amountMinor = toMinor(Math.max(0, Number(donationAmount) || 0));
+    const split = useMemo(
+        () => computeDonationSplit({
+            grossMinor: amountMinor,
+            platformFeeBps,
+            monimeFeeBpsFallback: monimeFeeBps,
+        }),
+        [amountMinor, platformFeeBps, monimeFeeBps]
+    );
 
-    const paymentFeePercent = (BASE_FEE_BPS / 100).toFixed(1);
-    const platformFeePercent = (platformFeeBps / 100).toFixed(1);
-    const totalFeePercent = ((BASE_FEE_BPS + platformFeeBps) / 100).toFixed(1);
+    const paymentFeePercent = formatBps(monimeFeeBps);
+    const platformFeePercent = formatBps(platformFeeBps);
+    const totalFeePercent = formatBps(monimeFeeBps + platformFeeBps);
 
 
     return (
@@ -80,7 +87,7 @@ const Pricing = () => {
                                                 {loading ? <Skeleton className="h-10 w-24 sm:h-12" /> : `${totalFeePercent}%`}
                                             </div>
                                             <p className="text-sm text-muted-foreground sm:text-base">
-                                                Total fee for {campaignType === "individual" ? "individual" : "organization"} campaigns. Donors cover the fees so 100% of the donation goes to the campaign.
+                                                Total fee for {campaignType === "individual" ? "individual" : "organization"} campaigns, deducted from each donation.
                                             </p>
                                         </div>
 
@@ -123,7 +130,7 @@ const Pricing = () => {
                                         <div className="flex items-start gap-3 rounded-xl bg-primary/5 p-4">
                                             <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" />
                                             <p className="text-sm text-muted-foreground">
-                                                <strong className="text-foreground">100% of your donation goes to the campaign.</strong> Fees are added on top and covered by donors.
+                                                <strong className="text-foreground">You&apos;re charged exactly what you enter.</strong> There is no surcharge at checkout — fees are deducted from the donation instead.
                                             </p>
                                         </div>
                                     </div>
@@ -200,24 +207,24 @@ const Pricing = () => {
                                             <div className="flex items-center justify-between border-b border-border pb-3">
                                                 <span className="text-muted-foreground">Donation Amount</span>
                                                 <span className="text-lg font-bold text-foreground sm:text-xl">
-                                                    SLL {amount.toFixed(2)}
+                                                    {formatMinor(split.grossMinor)}
                                                 </span>
                                             </div>
 
                                             <div className="flex items-center justify-between border-b border-border pb-3">
-                                                <span className="text-muted-foreground">Payment Fee ({loading ? "…" : `${paymentFeePercent}%`})</span>
+                                                <span className="text-muted-foreground">Payment Fee ({loading ? "…" : paymentFeePercent})</span>
                                                 {loading ? <Skeleton className="h-5 w-20" /> : (
                                                     <span className="font-semibold text-foreground">
-                                                        SLL {paymentFee.toFixed(2)}
+                                                        -{formatMinor(split.monimeFeeMinor)}
                                                     </span>
                                                 )}
                                             </div>
 
                                             <div className="flex items-center justify-between border-b border-border pb-3">
-                                                <span className="text-muted-foreground">Platform Fee ({loading ? "…" : `${platformFeePercent}%`})</span>
+                                                <span className="text-muted-foreground">Platform Fee ({loading ? "…" : platformFeePercent})</span>
                                                 {loading ? <Skeleton className="h-5 w-20" /> : (
                                                     <span className="font-semibold text-foreground">
-                                                        SLL {platformFee.toFixed(2)}
+                                                        -{formatMinor(split.platformFeeMinor)}
                                                     </span>
                                                 )}
                                             </div>
@@ -226,7 +233,7 @@ const Pricing = () => {
                                                 <span className="font-semibold text-foreground">Total Donor Pays</span>
                                                 {loading ? <Skeleton className="h-6 w-24" /> : (
                                                     <span className="text-lg font-bold text-blaze-orange sm:text-xl">
-                                                        SLL {totalCharged.toFixed(2)}
+                                                        {formatMinor(split.grossMinor)}
                                                     </span>
                                                 )}
                                             </div>
@@ -234,7 +241,7 @@ const Pricing = () => {
                                             <div className="-mx-5 flex items-center justify-between rounded-b-xl bg-primary/5 px-5 py-3 pt-2 sm:-mx-6 sm:px-6">
                                                 <span className="font-bold text-primary">Goes to Campaign</span>
                                                 <span className="text-xl font-bold text-primary sm:text-2xl">
-                                                    SLL {amount.toFixed(2)}
+                                                    ≈ {formatMinor(split.campaignReceivesMinor)}
                                                 </span>
                                             </div>
                                         </div>
@@ -243,12 +250,12 @@ const Pricing = () => {
                                             <Button size="lg" className="w-full" disabled={loading} asChild={!loading}>
                                                 {loading ? <Skeleton className="h-5 w-32" /> : (
                                                     <Link href="/campaigns">
-                                                        Donate SLL {totalCharged.toFixed(2)}
+                                                        Donate {formatMinor(split.grossMinor)}
                                                     </Link>
                                                 )}
                                             </Button>
                                             <p className="text-center text-xs text-muted-foreground">
-                                                100% of your SLL {amount.toFixed(2)} donation goes to the campaign
+                                                You&apos;re charged exactly {formatMinor(split.grossMinor)} — fees come out of it, not on top
                                             </p>
                                         </div>
 
@@ -283,8 +290,8 @@ const Pricing = () => {
                                 </p>
                                 <p>
                                     <strong className="text-foreground">Donors cover the fees</strong> so that 100% of every donation goes directly to the campaign.
-                                    The small fee ({loading ? "…" : `${totalFeePercent}%`} for {campaignType} campaigns) is added on top of the donation amount and covers
-                                    payment processing (1%) and platform costs ({loading ? "…" : `${platformFeePercent}%`}).
+                                    The fee ({loading ? "…" : totalFeePercent} for {campaignType} campaigns) is deducted from the donation and covers
+                                    payment processing ({loading ? "…" : paymentFeePercent}) and platform costs ({loading ? "…" : platformFeePercent}).
                                 </p>
                                 <p>
                                     <strong className="text-foreground">Campaign organizers pay nothing</strong> — starting a fundraiser on ib4me is completely free.
@@ -301,10 +308,10 @@ const Pricing = () => {
                             <div className="space-y-4 text-base leading-relaxed text-muted-foreground sm:space-y-5 sm:text-lg">
                                 <p>
                                     Verified organizations benefit from a reduced platform fee of{" "}
-                                    {loading ? "…" : `${(PLATFORM_FEE_ORGANIZATION_BPS / 100).toFixed(1)}%`}{" "}
-                                    (vs {loading ? "…" : `${(PLATFORM_FEE_INDIVIDUAL_BPS / 100).toFixed(1)}%`} for individuals),
+                                    {loading ? "…" : formatBps(PLATFORM_FEE_ORGANIZATION_BPS)}{" "}
+                                    (vs {loading ? "…" : formatBps(PLATFORM_FEE_INDIVIDUAL_BPS)} for individuals),
                                     bringing their total fee to just{" "}
-                                    {loading ? "…" : `${((BASE_FEE_BPS + PLATFORM_FEE_ORGANIZATION_BPS) / 100).toFixed(1)}%`}.{" "}
+                                    {loading ? "…" : formatBps(monimeFeeBps + PLATFORM_FEE_ORGANIZATION_BPS)}.{" "}
                                     This helps established organizations and NGOs maximize the impact of every donation they receive.
                                 </p>
                                 <p>

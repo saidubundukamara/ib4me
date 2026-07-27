@@ -1,27 +1,58 @@
 import type { FeeSettings } from "@/lib/settings-provider";
-
-// Monime's fixed payment-processing fee — mirrors pricing page & SettingService
-const BASE_FEE_BPS = 100; // 1%
+import { computeDonationSplit } from "@/lib/fees";
+import { formatMinor, formatBps, toMinor } from "@/lib/currency";
 
 /**
- * Derive human-readable fee figures from the live (admin-configurable) fee
- * settings so user-facing copy (FAQ, Terms, Pricing) stays in sync with the
- * platform's actual fees instead of hardcoding percentages.
+ * Human-readable fee figures for static copy (FAQ, Terms, Pricing, Footer).
+ *
+ * Every rate comes from the live admin-configurable settings, so no page hardcodes a
+ * percentage (MONIME-FEE-MODEL.md §8.2). It used to define its own `BASE_FEE_BPS = 100`,
+ * one of five copies of that constant.
+ *
+ * Note the model these strings describe: fees are **deducted from** the donation, not
+ * added on top. `exampleTotal` previously computed `amount * (1 + totalFee)`, which
+ * described the opposite arrangement — donors were told they would pay a surcharge that
+ * no longer exists.
  */
 export function getFeeDisplay(fees: FeeSettings | null) {
   const individualBps = fees?.processingFee?.individualBps ?? 260;
   const organizationBps = fees?.processingFee?.organizationBps ?? 200;
-  const pct = (bps: number) => (bps / 100).toFixed(1); // e.g. "2.6"
+  const monimeBps = fees?.monimeCollectionFeeBpsEstimate ?? 100;
+  const payoutBps = fees?.payoutFeeBpsEstimate ?? 100;
+
+  const pct = (bps: number) => (bps / 100).toFixed(1); // "2.6" — bare number, no unit
 
   return {
-    payment: pct(BASE_FEE_BPS), // "1.0"
-    individualPlatform: pct(individualBps), // "2.6"
-    organizationPlatform: pct(organizationBps), // "2.0"
-    individualTotal: pct(BASE_FEE_BPS + individualBps), // "3.6"
-    organizationTotal: pct(BASE_FEE_BPS + organizationBps), // "3.0"
-    // Example: donor donates `amount`, pays amount + individual total fee.
-    exampleTotal: (amount: number) =>
-      (amount * (1 + (BASE_FEE_BPS + individualBps) / 10000)).toFixed(2), // "103.60"
+    // Bare numbers, for copy that supplies its own "%" sign.
+    payment: pct(monimeBps),
+    individualPlatform: pct(individualBps),
+    organizationPlatform: pct(organizationBps),
+    individualTotal: pct(monimeBps + individualBps),
+    organizationTotal: pct(monimeBps + organizationBps),
+    payout: pct(payoutBps),
+
+    // Pre-formatted, for copy that just interpolates.
+    paymentPct: formatBps(monimeBps),
+    individualPlatformPct: formatBps(individualBps),
+    organizationPlatformPct: formatBps(organizationBps),
+    individualTotalPct: formatBps(monimeBps + individualBps),
+    organizationTotalPct: formatBps(organizationBps + monimeBps),
+    payoutPct: formatBps(payoutBps),
+
+    /**
+     * What a campaign actually receives from a donation of `amountMajor`.
+     *
+     * Runs the real fee engine on minor units rather than approximating in decimals, so
+     * marketing copy cannot quote a number the charge path would never produce.
+     */
+    exampleReceives: (amountMajor: number, type: "individual" | "organization" = "individual") => {
+      const split = computeDonationSplit({
+        grossMinor: toMinor(amountMajor),
+        platformFeeBps: type === "organization" ? organizationBps : individualBps,
+        monimeFeeBpsFallback: monimeBps,
+      });
+      return formatMinor(split.campaignReceivesMinor);
+    },
   };
 }
 

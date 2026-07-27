@@ -42,7 +42,6 @@ interface FeatureSettings {
   whatsAppAutoPost?: boolean;
   paypalEnabled?: boolean;
   emergencyPoolFund?: boolean;
-  donorFeeChoiceEnabled?: boolean;
 }
 
 interface ContactSettings {
@@ -76,11 +75,16 @@ interface SeoSettings {
 }
 
 interface FeeSettings {
-  baseFeeMinor: number;
   processingFee: {
     individualBps: number;
     organizationBps: number;
   };
+  /**
+   * Monime's rates, for QUOTING only — the fee Monime actually reports always wins
+   * server-side (MONIME-FEE-MODEL.md R13). Sent down so no UI hardcodes a percentage.
+   */
+  monimeCollectionFeeBpsEstimate: number;
+  payoutFeeBpsEstimate: number;
 }
 
 interface PlatformAccountSettings {
@@ -155,7 +159,6 @@ const defaultFeatureSettings: FeatureSettings = {
   minimumWithdrawalPercent: 10,
   allowEmergencyOverride: true,
   withdrawalsBlocked: false,
-  donorFeeChoiceEnabled: false,
 };
 
 const defaultSocialSettings: SocialSettings = {
@@ -187,11 +190,14 @@ const sanitizeSocialSettings = (settings: SocialSettings | null | undefined): So
 
 const defaultSeoSettings: SeoSettings = {};
 const defaultFeeSettings: FeeSettings = {
-  baseFeeMinor: 50,
   processingFee: {
     individualBps: 260,
     organizationBps: 200,
   },
+  // Matches the server defaults in SettingService.getFeeSettings(). These used to
+  // disagree (client 50, server 0), which is its own small class of bug.
+  monimeCollectionFeeBpsEstimate: 100,
+  payoutFeeBpsEstimate: 100,
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);

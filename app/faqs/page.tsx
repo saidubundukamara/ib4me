@@ -37,7 +37,7 @@ const buildFaqCategories = (f: FeeDisplay): FAQCategory[] => [
             },
             {
                 question: "Is it free to create a campaign?",
-                answer: `Yes, creating a campaign on ib4me is completely free. Campaign organizers pay nothing. The small fees (${f.individualTotal}% for individuals, ${f.organizationTotal}% for organizations) are covered by donors and added on top of their donation amount.`,
+                answer: `Yes, creating a campaign on ib4me is completely free — there is nothing to pay up front. Fees (${f.individualTotal}% for individuals, ${f.organizationTotal}% for organizations) are deducted from donations as they come in, so you only ever pay a fee on money you have actually raised.`,
             },
             {
                 question: "How long does campaign verification take?",
@@ -57,11 +57,11 @@ const buildFaqCategories = (f: FeeDisplay): FAQCategory[] => [
             },
             {
                 question: "How much of my donation goes to the campaign?",
-                answer: `100% of your donation amount goes directly to the campaign. Fees are added on top of your donation and covered by you as the donor. For example, if you donate SLE 100 to an individual campaign, you'll pay SLE ${f.exampleTotal(100)} total, and the full SLE 100 goes to the campaign.`,
+                answer: `You are charged exactly what you enter — there is no surcharge added at checkout. Fees come out of the donation instead: for a SLE 100 donation to an individual campaign, roughly ${f.exampleReceives(100)} reaches the campaign after the ${f.payment}% payment processing fee and the ${f.individualPlatform}% platform fee.`,
             },
             {
                 question: "What are the fees?",
-                answer: `Total fees are ${f.individualTotal}% for individual campaigns and ${f.organizationTotal}% for organization campaigns. This includes a ${f.payment}% payment processing fee (Monime) and a platform fee (${f.individualPlatform}% for individuals, ${f.organizationPlatform}% for organizations). Fees are added on top of the donation amount.`,
+                answer: `Total fees are about ${f.individualTotal}% for individual campaigns and ${f.organizationTotal}% for organization campaigns. That is a ${f.payment}% payment processing fee (charged by Monime, our payment provider) plus a platform fee of ${f.individualPlatform}% for individuals or ${f.organizationPlatform}% for organizations. Fees are deducted from the donation, never added on top of it. Withdrawing to a mobile money wallet also carries a ${f.payout}% fee charged by the mobile money provider.`,
             },
             {
                 question: "Can I donate anonymously?",
