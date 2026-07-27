@@ -14,7 +14,8 @@
     "reconcile:donations": "tsx scripts/reconcile-donations.ts",
     "test:unit": "vitest run",
     "reconcile:ledger": "tsx scripts/reconcile-ledger.ts",
-    "backfill:fee-model": "tsx scripts/backfill-fee-model.ts"
+    "backfill:fee-model": "tsx scripts/backfill-fee-model.ts",
+    "check:tipping": "tsx scripts/check-tipping.ts"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.10.0",
