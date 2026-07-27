@@ -243,6 +243,13 @@ export default function DonateClient({
                       {formatMinor(toMinor(preset), currency)}
                     </Button>
                   ))}
+                  {/*
+                    Deliberately styled apart from the presets. It is a different KIND of
+                    control — the others commit an amount, this one opens an input — and
+                    when it looked identical it read as a fourth preset. A dashed border
+                    and a muted fill carry that difference without competing with the
+                    selected state, which stays the strongest signal on the row.
+                  */}
                   <Button
                     type="button"
                     variant={selectedPreset === "custom" ? "default" : "outline"}
@@ -250,7 +257,7 @@ export default function DonateClient({
                       "h-12 rounded-2xl border-2 transition-all",
                       selectedPreset === "custom"
                         ? "border-primary shadow-lg"
-                        : "border-border/60 hover:border-primary/60",
+                        : "border-dashed border-primary/40 bg-primary/5 text-primary/90 hover:border-primary/70 hover:bg-primary/10",
                     )}
                     onClick={() => setSelectedPreset("custom")}
                   >
