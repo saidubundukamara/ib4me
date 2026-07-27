@@ -90,6 +90,17 @@ const buildDefaultMenu = (tippingEnabled: boolean): MenuItem[] => [
         title: "Campaigns",
         url: "/campaigns",
     },
+    // Top level, not tucked inside the About dropdown. The entire point of this link is
+    // that the page was previously unreachable — a menu a visitor has to open first is
+    // barely more discoverable than no link at all.
+    ...(tippingEnabled
+        ? [
+              {
+                  title: "Support us",
+                  url: "/tip",
+              },
+          ]
+        : []),
     {
         title: "About",
         url: "",
@@ -106,16 +117,6 @@ const buildDefaultMenu = (tippingEnabled: boolean): MenuItem[] => [
                 icon: <DollarSign className="size-5 shrink-0" />,
                 url: "/pricing",
             },
-            ...(tippingEnabled
-                ? [
-                      {
-                          title: "Support ib4me",
-                          description: "Tip the platform to help keep ib4me running.",
-                          icon: <Heart className="size-5 shrink-0" />,
-                          url: "/tip",
-                      },
-                  ]
-                : []),
             {
                 title: "Contact Us",
                 description: "Get in touch with our support team.",
