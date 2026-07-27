@@ -29,19 +29,19 @@ const buildFaqCategories = (f: FeeDisplay): FAQCategory[] => [
         faqs: [
             {
                 question: "What is ib4me?",
-                answer: "ib4me is a crowdfunding platform designed specifically for Sierra Leone. We connect people and communities with donors who want to help. Whether it's education, personal needs, community projects, health expenses, or emergency relief, our platform supports any meaningful cause. Campaigns are reviewed to help ensure donations go to legitimate needs.",
+                answer: "ib4me is a crowdfunding platform designed specifically for Sierra Leone. We connect people and communities with donors who want to help. Whether it's education, personal needs, community projects, health expenses, or emergency relief, our platform supports any meaningful cause. Anyone can start a campaign, and every campaign shows whether its organizer has verified their identity so donors can judge for themselves.",
             },
             {
                 question: "How do I start a campaign?",
-                answer: "Starting a campaign is free and easy. Simply create an account, click 'Start a Campaign', and fill in details about your cause, including beneficiary information, description, and funding goal. You'll need to provide supporting documentation for verification.",
+                answer: "Starting a campaign is free and easy. Simply create an account, click 'Start a Campaign', and fill in details about your cause, including beneficiary information, description, and funding goal. You can also attach supporting documents — they are optional, but they help donors trust your campaign.",
             },
             {
                 question: "Is it free to create a campaign?",
                 answer: `Yes, creating a campaign on ib4me is completely free — there is nothing to pay up front. Fees (${f.individualTotal}% for individuals, ${f.organizationTotal}% for organizations) are deducted from donations as they come in, so you only ever pay a fee on money you have actually raised.`,
             },
             {
-                question: "How long does campaign verification take?",
-                answer: "Our team reviews campaigns within 24-48 hours. We verify the documentation, beneficiary information, and supporting details to ensure legitimacy. Once approved, your campaign goes live immediately.",
+                question: "How long before my campaign goes live?",
+                answer: "Immediately. There is no approval queue — as soon as you publish, your campaign is live and can receive donations. Identity verification is a separate, optional step: submit your documents from your dashboard and, once approved, your campaigns show a verified badge instead of the 'Unverified Organizer' one.",
             },
         ],
     },
@@ -57,7 +57,7 @@ const buildFaqCategories = (f: FeeDisplay): FAQCategory[] => [
             },
             {
                 question: "How much of my donation goes to the campaign?",
-                answer: `You are charged exactly what you enter — there is no surcharge added at checkout. Fees come out of the donation instead: for a SLE 100 donation to an individual campaign, roughly ${f.exampleReceives(100)} reaches the campaign after the ${f.payment}% payment processing fee and the ${f.individualPlatform}% platform fee.`,
+                answer: `You are charged exactly what you enter — there is no surcharge added at checkout. Fees come out of the donation instead: for a Le 100 donation to an individual campaign, roughly ${f.exampleReceives(100)} reaches the campaign after the ${f.payment}% payment processing fee and the ${f.individualPlatform}% platform fee.`,
             },
             {
                 question: "What are the fees?",
@@ -65,11 +65,11 @@ const buildFaqCategories = (f: FeeDisplay): FAQCategory[] => [
             },
             {
                 question: "Can I donate anonymously?",
-                answer: "Yes, you can choose to make your donation anonymous. Your name won't be displayed publicly on the campaign page, though we'll still need your email to send a receipt.",
+                answer: "Yes, you can choose to make your donation anonymous. Your name won't be displayed publicly on the campaign page. We still ask for your email so we can find your donation if you ever need help with it.",
             },
             {
                 question: "Will I receive a receipt?",
-                answer: "Yes, you'll receive an email receipt immediately after your donation is processed. This receipt can be used for tax purposes where applicable.",
+                answer: "Your donation details — the campaign, the amount you paid, and the date — are shown on the confirmation page as soon as your payment completes. Save or screenshot that page: we do not email receipts yet.",
             },
         ],
     },
@@ -81,15 +81,15 @@ const buildFaqCategories = (f: FeeDisplay): FAQCategory[] => [
         faqs: [
             {
                 question: "What qualifies as an organization?",
-                answer: "Organizations include registered NGOs, charitable organizations, schools, community groups, and other legal entities. You'll need to provide registration documents and verification during the application process.",
+                answer: "Organizations include registered NGOs, charitable organizations, schools, community groups, and other legal entities. Choose 'Organization' when you create your account and tell us your organization's name — you can add your registration details and documents afterwards from your dashboard.",
             },
             {
                 question: "Why do organizations pay lower fees?",
-                answer: `Verified organizations receive a reduced platform fee of ${f.organizationPlatform}% (vs ${f.individualPlatform}% for individuals), bringing their total fee to ${f.organizationTotal}%. This helps established organizations maximize the impact of donations they receive.`,
+                answer: `Organization accounts get a reduced platform fee of ${f.organizationPlatform}% (vs ${f.individualPlatform}% for individuals), bringing their total fee to ${f.organizationTotal}%. This helps established organizations maximize the impact of donations they receive.`,
             },
             {
                 question: "How do I verify my organization?",
-                answer: "During campaign creation, select 'Organization' as the campaign type and provide your registration certificate, tax ID, and other relevant documentation. Our team will review and verify your organization status.",
+                answer: "Go to Verification in your dashboard and submit your registration certificate, representative ID, proof of address, and tax certificate. Our team reviews them, usually within 1-2 business days. Verification earns your campaigns a verified badge — the reduced organization fee applies from the moment you register as an organization, whether or not verification is complete.",
             },
         ],
     },
@@ -100,12 +100,12 @@ const buildFaqCategories = (f: FeeDisplay): FAQCategory[] => [
         bgColor: "bg-chartereuse/10",
         faqs: [
             {
-                question: "How do you verify campaigns?",
-                answer: "Every campaign undergoes a thorough verification process. We review supporting documentation, confirm beneficiary identity, and assess the legitimacy of the funding request before approving any campaign.",
+                question: "Do you review campaigns before they go live?",
+                answer: "No — campaigns publish immediately, so anyone can start raising money without waiting on us. What we verify is the organizer: identity documents for individuals, registration documents for organizations. A campaign whose organizer has not completed that check carries an 'Unverified Organizer' badge, and we moderate campaigns after publication, taking down any that break our terms.",
             },
             {
                 question: "What happens if a campaign is fraudulent?",
-                answer: "We have a zero-tolerance policy for fraud. If we discover a campaign is fraudulent, we immediately suspend it, work with donors on refunds where possible, and report the incident to relevant authorities.",
+                answer: "We have a zero-tolerance policy for fraud. If we discover a campaign is fraudulent, we immediately suspend it, block any pending withdrawal, and report the incident to relevant authorities. Contact us straight away if you believe you have donated to a fraudulent campaign.",
             },
             {
                 question: "How is my personal data protected?",
@@ -113,11 +113,11 @@ const buildFaqCategories = (f: FeeDisplay): FAQCategory[] => [
             },
             {
                 question: "What does the 'Unverified Organizer' badge mean?",
-                answer: "An 'Unverified Organizer' badge means the campaign organizer has not yet completed identity verification (KYC). The campaign itself has been reviewed and approved, but the organizer's identity has not been independently confirmed. We encourage donors to exercise their own judgement when donating to campaigns with unverified organizers.",
+                answer: "It means the organizer has not completed identity verification (KYC), so we have not independently confirmed who they are. It is not a judgement about the campaign — campaigns are not pre-approved either way. We encourage donors to exercise their own judgement when donating to campaigns with unverified organizers.",
             },
             {
                 question: "Can I report a suspicious campaign?",
-                answer: "Yes, if you have concerns about a campaign, please contact us immediately at support@ib4me.org or use the 'Report' button on the campaign page. We investigate all reports thoroughly.",
+                answer: "Yes. Email us at ib4me.organisation@gmail.com with a link to the campaign and what concerns you. We investigate all reports thoroughly.",
             },
         ],
     },
@@ -129,11 +129,11 @@ const buildFaqCategories = (f: FeeDisplay): FAQCategory[] => [
         faqs: [
             {
                 question: "How do I withdraw funds?",
-                answer: "Once your campaign reaches the minimum withdrawal threshold, you can request a withdrawal from your dashboard. Funds are typically transferred within 2-3 business days after admin approval.",
+                answer: "Request a withdrawal from your dashboard and choose a mobile money number or bank account. We check that the mobile money number is registered and show you the exact fee and the amount you will receive before you confirm. Requests that meet the minimum withdrawal threshold are sent straight to the payment provider, typically arriving within 2-3 business days; anything below the threshold waits for an admin to review it first.",
             },
             {
                 question: "Can I update my campaign after it's live?",
-                answer: "Yes, you can post updates to keep donors informed about your campaign's progress. You can also edit certain campaign details, though significant changes may require re-verification.",
+                answer: "Yes, you can post updates to keep donors informed about your campaign's progress, and you can edit your campaign's details at any time.",
             },
             {
                 question: "What if I raise more than my goal?",
@@ -153,7 +153,7 @@ const buildFaqCategories = (f: FeeDisplay): FAQCategory[] => [
         faqs: [
             {
                 question: "How can I contact support?",
-                answer: "You can reach our support team via email at support@ib4me.org, through our contact form, or via WhatsApp. We typically respond within 24 hours.",
+                answer: "Email our support team at ib4me.organisation@gmail.com or use the contact form. We typically respond within 24 hours, Monday to Saturday.",
             },
             {
                 question: "Do you offer campaign coaching?",
@@ -186,7 +186,7 @@ function FAQAccordion({ item, isOpen, onToggle }: { item: FAQItem; isOpen: boole
             <div
                 className={cn(
                     "overflow-hidden transition-all duration-300",
-                    isOpen ? "max-h-96 pb-4 sm:pb-5" : "max-h-0"
+                    isOpen ? "max-h-[40rem] pb-4 sm:pb-5" : "max-h-0"
                 )}
             >
                 <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">{item.answer}</p>

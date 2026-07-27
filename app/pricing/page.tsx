@@ -76,7 +76,7 @@ const Pricing = () => {
                                 <Card className="h-full rounded-3xl border-0 p-6 shadow-[var(--shadow-lift)] sm:p-8">
                                     <div className="mb-5 flex items-center gap-3 sm:mb-6">
                                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                                            <span className="text-xs font-bold text-primary">SLL</span>
+                                            <span className="text-xs font-bold text-primary">Le</span>
                                         </div>
                                         <h2 className="text-xl font-bold text-foreground sm:text-2xl">Fee Structure</h2>
                                     </div>
@@ -115,8 +115,8 @@ const Pricing = () => {
                                                 {[
                                                     "Secure payment processing via Monime",
                                                     "Platform maintenance and development",
-                                                    "24/7 customer support",
-                                                    "Campaign verification and fraud protection",
+                                                    "Support for organizers and donors",
+                                                    "Organizer identity verification (KYC and KYB)",
                                                     "Marketing and outreach to help campaigns succeed",
                                                 ].map((item) => (
                                                     <div key={item} className="flex items-start gap-3">
@@ -189,7 +189,7 @@ const Pricing = () => {
                                                     className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 pr-3 text-lg font-bold text-muted-foreground sm:text-xl"
                                                     aria-hidden="true"
                                                 >
-                                                    SLL
+                                                    Le
                                                 </span>
                                                 <Input
                                                     id="donation-amount"
@@ -198,7 +198,7 @@ const Pricing = () => {
                                                     inputMode="decimal"
                                                     value={donationAmount}
                                                     onChange={(e) => setDonationAmount(Number(e.target.value) || 0)}
-                                                    className="h-12 pl-14 pr-4 text-lg font-bold sm:h-14 sm:pl-16 sm:text-xl"
+                                                    className="h-12 pl-12 pr-4 text-lg font-bold sm:h-14 sm:pl-14 sm:text-xl"
                                                 />
                                             </div>
                                         </div>
@@ -262,10 +262,11 @@ const Pricing = () => {
                                         <div className="space-y-2 rounded-xl bg-success/5 p-4">
                                             <div className="flex items-center gap-2">
                                                 <CheckCircle className="h-5 w-5 text-success" />
-                                                <span className="font-semibold text-foreground">Tax Deductible</span>
+                                                <span className="font-semibold text-foreground">Your receipt</span>
                                             </div>
                                             <p className="text-sm text-muted-foreground">
-                                                Your donation may be tax-deductible. You&#39;ll receive a receipt after your donation.
+                                                Your receipt appears on the confirmation page as soon as your payment settles.
+                                                Save or screenshot it there.
                                             </p>
                                         </div>
                                     </div>
@@ -289,12 +290,14 @@ const Pricing = () => {
                                     payment processors like Monime to accept and deliver your donations.
                                 </p>
                                 <p>
-                                    <strong className="text-foreground">Donors cover the fees</strong> so that 100% of every donation goes directly to the campaign.
-                                    The fee ({loading ? "…" : totalFeePercent} for {campaignType} campaigns) is deducted from the donation and covers
+                                    <strong className="text-foreground">You&#39;re charged exactly what you enter.</strong> Nothing is added at checkout.
+                                    The fee ({loading ? "…" : totalFeePercent} for {campaignType} campaigns) comes out of that amount and covers
                                     payment processing ({loading ? "…" : paymentFeePercent}) and platform costs ({loading ? "…" : platformFeePercent}).
+                                    Whatever is left reaches the campaign.
                                 </p>
                                 <p>
-                                    <strong className="text-foreground">Campaign organizers pay nothing</strong> — starting a fundraiser on ib4me is completely free.
+                                    <strong className="text-foreground">Starting a fundraiser is free</strong> — there is nothing to pay up front,
+                                    and organizers are only ever charged on money they have actually raised.
                                 </p>
                             </div>
                         </div>
@@ -307,7 +310,7 @@ const Pricing = () => {
                             </div>
                             <div className="space-y-4 text-base leading-relaxed text-muted-foreground sm:space-y-5 sm:text-lg">
                                 <p>
-                                    Verified organizations benefit from a reduced platform fee of{" "}
+                                    Organization accounts get a reduced platform fee of{" "}
                                     {loading ? "…" : formatBps(PLATFORM_FEE_ORGANIZATION_BPS)}{" "}
                                     (vs {loading ? "…" : formatBps(PLATFORM_FEE_INDIVIDUAL_BPS)} for individuals),
                                     bringing their total fee to just{" "}
@@ -315,8 +318,8 @@ const Pricing = () => {
                                     This helps established organizations and NGOs maximize the impact of every donation they receive.
                                 </p>
                                 <p>
-                                    <strong className="text-foreground">Organizations must complete verification</strong> to unlock the reduced fee rate.
-                                    This ensures trust and accountability for larger fundraising campaigns.
+                                    <strong className="text-foreground">Choose &ldquo;Organization&rdquo; when you register</strong> to get the reduced rate.
+                                    Completing KYB verification is separate — it earns a verified badge on your campaigns, and we recommend it.
                                 </p>
                             </div>
                         </div>
