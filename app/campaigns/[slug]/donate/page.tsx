@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { campaignService, mediaAssetService, settingService } from "@/services";
 import { CloudinaryService } from "@/lib/cloudinary";
 import { userRepository } from "@/repositories";
+import { slugToTitle } from "@/lib/utils";
 import DonateClient from "./DonateClient";
 
 type PageParams = {
@@ -21,7 +22,7 @@ export default async function CampaignDonatePage({ params }: PageParams) {
   const goalMinor = Math.max(0, campaign.goal?.amountMinor ?? 0);
   const progress =
     goalMinor > 0 ? Math.min(100, Math.round((amountRaisedMinor / goalMinor) * 100)) : 0;
-  const title = campaign.beneficiary?.name || campaign.details || campaign.slug;
+  const title = campaign.title || slugToTitle(slug);
 
   const organizer = campaign.ownerId ? await userRepository.findById(String(campaign.ownerId)) : null;
   const isOwnerVerified = campaign.ownerVerification?.verified ?? false;
@@ -35,6 +36,15 @@ export default async function CampaignDonatePage({ params }: PageParams) {
     ? feeSettings.processingFee.organizationBps
     : feeSettings.processingFee.individualBps;
   const monimeFeeBpsEstimate = feeSettings.monimeCollectionFeeBpsEstimate;
+
+  // Admin-configurable quick-pick amounts, from main.
+  const featureSettings = await settingService.getFeatureSettings();
+  const donationPresets = featureSettings.donationPresets ?? [50, 250, 500];
+
+  // No tip control here. The in-flow tip slider was removed: the amount it collected was
+  // added to the donor's charge but never recorded as a tip, never moved to the tip
+  // account, and never appeared in any report. Tipping is now offered after the donation
+  // completes, as its own properly-booked transaction.
 
   // Collect asset IDs: beneficiary photo (priority) and first document image (fallback)
   const assetIds: mongoose.Types.ObjectId[] = [];
@@ -107,6 +117,7 @@ export default async function CampaignDonatePage({ params }: PageParams) {
         processingFeeBps={processingFeeBps}
         monimeFeeBpsEstimate={monimeFeeBpsEstimate}
         isOwnerVerified={isOwnerVerified}
+        presetAmounts={donationPresets}
       />
     </main>
   );

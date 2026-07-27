@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { formatMajor } from "@/lib/currency";
@@ -12,7 +12,7 @@ const fromMinorUnits = (amountMinor: number, currency: string = "SLE"): number =
 };
 
 import { 
-  DollarSign, 
+  Banknote, 
   TrendingUp, 
   AlertTriangle,
   Users,
@@ -154,8 +154,66 @@ export default function AdminPayoutsPage() {
   };
 
   const handleExportData = () => {
-    // TODO: Implement data export functionality
-    console.log("Exporting payout data...");
+    if (!analytics) return;
+
+    const rows: (string | number)[][] = [
+      ["Metric", "Count", "Amount (SLE)"],
+      ["Total Payouts", analytics.totalPayouts, fromMinorUnits(analytics.totalAmount)],
+      ["Completed", analytics.completedPayouts, fromMinorUnits(analytics.completedAmount)],
+      ["Pending", analytics.pendingPayouts, fromMinorUnits(analytics.pendingAmount)],
+      ["Failed", analytics.failedPayouts, fromMinorUnits(analytics.failedAmount)],
+      ["Average Payout", "", fromMinorUnits(analytics.averagePayout)],
+      ["Success Rate", "", `${analytics.successRate.toFixed(1)}%`],
+    ];
+
+    if (methods.length > 0) {
+      rows.push([], ["--- Payment Methods ---", "", ""]);
+      rows.push(["Method", "Count", "Amount (SLE)", "Success Rate"]);
+      methods.forEach((m) => {
+        rows.push([m.method, m.count, fromMinorUnits(m.amount), `${m.successRate.toFixed(1)}%`]);
+      });
+    }
+
+    if (topCampaigns.length > 0) {
+      rows.push([], ["--- Top Campaigns ---", "", ""]);
+      rows.push(["Campaign", "Payouts", "Total Amount (SLE)", "Last Payout"]);
+      topCampaigns.forEach((c) => {
+        rows.push([c.campaignName, c.payoutCount, fromMinorUnits(c.totalAmount), c.lastPayout]);
+      });
+    }
+
+    if (pendingPayouts.length > 0) {
+      rows.push([], ["--- Pending Payouts ---", "", ""]);
+      rows.push(["Campaign", "Requester", "Amount (SLE)", "Method", "Status", "Date"]);
+      pendingPayouts.forEach((p) => {
+        const campaignName =
+          p.campaignId?.beneficiary?.name || p.campaignId?.details || p.campaignId?.slug || "Unknown";
+        const requester = p.requestedBy
+          ? `${p.requestedBy.firstName} ${p.requestedBy.lastName}`.trim()
+          : "Unknown";
+        rows.push([
+          campaignName,
+          requester,
+          fromMinorUnits(p.amountMinor),
+          p.method?.type || "",
+          p.status,
+          new Date(p.createdAt).toLocaleDateString(),
+        ]);
+      });
+    }
+
+    const csv = rows
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `payouts-${dateFilter}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const getStatusBadge = (status: string) => {
@@ -219,7 +277,7 @@ export default function AdminPayoutsPage() {
               <Download className="h-4 w-4" />
               Export Data
             </Button>
-            <Button onClick={() => window.location.href = "/payouts/list"}>
+            <Button onClick={() => window.location.href = "/s/admin/payouts/list"}>
               <Eye className="h-4 w-4 mr-2" />
               View All
             </Button>
@@ -291,7 +349,7 @@ export default function AdminPayoutsPage() {
                       {formatMajor(fromMinorUnits(analytics.totalAmount))}
                     </p>
                   </div>
-                  <DollarSign className="h-8 w-8" style={{ color: "#FF6000" }} />
+                  <Banknote className="h-8 w-8" style={{ color: "#FF6000" }} />
                 </div>
               </CardContent>
             </Card>
@@ -427,7 +485,7 @@ export default function AdminPayoutsPage() {
                   </div>
                 ))}
                 {pendingPayouts.length > 5 && (
-                  <Button variant="outline" onClick={() => window.location.href = "/payouts/list?requiresApproval=true"} className="w-full">
+                  <Button variant="outline" onClick={() => window.location.href = "/s/admin/payouts/list?requiresApproval=true"} className="w-full">
                     View All {pendingPayouts.length} Pending Payouts
                   </Button>
                 )}
@@ -521,11 +579,11 @@ export default function AdminPayoutsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-4">
-              <Button variant="outline" onClick={() => window.location.href = "/payouts/list"}>
+              <Button variant="outline" onClick={() => window.location.href = "/s/admin/payouts/list"}>
                 <FileText className="h-4 w-4 mr-2" />
                 View All Payouts
               </Button>
-              <Button variant="outline" onClick={() => window.location.href = "/payouts/list?requiresApproval=true"}>
+              <Button variant="outline" onClick={() => window.location.href = "/s/admin/payouts/list?requiresApproval=true"}>
                 <Clock className="h-4 w-4 mr-2" />
                 Pending Approvals
               </Button>

@@ -39,7 +39,7 @@ interface VerificationStatus {
 type DocumentType = "idDocument" | "addressProof" | "registrationCertificate" | "representativeId" | "taxCertificate";
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
-  not_started: { label: "Not Started", color: "bg-muted text-foreground", icon: Clock },
+  not_started: { label: "Not Started", color: "bg-muted text-foreground", icon: AlertCircle },
   pending: { label: "Pending Review", color: "bg-yellow-100 text-yellow-800", icon: Clock },
   under_review: { label: "Under Review", color: "bg-blue-100 text-blue-800", icon: ShieldCheck },
   approved: { label: "Approved", color: "bg-green-100 text-green-800", icon: CheckCircle },
@@ -309,22 +309,22 @@ export default function VerificationPage() {
               : ""
       }>
         <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center space-x-4">
               {verification.status === "approved" ? (
-                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center shrink-0">
                   <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
               ) : verification.status === "rejected" ? (
-                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
                   <XCircle className="w-6 h-6 text-red-600" />
                 </div>
               ) : verification.status === "pending" || verification.status === "under_review" ? (
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
                   <Clock className="w-6 h-6 text-blue-600" />
                 </div>
               ) : (
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center shrink-0">
                   <ShieldAlert className="w-6 h-6 text-muted-foreground" />
                 </div>
               )}
@@ -354,16 +354,31 @@ export default function VerificationPage() {
             <StatusBadge status={verification.status} />
           </div>
 
-          {/* Rejection Reason */}
-          {verification.status === "rejected" && verification.rejectionReason && (
-            <div className="mt-4 p-4 bg-red-100 rounded-lg">
-              <div className="flex items-start">
-                <AlertCircle className="w-5 h-5 text-red-600 mr-2 mt-0.5" />
-                <div>
-                  <p className="font-medium text-red-800">Rejection Reason:</p>
-                  <p className="text-red-700">{verification.rejectionReason}</p>
+          {/* Rejection Reason + inline resubmit */}
+          {verification.status === "rejected" && (
+            <div className="mt-4 space-y-3">
+              {verification.rejectionReason && (
+                <div className="p-4 bg-red-100 rounded-lg">
+                  <div className="flex items-start">
+                    <AlertCircle className="w-5 h-5 text-red-600 mr-2 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-medium text-red-800">Rejection Reason:</p>
+                      <p className="text-red-700">{verification.rejectionReason}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
+              <Button
+                onClick={handleResubmit}
+                disabled={submitting}
+                className="w-full sm:w-auto"
+              >
+                {submitting ? (
+                  <><RefreshCw className="w-4 h-4 mr-2 animate-spin" />Submitting...</>
+                ) : (
+                  "Resubmit for Review"
+                )}
+              </Button>
             </div>
           )}
 
@@ -461,7 +476,7 @@ export default function VerificationPage() {
       {(canSubmit || canResubmit) && (
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="font-medium">
                   {canResubmit ? "Ready to resubmit?" : "Ready to submit?"}
@@ -475,7 +490,7 @@ export default function VerificationPage() {
               <Button
                 onClick={canResubmit ? handleResubmit : handleSubmit}
                 disabled={!allDocumentsUploaded || submitting}
-                className="min-w-[150px]"
+                className="w-full sm:w-auto sm:min-w-[150px]"
               >
                 {submitting ? (
                   <>

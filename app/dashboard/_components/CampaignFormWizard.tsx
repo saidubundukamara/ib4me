@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Check } from "lucide-react";
+import { Check, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -71,6 +71,7 @@ interface CampaignFormWizardProps {
 }
 
 const defaultCurrency = "SLE";
+const DRAFT_KEY = "ib4me_campaign_create_draft";
 
 interface CategoryOption {
   _id: string;
@@ -103,6 +104,9 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
   const [removeBeneficiaryPhoto, setRemoveBeneficiaryPhoto] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [hasDraft, setHasDraft] = React.useState(false);
+  const [draftSavedLabel, setDraftSavedLabel] = React.useState(false);
+  const draftSaveTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const resetState = React.useCallback(() => {
     setCurrentStep(1);
@@ -121,7 +125,59 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
     setRemovedDocumentIds([]);
     setRemoveBeneficiaryPhoto(false);
     setErrors({});
+    setHasDraft(false);
   }, []);
+
+  // Persist all text fields to localStorage whenever they change (create mode only)
+  React.useEffect(() => {
+    if (mode !== "create" || !isOpen) return;
+    const draft = {
+      currentStep,
+      title,
+      urgency,
+      details,
+      description,
+      category,
+      beneficiaryName,
+      beneficiaryAge,
+      institutionName: institution.name,
+      goalAmount,
+      story,
+    };
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch {
+      // localStorage may be unavailable (private browsing quota)
+    }
+  }, [
+    mode, isOpen, currentStep, title, urgency, details, description,
+    category, beneficiaryName, beneficiaryAge, institution.name, goalAmount, story,
+  ]);
+
+  // Show "Draft saved" label 1.5 s after typing stops (create mode only)
+  React.useEffect(() => {
+    if (mode !== "create" || !isOpen) return;
+    if (draftSaveTimerRef.current) clearTimeout(draftSaveTimerRef.current);
+    draftSaveTimerRef.current = setTimeout(() => {
+      setDraftSavedLabel(true);
+      setTimeout(() => setDraftSavedLabel(false), 2000);
+    }, 1500);
+    return () => {
+      if (draftSaveTimerRef.current) clearTimeout(draftSaveTimerRef.current);
+    };
+  }, [mode, isOpen, title, urgency, details, description, category, beneficiaryName, beneficiaryAge, institution.name, goalAmount, story]);
+
+  // Clear draft from localStorage after successful submit
+  const clearDraft = React.useCallback(() => {
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* noop */ }
+    setHasDraft(false);
+  }, []);
+
+  // Discard draft and start fresh
+  const handleStartFresh = React.useCallback(() => {
+    clearDraft();
+    resetState();
+  }, [clearDraft, resetState]);
 
   // Fetch categories on mount
   React.useEffect(() => {
@@ -143,10 +199,16 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
 
   React.useEffect(() => {
     if (!isOpen) {
-      if (mode === "create") resetState();
+      // In create mode: keep the draft in localStorage but reset in-memory state
+      // so the form appears fresh until the draft is explicitly restored on next open.
+      if (mode === "create") {
+        setHasDraft(false);
+        setErrors({});
+      }
       return;
     }
     if (initialValues) {
+      // Edit mode: populate from server values, no draft involved
       setTitle(initialValues.title ?? "");
       setUrgency(initialValues.urgency ?? "medium");
       setDetails(initialValues.details ?? "");
@@ -170,6 +232,33 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
       setStory(initialValues.story ?? "");
       setDocuments(initialValues.documents ?? []);
     } else if (mode === "create") {
+      // Try restoring a saved draft first
+      try {
+        const saved = localStorage.getItem(DRAFT_KEY);
+        if (saved) {
+          const draft = JSON.parse(saved);
+          // Only restore if there's meaningful content
+          const hasMeaningfulContent =
+            draft.title || draft.beneficiaryName || draft.goalAmount || draft.story;
+          if (hasMeaningfulContent) {
+            setCurrentStep(Math.min(draft.currentStep ?? 1, 4)); // cap at Story step; files can't be restored
+            setTitle(draft.title ?? "");
+            setUrgency(draft.urgency ?? "medium");
+            setDetails(draft.details ?? "");
+            setDescription(draft.description ?? "");
+            setCategory(draft.category ?? "");
+            setBeneficiaryName(draft.beneficiaryName ?? "");
+            setBeneficiaryAge(draft.beneficiaryAge ?? "");
+            setInstitution({ name: draft.institutionName ?? "" });
+            setGoalAmount(draft.goalAmount ?? "");
+            setStory(draft.story ?? "");
+            setHasDraft(true);
+            return;
+          }
+        }
+      } catch {
+        // Corrupted draft — fall through to fresh state
+      }
       resetState();
     }
   }, [initialValues, isOpen, mode, resetState]);
@@ -248,6 +337,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
         removedDocumentIds: removedDocumentIds.length > 0 ? removedDocumentIds : undefined,
       });
       if (mode === "create") {
+        clearDraft();
         resetState();
       }
     } catch (error) {
@@ -275,6 +365,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
     description,
     removeBeneficiaryPhoto,
     removedDocumentIds,
+    clearDraft,
   ]);
 
   const reviewItems = [
@@ -316,6 +407,28 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
 
   return (
     <div className="py-4 sm:py-6 space-y-4 sm:space-y-6">
+      {/* Draft restored banner */}
+      {hasDraft && (
+        <div className="mx-3 sm:mx-0 flex items-start justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20 px-4 py-3">
+          <div>
+            <p className="text-sm text-amber-800 dark:text-amber-300">
+              Your previous draft has been restored.
+            </p>
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+              Your text was saved. Please re-upload any documents on step 5.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleStartFresh}
+            className="flex shrink-0 items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-200 transition-colors"
+          >
+            <RotateCcw className="h-3 w-3" />
+            Start fresh
+          </button>
+        </div>
+      )}
+
       {/* Stepper */}
       <div className="px-3 sm:px-4">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-3 sm:mx-0 px-3 sm:px-0">
@@ -353,6 +466,11 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
         </div>
       </div>
 
+      {/* Mobile step label */}
+      <p className="text-center text-xs text-muted-foreground md:hidden">
+        Step {currentStep} of {steps.length} — {steps[currentStep - 1].label}
+      </p>
+
       {/* Step content */}
       <div className="min-h-[280px] sm:min-h-[300px] space-y-4">
         {currentStep === 1 && (
@@ -365,7 +483,6 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Help fund education for 20 students"
                 className="rounded-2xl my-2"
-                disabled={mode === "edit"}
               />
               {errors.title && <p className="text-sm text-destructive mt-1">{errors.title}</p>}
             </div>
@@ -522,11 +639,17 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
         {currentStep === 4 && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="story">Story</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="story">Story</Label>
+                <span className={`text-xs tabular-nums ${story.length > 5000 ? "text-destructive" : "text-muted-foreground"}`}>
+                  {story.length}/5000
+                </span>
+              </div>
               <Textarea
                 id="story"
                 value={story}
                 onChange={(e) => setStory(e.target.value)}
+                maxLength={5000}
                 placeholder="Explain the situation, how funds will be used, and timelines."
                 className="rounded-2xl min-h-[180px] sm:min-h-[200px] my-2"
               />
@@ -549,7 +672,7 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
                   setRemovedDocumentIds(removedIds);
                 }}
               />
-              <p className="text-xs text-muted-foreground mt-2">Supported: images and PDFs. Max 5 files.</p>
+              <p className="text-xs text-muted-foreground mt-2">Supported: images and PDFs. Max 5 files, 5 MB each.</p>
             </div>
           </div>
         )}
@@ -566,6 +689,16 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
                   </p>
                 </div>
               ))}
+              <div>
+                <p className="text-sm text-muted-foreground">Story:</p>
+                <p className="font-semibold text-foreground">
+                  {story.trim()
+                    ? story.length > 200
+                      ? story.slice(0, 200) + "…"
+                      : story
+                    : "-"}
+                </p>
+              </div>
             </div>
           </div>
         )}
@@ -573,6 +706,16 @@ const CampaignFormWizard: React.FC<CampaignFormWizardProps> = ({
 
       {/* Footer actions */}
       <div className="sticky bottom-0 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        {mode === "create" && (
+          <div className="flex justify-end px-3 sm:px-0 pt-2 h-5">
+            <span
+              className={`text-xs text-muted-foreground transition-opacity duration-300 ${draftSavedLabel ? "opacity-100" : "opacity-0"}`}
+            >
+              <Check className="inline h-3 w-3 text-primary mr-1" />
+              Draft saved
+            </span>
+          </div>
+        )}
         <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 pt-3 sm:pt-4 border-t px-3 sm:px-0">
           <Button
             variant="outline"

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Heart, Lock, Gift, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { Heart, Lock, Gift, Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -223,13 +224,18 @@ export default function TipClient({
   return (
     <main className="container mx-auto max-w-2xl px-4 py-12">
       <div className="space-y-8">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Link>
+
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="mx-auto h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
             <Heart className="h-10 w-10 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">Support IB4ME</h1>
+            <h1 className="text-3xl font-bold">Support ib4me</h1>
             <p className="text-muted-foreground mt-2">
               Your tip helps us maintain the platform and support more campaigns in Sierra Leone.
             </p>
@@ -244,7 +250,7 @@ export default function TipClient({
               Leave a Tip
             </CardTitle>
             <CardDescription>
-              100% of your tip goes directly to supporting IB4ME&apos;s mission.
+              100% of your tip goes directly to supporting ib4me&apos;s mission.
             </CardDescription>
           </CardHeader>
 
@@ -423,7 +429,7 @@ export default function TipClient({
         {/* Info Section */}
         <Card className="rounded-3xl border border-border/40">
           <CardContent className="p-6">
-            <h3 className="font-semibold mb-3">Why tip IB4ME?</h3>
+            <h3 className="font-semibold mb-3">Why tip ib4me?</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
                 <span className="inline-block h-2 w-2 rounded-full bg-primary mt-2" />

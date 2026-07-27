@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { MessageCircle, Send, Loader2, UserCircle2 } from "lucide-react";
+import { MessageCircle, Send, Loader2, UserCircle2, ChevronDown, ChevronUp } from "lucide-react";
 
 export type CampaignUpdateItem = {
   id: string;
@@ -33,6 +33,9 @@ type TabsProps = {
 };
 
 const MAX_COMMENT = 500;
+const STORY_COLLAPSE_PX = 280;
+const UPDATES_INITIAL = 3;
+const COMMENTS_INITIAL = 5;
 
 const tabItems: Array<{ key: "story" | "updates" | "comments"; label: string }> = [
   { key: "story", label: "Story" },
@@ -58,12 +61,31 @@ export default function CampaignTabs({ story, updates, campaignId }: TabsProps) 
   const [commentsLoaded, setCommentsLoaded] = useState(false);
   const [commentsLoading, setCommentsLoading] = useState(false);
 
+  // Story expand/collapse
+  const [storyExpanded, setStoryExpanded] = useState(false);
+  const [storyOverflows, setStoryOverflows] = useState(false);
+  const storyRef = useRef<HTMLDivElement>(null);
+
+  // See more for updates and comments
+  const [updatesVisible, setUpdatesVisible] = useState(UPDATES_INITIAL);
+  const [commentsVisible, setCommentsVisible] = useState(COMMENTS_INITIAL);
+
   // Form state
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [justPosted, setJustPosted] = useState(false);
+
+  useEffect(() => {
+    const el = storyRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      setStoryOverflows(el.scrollHeight > STORY_COLLAPSE_PX + 10);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [story]);
 
   const loadComments = useCallback(async () => {
     if (commentsLoaded) return;
@@ -80,9 +102,13 @@ export default function CampaignTabs({ story, updates, campaignId }: TabsProps) 
     }
   }, [campaignId, commentsLoaded]);
 
+  useEffect(() => {
+    loadComments();
+  }, [loadComments]);
+
   const handleTabChange = (key: "story" | "updates" | "comments") => {
     setActive(key);
-    if (key === "comments") loadComments();
+    if (key === "comments" && !commentsLoaded) loadComments();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,6 +143,8 @@ export default function CampaignTabs({ story, updates, campaignId }: TabsProps) 
   };
 
   const commentCount = commentsLoaded ? comments.length : undefined;
+  const displayedUpdates = updates.slice(0, updatesVisible);
+  const displayedComments = comments.slice(0, commentsVisible);
 
   return (
     <div className="space-y-6">
@@ -148,22 +176,55 @@ export default function CampaignTabs({ story, updates, campaignId }: TabsProps) 
         })}
       </div>
 
-      {/* Story */}
-      {active === "story" && (
-        <div className="rounded-2xl border border-border/50 bg-background/80 p-5 text-sm leading-relaxed text-muted-foreground whitespace-pre-line md:text-base">
-          {story ? story : "This campaign has not added a story yet."}
-        </div>
-      )}
-
-      {/* Updates */}
-      {active === "updates" && (
-        <div className="space-y-4">
-          {updates.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border/60 bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-              No updates yet. Check back later for progress.
-            </div>
+      {/* Story — always mounted so expand/collapse state and ResizeObserver persist */}
+      <div className={active !== "story" ? "hidden" : ""}>
+        <div className="rounded-2xl border border-border/50 bg-background/80 overflow-hidden">
+          {story ? (
+            <>
+              <div
+                ref={storyRef}
+                style={!storyExpanded ? { maxHeight: STORY_COLLAPSE_PX } : undefined}
+                className="relative overflow-hidden p-5 text-sm leading-relaxed text-muted-foreground whitespace-pre-line md:text-base transition-[max-height] duration-500 ease-in-out"
+              >
+                {story}
+                {storyOverflows && !storyExpanded && (
+                  <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-background/95 to-transparent pointer-events-none" />
+                )}
+              </div>
+              {storyOverflows && (
+                <div className="border-t border-border/40 px-5 py-3">
+                  <button
+                    type="button"
+                    onClick={() => setStoryExpanded((v) => !v)}
+                    className="flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded"
+                    aria-expanded={storyExpanded}
+                  >
+                    {storyExpanded ? (
+                      <><ChevronUp className="w-4 h-4" /> See less</>
+                    ) : (
+                      <><ChevronDown className="w-4 h-4" /> See more</>
+                    )}
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
-            updates.map((update) => (
+            <div className="p-5 text-sm text-muted-foreground">
+              This campaign has not added a story yet.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Updates — always mounted */}
+      <div className={active !== "updates" ? "hidden" : "space-y-4"}>
+        {updates.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border/60 bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+            No updates yet. Check back later for progress.
+          </div>
+        ) : (
+          <>
+            {displayedUpdates.map((update) => (
               <Card key={update.id} className="rounded-2xl border border-border/60 bg-background/80 shadow-sm">
                 <CardHeader>
                   <div className="flex items-center justify-between gap-3">
@@ -179,127 +240,173 @@ export default function CampaignTabs({ story, updates, campaignId }: TabsProps) 
                   <p className="text-sm text-muted-foreground whitespace-pre-line">{update.content}</p>
                 </CardContent>
               </Card>
-            ))
-          )}
-        </div>
-      )}
-
-      {/* Comments */}
-      {active === "comments" && (
-        <div className="space-y-6">
-          {/* Post a comment form */}
-          <div className="rounded-2xl border border-border/60 bg-background/80 p-5">
-            <h3 className="mb-4 text-sm font-semibold text-foreground">Leave a comment</h3>
-            {justPosted && (
-              <div className="mb-4 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
-                Your comment was posted successfully!
+            ))}
+            {updates.length > updatesVisible && (
+              <div className="flex justify-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => setUpdatesVisible((v) => v + UPDATES_INITIAL)}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+                >
+                  <ChevronDown className="w-4 h-4" />
+                  See more updates ({updates.length - updatesVisible} remaining)
+                </button>
               </div>
             )}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="comment-name" className="text-sm">
-                  Name <span className="text-muted-foreground font-normal">(optional)</span>
-                </Label>
-                <Input
-                  id="comment-name"
-                  placeholder="Your name or leave blank to post anonymously"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  maxLength={80}
-                  disabled={submitting}
-                  className="rounded-xl"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="comment-message" className="text-sm">
-                    Message <span className="text-red-500">*</span>
-                  </Label>
-                  <span className={`text-xs ${message.length > MAX_COMMENT * 0.9 ? "text-red-500" : "text-muted-foreground"}`}>
-                    {message.length}/{MAX_COMMENT}
-                  </span>
-                </div>
-                <Textarea
-                  id="comment-message"
-                  placeholder="Share your support, encouragement, or words of hope..."
-                  value={message}
-                  onChange={(e) => { setMessage(e.target.value); setFormError(null); }}
-                  rows={3}
-                  maxLength={MAX_COMMENT + 10}
-                  disabled={submitting}
-                  className="rounded-xl resize-none"
-                />
-                {formError && <p className="text-xs text-red-500">{formError}</p>}
-              </div>
-              <Button
-                type="submit"
-                disabled={submitting || !message.trim()}
-                className="w-full sm:w-auto"
-              >
-                {submitting ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Posting...</>
-                ) : (
-                  <><Send className="mr-2 h-4 w-4" /> Post Comment</>
-                )}
-              </Button>
-            </form>
-          </div>
-
-          {/* Comments list */}
-          {commentsLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="animate-pulse rounded-2xl border border-border/40 bg-muted/30 p-4">
-                  <div className="mb-3 flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-muted" />
-                    <div className="h-4 w-28 rounded bg-muted" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="h-3 w-full rounded bg-muted" />
-                    <div className="h-3 w-4/5 rounded bg-muted" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : comments.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border/60 bg-muted/30 p-8 text-center">
-              <MessageCircle className="mx-auto h-8 w-8 text-muted-foreground/40" />
-              <p className="mt-3 text-sm font-medium text-foreground">No comments yet</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Be the first to leave a message of support.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="rounded-2xl border border-border/60 bg-background/80 p-4"
+            {updatesVisible > UPDATES_INITIAL && (
+              <div className="flex justify-center pt-1">
+                <button
+                  type="button"
+                  onClick={() => setUpdatesVisible(UPDATES_INITIAL)}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                      <UserCircle2 className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline justify-between gap-2 flex-wrap">
-                        <p className="text-sm font-semibold text-foreground">
-                          {comment.authorName || "Anonymous"}
-                        </p>
-                        <span className="text-xs text-muted-foreground shrink-0">
-                          {timeAgo(comment.createdAt)}
-                        </span>
-                      </div>
-                      <p className="mt-1.5 text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
-                        {comment.content}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  <ChevronUp className="w-4 h-4" />
+                  See less
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Comments — always mounted */}
+      <div className={active !== "comments" ? "hidden" : "space-y-6"}>
+        {/* Post a comment form */}
+        <div className="rounded-2xl border border-border/60 bg-background/80 p-5">
+          <h3 className="mb-4 text-sm font-semibold text-foreground">Leave a comment</h3>
+          {justPosted && (
+            <div className="mb-4 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+              Your comment was posted successfully!
             </div>
           )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="comment-name" className="text-sm">
+                Name <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
+              <Input
+                id="comment-name"
+                placeholder="Your name or leave blank to post anonymously"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={80}
+                disabled={submitting}
+                className="rounded-xl"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="comment-message" className="text-sm">
+                  Message <span className="text-red-500">*</span>
+                </Label>
+                <span className={`text-xs ${message.length > MAX_COMMENT * 0.9 ? "text-red-500" : "text-muted-foreground"}`}>
+                  {message.length}/{MAX_COMMENT}
+                </span>
+              </div>
+              <Textarea
+                id="comment-message"
+                placeholder="Share your support, encouragement, or words of hope..."
+                value={message}
+                onChange={(e) => { setMessage(e.target.value); setFormError(null); }}
+                rows={3}
+                maxLength={MAX_COMMENT + 10}
+                disabled={submitting}
+                className="rounded-xl resize-none"
+              />
+              {formError && <p className="text-xs text-red-500">{formError}</p>}
+            </div>
+            <Button
+              type="submit"
+              disabled={submitting || !message.trim()}
+              className="w-full sm:w-auto"
+            >
+              {submitting ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Posting...</>
+              ) : (
+                <><Send className="mr-2 h-4 w-4" /> Post Comment</>
+              )}
+            </Button>
+          </form>
         </div>
-      )}
+
+        {/* Comments list */}
+        {commentsLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse rounded-2xl border border-border/40 bg-muted/30 p-4">
+                <div className="mb-3 flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-muted" />
+                  <div className="h-4 w-28 rounded bg-muted" />
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 w-full rounded bg-muted" />
+                  <div className="h-3 w-4/5 rounded bg-muted" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : comments.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border/60 bg-muted/30 p-8 text-center">
+            <MessageCircle className="mx-auto h-8 w-8 text-muted-foreground/40" />
+            <p className="mt-3 text-sm font-medium text-foreground">No comments yet</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Be the first to leave a message of support.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {displayedComments.map((comment) => (
+              <div
+                key={comment.id}
+                className="rounded-2xl border border-border/60 bg-background/80 p-4"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <UserCircle2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between gap-2 flex-wrap">
+                      <p className="text-sm font-semibold text-foreground">
+                        {comment.authorName || "Anonymous"}
+                      </p>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {timeAgo(comment.createdAt)}
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
+                      {comment.content}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {comments.length > commentsVisible && (
+              <div className="flex justify-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => setCommentsVisible((v) => v + COMMENTS_INITIAL)}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+                >
+                  <ChevronDown className="w-4 h-4" />
+                  See more comments ({comments.length - commentsVisible} remaining)
+                </button>
+              </div>
+            )}
+            {commentsVisible > COMMENTS_INITIAL && (
+              <div className="flex justify-center pt-1">
+                <button
+                  type="button"
+                  onClick={() => setCommentsVisible(COMMENTS_INITIAL)}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ChevronUp className="w-4 h-4" />
+                  See less
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

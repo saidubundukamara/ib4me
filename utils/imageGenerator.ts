@@ -1,5 +1,6 @@
 export interface CampaignImageData {
   slug: string;
+  title?: string;
   beneficiary?: { name?: string; age?: number };
   institution?: { name?: string };
   details?: string;
@@ -357,8 +358,8 @@ export async function generateCampaignImage(
   // ── 7. Title — full card width so it never conflicts with the ring ──────────
   const CONTENT_Y = IMG_Y + IMG_H + 22; // y=552
 
-  // Slug titles (hyphens, no spaces) → readable words so wrapText can break them
-  const rawTitle = campaign.beneficiary?.name || campaign.details || campaign.slug || "Campaign";
+  // Prefer explicit title; fall back to slug (converted from hyphens to words)
+  const rawTitle = campaign.title || campaign.slug || "Campaign";
   const displayTitle = (!rawTitle.includes(" ") && rawTitle.includes("-"))
     ? rawTitle.replace(/-/g, " ")
     : rawTitle;

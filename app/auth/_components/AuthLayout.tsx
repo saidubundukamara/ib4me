@@ -16,9 +16,6 @@ type AuthLayoutProps = {
   children: ReactNode;
   footer?: ReactNode;
   aside?: ReactNode;
-  backHref?: string;
-  backLabel?: string;
-  showMobileLogo?: boolean;
 };
 
 export function AuthLayout({
@@ -29,9 +26,6 @@ export function AuthLayout({
   children,
   footer,
   aside,
-  backHref = "/",
-  backLabel = "← Back to home",
-  showMobileLogo = true,
 }: AuthLayoutProps) {
   const hasAside = Boolean(aside);
 
@@ -43,12 +37,10 @@ export function AuthLayout({
       </div>
 
       <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col">
+        {/* Logo header — acts as home link */}
         <div className="px-4 pt-6 sm:px-8 sm:pt-8">
-          <Link
-            href={backHref}
-            className="inline-flex items-center gap-1 text-sm font-semibold text-blaze-orange transition-colors hover:text-foreground"
-          >
-            {backLabel}
+          <Link href="/" aria-label="Go to homepage">
+            <Image src={logo} alt="ib4me" className="h-9 w-auto object-contain" priority />
           </Link>
         </div>
 
@@ -67,11 +59,6 @@ export function AuthLayout({
               <div className={hasAside ? "md:col-span-3" : "md:col-span-5"}>
                 <div className="flex h-full flex-col justify-center p-6 sm:p-10">
                   <div className="mb-8 text-center md:text-left">
-                    {showMobileLogo ? (
-                      <div className="mx-auto mb-4 flex h-12 w-32 items-center justify-center md:hidden">
-                        <Image src={logo} alt="ib4me" className="h-12 w-32 object-contain" priority />
-                      </div>
-                    ) : null}
                     <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">{title}</h2>
                     {subtitle ? <p className="mt-2 text-sm text-muted-foreground md:text-base">{subtitle}</p> : null}
                     {highlight ? <div className="mt-2">{highlight}</div> : null}

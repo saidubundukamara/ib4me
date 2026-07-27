@@ -13,6 +13,8 @@ import type { AuditContext } from "../lib/admin-auth";
 import { monimeService } from "../lib/monime";
 import { settingService } from "./SettingService";
 import { computeDonationSplit, type DonationSplit } from "../lib/fees";
+import { createUserNotification, createAdminNotification } from "../lib/createNotification";
+import CampaignModel from "../models/Campaign";
 
 export type ReconcileAction =
   | "advanced_to_succeeded"
@@ -556,7 +558,7 @@ export class DonationService {
     transferId: string,
     session?: ServiceSession
   ): Promise<IDonation> {
-    return runInTransaction<IDonation>(async (txn) => {
+    const completed = await runInTransaction<IDonation>(async (txn) => {
       const donation = await donationRepository.findById(donationId);
       if (!donation) throw new Error("Donation not found");
 
@@ -636,6 +638,36 @@ export class DonationService {
 
       return updated;
     }, session);
+
+    // Fire in-app notifications after the transaction commits (non-blocking).
+    try {
+      const campaign = await CampaignModel.findById(completed.campaignId)
+        .select("ownerId title")
+        .lean<{ ownerId: unknown; title?: string }>();
+      if (campaign?.ownerId) {
+        const amountSLE = (completed.amount.minor / 100).toFixed(2);
+        const donorName = completed.isAnonymous
+          ? "An anonymous donor"
+          : (completed.donorSnapshot?.name ?? "A donor");
+        await createUserNotification({
+          recipientId: campaign.ownerId as mongoose.Types.ObjectId,
+          type: "donation",
+          title: "New donation received!",
+          message: `${donorName} donated SLE ${amountSLE} to your campaign.`,
+          link: `/dashboard/campaigns/${String(completed.campaignId)}`,
+        });
+        await createAdminNotification({
+          type: "donation",
+          title: "New donation",
+          message: `${donorName} donated SLE ${amountSLE} to "${campaign.title ?? "a campaign"}".`,
+          link: `/s/admin/donations`,
+        });
+      }
+    } catch (notifErr) {
+      console.error("[DonationService.completeWithTransfer] notification failed:", notifErr);
+    }
+
+    return completed;
   }
 
   /**
@@ -1084,7 +1116,7 @@ export class DonationService {
         id: new mongoose.Types.ObjectId(donationId)
       },
       diff: {
-        previouslyFlagged: (donation as any).isFlagged || false,
+        previouslyFlagged: (donation as unknown as Record<string, unknown>).isFlagged ?? false,
         flagReason: reason,
         donationId,
         campaignId: donation.campaignId?.toString(),
@@ -1142,9 +1174,11 @@ export class DonationService {
         id: new mongoose.Types.ObjectId(donationId)
       },
       diff: {
-        previouslyFlagged: (donation as any).isFlagged || false,
-        previousFlagReason: (donation as any).flagReason,
-        previousFlaggedBy: (donation as any).flaggedBy?.toString(),
+        previouslyFlagged: (donation as unknown as Record<string, unknown>).isFlagged ?? false,
+        previousFlagReason: (donation as unknown as Record<string, unknown>).flagReason,
+        previousFlaggedBy: (donation as unknown as Record<string, unknown>).flaggedBy != null
+          ? String((donation as unknown as Record<string, unknown>).flaggedBy)
+          : undefined,
         donationId,
         campaignId: donation.campaignId?.toString(),
         donorId: donation.donorId?.toString(),

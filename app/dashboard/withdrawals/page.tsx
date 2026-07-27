@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { WithdrawalForm } from "./WithdrawalForm";
 import Card from "../_components/Card";
-import { Calendar, TrendingUp, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, Calendar, TrendingUp, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatMinor } from "@/lib/currency";
@@ -147,14 +148,24 @@ export default function UserWithdrawalsPage() {
   const totalWithdrawnMinor = payouts
     .filter((p) => !NON_WITHDRAWN_STATUSES.includes(p.status))
     .reduce((sum, p) => sum + p.amountMinor, 0);
-  const pendingRequests = payouts.filter((p) =>
-    ["pending", "processing", "approved"].includes(p.status)
-  ).length;
+  // In Transit = payouts actively being processed or awaiting execution
+  const inTransitMinor = payouts
+    .filter((p) => ["processing", "approved"].includes(p.status))
+    .reduce((sum, p) => sum + p.amountMinor, 0);
   const primaryCurrency =
     campaignOptions[0]?.currency ?? campaigns[0]?.goal?.currency ?? "SLE";
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+      {withdrawalBlockStatus.blocked && (
+        <Alert className="border-destructive/50 bg-destructive/5 rounded-2xl">
+          <AlertTriangle className="h-4 w-4 text-destructive" />
+          <AlertDescription className="text-destructive text-sm font-medium">
+            Withdrawals are currently paused.
+            {withdrawalBlockStatus.reason ? ` ${withdrawalBlockStatus.reason}` : " Please check back later or contact support."}
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card className="border-border bg-card p-6 transition-all hover:shadow-lg">
           <div className="flex items-center gap-4">
@@ -170,6 +181,7 @@ export default function UserWithdrawalsPage() {
                   formatMinor(totalAvailable, primaryCurrency)
                 )}
               </div>
+              <p className="text-xs text-muted-foreground mt-0.5">Live balance, ready to withdraw</p>
             </div>
           </div>
         </Card>
@@ -195,17 +207,18 @@ export default function UserWithdrawalsPage() {
         <Card className="border-border bg-card p-6 transition-all hover:shadow-lg">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-chartereuse/10">
-              <Calendar className="w-6 h-6 text-chartereuse-foreground" />
+              <ArrowUpRight className="w-6 h-6 text-chartereuse-dark" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Pending Requests</p>
+              <p className="text-sm text-muted-foreground">In Transit</p>
               <div className="text-2xl font-bold text-foreground">
                 {isLoading ? (
-                  <Skeleton className="h-6 w-12 rounded-md" />
+                  <Skeleton className="h-6 w-24 rounded-md" />
                 ) : (
-                  pendingRequests
+                  formatMinor(inTransitMinor, primaryCurrency)
                 )}
               </div>
+              <p className="text-xs text-muted-foreground mt-0.5">Being processed</p>
             </div>
           </div>
         </Card>
@@ -301,10 +314,10 @@ export default function UserWithdrawalsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Badge variant="outline" className={statusColor}>
-                          <span className="sr-only">{displayStatus.replace("_", " ")}</span>
+                        <Badge variant="outline" className={`${statusColor} capitalize`}>
+                          {displayStatus.replace(/_/g, " ")}
                         </Badge>
-                        <span className="text-foreground">{formatMinor(p.amountMinor, currency)}</span>
+                        <span className="font-medium text-foreground">{formatMinor(p.amountMinor, currency)}</span>
                       </div>
                     </div>
                   );

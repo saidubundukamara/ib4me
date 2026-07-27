@@ -99,6 +99,7 @@ export async function GET(
   return NextResponse.json({
     id: String(doc._id),
     slug: doc.slug,
+    title: doc.title,
     details: doc.details,
     campaignType: doc.campaignType,
     urgency: doc.urgency,
@@ -152,6 +153,7 @@ export async function PATCH(
   }
 
   // Extract text fields
+  const title = form.get("title") as string | null;
   const details = form.get("details") as string | null;
   const campaignType = form.get("campaignType") as string | null;
   const urgency = form.get("urgency") as string | null;
@@ -183,6 +185,9 @@ export async function PATCH(
   // Build update object
   const updatable: Record<string, unknown> = {};
 
+  if (typeof title === "string" && title.trim()) {
+    updatable.title = title.trim();
+  }
   if (typeof details === "string") {
     updatable.details = details || undefined;
   }

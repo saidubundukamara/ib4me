@@ -33,6 +33,7 @@ type CampaignItem = {
   title: string;
   currency: string;
   description?: string;
+  category?: string;
   amountRaised: number;
   goalAmount: number;
   donationsCount: number;
@@ -72,18 +73,20 @@ const filterOptions: {
 export default function DiscoverCampaigns() {
   const [items, setItems] = useState<CampaignItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterKey>("");
   const [api, setApi] = useState<CarouselApi | null>(null);
 
   const fetchCampaigns = useCallback((filter: FilterKey) => {
     setLoading(true);
+    setFetchError(false);
     const qs = filter ? `?limit=6&filter=${filter}` : "?limit=6";
     fetch(`/api/campaigns/active${qs}`)
       .then((r) => r.json())
       .then((data: CampaignItem[]) => {
         setItems(Array.isArray(data) ? data.slice(0, 6) : []);
       })
-      .catch(() => setItems([]))
+      .catch(() => { setItems([]); setFetchError(true); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -95,12 +98,15 @@ export default function DiscoverCampaigns() {
     setActiveFilter((prev) => (prev === key ? "" : key));
   };
 
+  const formatAmount = (amount: number, currency: string = "SLE") =>
+    new Intl.NumberFormat("en-GB", { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+
   const handleShare = (campaign: CampaignItem) => {
     if (typeof window === "undefined") return;
-    const url = `${window.location.origin}/campaigns/${campaign.slug}`;
+    const url = `${window.location.origin}/campaigns/${campaign.slug}?ref=discover`;
     const shareData = {
       title: campaign.title,
-      text: campaign.description || "Support this campaign on ib4me",
+      text: `Help ${campaign.title.replace(/^help\s+/i, "")} — ${formatAmount(campaign.amountRaised, campaign.currency)} raised of ${formatAmount(campaign.goalAmount, campaign.currency)} goal`,
       url,
     };
     if (navigator.share) {
@@ -180,14 +186,14 @@ export default function DiscoverCampaigns() {
             <button
               onClick={() => api?.scrollPrev()}
               className="cursor-pointer rounded-full border p-2 text-blaze-orange transition-colors hover:bg-blaze-orange/10"
-              aria-label="Previous"
+              aria-label="Previous campaign"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
             <button
               onClick={() => api?.scrollNext()}
               className="cursor-pointer rounded-full border p-2 text-blaze-orange transition-colors hover:bg-blaze-orange/10"
-              aria-label="Next"
+              aria-label="Next campaign"
             >
               <ArrowRight className="h-5 w-5" />
             </button>
@@ -237,6 +243,22 @@ export default function DiscoverCampaigns() {
               </div>
             ))}
           </div>
+        ) : fetchError ? (
+          <div className="flex flex-col items-center py-16 text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+              <FolderSearch className="h-8 w-8 text-muted-foreground/40" />
+            </div>
+            <p className="mb-1 text-sm font-medium text-foreground">Failed to load campaigns</p>
+            <p className="mb-4 text-xs text-muted-foreground">Please check your connection and try again.</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl"
+              onClick={() => fetchCampaigns(activeFilter)}
+            >
+              Try again
+            </Button>
+          </div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center py-16 text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
@@ -274,10 +296,11 @@ export default function DiscoverCampaigns() {
                       raised={c.amountRaised}
                       goal={c.goalAmount}
                       donors={c.donationsCount}
-                      verified={false}
-                      ownerVerified={c.ownerVerified ?? true}
+                      verified={c.ownerVerified ?? false}
+                      ownerVerified={c.ownerVerified ?? false}
                       urgency={c.urgency}
                       urgent={c.urgency === "high"}
+                      category={c.category}
                       href={`/campaigns/${c.slug}`}
                       currency={c.currency || "SLE"}
                       onShare={() => handleShare(c)}

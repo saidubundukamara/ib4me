@@ -2,8 +2,8 @@ import { Button } from "@/components/ui/button";
 import { formatMajor } from "@/lib/currency";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Share2, CheckCircle, ShieldAlert } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { Share2, CheckCircle, ShieldAlert, Heart } from "lucide-react";
+import ProgressBar from "@/app/_components/ProgressBar";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -55,20 +55,30 @@ const CampaignCard = ({
   const isEndingSoon = !isUrgent && urgency === "medium";
   const showDaysLeft = typeof daysLeft === "number" && daysLeft >= 0;
 
-  const cardContent = (
-    <Card className="overflow-hidden rounded-3xl bg-card hover:shadow-[var(--shadow-lift)] transition-all duration-300 hover:-translate-y-1 border-0 cursor-pointer group">
+  return (
+    <Card className="overflow-hidden rounded-3xl bg-card hover:shadow-[var(--shadow-lift)] transition-all duration-300 hover:-translate-y-1 border-0 cursor-pointer group relative">
+      {/* Invisible full-card link — screen readers use "Learn More" button below */}
+      {href && (
+        <Link href={href} className="absolute inset-0 z-0" aria-hidden tabIndex={-1} />
+      )}
+
       {/* Image */}
-      <div className="relative aspect-video overflow-hidden">
+      <div className="relative aspect-video overflow-hidden bg-muted">
         <Image
           src={imageUrl}
           alt={title}
           width={800}
           height={450}
           unoptimized
+          loading="lazy"
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        {/* Urgency / days-left badge */}
-        {showDaysLeft ? (
+        {/* Goal reached / urgency / days-left badge */}
+        {percentage >= 100 ? (
+          <div className="absolute top-3 left-3 bg-fun-green text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+            Goal Reached!
+          </div>
+        ) : showDaysLeft ? (
           <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold shadow-lg ${daysLeft! <= 3 ? "bg-red-500 text-white animate-pulse" : daysLeft! <= 7 ? "bg-red-500 text-white" : "bg-amber-500 text-white"}`}>
             {daysLeft === 0 ? "Last day!" : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`}
           </div>
@@ -123,15 +133,19 @@ const CampaignCard = ({
 
         {/* Progress Bar with Gradient */}
         <div className="space-y-2">
-          <Progress
-            value={percentage}
-            className="h-3 bg-muted"
-          />
+          <ProgressBar value={percentage} className="h-3" />
           <div className="flex justify-between items-center text-sm">
             <div>
-              <span className="font-bold text-blaze-orange text-lg">
-                {raisedLabel}
-              </span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="font-bold text-blaze-orange text-lg cursor-default">
+                    {raisedLabel}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  {currencyCode} — {currency === "SLE" ? "Sierra Leone Leone" : currency}
+                </TooltipContent>
+              </Tooltip>
               <span className="text-muted-foreground"> raised of {goalLabel}</span>
             </div>
             <span className="font-semibold text-primary">{Math.round(percentage)}%</span>
@@ -142,21 +156,35 @@ const CampaignCard = ({
         <div className="flex items-center justify-between pt-4 border-t border-border">
           <div className="flex items-center gap-1.5 text-sm">
             <div className="flex -space-x-1">
-              {[0,1,2].map(i => (
-                <div key={i} className="h-5 w-5 rounded-full bg-primary/20 border-2 border-card flex items-center justify-center">
-                  <span className="text-[8px] text-primary font-bold">♥</span>
-                </div>
-              ))}
+              {[0, 1, 2].map((i) => {
+                const filledHearts = donors >= 50 ? 3 : donors >= 10 ? 2 : donors >= 1 ? 1 : 0;
+                const filled = i < filledHearts;
+                return (
+                  <div key={i} className="h-5 w-5 rounded-full bg-primary/20 border-2 border-card flex items-center justify-center">
+                    <Heart
+                      className={`h-2.5 w-2.5 transition-colors ${filled ? "fill-red-600 text-red-600" : "text-red-700/40"}`}
+                      strokeWidth={1.5}
+                      style={filled ? undefined : { fill: "none" }}
+                      aria-hidden="true"
+                    />
+                  </div>
+                );
+              })}
             </div>
             <span className="font-bold text-card-foreground">{donors.toLocaleString()}</span>
             <span className="text-muted-foreground">donor{donors !== 1 ? "s" : ""}</span>
           </div>
-          <span className="text-xs text-muted-foreground font-medium">{Math.round(percentage)}% funded</span>
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-3 pt-2">
-          <Button className="flex-1">Learn More</Button>
+        {/* Actions — z-10 so they sit above the invisible overlay link */}
+        <div className="flex gap-3 pt-2 relative z-10">
+          {href ? (
+            <Button asChild className="flex-1">
+              <Link href={href}>Learn More</Link>
+            </Button>
+          ) : (
+            <Button className="flex-1">Learn More</Button>
+          )}
           <Button
             variant="outline"
             size="icon"
@@ -167,6 +195,7 @@ const CampaignCard = ({
               onShare?.();
             }}
             type="button"
+            aria-label="Share campaign"
           >
             <Share2 className="w-4 h-4" />
           </Button>
@@ -174,16 +203,6 @@ const CampaignCard = ({
       </div>
     </Card>
   );
-
-  if (href) {
-    return (
-      <Link href={href} className="block group">
-        {cardContent}
-      </Link>
-    );
-  }
-
-  return cardContent;
 };
 
 export default CampaignCard;

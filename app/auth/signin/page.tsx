@@ -13,7 +13,6 @@ import { Label } from "@/components/ui/label";
 import { AuthLayout } from "../_components/AuthLayout";
 import { ContinueDivider } from "../_components/ContinueDivider";
 import { SignInAside } from "../_components/AuthSidePanels";
-import { SOCIAL_PROVIDERS } from "../_components/social-providers";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -44,7 +43,7 @@ export default function SignInPage() {
 
       if (response?.ok) {
         toast.success("Signed in successfully!");
-        router.push(response.url ?? "/dashboard");
+        router.push("/dashboard");
       }
     } catch (submitError) {
       console.error(submitError);
@@ -54,10 +53,6 @@ export default function SignInPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleSocialLogin = () => {
-    toast.info("Coming soon! Social login will be available shortly.");
   };
 
   return (
@@ -72,20 +67,7 @@ export default function SignInPage() {
       }
       lead={
         <div className="space-y-4 sm:space-y-5">
-          <div className="grid w-full gap-3 sm:grid-cols-3">
-            {SOCIAL_PROVIDERS.map(({ id, icon: Icon, hover, iconColor }) => (
-              <Button
-                key={id}
-                type="button"
-                variant="outline"
-                className={`h-12 border-border/50 transition-all ${hover}`}
-                onClick={handleSocialLogin}
-                disabled={isLoading}
-              >
-                <Icon className={`h-5 w-5 ${iconColor ?? ""}`} />
-              </Button>
-            ))}
-          </div>
+          <p className="text-center text-xs text-muted-foreground">Social login coming soon</p>
 
           <ContinueDivider label="Or continue with email" />
         </div>
@@ -107,7 +89,7 @@ export default function SignInPage() {
           </Label>
           <Input
             id="identifier"
-            placeholder="m@example.com or +232..."
+            placeholder="Email or phone number"
             value={identifier}
             onChange={(event) => setIdentifier(event.target.value)}
             autoComplete="username"
@@ -144,10 +126,10 @@ export default function SignInPage() {
           </div>
         </div>
         <Link href="/auth/forgot-password" className="text-sm font-medium  text-primary hover:underline">
-          Forget password?
+          Forgot password?
         </Link>
 
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
 
         <Button
           type="submit"

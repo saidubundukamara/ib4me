@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import ProgressBar from "@/app/_components/ProgressBar";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,9 +36,9 @@ export type DonateClientProps = {
   /** Monime's collection rate in basis points — an estimate until settlement. */
   monimeFeeBpsEstimate?: number;
   isOwnerVerified?: boolean; // Whether organizer has completed KYC
+  /** Admin-configurable quick-pick amounts, in major units. */
+  presetAmounts?: number[];
 };
-
-const PRESET_AMOUNTS = [50, 250, 500];
 
 export default function DonateClient({
   slug,
@@ -52,8 +52,9 @@ export default function DonateClient({
   processingFeeBps = 260,
   monimeFeeBpsEstimate = 100,
   isOwnerVerified = true,
+  presetAmounts = [50, 250, 500],
 }: DonateClientProps) {
-  const [selectedPreset, setSelectedPreset] = useState<number | "custom">(PRESET_AMOUNTS[1]);
+  const [selectedPreset, setSelectedPreset] = useState<number | "custom">(presetAmounts[1] ?? presetAmounts[0] ?? 50);
   const [customAmount, setCustomAmount] = useState("");
 
   const [firstName, setFirstName] = useState("");
@@ -62,8 +63,30 @@ export default function DonateClient({
   const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState("");
 
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; firstName?: string }>({});
+
+  const validateDonorField = (field: string, value: string) => {
+    if (anonymous) return;
+    const next = { ...fieldErrors };
+    if (field === "email") {
+      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        next.email = "Please enter a valid email address.";
+      } else {
+        delete next.email;
+      }
+    }
+    if (field === "firstName") {
+      if (!value.trim()) {
+        next.firstName = "First name is required.";
+      } else {
+        delete next.firstName;
+      }
+    }
+    setFieldErrors(next);
+  };
 
   /**
    * The amount in MINOR UNITS. Everything downstream is integer arithmetic on minor
@@ -213,7 +236,7 @@ export default function DonateClient({
                 </span>
               </div>
               <div>
-                <Progress value={progressPercent} className="h-3" />
+                <ProgressBar value={progressPercent} className="h-3" />
                 <div className="mt-2 flex justify-between text-xs font-medium text-muted-foreground">
                   <span>{progressPercent}% funded</span>
                   <span>Goal {formatMinor(goalAmountMinor, currency)}</span>
@@ -226,8 +249,8 @@ export default function DonateClient({
                 <h2 className="text-lg font-semibold text-foreground">
                   Choose your donation
                 </h2>
-                <div className="grid gap-3 sm:grid-cols-4">
-                  {PRESET_AMOUNTS.map((preset) => (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {presetAmounts.map((preset) => (
                     <Button
                       key={preset}
                       type="button"
@@ -298,15 +321,19 @@ export default function DonateClient({
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="first-name">First name</Label>
+                    <Label htmlFor="first-name">First name <span className="text-destructive">*</span></Label>
                     <Input
                       id="first-name"
                       value={firstName}
                       onChange={(event) => setFirstName(event.target.value)}
+                      onBlur={(e) => validateDonorField("firstName", e.target.value)}
                       disabled={anonymous}
                       placeholder="Jane"
                       className="rounded-2xl border-border/50"
                     />
+                    {fieldErrors.firstName && !anonymous && (
+                      <p className="text-xs text-destructive">{fieldErrors.firstName}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="last-name">Last name</Label>
@@ -321,19 +348,24 @@ export default function DonateClient({
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="donor-email">Email address</Label>
+                  <Label htmlFor="donor-email">Email address <span className="text-destructive">*</span></Label>
                   <Input
                     id="donor-email"
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
+                    onBlur={(e) => validateDonorField("email", e.target.value)}
                     disabled={anonymous}
                     placeholder="you@example.com"
                     className="rounded-2xl border-border/50"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    We&#39;ll send your receipt to this email.
-                  </p>
+                  {fieldErrors.email && !anonymous ? (
+                    <p className="text-xs text-destructive">{fieldErrors.email}</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      We&#39;ll send your receipt to this email.
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center justify-between rounded-2xl border border-border/50 bg-muted/30 px-4 py-3">
                   <div>
@@ -351,6 +383,7 @@ export default function DonateClient({
                   />
                 </div>
               </section>
+
 
               <Separator />
 
@@ -417,7 +450,7 @@ export default function DonateClient({
                   <span>Campaign progress</span>
                   <span className="font-semibold text-foreground">{progressPercent}%</span>
                 </div>
-                <Progress value={progressPercent} className="h-2" />
+                <ProgressBar value={progressPercent} className="h-2" />
                 <div className="flex items-center justify-between">
                   <span className="text-xs">Raised</span>
                   <span className="font-medium text-foreground">

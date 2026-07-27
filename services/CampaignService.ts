@@ -152,7 +152,7 @@ export class CampaignService {
     const [campaigns, total] = await Promise.all([
       campaignRepository.findMany(query as never, {
         query: { sort, skip, limit }
-      } as any),
+      } as never),
       campaignRepository.count(query as never)
     ]);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -51,6 +51,7 @@ import {
 type CampaignResponse = {
   id: string;
   slug: string;
+  title?: string;
   urgency: string;
   details?: string;
   beneficiary?: { name?: string; age?: number; photoUrl?: string | null };
@@ -126,6 +127,7 @@ export default function UserCampaignDetailPage() {
   const [statusValue, setStatusValue] = useState<AllowedStatus | "">("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<CampaignTabValue>("overview");
+  const lastDonationCountRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -143,6 +145,7 @@ export default function UserCampaignDetailPage() {
           if (campaignRes.ok) {
             const data = (await campaignRes.json()) as CampaignResponse;
             setCampaign(data);
+            lastDonationCountRef.current = data.totals?.donationCount ?? 0;
           }
 
           if (updatesRes.ok) {
@@ -163,6 +166,33 @@ export default function UserCampaignDetailPage() {
     return () => {
       cancelled = true;
     };
+  }, [id]);
+
+  // Poll every 60 seconds for new donations and notify the campaign owner
+  useEffect(() => {
+    if (!id) return;
+
+    const intervalId = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/campaigns/${id}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as CampaignResponse;
+        const newCount = data.totals?.donationCount ?? 0;
+        const prevCount = lastDonationCountRef.current;
+        if (prevCount !== null && newCount > prevCount) {
+          const diff = newCount - prevCount;
+          toast.success(`${diff} new donation${diff > 1 ? "s" : ""} received!`, {
+            description: "Your campaign just received new support.",
+          });
+          setCampaign(data);
+        }
+        lastDonationCountRef.current = newCount;
+      } catch {
+        // Silently ignore polling errors
+      }
+    }, 60_000);
+
+    return () => clearInterval(intervalId);
   }, [id]);
 
   const progress = useMemo(() => {
@@ -253,7 +283,7 @@ export default function UserCampaignDetailPage() {
     setShareLoading(true);
     try {
       const sharePayload: ShareData = {
-        title: campaign.beneficiary?.name || campaign.slug,
+        title: campaign.title || campaign.beneficiary?.name || campaign.slug,
         text: campaign.story ? campaign.story.slice(0, 140) : "Support this campaign",
         url,
       };
@@ -464,7 +494,7 @@ export default function UserCampaignDetailPage() {
             </div>
             <div className="space-y-3">
               <h1 className="text-balance text-2xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
-                {campaign.beneficiary?.name ?? campaign.slug}
+                {campaign.title || campaign.beneficiary?.name || campaign.slug}
               </h1>
               <p className="text-pretty text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 Manage every detail of your campaign, update stories, review progress, and keep supporters engaged.
@@ -500,14 +530,14 @@ export default function UserCampaignDetailPage() {
             setActiveTab(value as CampaignTabValue);
           }
         }}
-        className="mt-8 space-y-24 sm:space-y-12 lg:space-y-16"
+        className="mt-8 space-y-4"
       >
-        <TabsList className="grid w-full grid-cols-2 gap-2 rounded-2xl bg-muted/50 p-1 sm:flex sm:flex-wrap sm:gap-2 md:flex-nowrap md:overflow-x-auto lg:overflow-visible">
+        <TabsList className="flex w-full flex-wrap gap-2 rounded-2xl bg-muted/50 p-1">
           {CAMPAIGN_TABS.map(({ value, label, icon: Icon }) => (
             <TabsTrigger
               key={value}
               value={value}
-              className="flex w-full items-center gap-2 whitespace-nowrap rounded-2xl px-3 py-2 text-xs font-medium transition focus-visible:outline-none data-[state=active]:bg-blaze-orange data-[state=active]:text-white data-[state=active]:shadow sm:flex-auto sm:px-4 sm:py-2 sm:text-sm md:w-auto"
+              className="flex flex-1 min-w-[calc(50%-4px)] items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none data-[state=active]:bg-blaze-orange data-[state=active]:text-white data-[state=active]:shadow sm:flex-auto sm:min-w-0"
             >
               <Icon className="h-4 w-4" />
               <span>{label}</span>

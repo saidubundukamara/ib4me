@@ -47,6 +47,9 @@ interface FeatureSettings {
   whatsAppAutoPost?: boolean;
   paypalEnabled?: boolean;
   emergencyPoolFund?: boolean;
+  donationPresets?: number[];
+  dailyWithdrawalLimitMinor?: number;
+  monthlyWithdrawalLimitMinor?: number;
 }
 
 interface WithdrawalSettings {
@@ -58,6 +61,8 @@ interface WithdrawalSettings {
   blockedReason?: string;
   blockedBy?: string;
   blockedAt?: string;
+  dailyLimitMinor?: number;
+  monthlyLimitMinor?: number;
 }
 
 interface ContactSettings {
@@ -178,6 +183,17 @@ const DEFAULT_COOKIE_CONSENT_SETTINGS: CookieConsentSettings = {
   services: [],
   consentExpiryDays: 365,
 };
+
+export interface LegalDocumentEntry {
+  content?: string;
+  effectiveDate?: string;
+  lastUpdatedAt?: string;
+}
+
+export interface LegalDocumentsSettings {
+  privacyPolicy: LegalDocumentEntry;
+  termsOfService: LegalDocumentEntry;
+}
 
 export class SettingService {
   async getPlatform(): Promise<ISetting | null> {
@@ -328,6 +344,9 @@ export class SettingService {
       whatsAppAutoPost: features.whatsAppAutoPost || false,
       paypalEnabled: features.paypalEnabled || false,
       emergencyPoolFund: features.emergencyPoolFund || false,
+      donationPresets: features.donationPresets?.length ? features.donationPresets : [50, 250, 500],
+      dailyWithdrawalLimitMinor: withdrawal.dailyLimitMinor,
+      monthlyWithdrawalLimitMinor: withdrawal.monthlyLimitMinor,
     };
   }
 
@@ -343,7 +362,9 @@ export class SettingService {
       withdrawalsBlocked: withdrawal.withdrawalsBlocked || false,
       blockedReason: withdrawal.blockedReason,
       blockedBy: withdrawal.blockedBy?.toString(),
-      blockedAt: withdrawal.blockedAt?.toISOString()
+      blockedAt: withdrawal.blockedAt?.toISOString(),
+      dailyLimitMinor: withdrawal.dailyLimitMinor,
+      monthlyLimitMinor: withdrawal.monthlyLimitMinor,
     };
   }
 
@@ -357,12 +378,15 @@ export class SettingService {
     if (updates.whatsAppAutoPost !== undefined) featureUpdates.whatsAppAutoPost = updates.whatsAppAutoPost;
     if (updates.paypalEnabled !== undefined) featureUpdates.paypalEnabled = updates.paypalEnabled;
     if (updates.emergencyPoolFund !== undefined) featureUpdates.emergencyPoolFund = updates.emergencyPoolFund;
+    if (updates.donationPresets !== undefined) featureUpdates.donationPresets = updates.donationPresets;
 
     const withdrawalUpdates: Partial<IWithdrawalSetting> = {};
     if (updates.thresholdEnabled !== undefined) withdrawalUpdates.thresholdEnabled = updates.thresholdEnabled;
     if (updates.minimumWithdrawalAmount !== undefined) withdrawalUpdates.minAmountMinor = updates.minimumWithdrawalAmount;
     if (updates.minimumWithdrawalPercent !== undefined) withdrawalUpdates.minPercent = updates.minimumWithdrawalPercent;
     if (updates.allowEmergencyOverride !== undefined) withdrawalUpdates.allowEmergencyOverride = updates.allowEmergencyOverride;
+    if (updates.dailyWithdrawalLimitMinor !== undefined) withdrawalUpdates.dailyLimitMinor = updates.dailyWithdrawalLimitMinor;
+    if (updates.monthlyWithdrawalLimitMinor !== undefined) withdrawalUpdates.monthlyLimitMinor = updates.monthlyWithdrawalLimitMinor;
 
     await this.updatePlatformSettings({
       features: { ...currentFeatures, ...featureUpdates },
@@ -779,6 +803,52 @@ export class SettingService {
           trackingId: s.trackingId!,
         })),
     };
+  }
+
+  // ==================== Legal Documents ====================
+
+  async getLegalDocuments(): Promise<LegalDocumentsSettings> {
+    const settings = await this.getOrCreatePlatform();
+    const legal = settings.legalDocuments || {};
+    return {
+      privacyPolicy: {
+        content: legal.privacyPolicy?.content,
+        effectiveDate: legal.privacyPolicy?.effectiveDate,
+        lastUpdatedAt: legal.privacyPolicy?.lastUpdatedAt?.toISOString(),
+      },
+      termsOfService: {
+        content: legal.termsOfService?.content,
+        effectiveDate: legal.termsOfService?.effectiveDate,
+        lastUpdatedAt: legal.termsOfService?.lastUpdatedAt?.toISOString(),
+      },
+    };
+  }
+
+  async updateLegalDocument(
+    docType: "privacyPolicy" | "termsOfService",
+    updates: Pick<LegalDocumentEntry, "content" | "effectiveDate">,
+    adminUserId?: string
+  ): Promise<LegalDocumentsSettings> {
+    const settings = await this.getOrCreatePlatform();
+    const currentLegal = settings.legalDocuments || {};
+    const currentDoc = currentLegal[docType] || {};
+
+    await this.updatePlatformSettings(
+      {
+        legalDocuments: {
+          ...currentLegal,
+          [docType]: {
+            ...currentDoc,
+            content: updates.content,
+            effectiveDate: updates.effectiveDate,
+            lastUpdatedAt: new Date(),
+          },
+        },
+      } as Parameters<typeof this.updatePlatformSettings>[0],
+      adminUserId
+    );
+
+    return this.getLegalDocuments();
   }
 }
 

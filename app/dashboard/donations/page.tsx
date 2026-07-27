@@ -70,7 +70,7 @@ export default async function UserDonationsPage() {
     const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
     const total = succeededDonations.reduce((sum, d) => {
       const dKey = `${d.createdAt.getFullYear()}-${String(d.createdAt.getMonth() + 1).padStart(2, "0")}`;
-      return dKey === key ? sum + d.amount.minor : sum;
+      return dKey === key ? sum + (d.campaignReceivesMinor ?? d.amount.minor) : sum;
     }, 0);
     monthTotals.push(total);
   }

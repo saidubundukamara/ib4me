@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { formatMajor } from "@/lib/currency";
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import {
   Gift,
-  DollarSign,
+  Banknote,
   TrendingUp,
   AlertTriangle,
   Users,
@@ -258,7 +258,7 @@ export default function AdminTipsPage() {
                     {formatMajor(fromMinorUnits(analytics.totalAmountMinor))}
                   </p>
                 </div>
-                <DollarSign className="h-8 w-8" style={{ color: "#00712D" }} />
+                <Banknote className="h-8 w-8" style={{ color: "#00712D" }} />
               </div>
             </CardContent>
           </Card>
@@ -464,3 +464,4 @@ export default function AdminTipsPage() {
     </div>
   );
 }
+

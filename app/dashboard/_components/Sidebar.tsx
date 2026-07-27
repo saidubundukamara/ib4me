@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useNotifications } from "./NotificationsContext";
 import {
   Home,
   FolderOpen,
@@ -44,6 +45,7 @@ export function Sidebar({ className, onNavigate, variant = "desktop" }: SidebarP
   const pathname = usePathname();
   const { data: session } = useSession();
   const isMobileVariant = variant === "mobile";
+  const { unreadCount } = useNotifications();
 
   const name = session?.user?.name ?? "Your ib4me space";
   const email = session?.user?.email ?? "Manage your impact";
@@ -124,16 +126,23 @@ export function Sidebar({ className, onNavigate, variant = "desktop" }: SidebarP
               )}
               aria-current={active ? "page" : undefined}
             >
-              <Icon
-                className={cn(
-                  "h-5 w-5 transition-colors",
-                  active
-                    ? "text-white"
-                    : "text-muted-foreground/70 group-hover:text-primary",
-                  isMobileVariant && "h-[18px] w-[18px]",
+              <span className="relative inline-flex shrink-0">
+                <Icon
+                  className={cn(
+                    "h-5 w-5 transition-colors",
+                    active
+                      ? "text-white"
+                      : "text-muted-foreground/70 group-hover:text-primary",
+                    isMobileVariant && "h-[18px] w-[18px]",
+                  )}
+                  aria-hidden="true"
+                />
+                {item.path === "/dashboard/notifications" && unreadCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground leading-none">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
                 )}
-                aria-hidden="true"
-              />
+              </span>
               <span>{item.label}</span>
             </Link>
           );

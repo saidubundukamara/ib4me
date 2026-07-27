@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  UserPlus, DollarSign, Heart, CheckCircle,
+  UserPlus, Banknote, Heart, CheckCircle,
   Users, ArrowRight, Lock, Eye,
   Globe, Share2, Wallet,
 } from "lucide-react";
@@ -69,7 +69,7 @@ const donorSteps = [
     description: "Select campaigns that resonate with your values",
   },
   {
-    icon: DollarSign,
+    icon: Banknote,
     number: "03",
     title: "Donate Securely",
     description:
@@ -292,7 +292,7 @@ const HowItWorks = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
+            <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 sm:grid-cols-3 sm:gap-6">
               {trustItems.map((item, index) => {
                 const TrustIcon = item.icon;
                 return (
@@ -384,3 +384,4 @@ const HowItWorks = () => {
 };
 
 export default HowItWorks;
+

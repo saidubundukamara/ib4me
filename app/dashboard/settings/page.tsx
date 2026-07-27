@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { generateAvatarDataUri } from "@/lib/avatar";
@@ -22,6 +23,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   Eye,
   EyeOff,
+  ExternalLink,
   KeyRound,
   MapPin,
   Phone,
@@ -29,6 +31,7 @@ import {
   UserRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import Link from "next/link";
 
 type User = {
   _id: string;
@@ -36,6 +39,7 @@ type User = {
   email?: string;
   phone?: string;
   photoUrl?: string;
+  bio?: string | null;
   whatsappOptIn?: boolean;
   address?: {
     country?: string;
@@ -226,6 +230,7 @@ export default function UserSettingsPage() {
           name: formData.get("name"),
           email: formData.get("email"),
           phone: formData.get("phone"),
+          bio: formData.get("bio"),
           whatsappOptIn,
           photoUrl,
         }),
@@ -396,14 +401,30 @@ export default function UserSettingsPage() {
                 {avatarUploading ? "Uploading..." : "Update photo"}
               </Button>
               {avatarFile && (
+                <>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="rounded-2xl w-full sm:w-auto"
+                    onClick={handleRemoveAvatar}
+                    disabled={isProfileBusy}
+                  >
+                    Remove
+                  </Button>
+                  <p className="text-xs text-muted-foreground w-full sm:w-auto">Save profile below to apply your new photo.</p>
+                </>
+              )}
+              {session?.user?.id && (
                 <Button
                   type="button"
                   variant="ghost"
-                  className="rounded-2xl w-full sm:w-auto"
-                  onClick={handleRemoveAvatar}
-                  disabled={isProfileBusy}
+                  className="rounded-2xl w-full sm:w-auto gap-1.5 text-primary"
+                  asChild
                 >
-                  Remove
+                  <Link href={`/creators/${session.user.id}`} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                    View Public Profile
+                  </Link>
                 </Button>
               )}
             </div>
@@ -449,13 +470,13 @@ export default function UserSettingsPage() {
         onChange={handleAvatarChange}
       />
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-24 sm:space-y-12 lg:space-y-16">
-          <TabsList className="grid w-full grid-cols-2 gap-1 rounded-2xl bg-muted/50 p-1 sm:flex sm:flex-wrap sm:gap-2 md:flex-nowrap md:overflow-x-auto lg:overflow-visible">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+          <TabsList className="flex w-full flex-wrap gap-2 rounded-2xl bg-muted/50 p-1">
             {SETTINGS_TABS.map(({ value, label, icon: Icon }) => (
               <TabsTrigger
                 key={value}
                 value={value}
-                className="flex w-full items-center gap-2 whitespace-nowrap rounded-2xl px-3 py-2 text-xs font-medium transition focus-visible:outline-none data-[state=active]:bg-blaze-orange data-[state=active]:text-white data-[state=active]:shadow sm:flex-auto sm:px-4 sm:py-2 sm:text-sm md:w-auto"
+                className="flex flex-1 min-w-[calc(50%-4px)] items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none data-[state=active]:bg-blaze-orange data-[state=active]:text-white data-[state=active]:shadow sm:flex-auto sm:min-w-0"
               >
                 <Icon className="h-4 w-4" />
                 <span>{label}</span>
@@ -536,7 +557,7 @@ export default function UserSettingsPage() {
                         className="rounded-2xl bg-muted/50 cursor-not-allowed"
                       />
                       <p className="text-xs text-muted-foreground">
-                        Contact support to change your email address
+                        <a href="mailto:support@ib4me.com" className="font-medium text-primary hover:underline">Contact support</a> to change your email address.
                       </p>
                     </div>
                     <div className="space-y-2">
@@ -551,6 +572,20 @@ export default function UserSettingsPage() {
                         className="rounded-2xl"
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bio">About you</Label>
+                    <Textarea
+                      id="bio"
+                      name="bio"
+                      placeholder="Share a short bio — who you are, what drives you to fundraise, or how funds will be used."
+                      defaultValue={user?.bio ?? ""}
+                      disabled={isProfileBusy}
+                      className="rounded-2xl min-h-[100px] resize-none"
+                      maxLength={300}
+                    />
+                    <p className="text-xs text-muted-foreground">Shown publicly on your organiser profile. Max 300 characters.</p>
                   </div>
 
                   <div className="flex flex-col gap-4 rounded-2xl border border-border/50 bg-muted/10 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -832,7 +867,7 @@ export default function UserSettingsPage() {
                   Send an email to <a href="mailto:support@ib4me.com" className="font-semibold text-primary hover:underline">support@ib4me.com</a> and we will respond within 24 hours. For urgent payout questions call <span className="font-semibold">+232 30 000 000</span>.
                 </p>
                 <Button variant="outline" className="w-full rounded-2xl" asChild>
-                  <a href="mailto:ib4me.organisation@gmail.com">Contact support</a>
+                  <a href="mailto:support@ib4me.com">Contact support</a>
                 </Button>
               </CardContent>
             </Card>

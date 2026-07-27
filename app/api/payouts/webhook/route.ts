@@ -8,6 +8,8 @@ import {
 import { payoutService } from "@/services/PayoutService";
 import { webhookEventRepository } from "@/repositories";
 import { sumMonimeFees } from "@/lib/fees";
+import { formatMinor } from "@/lib/currency";
+import { createUserNotification } from "@/lib/createNotification";
 
 export async function POST(req: NextRequest) {
   try {
@@ -144,6 +146,21 @@ async function handlePayoutCompleted(payload: MonimeWebhookPayload) {
       console.log(
         `Successfully updated payout ${updatedPayout.id} to completed status`
       );
+      // Tell them what they actually RECEIVED, not what they requested. Monime takes its
+      // fee out of the amount sent, so quoting the requested figure here would be the same
+      // "a number they will not receive" problem the payout columns exist to fix.
+      // netAmountMinor is written moments earlier by applyPayoutCompletion.
+      const receivedMinor =
+        updatedPayout.netAmountMinor || updatedPayout.amountMinor;
+      createUserNotification({
+        recipientId: updatedPayout.requestedBy,
+        type: "payout",
+        title: "Payout completed",
+        message:
+          `${formatMinor(receivedMinor, updatedPayout.currency || "SLE")} has been sent ` +
+          `to your mobile money account.`,
+        link: "/dashboard/withdrawals",
+      }).catch(() => {});
     } else {
       console.warn(`Payout with Monime ID ${payout.id} not found in database`);
     }
@@ -184,6 +201,14 @@ async function handlePayoutFailed(payload: MonimeWebhookPayload) {
       console.log(
         `Successfully updated payout ${updatedPayout.id} to failed status: ${failureReason}`
       );
+      const amountSLE = (updatedPayout.amountMinor / 100).toFixed(2);
+      createUserNotification({
+        recipientId: updatedPayout.requestedBy,
+        type: "payout",
+        title: "Payout failed",
+        message: `Your withdrawal of SLE ${amountSLE} could not be processed. ${failureReason}`,
+        link: "/dashboard/withdrawals",
+      }).catch(() => {});
     } else {
       console.warn(`Payout with Monime ID ${payout.id} not found in database`);
     }

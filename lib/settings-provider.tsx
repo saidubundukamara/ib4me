@@ -42,6 +42,11 @@ interface FeatureSettings {
   whatsAppAutoPost?: boolean;
   paypalEnabled?: boolean;
   emergencyPoolFund?: boolean;
+  // donorFeeChoiceEnabled is gone — the "donor covers the fee" mode was removed when
+  // fees became deducted rather than added on top.
+  donationPresets?: number[];
+  dailyWithdrawalLimitMinor?: number;
+  monthlyWithdrawalLimitMinor?: number;
 }
 
 interface ContactSettings {

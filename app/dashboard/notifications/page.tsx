@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
-import { Bell, Check, CheckCheck, Trash2, Info, Heart, DollarSign, ShieldCheck } from "lucide-react";
+import { Bell, Check, CheckCheck, Trash2, Info, Heart, Banknote, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/app/dashboard/_components/NotificationsContext";
+import { toast } from "sonner";
 
 function timeAgo(dateStr: string): string {
   try {
@@ -24,7 +25,7 @@ function timeAgo(dateStr: string): string {
 }
 
 const typeIcon: Record<string, React.ReactNode> = {
-  donation: <DollarSign className="w-4 h-4" style={{ color: "#FF6000" }} />,
+  donation: <Banknote className="w-4 h-4" style={{ color: "#FF6000" }} />,
   campaign: <Heart className="w-4 h-4" style={{ color: "#00712D" }} />,
   verification: <ShieldCheck className="w-4 h-4" style={{ color: "#80E10A" }} />,
   system: <Info className="w-4 h-4" style={{ color: "#FBB03B" }} />,
@@ -135,19 +136,31 @@ function NotificationRow({
 }) {
   const relativeTime = timeAgo(notification.date);
 
+  const handleDelete = () => {
+    onDelete(notification.id);
+    toast("Notification deleted", {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          // Undo is best-effort: re-fetch will restore if the API delete hasn't fired yet.
+          // The context's deleteNotification is optimistic, so we just reload notifications.
+          window.location.reload();
+        },
+      },
+      duration: 4000,
+    });
+  };
+
   return (
     <div
-      className={`group flex items-start gap-4 rounded-2xl border border-border p-4 transition-all hover:shadow-sm ${
+      className={`flex items-start gap-4 rounded-2xl border border-border p-4 transition-all hover:shadow-sm ${
         !notification.read ? "bg-[#00712D06] border-[#00712D20]" : "bg-background"
       }`}
     >
       {/* Icon */}
       <div
         className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
-        style={{
-          backgroundColor:
-            typeBg[notification.type] ?? "#00712D12",
-        }}
+        style={{ backgroundColor: typeBg[notification.type] ?? "#00712D12" }}
       >
         {typeIcon[notification.type] ?? <Bell className="w-4 h-4" style={{ color: "#00712D" }} />}
       </div>
@@ -160,23 +173,25 @@ function NotificationRow({
         <p className="mt-1 text-xs text-muted-foreground">{relativeTime}</p>
       </div>
 
-      {/* Actions */}
-      <div className="flex flex-shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Actions — always visible */}
+      <div className="flex flex-shrink-0 items-center gap-1">
         {!notification.read && (
           <button
             onClick={() => onMarkAsRead(notification.id)}
-            className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="rounded-lg p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             title="Mark as read"
+            aria-label="Mark as read"
           >
-            <Check className="w-3.5 h-3.5" />
+            <Check className="w-4 h-4" />
           </button>
         )}
         <button
-          onClick={() => onDelete(notification.id)}
-          className="rounded-lg p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+          onClick={handleDelete}
+          className="rounded-lg p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
           title="Delete"
+          aria-label="Delete notification"
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 className="w-4 h-4" />
         </button>
       </div>
 
@@ -187,3 +202,4 @@ function NotificationRow({
     </div>
   );
 }
+

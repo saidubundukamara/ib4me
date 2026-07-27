@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Heart } from "lucide-react";
-
 
 interface DonorEntry {
   name: string;
@@ -13,17 +12,20 @@ interface DonorEntry {
 
 export default function DonorsTicker({ donors }: { donors: DonorEntry[] }) {
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [visible, setVisible] = useState(true);
+  const [animating, setAnimating] = useState(false);
+  const paused = useRef(false);
+  const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (donors.length <= 1) return;
     const interval = setInterval(() => {
-      setVisible(false);
+      if (paused.current) return;
+      setAnimating(true);
       setTimeout(() => {
         setCurrentIdx((prev) => (prev + 1) % donors.length);
-        setVisible(true);
-      }, 400);
-    }, 3500);
+        setAnimating(false);
+      }, 300);
+    }, 4000);
     return () => clearInterval(interval);
   }, [donors.length]);
 
@@ -32,39 +34,70 @@ export default function DonorsTicker({ donors }: { donors: DonorEntry[] }) {
   const donor = donors[currentIdx];
 
   return (
-    <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+    <div
+      className="rounded-xl border border-primary/20 bg-primary/5 overflow-hidden"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {/* Horizontal slide track */}
       <div
-        className={`flex items-start gap-3 transition-all duration-400 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"}`}
+        ref={trackRef}
+        className="overflow-x-auto no-scrollbar"
+        onMouseEnter={() => { paused.current = true; }}
+        onMouseLeave={() => { paused.current = false; }}
+        onTouchStart={() => { paused.current = true; }}
+        onTouchEnd={() => { paused.current = false; }}
       >
-        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15">
-          <Heart className="h-4 w-4 text-primary" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-foreground">
-            {donor.name}{" "}
-            <span className="font-normal text-muted-foreground">donated</span>{" "}
-            <span className="text-primary">{donor.amount}</span>
-          </p>
-          {donor.message && (
-            <p className="mt-0.5 text-xs text-muted-foreground italic line-clamp-1">
-              &ldquo;{donor.message}&rdquo;
-            </p>
-          )}
-          <p className="mt-0.5 text-xs text-muted-foreground">{donor.timeAgo}</p>
-        </div>
-        {donors.length > 1 && (
-          <div className="flex shrink-0 gap-1">
-            {donors.map((_, i) => (
-              <div
-                key={i}
-                className={`h-1.5 w-1.5 rounded-full transition-colors ${i === currentIdx ? "bg-primary" : "bg-primary/25"}`}
-              />
-            ))}
+        {/* Card */}
+        <div
+          className={`flex items-start gap-3 px-4 py-3 min-w-0 transition-opacity duration-300 ${
+            animating ? "opacity-0" : "opacity-100"
+          }`}
+        >
+          {/* Heart icon */}
+          <div className="flex h-8 w-8 shrink-0 mt-0.5 items-center justify-center rounded-full bg-primary/15">
+            <Heart className="h-3.5 w-3.5 text-primary" />
           </div>
-        )}
+
+          {/* Details */}
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-foreground leading-snug">
+              <span className="truncate block max-w-full">{donor.name}</span>
+              <span className="font-normal text-muted-foreground text-xs"> donated </span>
+              <span className="text-primary font-bold">{donor.amount}</span>
+            </p>
+            {donor.message && (
+              <p className="mt-0.5 text-xs text-muted-foreground italic leading-snug line-clamp-2">
+                &ldquo;{donor.message}&rdquo;
+              </p>
+            )}
+            <p className="mt-1 text-[11px] text-muted-foreground">{donor.timeAgo}</p>
+          </div>
+
+          {/* Dot indicators — horizontal */}
+          {donors.length > 1 && (
+            <div className="flex shrink-0 items-center gap-1 self-center">
+              {donors.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  aria-label={`Go to donor ${i + 1}`}
+                  onClick={() => {
+                    setAnimating(true);
+                    setTimeout(() => {
+                      setCurrentIdx(i);
+                      setAnimating(false);
+                    }, 200);
+                  }}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    i === currentIdx ? "w-4 bg-primary" : "w-1.5 bg-primary/25"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
-
-export { timeAgo } from "@/lib/utils";

@@ -99,6 +99,7 @@ interface ApiCampaign {
   id?: string;
   _id?: string;
   slug?: string;
+  title?: string;
   status?: string;
   urgency?: UrgencyValue | string | null;
   goal?: {
@@ -133,7 +134,7 @@ const normalizeFromApi = (campaign: ApiCampaign): CampaignItem => {
   return {
     id: String(campaign?.id ?? campaign?._id ?? `campaign-${Date.now()}`),
     slug: campaign?.slug ?? `campaign-${Date.now()}`,
-    title: toTitleCase(campaign?.slug ?? "untitled-campaign"),
+    title: campaign?.title || toTitleCase(campaign?.slug ?? "untitled-campaign"),
     status: campaign?.status ?? "draft",
     urgency: resolveUrgency(campaign?.urgency) ?? null,
     goalAmount: goalAmountMinor > 0 ? goalAmountMinor / 100 : 0,
@@ -210,6 +211,7 @@ export default function UserCampaignsPage() {
   const [deletingCampaign, setDeletingCampaign] = React.useState<CampaignItem | null>(null);
   const [limitInfo, setLimitInfo] = React.useState<CampaignLimitInfo | null>(null);
   const [showVerificationModal, setShowVerificationModal] = React.useState(false);
+  const [verificationModalContext, setVerificationModalContext] = React.useState<"gate" | "post">("gate");
 
   const refreshLimitInfo = React.useCallback(async () => {
     try {
@@ -282,6 +284,7 @@ export default function UserCampaignsPage() {
       const formData = new FormData();
       const slug = generateSlug(formValues.title || `campaign-${Date.now()}`);
       formData.set("slug", slug);
+      if (formValues.title) formData.set("title", formValues.title);
       if (formValues.details) formData.set("details", formValues.details);
       formData.set("urgency", formValues.urgency);
       formData.set("beneficiary.name", formValues.beneficiary.name);
@@ -335,7 +338,13 @@ export default function UserCampaignsPage() {
         }
 
         const data = await res.json().catch(() => ({}));
-        toast.success("Campaign created successfully!");
+        if (data.failedUploads?.length) {
+          toast.warning(
+            `Campaign created, but ${data.failedUploads.length} document${data.failedUploads.length !== 1 ? "s" : ""} failed to upload. You can add them again by editing the campaign.`
+          );
+        } else {
+          toast.success("Campaign created successfully!");
+        }
         handleCreateCampaign({
           id: data.id ?? `campaign-${Date.now()}`,
           slug: data.slug ?? slug,
@@ -344,11 +353,6 @@ export default function UserCampaignsPage() {
           form: formValues,
         });
         setIsCreateOpen(false);
-
-        // Show verification modal if user is not verified
-        if (data.ownerVerification && !data.ownerVerification.verified) {
-          setShowVerificationModal(true);
-        }
 
         // Refresh limit info after successful creation
         await refreshLimitInfo();
@@ -372,6 +376,7 @@ export default function UserCampaignsPage() {
       const formData = new FormData();
 
       // Basic text fields
+      if (values.title) formData.set("title", values.title);
       if (values.details) formData.set("details", values.details);
       formData.set("urgency", values.urgency);
       if (values.category) formData.set("category", values.category);
@@ -606,7 +611,15 @@ export default function UserCampaignsPage() {
             if (isCreateOpen) {
               handleCancelCreate();
             } else {
-              // Check limit before opening form
+              // Block creation if KYC/KYB not submitted or was rejected
+              const vStatus = limitInfo?.verification?.status;
+              const isBlocked = vStatus === "not_started" || vStatus === "rejected";
+              if (limitInfo?.verification && !limitInfo.verification.verified && isBlocked) {
+                setVerificationModalContext("gate");
+                setShowVerificationModal(true);
+                return;
+              }
+              // Check campaign count limit
               if (limitInfo && !limitInfo.allowed) {
                 toast.error(
                   `Campaign limit reached. You can have up to ${limitInfo.maxAllowed} active campaigns.`
@@ -621,7 +634,7 @@ export default function UserCampaignsPage() {
           <span className="mr-2">
             <Plus />
           </span>
-          {isCreateOpen ? "Close Form" : "Create Campaign"}
+          {isCreateOpen ? "Cancel" : "Create Campaign"}
         </Button>
       </div>
 
@@ -717,7 +730,19 @@ export default function UserCampaignsPage() {
       <div className="grid gap-6">
         {items.length === 0 ? (
           <Card className="p-4 sm:p-6 border-0 shadow-[var(--shadow-soft)] rounded-3xl col-span-full">
-            <div className="text-sm text-muted-foreground">No campaigns yet. Create your first campaign.</div>
+            <div className="flex flex-col items-center py-6 text-center gap-3">
+              <p className="text-sm text-muted-foreground">No campaigns yet.</p>
+              <Button
+                size="sm"
+                className="rounded-xl"
+                onClick={() => {
+                  handleCancelEdit();
+                  setIsCreateOpen(true);
+                }}
+              >
+                Create your first campaign
+              </Button>
+            </div>
           </Card>
         ) : (
           items.map((campaign) => {
@@ -761,10 +786,20 @@ export default function UserCampaignsPage() {
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 overflow-hidden">
                       <div className="flex-1 min-w-0 overflow-hidden">
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1.5 sm:mb-2 overflow-hidden">
-                          <h3 className="font-bold text-xs sm:text-sm lg:text-lg text-foreground truncate max-w-full">
+                          <h3 className="font-bold text-sm sm:text-base lg:text-lg text-foreground truncate max-w-full">
                             {campaign.title}
                           </h3>
-                          <Badge className="bg-primary/10 text-primary border-primary flex-shrink-0 whitespace-nowrap hover:bg-primary/20">
+                          <Badge
+                            className={`flex-shrink-0 whitespace-nowrap border ${
+                              campaign.status === "active"
+                                ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                                : campaign.status === "pending"
+                                ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                                : campaign.status === "rejected"
+                                ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                                : "bg-muted text-muted-foreground border-border hover:bg-muted/80"
+                            }`}
+                          >
                             {statusLabel}
                           </Badge>
                         </div>
@@ -848,12 +883,16 @@ export default function UserCampaignsPage() {
         />
       )}
 
-      {/* Verification Required Modal - shown after campaign creation for unverified users */}
       <VerificationRequiredModal
         open={showVerificationModal}
         onOpenChange={setShowVerificationModal}
-        verificationStatus={(limitInfo?.verification?.status === "approved" ? "not_started" : limitInfo?.verification?.status) ?? "not_started"}
+        verificationStatus={
+          (limitInfo?.verification?.status === "approved"
+            ? "not_started"
+            : limitInfo?.verification?.status) ?? "not_started"
+        }
         verificationType={limitInfo?.verification?.type ?? "kyc"}
+        context={verificationModalContext}
         onGoToVerification={() => {
           setShowVerificationModal(false);
           router.push("/dashboard/verification");

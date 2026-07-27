@@ -8,6 +8,7 @@ export interface PublicUserProfile {
   id: string;
   name: string;
   photoUrl: string | null;
+  bio: string | null;
   isOrganization: boolean;
   organization?: {
     name: string | null;
@@ -191,7 +192,7 @@ export class UserService {
 
     // Build update data
     const updateData: Partial<IUser> = {};
-    const changes: Record<string, { from: any; to: any }> = {};
+    const changes: Record<string, { from: unknown; to: unknown }> = {};
 
     if (data.name !== undefined && data.name !== existingUser.name) {
       updateData.name = data.name;
@@ -546,6 +547,7 @@ export class UserService {
       id: String(user._id),
       name: user.name || "Anonymous",
       photoUrl: user.photoUrl || null,
+      bio: user.bio || null,
       isOrganization,
       organization: isOrganization && user.organization ? {
         name: user.organization.name || null,

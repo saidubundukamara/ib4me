@@ -19,17 +19,27 @@ interface VerificationRequiredModalProps {
   verificationStatus: "not_started" | "pending" | "under_review" | "rejected";
   verificationType: "kyc" | "kyb";
   onGoToVerification: () => void;
+  /** "gate" = blocking pre-creation warning; "post" = informational after creation */
+  context?: "gate" | "post";
 }
 
-const statusMessages = {
-  not_started:
-    "Complete identity verification to earn a verified badge on your campaigns. This builds trust with donors and helps your campaigns stand out.",
-  pending:
-    "Your verification documents are being reviewed. Your campaigns are live and will display a verified badge once approved.",
-  under_review:
-    "Your verification is currently under review. Your campaigns are live and will display a verified badge once approved.",
-  rejected:
-    "Your verification was rejected. Please review and resubmit your documents to earn a verified badge on your campaigns.",
+const statusMessages: Record<string, { gate: string; post: string }> = {
+  not_started: {
+    gate: "You need to complete identity verification before creating a campaign. This protects donors and ensures your campaign is trusted.",
+    post: "Complete identity verification to earn a verified badge on your campaigns. This builds trust with donors and helps your campaigns stand out.",
+  },
+  pending: {
+    gate: "Your verification is pending review. You can still create campaigns while we process your documents.",
+    post: "Your verification documents are being reviewed. Your campaigns are live and will display a verified badge once approved.",
+  },
+  under_review: {
+    gate: "Your verification is under review. You can still create campaigns while we process your documents.",
+    post: "Your verification is currently under review. Your campaigns are live and will display a verified badge once approved.",
+  },
+  rejected: {
+    gate: "Your verification was rejected. Please resubmit your documents before you can create a campaign.",
+    post: "Your verification was rejected. Please review and resubmit your documents to earn a verified badge on your campaigns.",
+  },
 };
 
 export default function VerificationRequiredModal({
@@ -38,8 +48,11 @@ export default function VerificationRequiredModal({
   verificationStatus,
   verificationType,
   onGoToVerification,
+  context = "post",
 }: VerificationRequiredModalProps) {
   const typeLabel = verificationType === "kyb" ? "Business" : "Identity";
+  const messages = statusMessages[verificationStatus] ?? statusMessages.not_started;
+  const isGate = context === "gate";
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -49,13 +62,17 @@ export default function VerificationRequiredModal({
             <ShieldCheck className="h-6 w-6 text-primary" />
           </div>
           <AlertDialogHeader className="text-center">
-            <AlertDialogTitle>{typeLabel} Verification Required</AlertDialogTitle>
+            <AlertDialogTitle>
+              {isGate ? `${typeLabel} Verification Required` : `${typeLabel} Verification`}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {statusMessages[verificationStatus]}
+              {isGate ? messages.gate : messages.post}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
-            <AlertDialogCancel className="rounded-2xl">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-2xl">
+              {isGate ? "Not Now" : "Cancel"}
+            </AlertDialogCancel>
             <AlertDialogAction onClick={onGoToVerification} className="rounded-2xl">
               {verificationStatus === "not_started"
                 ? "Start Verification"

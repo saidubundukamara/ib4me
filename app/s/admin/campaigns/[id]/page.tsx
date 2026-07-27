@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 interface Campaign {
   _id: string;
   slug: string;
+  title?: string;
   beneficiary?: { name?: string; age?: number; photoUrls?: string[] };
   details?: string;
   institution?: { name?: string };
@@ -100,7 +101,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
         const data = await response.json();
         setCampaign(data.data);
       } else if (response.status === 404) {
-        router.push("/campaigns");
+        router.push("/s/admin/campaigns");
       }
     } catch (error) {
       console.error("Error fetching campaign:", error);
@@ -213,7 +214,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
         <p className="text-muted-foreground">Campaign not found</p>
         <Button 
           variant="outline" 
-          onClick={() => router.push("/campaigns")}
+          onClick={() => router.push("/s/admin/campaigns")}
           className="mt-4"
         >
           Back to Campaigns
@@ -228,15 +229,15 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center space-x-2 mb-2">
-            <Link 
-              href="/campaigns"
+            <Link
+              href="/s/admin/campaigns"
               className="text-sm text-blue-600 hover:text-blue-800"
             >
               ← Back to Campaigns
             </Link>
           </div>
           <h1 className="text-3xl font-bold text-foreground">
-            {campaign.beneficiary?.name || campaign.details || campaign.slug}
+            {campaign.title || campaign.beneficiary?.name || campaign.details || campaign.slug}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Campaign ID: {campaign._id}

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
-    Menu, ChevronRight, PhoneCall, Heart, MessageCircleQuestion, DollarSign,
+    Menu, ChevronRight, PhoneCall, Heart, MessageCircleQuestion, Banknote,
     LogOutIcon, Search,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -90,6 +90,10 @@ const buildDefaultMenu = (tippingEnabled: boolean): MenuItem[] => [
         title: "Campaigns",
         url: "/campaigns",
     },
+    {
+        title: "Mobile Fundraisers",
+        url: "/mobile-fundraisers",
+    },
     // Top level, not tucked inside the About dropdown. The entire point of this link is
     // that the page was previously unreachable — a menu a visitor has to open first is
     // barely more discoverable than no link at all.
@@ -114,7 +118,7 @@ const buildDefaultMenu = (tippingEnabled: boolean): MenuItem[] => [
             {
                 title: "Pricing",
                 description: "Explore our pricing.",
-                icon: <DollarSign className="size-5 shrink-0" />,
+                icon: <Banknote className="size-5 shrink-0" />,
                 url: "/pricing",
             },
             {
@@ -150,11 +154,14 @@ const Navbar = ({
     const [hasScrolled, setHasScrolled] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchOpen, setSearchOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const searchRef = useRef<HTMLInputElement>(null);
     const { data: session, status } = useSession();
     const isAuthenticated = status === "authenticated";
     const router = useRouter();
     const pathname = usePathname();
+
+    useEffect(() => { setMounted(true); }, []);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -183,14 +190,30 @@ const Navbar = ({
                 <nav className="hidden justify-between lg:flex items-center">
                     <div className="flex items-center gap-6">
                         <a href={logo.url} className="flex items-center gap-2 shrink-0">
-                            <Image src={logo.src} className={`object-contain transition-all duration-200 ${hasScrolled ? "w-28 h-14" : "w-36 h-16"}`} alt={logo.alt} />
+                            <Image src={logo.src} className="object-contain h-12 w-auto max-w-[180px]" alt={logo.alt} />
                         </a>
-                        <div className="flex items-center font-Sora text-neutral-900">
-                            <NavigationMenu>
-                                <NavigationMenuList>
-                                    {resolvedMenu.map((item) => renderMenuItem(item, pathname))}
-                                </NavigationMenuList>
-                            </NavigationMenu>
+                        <div className="flex items-center font-Sora text-neutral-900 gap-1">
+                            {resolvedMenu.map((item) => {
+                                if (item.items) {
+                                    return (
+                                        <NavigationMenu key={item.title}>
+                                            <NavigationMenuList>
+                                                {renderMenuItem(item, pathname)}
+                                            </NavigationMenuList>
+                                        </NavigationMenu>
+                                    );
+                                }
+                                const isActive = item.url ? pathname === item.url || pathname.startsWith(item.url + "/") : false;
+                                return (
+                                    <a
+                                        key={item.title}
+                                        href={item.url}
+                                        className={`inline-flex h-10 items-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-accent-foreground ${isActive ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground"}`}
+                                    >
+                                        {item.title}
+                                    </a>
+                                );
+                            })}
                         </div>
                     </div>
                     <div className="flex items-center gap-2 font-Sora">
@@ -200,7 +223,7 @@ const Navbar = ({
                                 type="button"
                                 onClick={() => { setSearchOpen((v) => !v); setTimeout(() => searchRef.current?.focus(), 50); }}
                                 className="absolute left-0 z-10 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
-                                aria-label="Search campaigns"
+                                aria-label="Open search"
                             >
                                 <Search className="h-4 w-4" />
                             </button>
@@ -215,7 +238,7 @@ const Navbar = ({
                                 aria-label="Search campaigns"
                             />
                         </form>
-                        {isAuthenticated ? (
+                        {mounted && isAuthenticated ? (
                             <Userprofile />
                         ) : (
                             <>
@@ -233,7 +256,7 @@ const Navbar = ({
                 <div className="block lg:hidden">
                     <div className="flex items-center justify-between">
                         <a href={logo.url} className="flex items-center gap-2">
-                            <Image src={logo.src} className="w-32 h-12 object-contain" alt={logo.alt} />
+                            <Image src={logo.src} className="h-10 w-auto max-w-[160px] object-contain" alt={logo.alt} />
                         </a>
                         <Sheet>
                             <SheetTrigger asChild>
@@ -245,11 +268,11 @@ const Navbar = ({
                                 <SheetHeader>
                                     <SheetTitle>
                                         <a href={logo.url} className="flex items-center gap-2">
-                                            <Image src={logo.src} className="w-36 h-16 object-contain" alt={logo.alt} />
+                                            <Image src={logo.src} className="h-14 w-auto max-w-[200px] object-contain" alt={logo.alt} />
                                         </a>
                                     </SheetTitle>
                                 </SheetHeader>
-                                {status === "authenticated" && (
+                                {mounted && status === "authenticated" && (
                                     <Card className="border-none shadow-none">
                                         <CardContent className="flex flex-col items-center text-center">
                                             <UserAvatar
@@ -289,7 +312,7 @@ const Navbar = ({
                                         {resolvedMenu.map((item) => renderMobileMenuItem(item, pathname))}
                                     </Accordion>
                                     <div className="flex flex-col gap-3">
-                                        {status !== "authenticated" && (
+                                        {(!mounted || status !== "authenticated") && (
                                             <>
                                                 <Button asChild variant="outline" size="sm">
                                                     <a href={auth.login.url}>{auth.login.text}</a>
@@ -336,17 +359,18 @@ const renderMenuItem = (item: MenuItem, pathname: string) => {
     }
 
     return (
-        <a
-            key={item.title}
-            className={`group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-accent-foreground ${
-                isActive
-                    ? "bg-primary/10 text-primary font-semibold"
-                    : "bg-background text-muted-foreground"
-            }`}
-            href={item.url}
-        >
-            {item.title}
-        </a>
+        <NavigationMenuItem key={item.title}>
+            <a
+                className={`group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-accent-foreground ${
+                    isActive
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "bg-background text-muted-foreground"
+                }`}
+                href={item.url}
+            >
+                {item.title}
+            </a>
+        </NavigationMenuItem>
     );
 };
 
@@ -372,7 +396,7 @@ const renderMobileMenuItem = (item: MenuItem, pathname: string) => {
         <a
             key={item.title}
             href={item.url}
-            className={`text-md font-semibold transition-colors ${isActive ? "text-primary" : ""}`}
+            className={`flex items-center py-2 text-base font-semibold transition-colors border-b border-border/40 last:border-0 ${isActive ? "text-primary" : "text-foreground hover:text-primary"}`}
         >
             {item.title}
         </a>

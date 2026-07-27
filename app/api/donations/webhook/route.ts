@@ -453,6 +453,7 @@ async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
       `[webhook] settleTransfer for donation ${donationId}: ${result.status}` +
         (result.reason ? ` (${result.reason})` : "")
     );
+
   } catch (error) {
     console.error(`Error processing payment completed:`, error);
     throw error;

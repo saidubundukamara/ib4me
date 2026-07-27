@@ -96,7 +96,7 @@ export default function CreateAdminPage() {
         description: `${formData.name} has been added as ${formData.role}.`,
       });
 
-      router.push('/admins');
+      router.push('/s/admin/admins');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create admin user';
       setError(errorMessage);
@@ -109,7 +109,7 @@ export default function CreateAdminPage() {
   };
 
   const handleCancel = () => {
-    router.push('/admin/admins');
+    router.push('/s/admin/admins');
   };
 
   // Redirect if not super admin
@@ -122,7 +122,7 @@ export default function CreateAdminPage() {
               <Shield className="h-12 w-12 text-muted-foreground/60 mx-auto mb-4" />
               <h2 className="text-lg font-medium text-foreground mb-2">Access Restricted</h2>
               <p className="text-muted-foreground mb-4">Only Super Administrators can create new admin users.</p>
-              <Button onClick={() => router.push('/admins')} variant="outline">
+              <Button onClick={() => router.push('/s/admin/admins')} variant="outline">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Admin Users
               </Button>

@@ -11,11 +11,8 @@ import {
 } from "react-icons/fa6";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import ProgressBar from "@/app/_components/ProgressBar";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { generateAvatarDataUri } from "@/lib/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ShieldAlert } from "lucide-react";
@@ -25,12 +22,16 @@ import {
   donationRepository,
   campaignUpdateRepository,
   userRepository,
+  campaignRepository,
 } from "@/repositories";
 import CampaignTabs, { type CampaignUpdateItem } from "./Tabs";
 import DonorsTicker from "./DonorsTicker";
-import { timeAgo } from "@/lib/utils";
+import SimilarCampaignsSection, { type SimilarCampaign } from "./SimilarCampaignsSection";
+import OrganizerBio from "./OrganizerBio";
+import { timeAgo, slugToTitle } from "@/lib/utils";
 import ShareImageButton from "./ShareImageButton";
 import { formatMajor } from "@/lib/currency";
+import CopyUrlButton from "./CopyUrlButton";
 
 function buildResponsiveHero(key: string) {
   const widths = [320, 480, 640, 768, 1024, 1280];
@@ -62,17 +63,34 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     return { title: 'Campaign Not Found' };
   }
 
-  // Get beneficiary photo URL if available
+  const campaignTitle = campaign.title?.trim() || slugToTitle(campaign.slug);
+  const goalAmount = campaign.goal?.amountMinor ? (campaign.goal.amountMinor / 100).toLocaleString() : '0';
+  const raisedAmount = campaign.totals?.raisedMinor ? (campaign.totals.raisedMinor / 100).toLocaleString() : '0';
+  const currency = campaign.goal?.currency || 'SLE';
+
+  const title = `${campaignTitle} - Fundraiser on ib4me`;
+  const description = `${campaignTitle}: ${currency} ${raisedAmount} raised of ${currency} ${goalAmount} goal. Support this campaign on ib4me.`;
+  const pageUrl = `https://ib4me.org/campaigns/${slug}`;
+
+  // Build og:image from Cloudinary — fast, CDN-cached, no server timeout
   let imageUrl = 'https://ib4me.org/assets/Hero.png';
+  const ogAssetIds: mongoose.Types.ObjectId[] = [];
   if (campaign.beneficiary?.photoAssetId) {
-    const assets = await mediaAssetService.listByIds([campaign.beneficiary.photoAssetId as mongoose.Types.ObjectId]);
+    ogAssetIds.push(campaign.beneficiary.photoAssetId as mongoose.Types.ObjectId);
+  }
+  const firstDocImage = (campaign.documents || []).find((d) => d.type?.startsWith('image/'));
+  if (firstDocImage?.assetId) {
+    ogAssetIds.push(firstDocImage.assetId as unknown as mongoose.Types.ObjectId);
+  }
+  if (ogAssetIds.length > 0) {
+    const assets = await mediaAssetService.listByIds(ogAssetIds);
     const asset = assets[0];
     if (asset?.storage?.key) {
       imageUrl = CloudinaryService.generateTransformationUrl(asset.storage.key, {
         width: 1200,
+        height: 630,
         crop: 'fill',
-        gravity: 'auto',
-        aspect_ratio: '1.91:1',
+        gravity: 'face',
         fetch_format: 'jpg',
         quality: 'auto',
       });
@@ -81,15 +99,6 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     }
   }
 
-  const beneficiaryName = campaign.beneficiary?.name || 'a beneficiary';
-  const goalAmount = campaign.goal?.amountMinor ? (campaign.goal.amountMinor / 100).toLocaleString() : '0';
-  const raisedAmount = campaign.totals?.raisedMinor ? (campaign.totals.raisedMinor / 100).toLocaleString() : '0';
-  const currency = campaign.goal?.currency || 'SLE';
-
-  const title = `Help ${beneficiaryName} - Fundraiser on ib4me`;
-  const description = `Help ${beneficiaryName} raise ${currency} ${goalAmount} for ${campaign.details || 'their cause'}. ${currency} ${raisedAmount} raised so far.`;
-  const pageUrl = `https://ib4me.org/campaigns/${slug}`;
-
   return {
     title,
     description,
@@ -97,9 +106,9 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
       title,
       description,
       url: pageUrl,
-      images: [{ url: imageUrl, width: 1200, height: 630, alt: beneficiaryName }],
       type: 'website',
       siteName: 'ib4me',
+      images: [{ url: imageUrl, width: 1200, height: 630, alt: `${campaignTitle} on ib4me` }],
     },
     twitter: {
       card: 'summary_large_image',
@@ -132,7 +141,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
   const progress =
     goalAmount > 0 ? Math.min(100, Math.round((amountRaised / goalAmount) * 100)) : 0;
 
-  const title = campaign.beneficiary?.name || campaign.details || campaign.slug;
+  const title = campaign.title?.trim() || slugToTitle(campaign.slug);
 
   // Collect asset IDs: beneficiary photo (priority) and first document image (fallback)
   const assetIds: mongoose.Types.ObjectId[] = [];
@@ -225,46 +234,96 @@ export default async function CampaignDetailPage({ params }: PageParams) {
   const organizerPhoto = organizer?.photoUrl ?? null;
   const createdLabel = campaign.createdAt ? formatDate(campaign.createdAt) : null;
 
+  // Fetch similar campaigns (other active campaigns, excluding this one)
+  const similarRaw = await campaignRepository.findMany({
+    status: "active",
+    _id: { $ne: campaign._id },
+  } as never, { query: { sort: { createdAt: -1 }, limit: 3 } });
+
+  const similarAssetIds: mongoose.Types.ObjectId[] = [];
+  for (const c of similarRaw) {
+    const docs = (c.documents as unknown as { type?: string; assetId?: mongoose.Types.ObjectId }[]) || [];
+    const img = docs.find((d) => d.type?.startsWith("image/"));
+    if (img?.assetId) similarAssetIds.push(img.assetId);
+  }
+  const similarAssets = similarAssetIds.length
+    ? await mediaAssetService.listByIds(similarAssetIds)
+    : [];
+  const similarAssetMap = new Map(similarAssets.map((a) => [String(a._id), a]));
+
+  const similarCampaigns: SimilarCampaign[] = similarRaw.map((c) => {
+    const docs = (c.documents as unknown as { type?: string; assetId?: mongoose.Types.ObjectId }[]) || [];
+    const img = docs.find((d) => d.type?.startsWith("image/"));
+    const asset = img?.assetId ? similarAssetMap.get(String(img.assetId)) : null;
+    const imgUrl = asset?.storage?.key
+      ? CloudinaryService.generateTransformationUrl(asset.storage.key, { width: 768, crop: "fill", gravity: "auto", aspect_ratio: "16:9", fetch_format: "auto", quality: "auto" })
+      : asset?.url || "/assets/Hero.png";
+    const raisedMinor = (c.totals as unknown as { raisedMinor?: number })?.raisedMinor ?? 0;
+    const goalMinor = (c.goal as unknown as { amountMinor?: number })?.amountMinor ?? 0;
+    const cur = (c.goal as unknown as { currency?: string })?.currency || "SLE";
+    const storyText = (c as { story?: string }).story;
+    return {
+      id: String(c._id),
+      slug: c.slug,
+      title: (c as { title?: string }).title?.trim() || slugToTitle(c.slug),
+      description: storyText ? storyText.replace(/<[^>]+>/g, "").slice(0, 160).trim() || undefined : undefined,
+      amountRaised: Math.floor(raisedMinor) / 100,
+      goalAmount: Math.floor(goalMinor) / 100,
+      donationsCount: (c.totals as unknown as { donationCount?: number })?.donationCount ?? 0,
+      currency: cur,
+      category: (c as { category?: string }).category || undefined,
+      urgency: (c as { urgency?: "low" | "medium" | "high" }).urgency || undefined,
+      ownerVerified: (c as { ownerVerification?: { verified?: boolean } }).ownerVerification?.verified ?? false,
+      imageUrl: imgUrl,
+    };
+  });
+
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ib4me.org";
   const absoluteUrl = `${siteUrl}/campaigns/${campaign.slug}`;
-  const shareText = `Help ${title} — ${formatMajor(amountRaised, currency)} raised of ${formatMajor(goalAmount, currency)} goal`;
+  const shareText = `Help ${title.replace(/^help\s+/i, "")} — ${formatMajor(amountRaised, currency)} raised of ${formatMajor(goalAmount, currency)} goal`;
 
   const shareLinks = [
     {
       name: "Facebook",
-      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(absoluteUrl)}`,
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(absoluteUrl + "?ref=facebook")}`,
       icon: FaFacebookF,
       bgColor: "bg-blue-50 dark:bg-blue-950/20",
       hoverBg: "hover:bg-blue-100 dark:hover:bg-blue-950/40 hover:border-blue-300",
     },
     {
       name: "X",
-      href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(absoluteUrl)}&text=${encodeURIComponent(shareText)}`,
+      href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(absoluteUrl + "?ref=twitter")}&text=${encodeURIComponent(shareText)}`,
       icon: FaXTwitter,
       bgColor: "bg-muted",
       hoverBg: "hover:bg-muted/80 hover:border-foreground/30",
     },
     {
       name: "WhatsApp",
-      href: `https://wa.me/?text=${encodeURIComponent(`${shareText}\n${absoluteUrl}`)}`,
+      href: `https://wa.me/?text=${encodeURIComponent(`${shareText}\n${absoluteUrl}?ref=whatsapp`)}`,
       icon: FaWhatsapp,
       bgColor: "bg-green-50 dark:bg-green-950/20",
       hoverBg: "hover:bg-green-100 dark:hover:bg-green-950/40 hover:border-green-300",
     },
     {
       name: "LinkedIn",
-      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(absoluteUrl)}`,
+      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(absoluteUrl + "?ref=linkedin")}`,
       icon: FaLinkedinIn,
       bgColor: "bg-blue-50 dark:bg-blue-950/20",
       hoverBg: "hover:bg-blue-100 dark:hover:bg-blue-950/40 hover:border-blue-400",
     },
   ];
 
+  // Social proof: count donations from the last 24 hours
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const donationsLast24h = donations.filter(
+    (d) => d.status === "succeeded" && new Date(d.createdAt) > oneDayAgo,
+  ).length;
+
   return (
-    <div className="min-h-dvh overflow-x-hidden bg-gradient-to-b from-background to-muted/20 font-Sora pb-20 md:pb-0">
-      {/* Mobile sticky donate bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg">
-        <div className="flex items-center gap-3">
+    <div className="min-h-dvh overflow-x-hidden bg-gradient-to-b from-background to-muted/20 font-Sora pb-[calc(72px+env(safe-area-inset-bottom))] lg:pb-0">
+      {/* Sticky donate bar — visible on all screens except large (where sidebar has the button) */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-card/95 backdrop-blur border-t border-border px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg">
+        <div className="flex items-center gap-3 max-w-2xl mx-auto">
           <div className="min-w-0">
             <p className="text-[11px] text-muted-foreground leading-none mb-0.5">Raised so far</p>
             <p className="text-sm font-bold text-primary truncate">{formatMajor(amountRaised, currency)} <span className="text-muted-foreground font-normal text-xs">of {formatMajor(goalAmount, currency)}</span></p>
@@ -275,15 +334,6 @@ export default async function CampaignDetailPage({ params }: PageParams) {
         </div>
       </div>
 
-      {/* Non-dismissible unverified banner — shown at very top of page */}
-      {!isOwnerVerified && (
-        <div className="w-full bg-amber-500 text-white px-4 py-2.5">
-          <div className="mx-auto max-w-6xl flex items-center gap-2 text-sm font-medium">
-            <ShieldAlert className="h-4 w-4 shrink-0" />
-            <span>This campaign organizer has not been verified. Review carefully before contributing.</span>
-          </div>
-        </div>
-      )}
 
       <div className="py-8 md:py-12">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -296,7 +346,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
             <span className="truncate text-foreground font-medium">{title}</span>
           </nav>
 
-          <div className="grid gap-8 lg:grid-cols-12">
+          <div className="grid gap-8 md:grid-cols-[1fr_340px] lg:grid-cols-12">
             <section className="animate-fade-up min-w-0 space-y-6 lg:col-span-8">
               <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border/40 bg-muted shadow-lg">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -356,7 +406,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
             </section>
 
             <aside className="animate-fade-up delay-200 space-y-6 lg:col-span-4">
-              <div className="space-y-6 lg:sticky lg:top-6">
+              <div className="space-y-6 md:sticky md:top-6">
                 <Card className="overflow-hidden rounded-3xl border border-border/50 shadow-xl">
                   <div className="h-1 bg-gradient-to-r from-primary via-primary/80 to-primary/40" />
                   <CardContent className="space-y-6 p-5 sm:p-6">
@@ -369,7 +419,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                           of {formatMajor(goalAmount, currency)} goal
                         </span>
                       </div>
-                      <Progress value={progress} className="mt-4 h-3" />
+                      <ProgressBar value={progress} className="mt-4 h-3" />
                       <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                         <span className="inline-flex items-center gap-2">
                           <Heart className="h-4 w-4 text-primary" />
@@ -378,6 +428,21 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                         <span className="font-semibold text-primary">{progress}%</span>
                       </div>
                     </div>
+
+                    {/* Goal reached banner */}
+                    {progress >= 100 && (
+                      <div className="rounded-2xl bg-gradient-to-r from-primary to-chartereuse-dark text-white px-5 py-4 text-center space-y-1">
+                        <p className="text-base font-bold">Goal Reached!</p>
+                        <p className="text-xs opacity-90">This campaign has been fully funded. Thank you to all donors!</p>
+                      </div>
+                    )}
+
+                    {/* Social proof: last-24h donations */}
+                    {donationsLast24h > 0 && (
+                      <p className="text-center text-sm font-semibold text-primary">
+                        {donationsLast24h} {donationsLast24h === 1 ? "person" : "people"} donated in the last 24 hours
+                      </p>
+                    )}
 
                     <div className="space-y-3">
                       <Button
@@ -407,7 +472,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                             key={name}
                             variant="outline"
                             size="icon"
-                            className={`${bgColor} ${hoverBg} flex-1 min-w-12 transition-colors`}
+                            className={`${bgColor} ${hoverBg} flex-1 min-w-[44px] h-11 transition-colors`}
                             asChild
                           >
                             <a
@@ -420,10 +485,12 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                             </a>
                           </Button>
                         ))}
+                        <CopyUrlButton url={absoluteUrl} />
                       </div>
                       <ShareImageButton
                         campaign={{
                           slug: campaign.slug,
+                          title: campaign.title ?? undefined,
                           beneficiary: campaign.beneficiary
                             ? { name: campaign.beneficiary.name ?? undefined, age: campaign.beneficiary.age ?? undefined }
                             : undefined,
@@ -449,37 +516,15 @@ export default async function CampaignDetailPage({ params }: PageParams) {
 
                     <Separator />
 
-                    <Link href={`/creators/${String(campaign.ownerId)}`}>
-                      <div className="flex items-center gap-3 rounded-2xl bg-muted/40 p-3 hover:bg-muted/60 transition-colors cursor-pointer">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage
-                            src={organizerPhoto ?? generateAvatarDataUri(String(campaign.ownerId))}
-                            alt={organizerName}
-                          />
-                          <AvatarFallback>{organizerInitials}</AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="truncate text-sm font-semibold text-foreground hover:text-primary transition-colors">
-                              {organizerName}
-                            </p>
-                            {!isOwnerVerified && (
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800"
-                                title="This organizer has not completed identity verification"
-                              >
-                                Unverified Organizer
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            Campaign organizer
-                            {createdLabel ? ` • Created ${createdLabel}` : ""}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
+                    <OrganizerBio
+                      organizerId={String(campaign.ownerId)}
+                      organizerName={organizerName}
+                      organizerInitials={organizerInitials}
+                      organizerPhoto={organizerPhoto}
+                      isOwnerVerified={isOwnerVerified}
+                      createdLabel={createdLabel}
+                      bio={organizer?.bio ?? null}
+                    />
 
                     <Separator />
 
@@ -510,6 +555,9 @@ export default async function CampaignDetailPage({ params }: PageParams) {
               </div>
             </aside>
           </div>
+
+          {/* Similar Campaigns */}
+          <SimilarCampaignsSection campaigns={similarCampaigns} />
         </div>
       </div>
     </div>

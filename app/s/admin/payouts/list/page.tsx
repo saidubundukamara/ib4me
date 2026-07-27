@@ -108,6 +108,8 @@ export default function PayoutListPage() {
       // Add filters based on active tab
       if (activeTab === "threshold_review") {
         url = "/api/admin/payouts/threshold-review";
+      } else if (activeTab === "pending") {
+        params.append("status", "processing,in_review,threshold_review,approved");
       } else if (statusFilter && statusFilter !== "all") {
         params.append("status", statusFilter);
       }
@@ -154,7 +156,7 @@ export default function PayoutListPage() {
   };
 
   const handleViewDetails = (payoutId: string) => {
-    router.push(`/payouts/${payoutId}`);
+    router.push(`/s/admin/payouts/${payoutId}`);
   };
 
   const StatusBadge = ({ status }: { status: string }) => {
@@ -296,7 +298,7 @@ export default function PayoutListPage() {
                     </TableHeader>
                     <TableBody>
                       {payouts.map((payout) => (
-                        <TableRow key={payout._id}>
+                        <TableRow key={payout._id} className="hover:bg-muted/50 transition-colors cursor-pointer">
                           <TableCell>
                             <div>
                               <div className="font-medium">

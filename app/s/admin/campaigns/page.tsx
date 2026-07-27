@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 interface Campaign {
   _id: string;
   slug: string;
+  title?: string;
   beneficiary?: { name?: string; age?: number };
   details?: string;
   status: string;
@@ -300,10 +301,10 @@ export default function AdminCampaignsPage() {
                       <div className="flex items-center space-x-4">
                         <div>
                           <Link 
-                            href={`/campaigns/${campaign._id}`}
+                            href={`/s/admin/campaigns/${campaign._id}`}
                             className="font-medium hover:underline" style={{ color: "#00712D" }}
                           >
-                            {campaign.beneficiary?.name || campaign.details || campaign.slug}
+                            {campaign.title || campaign.beneficiary?.name || campaign.details || campaign.slug}
                           </Link>
                           <div className="text-sm text-muted-foreground mt-1">
                             Owner: {campaign.ownerId?.firstName} {campaign.ownerId?.lastName} ({campaign.ownerId?.email})
@@ -361,7 +362,7 @@ export default function AdminCampaignsPage() {
                         </Button>
                       )}
                       
-                      <Link href={`/campaigns/${campaign._id}`}>
+                      <Link href={`/s/admin/campaigns/${campaign._id}`}>
                         <Button size="sm" variant="default">
                           View Details
                         </Button>

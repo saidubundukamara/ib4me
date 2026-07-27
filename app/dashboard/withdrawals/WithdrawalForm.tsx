@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { formatMinor, toMinor } from "@/lib/currency";
 import { computePayoutSplit } from "@/lib/fees";
-import { Smartphone, CreditCard, Ban, Loader2, CheckCircle2 } from "lucide-react";
+import { Smartphone, Ban, Loader2, CheckCircle2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -232,9 +232,10 @@ export function WithdrawalForm({
               "We couldn't complete the payout with the provider. Please try again or contact support.",
           });
         } else {
-          toast.success("Payout request submitted successfully!", {
-            description:
-              "Your withdrawal is being processed and will be sent to your selected destination.",
+          toast.success("Withdrawal request submitted!", {
+            description: result.payoutId
+              ? `Reference: #${String(result.payoutId).slice(-8).toUpperCase()} — Your withdrawal is being processed.`
+              : "Your withdrawal is being processed and will be sent to your selected destination.",
           });
         }
         formRef.current?.reset();
@@ -415,15 +416,10 @@ export function WithdrawalForm({
                   Mobile Money
                 </div>
               </SelectItem>
-              <SelectItem value="bank" disabled>
-                <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  Bank Transfer (coming soon)
-                </div>
-              </SelectItem>
             </SelectContent>
           </Select>
           <input type="hidden" name="payoutType" value={payoutType} />
+          <p className="text-xs text-muted-foreground">More payout methods coming soon.</p>
         </div>
       </div>
 

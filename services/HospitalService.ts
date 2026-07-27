@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import { hospitalRepository, campaignRepository } from "../repositories";
 import { IHospital } from "../models/Hospital";
-import { runInTransaction } from "./ServiceTransaction";
 
 interface HospitalFilters {
   search?: string;
@@ -102,7 +101,7 @@ export class HospitalService {
 
       // Check for duplicate name (excluding current hospital)
       const existing = await hospitalRepository.findByName(input.name.trim());
-      if (existing && (existing._id as any).toString() !== id) {
+      if (existing && String(existing._id) !== id) {
         throw new Error("A hospital with this name already exists");
       }
     }
@@ -115,7 +114,7 @@ export class HospitalService {
     // Check for duplicate email if being updated
     if (input.contactEmail) {
       const existingEmail = await hospitalRepository.findByEmail(input.contactEmail);
-      if (existingEmail && (existingEmail._id as any).toString() !== id) {
+      if (existingEmail && String(existingEmail._id) !== id) {
         throw new Error("A hospital with this email already exists");
       }
     }

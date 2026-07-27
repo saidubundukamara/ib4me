@@ -6,7 +6,7 @@ import { FaFacebookF, FaWhatsapp } from "react-icons/fa6";
 import { campaignService } from "@/services";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import ProgressBar from "@/app/_components/ProgressBar";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatMajor } from "@/lib/currency";
@@ -32,15 +32,15 @@ async function DonationCancelContent({ params }: PageProps) {
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ib4me.org";
   const absoluteUrl = `${siteUrl}/campaigns/${slug}`;
-  const shareText = `Help support ${campaignName} on ib4me`;
+  const shareText = `Help support ${campaignName.replace(/^help\s+/i, "")} on ib4me`;
 
   return (
     <main className="container mx-auto max-w-2xl px-4 py-8 font-Sora">
       <Card className="rounded-3xl border border-border/40 bg-card/80 shadow-2xl backdrop-blur">
-        <CardContent className="p-8">
+        <CardContent className="p-4 sm:p-8">
           <div className="text-center space-y-6">
             {/* Cancel Icon */}
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-950/30">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-orange-100">
               <XCircle className="h-10 w-10 text-blaze-orange" />
             </div>
 
@@ -82,7 +82,7 @@ async function DonationCancelContent({ params }: PageProps) {
                     <span>Raised so far</span>
                     <span className="font-medium text-foreground">{formatMajor(amountRaised, currency)}</span>
                   </div>
-                  <Progress value={progress} className="h-2" />
+                  <ProgressBar value={progress} className="h-2" />
                   <div className="flex items-center justify-between">
                     <span>Goal</span>
                     <span className="font-medium text-foreground">{formatMajor(goalAmount, currency)}</span>
@@ -117,7 +117,7 @@ async function DonationCancelContent({ params }: PageProps) {
                 <Button
                   asChild
                   variant="outline"
-                  className="h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-950/40"
+                  className="h-10 rounded-2xl bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
                 >
                   <a
                     href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(absoluteUrl)}`}
@@ -132,7 +132,7 @@ async function DonationCancelContent({ params }: PageProps) {
                 <Button
                   asChild
                   variant="outline"
-                  className="h-10 rounded-2xl bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-950/40"
+                  className="h-10 rounded-2xl bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
                 >
                   <a
                     href={`https://wa.me/?text=${encodeURIComponent(`${shareText}\n${absoluteUrl}`)}`}
@@ -165,7 +165,7 @@ export default function DonationCancelPage({ params }: PageProps) {
     <Suspense fallback={
       <div className="container mx-auto max-w-2xl px-4 py-8 font-Sora">
         <Card className="rounded-3xl border border-border/40 bg-card/80 shadow-2xl backdrop-blur">
-          <CardContent className="p-8">
+          <CardContent className="p-4 sm:p-8">
             <div className="text-center space-y-6">
               <Skeleton className="mx-auto h-16 w-16 rounded-full" />
               <div className="space-y-3">

@@ -159,11 +159,12 @@ export class UserRepository extends BaseRepository<IUser> {
         "organization.type": 1,
         "organization.description": 1,
         "organization.website": 1,
+        bio: 1,
         "address.city": 1,
         "address.country": 1,
         createdAt: 1,
       }
-    ).exec();
+    ).lean().exec() as Promise<Partial<IUser> | null>;
   }
 
   async findAdminsWithPagination(filters: AdminUserFilters): Promise<PaginatedUsers> {

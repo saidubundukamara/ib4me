@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { payoutService } from "@/services";
 import mongoose from "mongoose";
+import { getAdminFromToken } from "@/lib/admin-auth-token";
 
 export async function GET(request: NextRequest) {
   try {
+    const adminUser = await getAdminFromToken();
+    if (!adminUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { searchParams } = new URL(request.url);
     
     // Pagination

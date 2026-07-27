@@ -95,8 +95,8 @@ export class AuditLogService {
       timestamp: log.at.toISOString(),
       admin: log.actor.userId ? {
         id: log.actor.userId.toString(),
-        name: (log.actor as any).userId?.name,
-        email: (log.actor as any).userId?.email
+        name: (log.actor.userId as unknown as { name?: string }).name,
+        email: (log.actor.userId as unknown as { email?: string }).email,
       } : null,
       action: {
         type: log.action,

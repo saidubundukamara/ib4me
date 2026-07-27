@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+﻿import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
 import Link from "next/link";
 import { authConfig } from "@/lib/auth-config";
@@ -7,7 +7,7 @@ import { campaignService } from "@/services/CampaignService";
 import { donationRepository } from "@/repositories/DonationRepository";
 import Card from "./_components/Card";
 import ProgressBar from "./_components/ProgressBar";
-import { DollarSign, Heart, Users, TrendingUp, MoreVertical, Eye, Pencil, Share2 } from "lucide-react";
+import { Banknote, Heart, Users, TrendingUp, MoreVertical, Eye, Pencil, Share2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,8 +36,8 @@ export default async function UserDashboardPage() {
 
   const totalRaisedMinor = campaigns.reduce((sum, c) => sum + (c.totals?.raisedMinor ?? 0), 0);
   const totalDonations = campaigns.reduce((sum, c) => sum + (c.totals?.donationCount ?? 0), 0);
-  const campaignsSupported = donations.length;
-  const avgDonationMinor = donations.length ? Math.round(donations.reduce((sum, d) => sum + d.amount.minor, 0) / donations.length) : 0;
+  const campaignsSupported = new Set(donations.map((d) => String(d.campaignId))).size;
+  const avgDonationMinor = donations.length ? Math.round(donations.reduce((sum, d) => sum + (d.campaignReceivesMinor ?? d.amount.minor), 0) / donations.length) : 0;
 
   const averageProgressPct = (() => {
     const progressValues = campaigns
@@ -74,7 +74,7 @@ export default async function UserDashboardPage() {
     const dt = new Date(d.createdAt);
     const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
     const bucket = months.find((m) => m.key === key);
-    if (bucket) bucket.totalMinor += d.amount.minor;
+    if (bucket) bucket.totalMinor += d.campaignReceivesMinor ?? d.amount.minor;
   }
   const maxMinor = Math.max(1, ...months.map((m) => m.totalMinor));
 
@@ -102,7 +102,7 @@ export default async function UserDashboardPage() {
         <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 sm:w-14 sm:h-14 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-              <DollarSign className="w-6 h-6 sm:w-7 sm:h-7 text-primary" aria-hidden />
+              <Banknote className="w-6 h-6 sm:w-7 sm:h-7 text-primary" aria-hidden />
             </div>
             <div className="min-w-0">
               <div className="text-xs sm:text-sm text-muted-foreground">Total Raised</div>
@@ -174,8 +174,8 @@ export default async function UserDashboardPage() {
 
         <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-orange-blaze/10 rounded-full flex items-center justify-center shrink-0">
-              <TrendingUp className="w-6 h-6 sm:w-7 sm:h-7 text-orange-blaze" aria-hidden />
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-blaze-orange/10 rounded-full flex items-center justify-center shrink-0">
+              <TrendingUp className="w-6 h-6 sm:w-7 sm:h-7 text-blaze-orange" aria-hidden />
             </div>
             <div>
               <div className="text-xs sm:text-sm text-muted-foreground">Total Donations</div>
@@ -205,22 +205,30 @@ export default async function UserDashboardPage() {
               <div className="text-xl sm:text-2xl font-bold text-foreground">{campaignsSupported}</div>
             </div>
           </div>
-
-          <div className="mt-3 sm:mt-4">
-            <ProgressBar value={averageProgressPct} className="w-full" aria-label="Average progress" />
-            <div className="mt-1.5 sm:mt-2 text-[11px] sm:text-xs text-muted-foreground">
-              {averageProgressPct}% average progress
-            </div>
-          </div>
         </Card>
       </div>
 
       {/* Your Campaigns */}
-      <Card className="p-8 rounded-3xl border-0 shadow-[var(--shadow-lift)]">
+      <Card className="p-4 sm:p-8 rounded-3xl border-0 shadow-[var(--shadow-lift)]">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg sm:text-2xl font-bold text-foreground">Your Campaigns</h2>
           <Link href="/dashboard/campaigns" className="text-sm text-primary">View all</Link>
         </div>
+        {campaigns.length === 0 && (
+          <div className="flex flex-col items-center py-10 text-center">
+            <div className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-4">
+              <Heart className="w-7 h-7 text-muted-foreground/40" />
+            </div>
+            <p className="text-sm font-medium text-foreground mb-1">No campaigns yet</p>
+            <p className="text-xs text-muted-foreground mb-4">Start your first campaign and reach donors.</p>
+            <Link
+              href="/dashboard/campaigns"
+              className="inline-flex items-center rounded-full bg-primary px-4 py-2 text-xs font-medium text-white hover:bg-primary/90 transition-colors"
+            >
+              Create your first campaign
+            </Link>
+          </div>
+        )}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {campaigns.slice(0, 6).map((c) => {
             const raised = c.totals?.raisedMinor ?? 0;
@@ -255,18 +263,13 @@ export default async function UserDashboardPage() {
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link href={`/dashboard/donations?campaign=${campaignId}`} className="flex items-center gap-2">
-                          <DollarSign className="h-4 w-4" /> View Donations
+                          <Banknote className="h-4 w-4" /> View Donations
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <a
-                          href={`https://wa.me/?text=${encodeURIComponent(`Support this campaign: ${process.env.NEXT_PUBLIC_SITE_URL || "https://ib4me.org"}/campaigns/${c.slug}`)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2"
-                        >
+                        <Link href={`/campaigns/${c.slug}#share`} className="flex items-center gap-2">
                           <Share2 className="h-4 w-4" /> Share
-                        </a>
+                        </Link>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -285,7 +288,7 @@ export default async function UserDashboardPage() {
       </Card>
 
       {/* Recent Donations */}
-      <Card className="p-8 rounded-3xl border-0 shadow-[var(--shadow-lift)]">
+      <Card className="p-4 sm:p-8 rounded-3xl border-0 shadow-[var(--shadow-lift)]">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg sm:text-2xl font-bold text-foreground">Recent Donations</h2>
           <a href="/dashboard/donations" className="text-sm text-primary">View all</a>
@@ -328,7 +331,7 @@ export default async function UserDashboardPage() {
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="text-base font-bold text-blaze-orange">{formatMinor(d.amount.minor, d.amount.currency)}</div>
+                    <div className="text-base font-bold text-blaze-orange">{formatMinor(d.campaignReceivesMinor ?? d.amount.minor, d.amount.currency)}</div>
                   </div>
                 </div>
               );
@@ -339,3 +342,4 @@ export default async function UserDashboardPage() {
     </div>
   );
 }
+

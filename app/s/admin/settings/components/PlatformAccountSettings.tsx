@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/lib/settings-provider";
-import { Loader2, Save, AlertCircle, Wallet, Gift, DollarSign } from "lucide-react";
+import { Loader2, Save, AlertCircle, Wallet, Gift, Banknote } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -135,7 +135,7 @@ export default function PlatformAccountSettings() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
+            <Banknote className="h-5 w-5" />
             Platform Financial Account (Fees)
           </CardTitle>
           <CardDescription>
@@ -429,3 +429,4 @@ export default function PlatformAccountSettings() {
     </form>
   );
 }
+

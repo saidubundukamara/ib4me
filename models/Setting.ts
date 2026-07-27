@@ -9,6 +9,8 @@ export interface IWithdrawalSetting {
   blockedReason?: string;
   blockedBy?: mongoose.Types.ObjectId;
   blockedAt?: Date;
+  dailyLimitMinor?: number;    // Max per user per 24h (minor units, 0 = unlimited)
+  monthlyLimitMinor?: number;  // Max per user per 30 days (minor units, 0 = unlimited)
 }
 
 export interface ITieredFeeRate {
@@ -60,6 +62,7 @@ export interface IFeatureFlags {
   whatsAppAutoPost?: boolean;
   paypalEnabled?: boolean;
   emergencyPoolFund?: boolean;
+  donationPresets?: number[];      // Quick-pick amounts on donate page (major units, e.g. [50,250,500])
 }
 
 export interface IWebsiteSettings {
@@ -127,6 +130,17 @@ export interface ICookieCategory {
   description?: string;
 }
 
+export interface ILegalDocumentEntry {
+  content?: string;
+  effectiveDate?: string;
+  lastUpdatedAt?: Date;
+}
+
+export interface ILegalDocuments {
+  privacyPolicy?: ILegalDocumentEntry;
+  termsOfService?: ILegalDocumentEntry;
+}
+
 export interface ICookieConsentSettings {
   enabled?: boolean;
   banner?: ICookieConsentBanner;
@@ -154,6 +168,7 @@ export interface ISetting extends mongoose.Document {
   tipFinancialAccount?: ITipFinancialAccount;            // For receiving tips
   tipping?: ITippingSettings;
   cookieConsent?: ICookieConsentSettings;
+  legalDocuments?: ILegalDocuments;
   updatedAt: Date;
 }
 
@@ -169,6 +184,8 @@ const settingSchema = new mongoose.Schema<ISetting>(
       blockedReason: { type: String },
       blockedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
       blockedAt: { type: Date },
+      dailyLimitMinor: { type: Number },
+      monthlyLimitMinor: { type: Number },
     },
     fees: {
       processingFee: {
@@ -184,6 +201,7 @@ const settingSchema = new mongoose.Schema<ISetting>(
       whatsAppAutoPost: { type: Boolean },
       paypalEnabled: { type: Boolean },
       emergencyPoolFund: { type: Boolean },
+      donationPresets: [{ type: Number }],
     },
     website: {
       siteName: { type: String },
@@ -278,6 +296,18 @@ const settingSchema = new mongoose.Schema<ISetting>(
         },
       ],
       consentExpiryDays: { type: Number, default: 365 },
+    },
+    legalDocuments: {
+      privacyPolicy: {
+        content: { type: String },
+        effectiveDate: { type: String },
+        lastUpdatedAt: { type: Date },
+      },
+      termsOfService: {
+        content: { type: String },
+        effectiveDate: { type: String },
+        lastUpdatedAt: { type: Date },
+      },
     },
   },
   { timestamps: { createdAt: false, updatedAt: true }, _id: false }

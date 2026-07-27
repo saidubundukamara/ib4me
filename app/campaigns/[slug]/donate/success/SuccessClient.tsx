@@ -14,6 +14,7 @@ type DonationStatus = "loading" | "pending" | "transferring" | "succeeded" | "fa
 
 interface DonationDetails {
   amountMajor: number;
+  campaignReceivesMajor: number | null;
   currency: string;
   createdAt: string;
 }
@@ -115,6 +116,7 @@ export default function SuccessClient({
         if (isMounted && donationData?.amount) {
           setDetails({
             amountMajor: donationData.amount.major,
+            campaignReceivesMajor: donationData.amount.campaignReceivesMajor ?? null,
             currency: donationData.amount.currency,
             createdAt: donationData.createdAt,
           });
@@ -159,6 +161,7 @@ export default function SuccessClient({
         if (donationData.amount) {
           setDetails({
             amountMajor: donationData.amount.major,
+            campaignReceivesMajor: donationData.amount.campaignReceivesMajor ?? null,
             currency: donationData.amount.currency,
             createdAt: donationData.createdAt,
           });
@@ -211,6 +214,7 @@ export default function SuccessClient({
 
   // Loading state
   if (status === "loading") {
+    const timedOut = pollingCount >= MAX_POLLING_ATTEMPTS;
     return (
       <main className="container mx-auto max-w-2xl px-4 py-8 font-Sora">
         <Card className="rounded-3xl border border-border/40 bg-card/80 shadow-2xl backdrop-blur">
@@ -223,6 +227,16 @@ export default function SuccessClient({
                 <h1 className="text-2xl font-semibold text-foreground">Checking donation status...</h1>
                 <p className="text-muted-foreground mt-2">Please wait while we verify your payment.</p>
               </div>
+              {timedOut && (
+                <div className="rounded-2xl border border-border/40 bg-muted/30 p-4 space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Your donation is taking longer than expected. It&apos;s safe — check your email for a confirmation or contact support.
+                  </p>
+                  <Button variant="outline" size="sm" className="w-full rounded-xl" onClick={() => window.location.reload()}>
+                    Refresh Page
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -246,15 +260,26 @@ export default function SuccessClient({
                   Your payment is being processed. This usually takes just a few seconds.
                 </p>
               </div>
-              <div className="rounded-2xl border border-border/40 bg-muted/30 p-4">
+              <div className="rounded-2xl border border-border/40 bg-muted/30 p-4 space-y-3">
                 <p className="text-sm text-muted-foreground">
                   {pollingCount > 0 && pollingCount < MAX_POLLING_ATTEMPTS && (
-                    <span>Checking status... ({Math.min(pollingCount * 2, 60)}s)</span>
+                    <span>Checking status… ({Math.min(pollingCount * 2, 60)}s elapsed)</span>
                   )}
                   {pollingCount >= MAX_POLLING_ATTEMPTS && (
-                    <span>This is taking longer than expected. You can refresh the page to check again.</span>
+                    <span>This is taking longer than expected. Your donation is safe — please refresh to check again.</span>
                   )}
                 </p>
+                {pollingCount >= MAX_POLLING_ATTEMPTS && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full rounded-xl"
+                    onClick={() => window.location.reload()}
+                  >
+                    Refresh Page
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
@@ -265,6 +290,7 @@ export default function SuccessClient({
 
   // Transferring state
   if (status === "transferring") {
+    const timedOut = pollingCount >= MAX_POLLING_ATTEMPTS;
     return (
       <main className="container mx-auto max-w-2xl px-4 py-8 font-Sora">
         <Card className="rounded-3xl border border-border/40 bg-card/80 shadow-2xl backdrop-blur">
@@ -286,6 +312,21 @@ export default function SuccessClient({
                     <strong>Note:</strong> {error}. The transfer will be completed automatically.
                   </AlertDescription>
                 </Alert>
+              )}
+              {timedOut && (
+                <div className="rounded-2xl border border-border/40 bg-muted/30 p-4 space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    This is taking longer than expected. Your payment was received — the transfer to {campaignName} will complete automatically. Check your email for updates.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 rounded-xl" onClick={() => window.location.reload()}>
+                      Refresh
+                    </Button>
+                    <Button asChild size="sm" className="flex-1 rounded-xl">
+                      <Link href={`/campaigns/${slug}`}>View Campaign</Link>
+                    </Button>
+                  </div>
+                </div>
               )}
             </div>
           </CardContent>
@@ -365,11 +406,20 @@ export default function SuccessClient({
                 {details && (
                   <>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Amount:</span>
+                      <span className="text-muted-foreground">Your donation:</span>
                       <span className="font-medium text-foreground">
                         {formatMajor(details.amountMajor, details.currency)}
                       </span>
                     </div>
+                    {details.campaignReceivesMajor != null &&
+                      details.campaignReceivesMajor !== details.amountMajor && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Goes to campaign:</span>
+                          <span className="font-medium text-foreground">
+                            {formatMajor(details.campaignReceivesMajor, details.currency)}
+                          </span>
+                        </div>
+                      )}
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Date:</span>
                       <span className="font-medium text-foreground">

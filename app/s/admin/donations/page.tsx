@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { formatMajor } from "@/lib/currency";
@@ -12,7 +12,7 @@ const fromMinorUnits = (amountMinor: number, currency: string = "SLE"): number =
 };
 
 import { 
-  DollarSign, 
+  Banknote, 
   TrendingUp, 
   AlertTriangle,
   Users,
@@ -141,8 +141,63 @@ export default function AdminDonationsPage() {
   };
 
   const handleExportData = () => {
-    // TODO: Implement data export functionality
-    console.log("Exporting donation data...");
+    if (!analytics) return;
+
+    const rows: (string | number)[][] = [
+      ["Metric", "Count", "Amount (SLE)"],
+      ["Total Donations", analytics.totalDonations, fromMinorUnits(analytics.totalAmount)],
+      ["Successful", analytics.successfulDonations, fromMinorUnits(analytics.successfulAmount)],
+      ["Pending", analytics.pendingDonations, fromMinorUnits(analytics.pendingAmount)],
+      ["Failed", analytics.failedDonations, fromMinorUnits(analytics.failedAmount)],
+      ["Refunded", analytics.refundedDonations, fromMinorUnits(analytics.refundedAmount)],
+      ["Payment Received", analytics.paymentReceivedDonations, fromMinorUnits(analytics.paymentReceivedAmount)],
+      [],
+      ["--- Revenue ---", "", ""],
+    ];
+
+    if (revenue) {
+      rows.push(
+        ["Total Revenue", "", fromMinorUnits(revenue.totalRevenue)],
+        ["Campaign Payouts", "", fromMinorUnits(revenue.campaignPayouts)],
+        ["Payment Fees", "", fromMinorUnits(revenue.paymentFees)],
+        ["Platform Fees", "", fromMinorUnits(revenue.platformFees)],
+        ["Net Revenue", "", fromMinorUnits(revenue.netRevenue)],
+      );
+    }
+
+    if (providers.length > 0) {
+      rows.push([], ["--- Payment Methods ---", "", ""]);
+      rows.push(["Provider", "Count", "Amount (SLE)", "Success Rate"]);
+      providers.forEach((p) => {
+        rows.push([p.provider, p.count, fromMinorUnits(p.amount), `${p.successRate.toFixed(1)}%`]);
+      });
+    }
+
+    if (topDonors.length > 0) {
+      rows.push([], ["--- Top Donors ---", "", ""]);
+      rows.push(["Name", "Email", "Total Amount (SLE)", "Donations"]);
+      topDonors.forEach((d) => {
+        rows.push([
+          d.isAnonymous ? "Anonymous" : d.donorName,
+          d.isAnonymous ? "" : (d.donorEmail || ""),
+          fromMinorUnits(d.totalAmount),
+          d.donationCount,
+        ]);
+      });
+    }
+
+    const csv = rows
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `donations-${dateFilter}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   useEffect(() => {
@@ -245,7 +300,7 @@ export default function AdminDonationsPage() {
                       {formatMajor(fromMinorUnits(analytics.successfulAmount))}
                     </p>
                   </div>
-                  <DollarSign className="h-8 w-8" style={{ color: "#FF6000" }} />
+                  <Banknote className="h-8 w-8" style={{ color: "#FF6000" }} />
                 </div>
               </CardContent>
             </Card>
@@ -388,7 +443,7 @@ export default function AdminDonationsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
+                <Banknote className="h-4 w-4" />
                 Revenue Report
               </CardTitle>
             </CardHeader>
@@ -521,7 +576,7 @@ export default function AdminDonationsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-4">
-              <Button variant="outline" onClick={() => window.location.href = "/donations/list"}>
+              <Button variant="outline" onClick={() => window.location.href = "/s/admin/donations/list"}>
                 <PieChart className="h-4 w-4 mr-2" />
                 View All Donations
               </Button>

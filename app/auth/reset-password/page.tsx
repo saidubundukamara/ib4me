@@ -148,8 +148,6 @@ export default function ResetPasswordPage() {
           </Link>
         </>
       }
-      backHref="/auth/forgot-password"
-      backLabel="← Back to forgot password"
     >
       <form onSubmit={onSubmit} className="space-y-5">
         <div className="space-y-2">

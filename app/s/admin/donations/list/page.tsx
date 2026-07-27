@@ -225,7 +225,7 @@ export default function AdminDonationsListPage() {
   };
 
   const handleViewDetails = (donationId: string) => {
-    router.push(`/donations/${donationId}`);
+    router.push(`/s/admin/donations/${donationId}`);
   };
 
   const handleSearch = () => {
@@ -292,7 +292,7 @@ export default function AdminDonationsListPage() {
               View and manage all donations in the system
             </p>
           </div>
-          <Button variant="outline" onClick={() => router.push("/donations")}>
+          <Button variant="outline" onClick={() => router.push("/s/admin/donations")}>
             Back to Analytics
           </Button>
         </div>

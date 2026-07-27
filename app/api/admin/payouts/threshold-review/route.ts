@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { payoutService } from "@/services";
 import { z } from "zod";
+import { getAdminFromToken } from "@/lib/admin-auth-token";
 
 const thresholdReviewQuerySchema = z.object({
   page: z.string().optional().transform(val => val ? parseInt(val) : 1),
@@ -11,6 +12,10 @@ const thresholdReviewQuerySchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    const adminUser = await getAdminFromToken();
+    if (!adminUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const searchParams = request.nextUrl.searchParams;
     const queryParams = {
       page: searchParams.get("page") || undefined,
