@@ -247,6 +247,36 @@ export function computePayoutSplit(input: {
 }
 
 /**
+ * Split a platform tip into Monime's cut and what the platform keeps.
+ *
+ * A tip carries no platform fee — it IS platform income — so this is `computeDonationSplit`
+ * with a zero platform rate. Implemented as a wrapper rather than fresh arithmetic so tips
+ * inherit the audited behaviour for free: the reported-fee-wins rule, the estimate
+ * fallback, the `min(reported, gross)` cap, and the balance assertion. One fee engine, not
+ * two to keep in sync.
+ */
+export function computeTipSplit(input: {
+  grossMinor: number;
+  monimeFeeMinor?: number | null;
+  monimeFeeBpsFallback?: number;
+}): { grossMinor: number; monimeFeeMinor: number; netMinor: number; feeSource: FeeSource } {
+  const split = computeDonationSplit({
+    grossMinor: input.grossMinor,
+    platformFeeBps: 0,
+    monimeFeeMinor: input.monimeFeeMinor,
+    monimeFeeBpsFallback: input.monimeFeeBpsFallback,
+  });
+
+  return {
+    grossMinor: split.grossMinor,
+    monimeFeeMinor: split.monimeFeeMinor,
+    // With a zero platform rate, everything that arrived is the net.
+    netMinor: split.arrivedMinor,
+    feeSource: split.monimeFeeSource,
+  };
+}
+
+/**
  * How much must be available in the source account to send `requestedMinor`.
  *
  * This is the single switch for "does Monime take the payout fee out of the amount, or on

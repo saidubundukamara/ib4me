@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   computeDonationSplit,
   computePayoutSplit,
+  computeTipSplit,
   sumMonimeFees,
   requiredDebitMinor,
   PAYOUT_FEE_CHARGED_ON_TOP,
@@ -186,5 +187,37 @@ describe("requiredDebitMinor", () => {
     // documents which side of that switch we are on.
     expect(PAYOUT_FEE_CHARGED_ON_TOP).toBe(false);
     expect(requiredDebitMinor(9643, 100)).toBe(9643);
+  });
+});
+
+describe("computeTipSplit", () => {
+  it("has no platform fee — everything that arrives is the net", () => {
+    const t = computeTipSplit({ grossMinor: 30000, monimeFeeMinor: 300 });
+    expect(t.monimeFeeMinor).toBe(300);
+    expect(t.netMinor).toBe(29700);
+    expect(t.feeSource).toBe("reported");
+    expect(t.monimeFeeMinor + t.netMinor).toBe(t.grossMinor);
+  });
+
+  it("estimates when no fee was reported", () => {
+    const t = computeTipSplit({ grossMinor: 30000 });
+    expect(t.monimeFeeMinor).toBe(300);
+    expect(t.feeSource).toBe("estimated");
+  });
+
+  it("lets a reported fee beat the configured rate", () => {
+    const t = computeTipSplit({
+      grossMinor: 30000,
+      monimeFeeMinor: 250,
+      monimeFeeBpsFallback: 100,
+    });
+    expect(t.monimeFeeMinor).toBe(250);
+    expect(t.netMinor).toBe(29750);
+  });
+
+  it("caps the fee at the gross rather than going negative", () => {
+    const t = computeTipSplit({ grossMinor: 100, monimeFeeMinor: 500 });
+    expect(t.monimeFeeMinor).toBe(100);
+    expect(t.netMinor).toBe(0);
   });
 });

@@ -211,10 +211,20 @@ async function handleTipCheckoutSessionCompleted(checkoutSessionData: MonimeWebh
     }
 
     if (checkoutSessionData.status === "completed") {
-      if (tip.status === "pending") {
-        await tipService.markSucceeded(tipId);
-        console.log(`Marked tip ${tipId} as succeeded`);
-      }
+      // No fee data on this event, so this settles on an ESTIMATE.
+      //
+      // `monimeFeeMinor: null` means UNKNOWN. The old call here wrote
+      // `netAmountMinor = amount.minor` — the gross — and recorded no fee at all, so
+      // whenever this event won the race the tip stayed booked ~1% over permanently.
+      // The `tip.status === "pending"` guard is gone for the same reason it went from the
+      // donation path: applySettlement decides what to do, and returning early here is how
+      // the real fee got lost.
+      await tipService.applySettlement(tipId, {
+        source: "webhook_session",
+        monimeFeeMinor: null,
+        completedAt: new Date().toISOString(),
+      });
+      console.log(`Settled tip ${tipId} from checkout session (fee unknown)`);
     }
   } catch (error) {
     console.error(`Error processing checkout session completed for tip ${tipId}:`, error);
@@ -368,14 +378,23 @@ async function handlePaymentCompleted(payload: MonimeWebhookPayload) {
 
       console.log(`Found tip ID ${tipId} for payment ${payment.id}`);
 
-      await tipService.markSucceededWithPaymentDetails(tipId, {
-        paymentId: payment.id,
-        paymentMethod: payment.paymentMethod,
-        fees: payment.fees,
+      // The AUTHORITATIVE fee — this is the only event that carries it. `monimeFeeMinor`
+      // was already parsed once above; reuse it so both branches read fees identically.
+      await tipService.applySettlement(tipId, {
+        source: "webhook_payment",
+        monimeFeeMinor,
+        monimePaymentId: payment.id,
+        financialTransactionReference: payment.financialTransactionReference,
+        channelReference: payment.channel?.reference,
         completedAt: payment.completedAt,
       });
 
-      console.log(`Successfully processed payment completion for tip ${tipId}`);
+      console.log(
+        `Settled tip ${tipId} with ` +
+          (monimeFeeMinor === null
+            ? "NO reported Monime fee (estimated)"
+            : `reported Monime fee ${monimeFeeMinor}`)
+      );
       return;
     }
 

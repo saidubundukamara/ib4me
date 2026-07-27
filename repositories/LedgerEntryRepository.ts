@@ -81,8 +81,40 @@ export class LedgerEntryRepository extends BaseRepository<ILedgerEntry> {
   }
 
   /**
-   * Get the platform's current balance (total in - total out)
+   * Net movement for one account type, as `in − out`.
+   *
+   * `platform`, `campaign` and `platform_tips` each correspond to a real Monime financial
+   * account, so each balance is reconcilable against that account at zero tolerance.
    */
+  async getBalanceByAccountType(
+    accountType: LedgerAccountType
+  ): Promise<PlatformBalanceResult> {
+    const result = await LedgerEntry.aggregate([
+      { $match: { accountType } },
+      {
+        $group: {
+          _id: null,
+          totalIn: {
+            $sum: { $cond: [{ $eq: ["$direction", "in"] }, "$amountMinor", 0] },
+          },
+          totalOut: {
+            $sum: { $cond: [{ $eq: ["$direction", "out"] }, "$amountMinor", 0] },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          totalIn: 1,
+          totalOut: 1,
+          balance: { $subtract: ["$totalIn", "$totalOut"] },
+        },
+      },
+    ]);
+    return result[0] || { totalIn: 0, totalOut: 0, balance: 0 };
+  }
+
+  /** The platform fee/settlement account — NOT the tip account. */
   async getPlatformBalance(): Promise<PlatformBalanceResult> {
     const result = await LedgerEntry.aggregate([
       { $match: { accountType: "platform" } },
