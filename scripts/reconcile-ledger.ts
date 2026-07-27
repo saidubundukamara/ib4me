@@ -27,6 +27,7 @@ import mongoose from "mongoose";
 import { connectDB } from "../lib/db";
 import Campaign from "../models/Campaign";
 import Donation from "../models/Donation";
+import Tip from "../models/Tip";
 import { ledgerEntryRepository } from "../repositories";
 import { monimeService } from "../lib/monime";
 import { settingService } from "../services/SettingService";
@@ -139,6 +140,52 @@ async function main() {
     }
   }
 
+  // ---- Tip account ----
+  //
+  // A separate physical Monime account (`tipFinancialAccount`), so it reconciles on its
+  // own. Nothing ever leaves it, which makes the identity simply receipts minus fees — any
+  // shortfall means either a manual sweep or a Monime-side refund that was never booked as
+  // an `adjustment`.
+  const tipAccount = await settingService.getTipFinancialAccountSettings();
+  const tipLedger = await ledgerEntryRepository.getBalanceByAccountType("platform_tips");
+
+  let tipProvider: number | null = null;
+  if (!skipProvider && tipAccount?.id) {
+    try {
+      const account = await monimeService.getFinancialAccount(tipAccount.id);
+      tipProvider = monimeService.getAccountBalanceMinor(account);
+    } catch {
+      /* reporting only */
+    }
+  }
+
+  const tipNetAgg = await Tip.aggregate([
+    { $match: { status: "succeeded" } },
+    {
+      $group: {
+        _id: null,
+        net: {
+          $sum: { $ifNull: ["$settlement.netMinor", { $ifNull: ["$netAmountMinor", 0] }] },
+        },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+  const tipNetMinor = tipNetAgg[0]?.net ?? 0;
+
+  const [tipsReported, tipsEstimated, tipsUnsettled] = await Promise.all([
+    Tip.countDocuments({ "settlement.monimeFeeSource": "reported" }),
+    Tip.countDocuments({ "settlement.monimeFeeSource": "estimated" }),
+    Tip.countDocuments({ status: "succeeded", "settlement.appliedAt": { $exists: false } }),
+  ]);
+
+  // Regression guard: a tip booked against `platform` would silently inflate the platform
+  // ledger and break both reconciliations at once.
+  const misfiledTips = await ledgerEntryRepository.findMany({
+    refType: "tip_receipt",
+    accountType: { $ne: "platform_tips" },
+  } as never);
+
   // ---- Fee-data coverage: how much of the history has a REAL Monime fee? ----
   const [settledTotal, reportedFee, estimatedFee, noSettlement] = await Promise.all([
     Donation.countDocuments({ status: { $in: ["succeeded", "payment_received"] } }),
@@ -163,6 +210,45 @@ async function main() {
       `Platform divergence      ${formatMinor(platform.balance - platformProvider)}`
     );
   }
+  console.log("");
+  console.log("Tip account (platform tips):");
+  if (!tipAccount?.id) {
+    console.log("  (not configured — no tip account set, so no tips can be taken)");
+  } else {
+    console.log(`  ledger                 ${formatMinor(tipLedger.balance)}`);
+    console.log(
+      `  monime                 ${tipProvider === null ? "(unavailable)" : formatMinor(tipProvider)}`
+    );
+    console.log(`  \u03a3 succeeded tip net    ${formatMinor(tipNetMinor)}`);
+    if (tipProvider !== null && tipLedger.balance !== tipProvider) {
+      const diff = tipLedger.balance - tipProvider;
+      const dir = diff > 0 ? "PROVIDER SHORT" : "PROVIDER OVER";
+      console.log(`  ${dir}: ledger \u2212 monime = ${formatMinor(diff)}`);
+      console.log(
+        "    A shortfall here usually means a manual sweep out of the tip account, or a\n" +
+          "    tip refunded through Monime's dashboard. Either must be booked as an\n" +
+          "    `adjustment` on platform_tips or this gap never closes."
+      );
+    }
+    if (tipLedger.balance !== tipNetMinor) {
+      console.log(
+        `  ledger \u2212 tip net total = ${formatMinor(tipLedger.balance - tipNetMinor)}`
+      );
+    }
+    console.log(`  tips with a REPORTED fee   ${tipsReported}`);
+    console.log(`  tips with an ESTIMATED fee ${tipsEstimated}`);
+    console.log(`  succeeded, never settled   ${tipsUnsettled}`);
+  }
+
+  if (misfiledTips.length > 0) {
+    console.log("");
+    console.log(
+      `  ! ${misfiledTips.length} tip ledger entr(ies) are filed under the wrong account type.\n` +
+        "    Tips must be booked as `platform_tips`; filing them as `platform` inflates the\n" +
+        "    platform ledger by every tip and breaks both reconciliations."
+    );
+  }
+
   console.log("");
   console.log("Fee-data coverage (drives what a backfill can honestly reconstruct):");
   console.log(`  settled donations      ${settledTotal}`);
