@@ -35,6 +35,7 @@ dotenv.config({ path: ".env" });
 // Use dynamic imports inside main() rather than top-level static imports.
 import mongoose from "mongoose";
 import type { IDonation } from "../models/Donation";
+import { donationService } from "../services/DonationService";
 
 interface ParsedArgs {
   dryRun: boolean;
@@ -181,41 +182,27 @@ async function reconcileOne(donationId: string, dryRun: boolean): Promise<Reconc
     };
   }
 
-  // Mirror DonationService.markPaymentReceived: advance status + increment campaign totals.
-  // We deliberately skip the internal transfer step here — the webhook or admin
-  // retry-transfer route will finalize payment_received → succeeded.
-  const campaignReceivesAmount = donation.campaignReceivesMinor ?? donation.amount.minor;
-
-  const txnSession = await mongoose.startSession();
-  try {
-    await txnSession.withTransaction(async () => {
-      await Donation.updateOne(
-        { _id: donation._id, status: "pending" },
-        {
-          $set: {
-            status: "payment_received",
-            "provider.paymentId": session.result.id,
-            updatedAt: new Date(),
-          },
-        },
-        { session: txnSession }
-      );
-
-      await Campaign.updateOne(
-        { _id: donation.campaignId },
-        {
-          $inc: {
-            "totals.raisedMinor": campaignReceivesAmount,
-            "totals.donationCount": 1,
-          },
-          $set: { "totals.lastDonationAt": new Date() },
-        },
-        { session: txnSession }
-      );
-    });
-  } finally {
-    await txnSession.endSession();
-  }
+  // Delegate to the service rather than hand-rolling the status change and the campaign
+  // increment.
+  //
+  // This block used to duplicate the old `markPaymentReceived` inline, which meant it
+  // would have silently kept the pre-rework semantics — crediting `campaignReceivesMinor`
+  // without computing a settlement split, and writing the CHECKOUT SESSION id into
+  // `provider.paymentId`. Going through `applySettlement` keeps this script on exactly
+  // the same waterfall as the webhook.
+  //
+  // A polled session read carries no fee data (MONIME-FEE-MODEL.md §2.10), so this
+  // settles on an ESTIMATE — `monimeFeeMinor: null`, never 0 — and the payment webhook
+  // corrects it when the real fee arrives.
+  //
+  // The internal transfer is deliberately left to the webhook or the admin
+  // retry-transfer route, which finalize payment_received → succeeded.
+  await donationService.applySettlement(donationId, {
+    source: "reconcile",
+    monimeFeeMinor: null,
+    paymentMethod: { type: "checkout_session", provider: "MONIME" },
+    completedAt: new Date().toISOString(),
+  });
 
   return {
     donationId,

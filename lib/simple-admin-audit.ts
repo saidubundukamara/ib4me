@@ -1,8 +1,30 @@
 import mongoose from "mongoose";
-import { getServerSession } from "next-auth";
-import { authConfig } from "@/lib/auth-config";
 import { auditLogService } from "../services/AuditLogService";
 import { NextRequest } from "next/server";
+
+/**
+ * Resolve the current admin session, if there is one.
+ *
+ * `next-auth` and `@auth/mongodb-adapter` are imported LAZILY and only when a session is
+ * actually needed. Importing them at module scope pulls the adapter into anything that
+ * transitively reaches this file — including the service layer — and the adapter has no
+ * CommonJS `exports` entry, so every `tsx` script that touches a service dies at import
+ * time with ERR_PACKAGE_PATH_NOT_EXPORTED before running a line of its own code.
+ *
+ * Outside a request (a CLI script, a cron job) there is no session; that is normal, and
+ * the audit entry is written without an actor rather than failing.
+ */
+async function getAdminSession() {
+  try {
+    const [{ getServerSession }, { authConfig }] = await Promise.all([
+      import("next-auth"),
+      import("@/lib/auth-config"),
+    ]);
+    return await getServerSession(authConfig);
+  } catch {
+    return null;
+  }
+}
 
 export interface SimpleAuditContext {
   adminId?: mongoose.Types.ObjectId;
@@ -24,8 +46,8 @@ export async function createSimpleAuditLog(
   request?: NextRequest
 ): Promise<void> {
   try {
-    // Get session without throwing errors
-    const session = await getServerSession(authConfig);
+    // Get session without throwing errors (null outside a request context)
+    const session = await getAdminSession();
     
     const auditContext: SimpleAuditContext = {
       ip: request?.headers.get("x-forwarded-for") || 
@@ -82,8 +104,8 @@ export async function getAdminFromSession(): Promise<{
   hasAdminRole: boolean;
 }> {
   try {
-    const session = await getServerSession(authConfig);
-    
+    const session = await getAdminSession();
+
     if (!session?.user?.id) {
       return {
         adminId: null,
