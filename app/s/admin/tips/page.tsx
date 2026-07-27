@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { formatMajor } from "@/lib/currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,14 +32,6 @@ const fromMinorUnits = (amountMinor: number, currency: string = "SLE"): number =
   return amountMinor / Math.pow(10, decimalPlaces);
 };
 
-const formatCurrency = (amount: number, currency: string = "SLE"): string => {
-  return new Intl.NumberFormat("en-SL", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-};
 
 interface TipAnalytics {
   totalTips: number;
@@ -262,7 +255,7 @@ export default function AdminTipsPage() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Amount</p>
                   <p className="text-2xl font-bold">
-                    {formatCurrency(fromMinorUnits(analytics.totalAmountMinor))}
+                    {formatMajor(fromMinorUnits(analytics.totalAmountMinor))}
                   </p>
                 </div>
                 <Banknote className="h-8 w-8" style={{ color: "#00712D" }} />
@@ -288,7 +281,7 @@ export default function AdminTipsPage() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Average Tip</p>
                   <p className="text-2xl font-bold">
-                    {formatCurrency(fromMinorUnits(analytics.averageTipMinor))}
+                    {formatMajor(fromMinorUnits(analytics.averageTipMinor))}
                   </p>
                 </div>
                 <Gift className="h-8 w-8" style={{ color: "#8B5CF6" }} />
@@ -314,7 +307,7 @@ export default function AdminTipsPage() {
                 <div className="flex justify-between">
                   <span>Amount:</span>
                   <span className="font-semibold">
-                    {formatCurrency(fromMinorUnits(analytics.successfulAmountMinor))}
+                    {formatMajor(fromMinorUnits(analytics.successfulAmountMinor))}
                   </span>
                 </div>
               </div>
@@ -334,7 +327,7 @@ export default function AdminTipsPage() {
                 <div className="flex justify-between">
                   <span>Amount:</span>
                   <span className="font-semibold">
-                    {formatCurrency(fromMinorUnits(analytics.pendingAmountMinor))}
+                    {formatMajor(fromMinorUnits(analytics.pendingAmountMinor))}
                   </span>
                 </div>
               </div>
@@ -388,7 +381,7 @@ export default function AdminTipsPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">
-                        {formatCurrency(fromMinorUnits(tipper.totalAmountMinor))}
+                        {formatMajor(fromMinorUnits(tipper.totalAmountMinor))}
                       </p>
                     </div>
                   </div>
@@ -452,7 +445,7 @@ export default function AdminTipsPage() {
                         : tip.tipperSnapshot?.name || "Unknown"}
                     </TableCell>
                     <TableCell className="font-medium">
-                      {formatCurrency(fromMinorUnits(tip.amount.minor, tip.amount.currency))}
+                      {formatMajor(fromMinorUnits(tip.amount.minor, tip.amount.currency))}
                     </TableCell>
                     <TableCell className="max-w-[200px] truncate">
                       {tip.message || "-"}

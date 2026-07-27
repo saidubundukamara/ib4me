@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { campaignService } from "@/services";
+import { getTippingState } from "@/lib/tipping";
 import SuccessClient from "./SuccessClient";
 
 type PageProps = {
@@ -22,6 +23,11 @@ async function DonationSuccessContent({ params, searchParams }: PageProps) {
     console.error(`[success-page] Error fetching campaign ${slug}:`, error);
   }
 
+  // Resolved server-side rather than fetched by the client: this page already renders on
+  // the server, and the flag is cached, so the CTA is present in the first paint instead
+  // of popping in a moment later.
+  const tipping = await getTippingState();
+
   // If no campaign found, still show success page with minimal info
   // The SuccessClient will handle showing appropriate content
   const campaignData = campaign
@@ -41,6 +47,8 @@ async function DonationSuccessContent({ params, searchParams }: PageProps) {
       slug={slug}
       initialStatus={initialStatus}
       errorMessage={errorMessage}
+      tippingEnabled={tipping.enabled}
+      tipSuggestedAmounts={tipping.suggestedAmounts}
     />
   );
 }

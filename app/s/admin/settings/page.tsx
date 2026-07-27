@@ -129,7 +129,7 @@ export default function AdminSettingsPage() {
             <CardHeader>
               <CardTitle>Platform Fees</CardTitle>
               <CardDescription>
-                Configure base fees and processing fees for donations. Fees are added on top of donations.
+                Configure the platform fee and the estimated provider rates. Fees are deducted from donations, not added on top.
               </CardDescription>
             </CardHeader>
             <CardContent>

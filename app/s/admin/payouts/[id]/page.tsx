@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertTriangle, CheckCircle, Clock, XCircle, ArrowLeft, User, CreditCard, History, ShieldCheck, AlertCircle } from "lucide-react";
+import { formatMinor } from "@/lib/currency";
 import { toast } from "sonner";
 
 interface PayoutMethod {
@@ -71,6 +72,9 @@ interface Payout {
     email: string;
   };
   amountMinor: number;
+  feeMinor?: number;
+  netAmountMinor?: number;
+  feeSource?: "reported" | "estimated";
   method: PayoutMethod;
   status: string;
   policyCheck?: PolicyCheck;
@@ -94,15 +98,6 @@ const statusConfig = {
   paid: { label: "Paid", color: "bg-green-500/15 text-green-700", icon: CheckCircle },
 };
 
-const formatCurrency = (amountMinor: number, currency: string = "SLE") => {
-  const amount = amountMinor / 100;
-  return new Intl.NumberFormat("en-SL", {
-    style: "currency",
-    currency: currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-};
 
 const getMethodLabel = (method: string) => {
   switch (method) {
@@ -338,7 +333,7 @@ export default function PayoutDetailPage() {
                       <DialogHeader>
                         <DialogTitle>Approve Payout</DialogTitle>
                         <DialogDescription>
-                          Approve this payout request of {formatCurrency(payout.amountMinor, payout.campaignId.goal?.currency)}.
+                          Approve this payout request of {formatMinor(payout.amountMinor, payout.campaignId.goal?.currency)}.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
@@ -424,7 +419,7 @@ export default function PayoutDetailPage() {
                             <div>
                               <div className="font-medium text-yellow-700">Threshold Warning</div>
                               <div className="text-sm text-yellow-700">
-                                Amount: {formatCurrency(payout.amountMinor, payout.campaignId.goal?.currency)} is below minimum threshold
+                                Amount: {formatMinor(payout.amountMinor, payout.campaignId.goal?.currency)} is below minimum threshold
                               </div>
                             </div>
                           </div>
@@ -463,7 +458,7 @@ export default function PayoutDetailPage() {
                       <DialogHeader>
                         <DialogTitle>Disburse Payout</DialogTitle>
                         <DialogDescription>
-                          Send {formatCurrency(payout.amountMinor, payout.campaignId.goal?.currency)} to the
+                          Send {formatMinor(payout.amountMinor, payout.campaignId.goal?.currency)} to the
                           beneficiary&apos;s {getMethodLabel(payout.method.type)} account via Monime. This moves
                           real funds and cannot be undone.
                         </DialogDescription>
@@ -507,10 +502,41 @@ export default function PayoutDetailPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium">Amount</label>
+                    <label className="text-sm font-medium">Amount Requested</label>
                     <p className="text-2xl font-bold">
-                      {formatCurrency(payout.amountMinor, payout.campaignId.goal?.currency)}
+                      {formatMinor(payout.amountMinor, payout.campaignId.goal?.currency)}
                     </p>
+                    {/*
+                      Monime takes its cut out of the amount sent, so the recipient
+                      receives less than they asked for. Showing only the requested
+                      figure means an admin handling a query cannot tell what actually
+                      landed in the recipient's wallet.
+
+                      Written at completion from the fee Monime reported; `estimated`
+                      means it was derived from the configured rate and has not been
+                      confirmed, which matters when reconciling.
+                    */}
+                    {payout.netAmountMinor ? (
+                      <div className="mt-2 space-y-1 text-sm">
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>
+                            Withdrawal fee
+                            {payout.feeSource === "estimated" && (
+                              <span className="ml-1 text-xs text-amber-600">estimated</span>
+                            )}
+                          </span>
+                          <span>
+                            -{formatMinor(payout.feeMinor ?? 0, payout.campaignId.goal?.currency)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between border-t pt-1 font-medium">
+                          <span>Recipient received</span>
+                          <span>
+                            {formatMinor(payout.netAmountMinor, payout.campaignId.goal?.currency)}
+                          </span>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                   
                   <div>
@@ -570,7 +596,7 @@ export default function PayoutDetailPage() {
                   {payout.campaignId.goal && (
                     <div>
                       <label className="text-sm font-medium">Campaign Goal</label>
-                      <p>{formatCurrency(payout.campaignId.goal.targetMinor, payout.campaignId.goal.currency)}</p>
+                      <p>{formatMinor(payout.campaignId.goal.targetMinor, payout.campaignId.goal.currency)}</p>
                     </div>
                   )}
                 </CardContent>

@@ -29,7 +29,7 @@ const About = () => {
         {
             icon: Shield,
             title: "Trust",
-            description: "Every campaign is reviewed by our team to ensure legitimacy",
+            description: "Every organizer's verification status is shown on their campaign, before you give",
             color: "text-fun-green",
             bgColor: "bg-fun-green/10",
         },
@@ -43,7 +43,7 @@ const About = () => {
         {
             icon: TrendingUp,
             title: "Transparency",
-            description: "100% of donations go directly to beneficiaries",
+            description: "Every fee is itemised before you donate — no surprises at checkout",
             color: "text-chartereuse",
             bgColor: "bg-chartereuse/10",
         },
@@ -134,7 +134,7 @@ const About = () => {
                                 </p>
 
                                 <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
-                                    Our platform connects people and donors in a transparent ecosystem where every contribution makes a real difference. With a small fee covered by donors, 100% of each donation goes directly to the campaign.
+                                    Our platform connects people and donors in a transparent ecosystem where every contribution makes a real difference. Donors are charged exactly what they enter &mdash; a small fee comes out of that amount, itemised before you give, and the rest reaches the campaign.
                                 </p>
                             </div>
 
@@ -222,9 +222,11 @@ const About = () => {
                                             priority={index < 3}
                                             className="mx-auto h-28 w-28 rounded-full border-4 border-blaze-orange object-cover shadow-xl sm:h-32 sm:w-32 lg:h-36 lg:w-36"
                                         />
-                                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-fun-green p-2 text-white shadow-lg">
-                                            <CheckCircle size={16} aria-hidden="true" />
-                                            <span className="sr-only">Verified</span>
+                                        <div
+                                            className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-fun-green p-2 text-white shadow-lg"
+                                            aria-hidden="true"
+                                        >
+                                            <CheckCircle size={16} />
                                         </div>
                                     </div>
 
@@ -254,9 +256,11 @@ const About = () => {
                                             quality={100}
                                             className="mx-auto h-28 w-28 rounded-full border-4 border-blaze-orange object-cover shadow-xl sm:h-32 sm:w-32 lg:h-36 lg:w-36"
                                         />
-                                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-fun-green p-2 text-white shadow-lg">
-                                            <CheckCircle size={16} aria-hidden="true" />
-                                            <span className="sr-only">Verified</span>
+                                        <div
+                                            className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-fun-green p-2 text-white shadow-lg"
+                                            aria-hidden="true"
+                                        >
+                                            <CheckCircle size={16} />
                                         </div>
                                     </div>
 

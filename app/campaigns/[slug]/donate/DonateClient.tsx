@@ -19,6 +19,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import { formatMinor, formatBps, toMinor, toMajor } from "@/lib/currency";
+import { computeDonationSplit } from "@/lib/fees";
 
 export type DonateClientProps = {
   slug: string;
@@ -26,24 +28,17 @@ export type DonateClientProps = {
   title: string;
   organizerName?: string | null;
   progressPercent: number;
-  amountRaised: number;
-  goalAmount: number;
+  amountRaisedMinor: number;
+  goalAmountMinor: number;
   imageUrl: string;
-  processingFeeBps?: number; // Processing fee in basis points (e.g., 260 = 2.6%)
+  /** Platform rate in basis points, resolved server-side from settings. */
+  processingFeeBps?: number;
+  /** Monime's collection rate in basis points — an estimate until settlement. */
+  monimeFeeBpsEstimate?: number;
   isOwnerVerified?: boolean; // Whether organizer has completed KYC
-  donorFeeChoiceEnabled?: boolean; // Whether donor can choose to cover fees
-  tipEnabled?: boolean; // Whether platform tip is configured and active
-  presetAmounts?: number[]; // Quick-pick donation amounts (major units)
+  /** Admin-configurable quick-pick amounts, in major units. */
+  presetAmounts?: number[];
 };
-
-function formatAmount(amount: number, currency: string = "SLE") {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
 
 export default function DonateClient({
   slug,
@@ -51,13 +46,12 @@ export default function DonateClient({
   title,
   organizerName,
   progressPercent,
-  amountRaised,
-  goalAmount,
+  amountRaisedMinor,
+  goalAmountMinor,
   imageUrl,
-  processingFeeBps = 260, // Default 2.6%
+  processingFeeBps = 260,
+  monimeFeeBpsEstimate = 100,
   isOwnerVerified = true,
-  donorFeeChoiceEnabled = false,
-  tipEnabled = false,
   presetAmounts = [50, 250, 500],
 }: DonateClientProps) {
   const [selectedPreset, setSelectedPreset] = useState<number | "custom">(presetAmounts[1] ?? presetAmounts[0] ?? 50);
@@ -68,8 +62,7 @@ export default function DonateClient({
   const [email, setEmail] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState("");
-  const [coverFee, setCoverFee] = useState(false); // Default: fees from donation
-  const [tipPercent, setTipPercent] = useState(0); // Tip to ib4me (0-20%)
+
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,67 +88,46 @@ export default function DonateClient({
     setFieldErrors(next);
   };
 
-  const amount = useMemo(() => {
-    if (selectedPreset === "custom") {
-      const parsed = Number.parseFloat(customAmount || "0");
-      return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : 0;
-    }
-    return selectedPreset;
+  /**
+   * The amount in MINOR UNITS. Everything downstream is integer arithmetic on minor
+   * units, matching the server exactly.
+   *
+   * This page used to hold whole Leones and compute fees on them, so a Le100 donation
+   * displayed a Le4 fee while the server charged Le3.60, and any donation under Le50
+   * showed a Le0 platform fee (MONIME-FEE-MODEL.md §8.8).
+   */
+  const amountMinor = useMemo(() => {
+    const major =
+      selectedPreset === "custom"
+        ? Number.parseFloat(customAmount || "0")
+        : selectedPreset;
+    return Number.isFinite(major) ? toMinor(Math.max(0, major)) : 0;
   }, [selectedPreset, customAmount]);
 
-  // Fee constants
-  const BASE_FEE_BPS = 100; // Monime's 1% fee
-
-  // Calculate base fee (Monime 1%)
-  const baseFee = useMemo(() => {
-    return Math.round(amount * BASE_FEE_BPS / 10000);
-  }, [amount]);
-
-  // Calculate processing fee (platform fee)
-  const processingFee = useMemo(() => {
-    return Math.round(amount * processingFeeBps / 10000);
-  }, [amount, processingFeeBps]);
-
-  // Total fees = base fee + processing fee
-  const totalFee = baseFee + processingFee;
-
-  // Calculate amounts based on fee choice
-  const campaignReceives = useMemo(() => {
-    if (coverFee || !donorFeeChoiceEnabled) {
-      // Donor covers fee OR feature disabled: campaign gets full amount
-      return amount;
-    }
-    // Fees from donation: campaign gets amount minus fees
-    return Math.max(0, amount - totalFee);
-  }, [amount, totalFee, coverFee, donorFeeChoiceEnabled]);
-
-  const totalCharged = useMemo(() => {
-    if (coverFee || !donorFeeChoiceEnabled) {
-      // Donor covers fee OR feature disabled: donor pays amount + fees
-      return amount + totalFee;
-    }
-    // Fees from donation: donor pays just the amount
-    return amount;
-  }, [amount, totalFee, coverFee, donorFeeChoiceEnabled]);
-
-  // Optional tip to ib4me platform
-  const tipAmount = useMemo(
-    () => Math.round(amount * tipPercent) / 100,
-    [amount, tipPercent]
+  /**
+   * The same function the server runs — imported, not reimplemented. Three places used to
+   * compute this three ways and disagreed with each other by whole Leones (§8.4).
+   *
+   * These figures are ESTIMATES: Monime's actual cut isn't known until it settles, and the
+   * platform fee is a percentage of what survives it. The UI says so.
+   */
+  const split = useMemo(
+    () =>
+      computeDonationSplit({
+        grossMinor: amountMinor,
+        platformFeeBps: processingFeeBps,
+        monimeFeeBpsFallback: monimeFeeBpsEstimate,
+      }),
+    [amountMinor, processingFeeBps, monimeFeeBpsEstimate]
   );
 
-  const baseFeePercent = (BASE_FEE_BPS / 100).toFixed(1);
-  const processingFeePercent = (processingFeeBps / 100).toFixed(1);
-
   const donateLabel =
-    amount > 0
-      ? `Donate ${formatAmount(totalCharged + tipAmount, currency)}`
-      : "Enter amount";
+    amountMinor > 0 ? `Donate ${formatMinor(amountMinor, currency)}` : "Enter amount";
 
   const handleDonateSubmit = async () => {
     setError(null);
 
-    if (amount <= 0) {
+    if (amountMinor <= 0) {
       setError("Please enter a valid donation amount.");
       return;
     }
@@ -175,7 +147,8 @@ export default function DonateClient({
     try {
       const donationData = {
         campaignSlug: slug,
-        amount,
+        // The API takes major units; minor is the source of truth on this page.
+        amount: toMajor(amountMinor),
         currency,
         donor: anonymous
           ? undefined
@@ -185,8 +158,6 @@ export default function DonateClient({
             },
         isAnonymous: anonymous,
         message: message.trim() || undefined,
-        donorCoversFee: donorFeeChoiceEnabled ? coverFee : undefined,
-        tipAmountMinor: tipAmount > 0 ? Math.round(tipAmount * 100) : undefined,
       };
 
       const response = await fetch("/api/donations/create", {
@@ -214,7 +185,7 @@ export default function DonateClient({
   };
 
   const isFormValid =
-    amount > 0 && (anonymous || (firstName.trim() && email.trim()));
+    amountMinor > 0 && (anonymous || (firstName.trim() && email.trim()));
 
   return (
     <div className="font-Sora space-y-8">
@@ -261,14 +232,14 @@ export default function DonateClient({
                 <span>{organizerName ? `Organized by ${organizerName}` : "Campaign organizer"}</span>
                 <span className="inline-flex items-center gap-2">
                   <Heart className="h-4 w-4 text-primary" />
-                  {formatAmount(amountRaised, currency)} raised of {formatAmount(goalAmount, currency)}
+                  {formatMinor(amountRaisedMinor, currency)} raised of {formatMinor(goalAmountMinor, currency)}
                 </span>
               </div>
               <div>
                 <ProgressBar value={progressPercent} className="h-3" />
                 <div className="mt-2 flex justify-between text-xs font-medium text-muted-foreground">
                   <span>{progressPercent}% funded</span>
-                  <span>Goal {formatAmount(goalAmount, currency)}</span>
+                  <span>Goal {formatMinor(goalAmountMinor, currency)}</span>
                 </div>
               </div>
             </CardHeader>
@@ -292,9 +263,16 @@ export default function DonateClient({
                       )}
                       onClick={() => setSelectedPreset(preset)}
                     >
-                      {formatAmount(preset, currency)}
+                      {formatMinor(toMinor(preset), currency)}
                     </Button>
                   ))}
+                  {/*
+                    Deliberately styled apart from the presets. It is a different KIND of
+                    control — the others commit an amount, this one opens an input — and
+                    when it looked identical it read as a fourth preset. A dashed border
+                    and a muted fill carry that difference without competing with the
+                    selected state, which stays the strongest signal on the row.
+                  */}
                   <Button
                     type="button"
                     variant={selectedPreset === "custom" ? "default" : "outline"}
@@ -302,7 +280,7 @@ export default function DonateClient({
                       "h-12 rounded-2xl border-2 transition-all",
                       selectedPreset === "custom"
                         ? "border-primary shadow-lg"
-                        : "border-border/60 hover:border-primary/60",
+                        : "border-dashed border-primary/40 bg-primary/5 text-primary/90 hover:border-primary/70 hover:bg-primary/10",
                     )}
                     onClick={() => setSelectedPreset("custom")}
                   >
@@ -406,84 +384,6 @@ export default function DonateClient({
                 </div>
               </section>
 
-              {donorFeeChoiceEnabled && (
-                <>
-                  <Separator />
-                  <section className="space-y-2">
-                    <div className="flex items-center justify-between rounded-2xl border border-border/50 bg-muted/30 px-4 py-3">
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
-                          Cover the transaction fee
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {coverFee
-                            ? `Your generosity means ${formatAmount(amount, currency)} goes directly to this campaign.`
-                            : `The campaign will receive ${formatAmount(campaignReceives, currency)} after fees.`
-                          }
-                        </p>
-                      </div>
-                      <Switch
-                        checked={coverFee}
-                        onCheckedChange={setCoverFee}
-                        aria-label="Toggle cover transaction fee"
-                      />
-                    </div>
-                  </section>
-                </>
-              )}
-
-              <Separator />
-
-              {/* Tip to ib4me */}
-              <section className="space-y-3">
-                <div className={cn(
-                  "rounded-2xl border px-4 py-4 space-y-3 transition-opacity",
-                  tipEnabled
-                    ? "border-border/50 bg-muted/30"
-                    : "border-border/30 bg-muted/10 opacity-50 cursor-not-allowed select-none"
-                )}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className={cn("text-sm font-medium", tipEnabled ? "text-foreground" : "text-muted-foreground")}>
-                        Tip ib4me to keep us running
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {tipEnabled
-                          ? "Optional. Goes to ib4me, not the campaign — helps make sure more of every campaign reaches the organiser."
-                          : "Tipping is not available at the moment."}
-                      </p>
-                    </div>
-                    <span className={cn("text-sm font-semibold shrink-0 ml-4", tipEnabled ? "text-primary" : "text-muted-foreground")}>
-                      {tipEnabled ? `${tipPercent}%` : "—"}
-                    </span>
-                  </div>
-                  <div className="flex gap-2 flex-wrap">
-                    {[0, 5, 10, 15, 20].map((pct) => (
-                      <button
-                        key={pct}
-                        type="button"
-                        disabled={!tipEnabled}
-                        onClick={() => tipEnabled && setTipPercent(pct)}
-                        className={cn(
-                          "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
-                          !tipEnabled
-                            ? "border-border/30 text-muted-foreground/40 cursor-not-allowed"
-                            : tipPercent === pct
-                              ? "bg-primary text-white border-primary shadow-sm"
-                              : "border-border/60 text-foreground hover:border-primary/60"
-                        )}
-                      >
-                        {pct === 0 ? "No tip" : `${pct}%`}
-                      </button>
-                    ))}
-                  </div>
-                  {tipEnabled && tipAmount > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      {formatAmount(tipAmount, currency)} tip added to your total.
-                    </p>
-                  )}
-                </div>
-              </section>
 
               <Separator />
 
@@ -554,61 +454,53 @@ export default function DonateClient({
                 <div className="flex items-center justify-between">
                   <span className="text-xs">Raised</span>
                   <span className="font-medium text-foreground">
-                    {formatAmount(amountRaised, currency)}
+                    {formatMinor(amountRaisedMinor, currency)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs">Goal</span>
                   <span className="font-medium text-foreground">
-                    {formatAmount(goalAmount, currency)}
+                    {formatMinor(goalAmountMinor, currency)}
                   </span>
                 </div>
               </div>
 
               <Separator />
 
+              {/*
+                The full breakdown, so every deduction can be named. Percentages are
+                rendered from the server-supplied bps — nothing here hardcodes a rate.
+              */}
               <div className="space-y-2 text-sm text-muted-foreground">
                 <div className="flex items-center justify-between">
                   <span>Your donation</span>
                   <span className="font-medium text-foreground">
-                    {formatAmount(amount, currency)}
+                    {formatMinor(amountMinor, currency)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>Payment fee ({baseFeePercent}%)</span>
+                  <span>Payment fee ({formatBps(monimeFeeBpsEstimate)})</span>
                   <span className="font-medium text-foreground">
-                    {formatAmount(baseFee, currency)}
+                    -{formatMinor(split.monimeFeeMinor, currency)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>Platform fee ({processingFeePercent}%)</span>
+                  <span>Platform fee ({formatBps(processingFeeBps)})</span>
                   <span className="font-medium text-foreground">
-                    {formatAmount(processingFee, currency)}
+                    -{formatMinor(split.platformFeeMinor, currency)}
                   </span>
                 </div>
-                {donorFeeChoiceEnabled && !coverFee && (
-                  <div className="flex items-center justify-between text-amber-600 dark:text-amber-400">
-                    <span>Fee from donation</span>
-                    <span className="font-medium">-{formatAmount(totalFee, currency)}</span>
-                  </div>
-                )}
                 <Separator className="my-1" />
                 <div className="flex items-center justify-between">
                   <span>Campaign receives</span>
                   <span className="font-medium text-foreground">
-                    {formatAmount(campaignReceives, currency)}
+                    ≈ {formatMinor(split.campaignReceivesMinor, currency)}
                   </span>
                 </div>
-                {tipAmount > 0 && (
-                  <div className="flex items-center justify-between text-primary">
-                    <span>Tip to ib4me ({tipPercent}%)</span>
-                    <span className="font-medium">+{formatAmount(tipAmount, currency)}</span>
-                  </div>
-                )}
                 <div className="flex items-center justify-between border-t border-border/40 pt-2">
                   <span className="font-semibold text-foreground">You pay</span>
                   <span className="font-semibold text-foreground">
-                    {formatAmount(totalCharged + tipAmount, currency)}
+                    {formatMinor(amountMinor, currency)}
                   </span>
                 </div>
               </div>
@@ -616,10 +508,8 @@ export default function DonateClient({
               <div className="flex items-start gap-3 rounded-2xl bg-primary/10 p-4 text-xs text-primary">
                 <Lock className="mt-0.5 h-4 w-4" />
                 <p>
-                  {coverFee || !donorFeeChoiceEnabled
-                    ? `100% of your ${formatAmount(amount, currency)} donation goes directly to this campaign.`
-                    : `${formatAmount(campaignReceives, currency)} of your donation goes to this campaign after fees.`
-                  }
+                  You&#39;ll be charged exactly {formatMinor(amountMinor, currency)}. Final
+                  amounts are confirmed when the payment settles.
                 </p>
               </div>
             </CardContent>

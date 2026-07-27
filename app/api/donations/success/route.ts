@@ -74,8 +74,12 @@ async function handleSuccessRedirect(req: NextRequest) {
     // 5. Mark as payment received if still pending
     if (donation.status === "pending") {
       console.log("[api/donations/success] Marking payment received:", donationId);
-      await donationService.markPaymentReceived(donationId, {
-        paymentId: session.result.id,
+      // The redirect tells us the session completed but carries no fee data, so this
+      // settles on an ESTIMATE. `monimeFeeMinor: null` means UNKNOWN — writing 0 here
+      // would clobber the real fee when the payment webhook lands (R6).
+      await donationService.applySettlement(donationId, {
+        source: "success_redirect",
+        monimeFeeMinor: null,
         paymentMethod: { type: "checkout_session", provider: "MONIME" },
         completedAt: new Date().toISOString(),
       });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { formatMinor } from "@/lib/currency";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -135,13 +136,6 @@ export default function AdminCampaignsPage() {
     fetchCampaigns();
   }, [search, statusFilter, verificationFilter, urgencyFilter, currentPage, fetchCampaigns]);
 
-  const formatAmount = (amountMinor: number, currency: string = "SLE") => {
-    return new Intl.NumberFormat("en-SL", {
-      style: "currency",
-      currency,
-      minimumFractionDigits: 0,
-    }).format(amountMinor / 100);
-  };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "info"> = {
@@ -203,7 +197,7 @@ export default function AdminCampaignsPage() {
             { label: "Total Campaigns", value: analytics.totalCampaigns, color: "#00712D" },
             { label: "Active Campaigns", value: analytics.activeCampaigns, color: "#00712D" },
             { label: "Unverified Owner Campaigns", value: analytics.unverifiedOwnerCampaigns, color: "#FF6000" },
-            { label: "Total Raised", value: formatAmount(analytics.totalRaised), color: "#FBB03B" },
+            { label: "Total Raised", value: formatMinor(analytics.totalRaised), color: "#FBB03B" },
           ].map((card) => (
             <Card key={card.label} className="rounded-2xl">
               <CardContent className="pt-5">
@@ -326,8 +320,8 @@ export default function AdminCampaignsPage() {
                       
                       <div className="mt-2 flex items-center space-x-6 text-sm text-muted-foreground">
                         <span>
-                          Raised: {formatAmount(campaign.totals?.raisedMinor || 0, campaign.goal?.currency)} / 
-                          {formatAmount(campaign.goal?.amountMinor || 0, campaign.goal?.currency)}
+                          Raised: {formatMinor(campaign.totals?.raisedMinor || 0, campaign.goal?.currency)} / 
+                          {formatMinor(campaign.goal?.amountMinor || 0, campaign.goal?.currency)}
                         </span>
                         <span>Created: {new Date(campaign.createdAt).toLocaleDateString()}</span>
                       </div>

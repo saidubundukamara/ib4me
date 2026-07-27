@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { formatMajor } from "@/lib/currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,14 +11,6 @@ const fromMinorUnits = (amountMinor: number, currency: string = "SLE"): number =
   return amountMinor / Math.pow(10, decimalPlaces);
 };
 
-const formatCurrency = (amount: number, currency: string = "SLE"): string => {
-  return new Intl.NumberFormat("en-SL", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-};
 import { 
   Banknote, 
   TrendingUp, 
@@ -304,7 +297,7 @@ export default function AdminDonationsPage() {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Raised</p>
                     <p className="text-2xl font-bold">
-                      {formatCurrency(fromMinorUnits(analytics.successfulAmount))}
+                      {formatMajor(fromMinorUnits(analytics.successfulAmount))}
                     </p>
                   </div>
                   <Banknote className="h-8 w-8" style={{ color: "#FF6000" }} />
@@ -330,7 +323,7 @@ export default function AdminDonationsPage() {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Average Donation</p>
                     <p className="text-2xl font-bold">
-                      {formatCurrency(fromMinorUnits(analytics.averageDonation))}
+                      {formatMajor(fromMinorUnits(analytics.averageDonation))}
                     </p>
                   </div>
                   <Users className="h-8 w-8" style={{ color: "#FBB03B" }} />
@@ -356,7 +349,7 @@ export default function AdminDonationsPage() {
                   <div className="flex justify-between">
                     <span>Amount:</span>
                     <span className="font-semibold">
-                      {formatCurrency(fromMinorUnits(analytics.successfulAmount))}
+                      {formatMajor(fromMinorUnits(analytics.successfulAmount))}
                     </span>
                   </div>
                 </div>
@@ -376,7 +369,7 @@ export default function AdminDonationsPage() {
                   <div className="flex justify-between">
                     <span>Amount:</span>
                     <span className="font-semibold">
-                      {formatCurrency(fromMinorUnits(analytics.pendingAmount))}
+                      {formatMajor(fromMinorUnits(analytics.pendingAmount))}
                     </span>
                   </div>
                 </div>
@@ -396,7 +389,7 @@ export default function AdminDonationsPage() {
                   <div className="flex justify-between">
                     <span>Amount:</span>
                     <span className="font-semibold">
-                      {formatCurrency(fromMinorUnits(analytics.paymentReceivedAmount))}
+                      {formatMajor(fromMinorUnits(analytics.paymentReceivedAmount))}
                     </span>
                   </div>
                 </div>
@@ -416,7 +409,7 @@ export default function AdminDonationsPage() {
                   <div className="flex justify-between">
                     <span>Amount:</span>
                     <span className="font-semibold">
-                      {formatCurrency(fromMinorUnits(analytics.failedAmount))}
+                      {formatMajor(fromMinorUnits(analytics.failedAmount))}
                     </span>
                   </div>
                 </div>
@@ -436,7 +429,7 @@ export default function AdminDonationsPage() {
                   <div className="flex justify-between">
                     <span>Amount:</span>
                     <span className="font-semibold">
-                      {formatCurrency(fromMinorUnits(analytics.refundedAmount))}
+                      {formatMajor(fromMinorUnits(analytics.refundedAmount))}
                     </span>
                   </div>
                 </div>
@@ -459,35 +452,35 @@ export default function AdminDonationsPage() {
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Total Revenue</p>
                   <p className="text-xl font-bold" style={{ color: "#00712D" }}>
-                    {formatCurrency(fromMinorUnits(revenue.totalRevenue))}
+                    {formatMajor(fromMinorUnits(revenue.totalRevenue))}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">Gross charged to donors</p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Campaign Payouts</p>
                   <p className="text-xl font-bold" style={{ color: "#80E10A" }}>
-                    {formatCurrency(fromMinorUnits(revenue.campaignPayouts))}
+                    {formatMajor(fromMinorUnits(revenue.campaignPayouts))}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">Sent to campaigns</p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Payment Fees</p>
                   <p className="text-xl font-bold" style={{ color: "#FBB03B" }}>
-                    {formatCurrency(fromMinorUnits(revenue.paymentFees))}
+                    {formatMajor(fromMinorUnits(revenue.paymentFees))}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">Payment processor</p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Platform Fees</p>
                   <p className="text-xl font-bold" style={{ color: "#FF6000" }}>
-                    {formatCurrency(fromMinorUnits(revenue.platformFees))}
+                    {formatMajor(fromMinorUnits(revenue.platformFees))}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">IB4ME service fee</p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Net Revenue</p>
                   <p className="text-xl font-bold" style={{ color: "#00712D" }}>
-                    {formatCurrency(fromMinorUnits(revenue.netRevenue))}
+                    {formatMajor(fromMinorUnits(revenue.netRevenue))}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">Platform earnings</p>
                 </div>
@@ -525,7 +518,7 @@ export default function AdminDonationsPage() {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold">
-                          {formatCurrency(fromMinorUnits(provider.amount))}
+                          {formatMajor(fromMinorUnits(provider.amount))}
                         </p>
                       </div>
                     </div>
@@ -565,7 +558,7 @@ export default function AdminDonationsPage() {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold">
-                          {formatCurrency(fromMinorUnits(donor.totalAmount))}
+                          {formatMajor(fromMinorUnits(donor.totalAmount))}
                         </p>
                       </div>
                     </div>

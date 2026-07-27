@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, CheckCircle, Clock, XCircle, Filter, Search, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { formatMinor } from "@/lib/currency";
 
 interface PayoutMethod {
   type: "mobile_money" | "bank";
@@ -39,6 +40,9 @@ interface Payout {
     email: string;
   };
   amountMinor: number;
+  feeMinor?: number;
+  netAmountMinor?: number;
+  feeSource?: "reported" | "estimated";
   method: PayoutMethod;
   status: string;
   policyCheck?: PolicyCheck;
@@ -66,15 +70,6 @@ const statusConfig = {
   paid: { label: "Paid", color: "bg-green-500/15 text-green-700", icon: CheckCircle },
 };
 
-const formatCurrency = (amountMinor: number, currency: string = "SLE") => {
-  const amount = amountMinor / 100;
-  return new Intl.NumberFormat("en-SL", {
-    style: "currency",
-    currency: currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-};
 
 export default function PayoutListPage() {
   const router = useRouter();
@@ -326,8 +321,15 @@ export default function PayoutListPage() {
                           </TableCell>
                           <TableCell>
                             <div className="font-medium">
-                              {formatCurrency(payout.amountMinor, payout.campaignId.goal?.currency)}
+                              {formatMinor(payout.amountMinor, payout.campaignId.goal?.currency)}
                             </div>
+                            {/* What the recipient actually got, once it is known. */}
+                            {payout.netAmountMinor ? (
+                              <div className="text-xs text-muted-foreground">
+                                net {formatMinor(payout.netAmountMinor, payout.campaignId.goal?.currency)}
+                                {payout.feeSource === "estimated" && " (est.)"}
+                              </div>
+                            ) : null}
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">

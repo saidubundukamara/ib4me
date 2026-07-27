@@ -30,6 +30,7 @@ import SimilarCampaignsSection, { type SimilarCampaign } from "./SimilarCampaign
 import OrganizerBio from "./OrganizerBio";
 import { timeAgo, slugToTitle } from "@/lib/utils";
 import ShareImageButton from "./ShareImageButton";
+import { formatMajor } from "@/lib/currency";
 import CopyUrlButton from "./CopyUrlButton";
 
 function buildResponsiveHero(key: string) {
@@ -118,14 +119,6 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
   };
 }
 
-function formatAmount(amount: number, currency: string = "SLE") {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
 
 function formatDate(date: Date) {
   return new Date(date).toLocaleDateString(undefined, {
@@ -143,8 +136,8 @@ export default async function CampaignDetailPage({ params }: PageParams) {
   const currency = campaign.goal?.currency || "SLE";
   const raisedMinor = campaign.totals?.raisedMinor ?? 0;
   const goalMinor = campaign.goal?.amountMinor ?? 0;
-  const amountRaised = Math.max(0, Math.floor(raisedMinor) / 100);
-  const goalAmount = Math.max(0, Math.floor(goalMinor) / 100);
+  const amountRaised = Math.max(0, raisedMinor) / 100;
+  const goalAmount = Math.max(0, goalMinor) / 100;
   const progress =
     goalAmount > 0 ? Math.min(100, Math.round((amountRaised / goalAmount) * 100)) : 0;
 
@@ -287,7 +280,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ib4me.org";
   const absoluteUrl = `${siteUrl}/campaigns/${campaign.slug}`;
-  const shareText = `Help ${title.replace(/^help\s+/i, "")} — ${formatAmount(amountRaised, currency)} raised of ${formatAmount(goalAmount, currency)} goal`;
+  const shareText = `Help ${title.replace(/^help\s+/i, "")} — ${formatMajor(amountRaised, currency)} raised of ${formatMajor(goalAmount, currency)} goal`;
 
   const shareLinks = [
     {
@@ -333,7 +326,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
         <div className="flex items-center gap-3 max-w-2xl mx-auto">
           <div className="min-w-0">
             <p className="text-[11px] text-muted-foreground leading-none mb-0.5">Raised so far</p>
-            <p className="text-sm font-bold text-primary truncate">{formatAmount(amountRaised, currency)} <span className="text-muted-foreground font-normal text-xs">of {formatAmount(goalAmount, currency)}</span></p>
+            <p className="text-sm font-bold text-primary truncate">{formatMajor(amountRaised, currency)} <span className="text-muted-foreground font-normal text-xs">of {formatMajor(goalAmount, currency)}</span></p>
           </div>
           <Button asChild className="ml-auto shrink-0 h-10 px-6 font-semibold shadow-md">
             <Link href={`/campaigns/${campaign.slug}/donate`}>Donate Now</Link>
@@ -420,10 +413,10 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                     <div>
                       <div className="flex flex-wrap items-baseline justify-between gap-2">
                         <span className="text-3xl font-semibold text-primary">
-                          {formatAmount(amountRaised, currency)}
+                          {formatMajor(amountRaised, currency)}
                         </span>
                         <span className="text-sm text-muted-foreground">
-                          of {formatAmount(goalAmount, currency)} goal
+                          of {formatMajor(goalAmount, currency)} goal
                         </span>
                       </div>
                       <ProgressBar value={progress} className="mt-4 h-3" />
@@ -550,7 +543,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
                         <DonorsTicker
                           donors={recentDonations.map((d) => ({
                             name: d.isAnonymous ? "Anonymous" : (d.donorSnapshot?.name || "Supporter"),
-                            amount: formatAmount(Math.floor((d.amount?.minor ?? 0) / 100), d.amount?.currency || currency),
+                            amount: formatMajor(Math.floor((d.amount?.minor ?? 0) / 100), d.amount?.currency || currency),
                             timeAgo: timeAgo(d.createdAt),
                             message: d.message || undefined,
                           }))}

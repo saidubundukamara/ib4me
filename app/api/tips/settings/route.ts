@@ -1,21 +1,20 @@
 import { NextResponse } from "next/server";
-import { settingService, tipService } from "@/services";
+import { tipService } from "@/services";
 
+/**
+ * GET /api/tips/settings — public.
+ *
+ * Tells a client whether tipping is available and on what terms. Used by the /tip page
+ * itself; server-rendered surfaces (the thank-you CTA, the nav and footer links) call
+ * `tipService.getPublicTippingState()` directly instead of paying for a round trip.
+ *
+ * The gate lives in the service, not here, so every surface agrees on what "tipping is on"
+ * means — notably that it requires a configured tip account, not just the toggle.
+ */
 export async function GET() {
   try {
-    const tippingSettings = await settingService.getTippingSettings();
-    const platformAccount = await tipService.getPlatformFinancialAccount();
-
-    // Check if tipping is properly configured
-    const isConfigured = !!(platformAccount?.id && platformAccount?.uvan);
-    const isEnabled = isConfigured && (tippingSettings?.enabled ?? false);
-
-    return NextResponse.json({
-      enabled: isEnabled,
-      suggestedAmounts: tippingSettings?.suggestedAmounts || [5000, 10000, 25000, 50000],
-      minAmountMinor: tippingSettings?.minAmountMinor || 100,
-      maxAmountMinor: tippingSettings?.maxAmountMinor || 10000000,
-    });
+    const state = await tipService.getPublicTippingState();
+    return NextResponse.json(state);
   } catch (error) {
     console.error("Error fetching tipping settings:", error);
     return NextResponse.json(

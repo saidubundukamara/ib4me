@@ -11,6 +11,7 @@ import { CloudinaryService } from "@/lib/cloudinary";
 import { getOGImageFromCampaigns, buildPageMetadata } from "@/lib/metadata";
 import { slugToTitle } from "@/lib/utils";
 import CreatorCampaignsGrid from "./CreatorCampaignsGrid";
+import { formatMajor } from "@/lib/currency";
 
 type PageParams = { params: Promise<{ id: string }> };
 
@@ -60,14 +61,6 @@ function formatDate(date: Date) {
   });
 }
 
-function formatAmount(amount: number, currency: string = "SLE") {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
 
 export default async function CreatorProfilePage({ params }: PageParams) {
   const { id } = await params;
@@ -171,8 +164,8 @@ export default async function CreatorProfilePage({ params }: PageParams) {
       title: titleBase,
       description: storyText ? storyText.replace(/<[^>]+>/g, "").slice(0, 160).trim() || undefined : undefined,
       currency,
-      amountRaised: Math.max(0, Math.floor(raisedMinor) / 100),
-      goalAmount: Math.max(0, Math.floor(goalMinor) / 100),
+      amountRaised: Math.max(0, raisedMinor) / 100,
+      goalAmount: Math.max(0, goalMinor) / 100,
       donationsCount: c.totals?.donationCount ?? 0,
       imageUrl,
       verified: c.verification?.status === "approved",
@@ -322,7 +315,7 @@ export default async function CreatorProfilePage({ params }: PageParams) {
                     <TrendingUp className="h-4 w-4 text-primary" />
                   </div>
                 </div>
-                <p className="text-sm sm:text-xl font-bold text-primary leading-tight break-all">{formatAmount(totalRaised)}</p>
+                <p className="text-sm sm:text-xl font-bold text-primary leading-tight break-all">{formatMajor(totalRaised)}</p>
                 <p className="text-xs text-muted-foreground mt-1">Total Raised</p>
               </CardContent>
             </Card>

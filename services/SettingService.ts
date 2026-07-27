@@ -2,6 +2,10 @@ import mongoose from "mongoose";
 import { settingRepository } from "../repositories";
 import { ISetting, IWithdrawalSetting, IFeeSetting, IFeatureFlags, IWebsiteSettings, IContactSettings, ISocialSettings, ISeoSettings, ICampaignLimitsSettings, ICookieConsentSettings, IAnalyticsService } from "../models/Setting";
 import { createSimpleAuditLog } from "../lib/simple-admin-audit";
+import {
+  MONIME_COLLECTION_FEE_BPS_FALLBACK,
+  MONIME_PAYOUT_FEE_BPS_FALLBACK,
+} from "../lib/fees";
 
 interface WebsiteSettings {
   siteName?: string;
@@ -43,7 +47,6 @@ interface FeatureSettings {
   whatsAppAutoPost?: boolean;
   paypalEnabled?: boolean;
   emergencyPoolFund?: boolean;
-  donorFeeChoiceEnabled?: boolean;
   donationPresets?: number[];
   dailyWithdrawalLimitMinor?: number;
   monthlyWithdrawalLimitMinor?: number;
@@ -100,22 +103,18 @@ interface CampaignLimitsSettings {
 export type CampaignType = "individual" | "organization";
 
 export interface FeeSettings {
-  baseFeeMinor: number;
+  /** The platform's own rate, charged on what arrives after Monime's cut. */
   processingFee: {
     individualBps: number;
     organizationBps: number;
   };
-}
-
-export interface CalculatedFees {
-  baseFeeMinor: number;
-  processingFeeMinor: number;
-  processingFeeBps: number;
-  campaignType: CampaignType;
-  totalFeeMinor: number;
-  totalChargedMinor: number;
-  campaignReceivesMinor: number;
-  donorCoversFee: boolean;
+  /**
+   * Monime's rates. ESTIMATES — used to quote a donation or a withdrawal before Monime
+   * has reported what it actually took, and as a fallback when a settlement arrives with
+   * no fee attached. The reported figure always wins (MONIME-FEE-MODEL.md R13).
+   */
+  monimeCollectionFeeBpsEstimate: number;
+  payoutFeeBpsEstimate: number;
 }
 
 export interface PlatformAccountSettings {
@@ -212,14 +211,12 @@ export class SettingService {
           allowEmergencyOverride: true
         },
         fees: {
-          baseFeeMinor: 0,  // Set to 0 - Monime deducts 1% automatically
           processingFee: {
             individualBps: 260,    // 2.6%
             organizationBps: 200,  // 2.0%
           },
-          // Legacy
-          platformFeeBps: 500,
-          mobileMoneyFeeBps: 200
+          monimeCollectionFeeBpsEstimate: 100,  // 1% — quoting fallback only
+          payoutFeeBpsEstimate: 100,            // 1% — quoting fallback only
         },
         features: {
           whatsAppAutoPost: true,
@@ -286,7 +283,11 @@ export class SettingService {
     return {
       currency: "SLE",
       currencySymbol: "Le",
-      platformFeeRate: (fees.platformFeeBps || 500) / 100,
+      // The platform rate is tiered by campaign type and lives under `fees.processingFee`.
+      // This screen used to edit a separate `platformFeeBps` that no charge path read —
+      // an admin could change it and nothing happened. Surface the individual rate so the
+      // number shown here is at least the real one.
+      platformFeeRate: (fees.processingFee?.individualBps ?? 260) / 100,
       enableOrangeMoney: true,
       enableAfriMoney: true,
       enableStripe: true,
@@ -302,10 +303,10 @@ export class SettingService {
     const currentFees = settings.fees || {};
     const currentFeatures = settings.features || {};
     
+    // Fee rates are edited on the Fees screen, which writes `fees.processingFee`.
+    // This screen is payment-provider configuration only; it must not write a second,
+    // conflicting fee model.
     const feeUpdates: Partial<IFeeSetting> = {};
-    if (updates.platformFeeRate !== undefined) {
-      feeUpdates.platformFeeBps = Math.round(updates.platformFeeRate * 100);
-    }
 
     const featureUpdates: Partial<IFeatureFlags> = {};
     if (updates.enablePaypal !== undefined) {
@@ -343,7 +344,6 @@ export class SettingService {
       whatsAppAutoPost: features.whatsAppAutoPost || false,
       paypalEnabled: features.paypalEnabled || false,
       emergencyPoolFund: features.emergencyPoolFund || false,
-      donorFeeChoiceEnabled: features.donorFeeChoiceEnabled || false,
       donationPresets: features.donationPresets?.length ? features.donationPresets : [50, 250, 500],
       dailyWithdrawalLimitMinor: withdrawal.dailyLimitMinor,
       monthlyWithdrawalLimitMinor: withdrawal.monthlyLimitMinor,
@@ -378,7 +378,6 @@ export class SettingService {
     if (updates.whatsAppAutoPost !== undefined) featureUpdates.whatsAppAutoPost = updates.whatsAppAutoPost;
     if (updates.paypalEnabled !== undefined) featureUpdates.paypalEnabled = updates.paypalEnabled;
     if (updates.emergencyPoolFund !== undefined) featureUpdates.emergencyPoolFund = updates.emergencyPoolFund;
-    if (updates.donorFeeChoiceEnabled !== undefined) featureUpdates.donorFeeChoiceEnabled = updates.donorFeeChoiceEnabled;
     if (updates.donationPresets !== undefined) featureUpdates.donationPresets = updates.donationPresets;
 
     const withdrawalUpdates: Partial<IWithdrawalSetting> = {};
@@ -515,11 +514,14 @@ export class SettingService {
     const fees = settings.fees || {};
 
     return {
-      baseFeeMinor: fees.baseFeeMinor ?? 0,  // Default 0 - Monime deducts 1% automatically
       processingFee: {
-        individualBps: fees.processingFee?.individualBps ?? 260,    // Default 2.6%
-        organizationBps: fees.processingFee?.organizationBps ?? 200, // Default 2.0%
-      }
+        individualBps: fees.processingFee?.individualBps ?? 260,    // 2.6%
+        organizationBps: fees.processingFee?.organizationBps ?? 200, // 2.0%
+      },
+      monimeCollectionFeeBpsEstimate:
+        fees.monimeCollectionFeeBpsEstimate ?? MONIME_COLLECTION_FEE_BPS_FALLBACK,
+      payoutFeeBpsEstimate:
+        fees.payoutFeeBpsEstimate ?? MONIME_PAYOUT_FEE_BPS_FALLBACK,
     };
   }
 
@@ -532,15 +534,19 @@ export class SettingService {
 
     const feeUpdates: Partial<IFeeSetting> = { ...currentFees };
 
-    if (updates.baseFeeMinor !== undefined) {
-      feeUpdates.baseFeeMinor = updates.baseFeeMinor;
-    }
-
     if (updates.processingFee) {
       feeUpdates.processingFee = {
         individualBps: updates.processingFee.individualBps ?? currentFees.processingFee?.individualBps ?? 260,
         organizationBps: updates.processingFee.organizationBps ?? currentFees.processingFee?.organizationBps ?? 200,
       };
+    }
+
+    if (updates.monimeCollectionFeeBpsEstimate !== undefined) {
+      feeUpdates.monimeCollectionFeeBpsEstimate = updates.monimeCollectionFeeBpsEstimate;
+    }
+
+    if (updates.payoutFeeBpsEstimate !== undefined) {
+      feeUpdates.payoutFeeBpsEstimate = updates.payoutFeeBpsEstimate;
     }
 
     await this.updatePlatformSettings({ fees: feeUpdates }, adminUserId);
@@ -549,66 +555,28 @@ export class SettingService {
   }
 
   /**
-   * Check if the donor fee choice feature is enabled
+   * The platform rate to apply to a campaign of this type.
+   *
+   * Resolve this ONCE, at donation creation, and persist it on the donation
+   * (`quote.platformFeeBps`). Settlement reuses the persisted rate rather than calling
+   * back here, so an admin changing the fee between a donor paying and Monime settling
+   * cannot move the goalposts on a donation already in flight (R4/R10).
    */
-  async isDonorFeeChoiceEnabled(): Promise<boolean> {
-    const settings = await this.getOrCreatePlatform();
-    return settings.features?.donorFeeChoiceEnabled ?? false;
+  async getPlatformFeeBps(campaignType: CampaignType): Promise<number> {
+    const fees = await this.getFeeSettings();
+    return campaignType === "organization"
+      ? fees.processingFee.organizationBps
+      : fees.processingFee.individualBps;
   }
 
-  /**
-   * Calculate fees for a donation based on campaign type and donor's fee choice
-   *
-   * Fee structure:
-   * - Base fee: 1% (100 bps) - Monime payment processor fee
-   * - Processing fee: 2.6% (individual) / 2.0% (organization) - Platform fee
-   *
-   * Fee modes:
-   * - donorCoversFee = true: Donor pays donation + fees, campaign receives full donation
-   * - donorCoversFee = false: Fees deducted from donation, campaign receives donation - fees
-   */
-  calculateDonationFees(
-    donationAmountMinor: number,
-    campaignType: CampaignType,
-    feeSettings: FeeSettings,
-    donorCoversFee: boolean = true
-  ): CalculatedFees {
-    // Base fee is Monime's 1% (100 bps) - always percentage-based
-    const BASE_FEE_BPS = 100; // 1%
-    const baseFeeMinor = Math.round(donationAmountMinor * BASE_FEE_BPS / 10000);
+  /** Monime's collection rate — for quoting only. The reported fee always wins (R13). */
+  async getMonimeFeeEstimateBps(): Promise<number> {
+    return (await this.getFeeSettings()).monimeCollectionFeeBpsEstimate;
+  }
 
-    const processingFeeBps = campaignType === "organization"
-      ? feeSettings.processingFee.organizationBps
-      : feeSettings.processingFee.individualBps;
-
-    // Calculate processing fee: amount * (bps / 10000)
-    const processingFeeMinor = Math.round(donationAmountMinor * processingFeeBps / 10000);
-    const totalFeeMinor = baseFeeMinor + processingFeeMinor;
-
-    // Calculate amounts based on fee choice
-    let totalChargedMinor: number;
-    let campaignReceivesMinor: number;
-
-    if (donorCoversFee) {
-      // Donor covers fee: charge donation + fees, campaign gets full donation
-      totalChargedMinor = donationAmountMinor + totalFeeMinor;
-      campaignReceivesMinor = donationAmountMinor;
-    } else {
-      // Fee from donation: charge donation only, campaign gets donation - fees
-      totalChargedMinor = donationAmountMinor;
-      campaignReceivesMinor = Math.max(0, donationAmountMinor - totalFeeMinor);
-    }
-
-    return {
-      baseFeeMinor,
-      processingFeeMinor,
-      processingFeeBps,
-      campaignType,
-      totalFeeMinor,
-      totalChargedMinor,
-      campaignReceivesMinor,
-      donorCoversFee
-    };
+  /** Monime's payout rate — for quoting only. The reported fee always wins (R13). */
+  async getPayoutFeeEstimateBps(): Promise<number> {
+    return (await this.getFeeSettings()).payoutFeeBpsEstimate;
   }
 
   // ==================== Platform Account Settings ====================
@@ -679,6 +647,23 @@ export class SettingService {
   ): Promise<TippingSettings> {
     const settings = await this.getOrCreatePlatform();
     const currentTipping = settings.tipping || {};
+
+    // Refuse to enable tipping without somewhere for the money to land.
+    //
+    // The admin switch now gates on saved settings, but a client-side gate the server
+    // does not enforce is worth nothing — anyone can PUT this endpoint directly, and that
+    // is precisely the shape of bug the withdrawal buffer turned out to be. Persisting
+    // `enabled: true` against an unconfigured account produces a panel that claims
+    // tipping is on while every donor-facing surface correctly shows nothing.
+    if (updates.enabled === true) {
+      const account = settings.tipFinancialAccount;
+      if (!account?.id || !account?.uvan) {
+        throw new Error(
+          "Cannot enable tipping until the tip financial account is saved. " +
+            "Both the account ID and the UVAN are required."
+        );
+      }
+    }
 
     await this.updatePlatformSettings({
       tipping: { ...currentTipping, ...updates }

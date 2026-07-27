@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatMajor } from "@/lib/currency";
 import { useAuth } from "@/lib/auth-provider";
 
 interface DashboardStats {
@@ -74,8 +75,6 @@ export default function AdminDashboardPage() {
   const fromMinorUnits = (amountMinor: number, currency = "SLE") =>
     amountMinor / Math.pow(10, currency === "SLE" ? 2 : 2);
 
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("en-SL", { style: "currency", currency: "SLE" }).format(amount);
 
   const formatNumber = (num: number) =>
     new Intl.NumberFormat("en-US").format(num);
@@ -142,7 +141,7 @@ export default function AdminDashboardPage() {
     {
       label: "Total Donations",
       value: formatNumber(stats.totalDonations),
-      sub: `Avg: ${formatCurrency(fromMinorUnits(stats.averageDonationAmount))}`,
+      sub: `Avg: ${formatMajor(fromMinorUnits(stats.averageDonationAmount))}`,
       color: ORANGE,
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,7 +151,7 @@ export default function AdminDashboardPage() {
     },
     {
       label: "Total Raised",
-      value: formatCurrency(fromMinorUnits(stats.totalRevenue)),
+      value: formatMajor(fromMinorUnits(stats.totalRevenue)),
       sub: "Gross donation volume",
       color: AMBER,
       icon: (
@@ -163,7 +162,7 @@ export default function AdminDashboardPage() {
     },
     {
       label: "Platform Revenue",
-      value: formatCurrency(fromMinorUnits(stats.finance?.platformRevenue ?? 0)),
+      value: formatMajor(fromMinorUnits(stats.finance?.platformRevenue ?? 0)),
       sub: `${((stats.finance?.effectiveTakeRateBps ?? 0) / 100).toFixed(1)}% effective take`,
       color: GREEN,
       icon: (
@@ -188,7 +187,7 @@ export default function AdminDashboardPage() {
   ];
 
   const fin = stats.finance;
-  const money = (minor: number) => formatCurrency(fromMinorUnits(minor ?? 0));
+  const money = (minor: number) => formatMajor(fromMinorUnits(minor ?? 0));
   const financialOverview = [
     { label: "Platform Revenue", value: money(fin?.platformRevenue ?? 0), sub: "Our net earnings (processing fee)", bg: `${GREEN}10`, dot: GREEN, text: GREEN },
     { label: "Net to Campaigns", value: money(fin?.netToCampaigns ?? 0), sub: "Owed to campaigns after fees", bg: `${ORANGE}10`, dot: ORANGE, text: ORANGE },

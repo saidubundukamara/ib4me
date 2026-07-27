@@ -9,19 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatMinor } from "@/lib/currency";
 
-function formatCurrency(minor: number, currency: string): string {
-  const value = minor / 100;
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 2,
-    }).format(value);
-  } catch {
-    return `${currency} ${value.toFixed(2)}`;
-  }
-}
 
 // Statuses where the payout funds never left the campaign account or were
 // returned to it. Everything else (processing, approved, completed, paid)
@@ -189,7 +178,7 @@ export default function UserWithdrawalsPage() {
                 {isLoading ? (
                   <Skeleton className="h-6 w-24 rounded-md" />
                 ) : (
-                  formatCurrency(totalAvailable, primaryCurrency)
+                  formatMinor(totalAvailable, primaryCurrency)
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">Live balance, ready to withdraw</p>
@@ -208,7 +197,7 @@ export default function UserWithdrawalsPage() {
                 {isLoading ? (
                   <Skeleton className="h-6 w-24 rounded-md" />
                 ) : (
-                  formatCurrency(totalWithdrawnMinor, primaryCurrency)
+                  formatMinor(totalWithdrawnMinor, primaryCurrency)
                 )}
               </div>
             </div>
@@ -226,7 +215,7 @@ export default function UserWithdrawalsPage() {
                 {isLoading ? (
                   <Skeleton className="h-6 w-24 rounded-md" />
                 ) : (
-                  formatCurrency(inTransitMinor, primaryCurrency)
+                  formatMinor(inTransitMinor, primaryCurrency)
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">Being processed</p>
@@ -328,7 +317,7 @@ export default function UserWithdrawalsPage() {
                         <Badge variant="outline" className={`${statusColor} capitalize`}>
                           {displayStatus.replace(/_/g, " ")}
                         </Badge>
-                        <span className="font-medium text-foreground">{formatCurrency(p.amountMinor, currency)}</span>
+                        <span className="font-medium text-foreground">{formatMinor(p.amountMinor, currency)}</span>
                       </div>
                     </div>
                   );

@@ -8,10 +8,11 @@ import { IPayout, IPayoutApproval, IPayoutPolicyCheck } from "../models/Payout";
 import { runInTransaction, ServiceSession } from "./ServiceTransaction";
 import { monimeService, MonimePayoutRequest, MonimeApiError } from "../lib/monime";
 import { resolveMobileOperator } from "../lib/mobileMoney";
-import { randomUUID } from "crypto";
+
 import type { PayoutFilters, PayoutListOptions } from "../repositories/PayoutRepository";
 import { auditLogService } from "./AuditLogService";
 import { settingService } from "./SettingService";
+import { computePayoutSplit, requiredDebitMinor, sumMonimeFees } from "../lib/fees";
 
 export interface RequestPayoutInput {
   campaignId: mongoose.Types.ObjectId;
@@ -33,30 +34,133 @@ export class PayoutService {
   }
 
   /**
-   * Read the REAL available balance of the source financial account from Monime
-   * and throw a clear error if it can't cover the payout. Prevents a payout from
-   * silently sitting on "processing" when the account isn't actually funded.
+   * The fail-closed gate every payout passes through before any money moves.
+   *
+   * Three things it will not do:
+   *
+   * - **Trust our own ledger alone.** Every figure derived from our database is ours to
+   *   get wrong; the provider's balance is not. The payout is bounded by
+   *   `min(ledger, provider)` and any divergence is logged in both directions — under
+   *   means money we believe we hold isn't there, over means money arrived we never
+   *   booked. We cap at the ledger in the second case, because paying out unbooked money
+   *   is just a different hole (MONIME-FEE-MODEL.md R8).
+   * - **Compare currencies implicitly.** A balance held in another currency measured
+   *   against SLE minor units is arithmetic nonsense, not a small discrepancy.
+   * - **Fail open.** An unreadable or absent balance refuses the payout. This costs no
+   *   availability: a Monime we cannot read from is one we cannot `createPayout` against
+   *   either, and failing open would let anyone who can break the read switch the guard
+   *   off.
    */
   private async assertSufficientBalance(
     financialAccountId: string,
     amountMinor: number,
-    currency: string
+    currency: string,
+    campaignId?: mongoose.Types.ObjectId
   ): Promise<void> {
     const account = await monimeService.getFinancialAccount(financialAccountId);
-    const availableMinor = monimeService.getAccountBalanceMinor(account);
-    console.log("[payout] balance pre-flight", {
-      financialAccountId,
-      availableMinor,
-      amountMinor,
-      currency,
-      sufficient: availableMinor >= amountMinor,
-    });
-    if (availableMinor < amountMinor) {
-      const fmt = (minor: number) => `${currency} ${(minor / 100).toFixed(2)}`;
+
+    const balance = account?.balance?.available;
+    if (balance === null || balance === undefined) {
       throw new Error(
-        `Insufficient funds in payout account. Available ${fmt(availableMinor)}, requested ${fmt(amountMinor)}.`
+        "Could not confirm your balance with the payment provider. Please try again shortly."
       );
     }
+    if (typeof balance === "object" && balance.currency && balance.currency !== currency) {
+      throw new Error(
+        `This account is held in ${balance.currency}, not ${currency}. Withdrawal refused.`
+      );
+    }
+
+    const providerMinor = monimeService.getAccountBalanceMinor(account);
+
+    // What must be present to send `amountMinor` — see PAYOUT_FEE_CHARGED_ON_TOP. Monime
+    // is documented to take its fee out of the amount sent, in which case this is just
+    // `amountMinor` and a full-balance withdrawal is legal.
+    const payoutFeeBps = await settingService.getPayoutFeeEstimateBps();
+    const requiredMinor = requiredDebitMinor(amountMinor, payoutFeeBps);
+
+    // Bound by our own books too, and shout if the two disagree.
+    let effectiveAvailable = providerMinor;
+    if (campaignId) {
+      const ledger = await ledgerEntryRepository.getCampaignBalance(campaignId);
+      if (ledger.balance !== providerMinor) {
+        console.warn("[payout] balance divergence", {
+          financialAccountId,
+          campaignId: campaignId.toString(),
+          ledgerMinor: ledger.balance,
+          providerMinor,
+          direction: providerMinor < ledger.balance ? "provider_short" : "provider_over",
+        });
+      }
+      effectiveAvailable = Math.min(providerMinor, ledger.balance);
+    }
+
+    console.log("[payout] balance pre-flight", {
+      financialAccountId,
+      providerMinor,
+      effectiveAvailable,
+      amountMinor,
+      requiredMinor,
+      currency,
+      sufficient: effectiveAvailable >= requiredMinor,
+    });
+
+    if (effectiveAvailable < requiredMinor) {
+      const fmt = (minor: number) => `${currency} ${(minor / 100).toFixed(2)}`;
+      throw new Error(
+        `Insufficient funds in payout account. Available ${fmt(effectiveAvailable)}, requested ${fmt(requiredMinor)}.`
+      );
+    }
+  }
+
+  /**
+   * What a withdrawal of `amountMinor` will actually pay out, for the confirm screen.
+   *
+   * Quoted up front and never a silent deduction: mobile-money providers charge on every
+   * withdrawal, and the owner must see "requested X · fee Y · you receive Z" before they
+   * commit (MONIME-FEE-MODEL.md §8.7). The fee here is an ESTIMATE — the exact figure is
+   * confirmed from `payout.completed` and written to the payout row at completion.
+   */
+  async quotePayout(
+    campaignId: string,
+    amountMinor: number
+  ): Promise<{
+    currency: string;
+    availableMinor: number;
+    requestedMinor: number;
+    payoutFeeBps: number;
+    estimatedFeeMinor: number;
+    estimatedNetMinor: number;
+    requiredDebitMinor: number;
+    minPayoutMinor: number;
+    thresholdEnabled: boolean;
+    note: string;
+  }> {
+    const campaign = await campaignRepository.findById(campaignId);
+    const currency = campaign?.goal?.currency ?? "SLE";
+    const payoutFeeBps = await settingService.getPayoutFeeEstimateBps();
+    const withdrawalSettings = await settingService.getWithdrawalSettings();
+    const availableMinor = await this.getAvailableBalanceMinor(campaignId);
+
+    const split = computePayoutSplit({
+      requestedMinor: amountMinor,
+      payoutFeeBpsFallback: payoutFeeBps,
+    });
+
+    return {
+      currency,
+      availableMinor,
+      requestedMinor: split.requestedMinor,
+      payoutFeeBps,
+      estimatedFeeMinor: split.feeMinor,
+      estimatedNetMinor: split.netAmountMinor,
+      requiredDebitMinor: requiredDebitMinor(amountMinor, payoutFeeBps),
+      minPayoutMinor: withdrawalSettings.minAmountMinor,
+      thresholdEnabled: withdrawalSettings.thresholdEnabled,
+      note:
+        "Mobile money providers charge a fee on every withdrawal. The exact amount is " +
+        "confirmed when the payout settles.",
+    };
   }
 
   /**
@@ -86,7 +190,8 @@ export class PayoutService {
    */
   private async applyPayoutCompletion(
     payout: IPayout,
-    txn: ServiceSession
+    txn: ServiceSession,
+    opts?: { monimeFeeMinor?: number | null }
   ): Promise<void> {
     const claim = await payoutRepository.updateOne(
       { _id: payout.id, completionApplied: { $ne: true } } as never,
@@ -101,7 +206,28 @@ export class PayoutService {
     const campaign = await campaignRepository.findById(
       payout.campaignId.toString()
     );
-    const currency = campaign?.goal?.currency ?? "SLE";
+    const currency = payout.currency || campaign?.goal?.currency || "SLE";
+
+    // Monime takes its cut out of the amount we sent, so the owner receives less than
+    // they requested. Record BOTH figures, at completion, from what Monime actually
+    // reported — a configured rate is only a fallback (R12/R13).
+    const split = computePayoutSplit({
+      requestedMinor: payout.amountMinor,
+      payoutFeeMinor: opts?.monimeFeeMinor,
+      payoutFeeBpsFallback: await settingService.getPayoutFeeEstimateBps(),
+    });
+
+    await payoutRepository.updateById(
+      payout.id,
+      {
+        $set: {
+          feeMinor: split.feeMinor,
+          netAmountMinor: split.netAmountMinor,
+          feeSource: split.feeSource,
+        },
+      } as never,
+      txn
+    );
 
     await campaignRepository.updateById(
       payout.campaignId.toString(),
@@ -114,15 +240,23 @@ export class PayoutService {
       txn
     );
 
-    await ledgerEntryRepository.create(
+    // The FULL requested amount left the campaign's balance — net to the owner, fee to
+    // Monime. The fee is deliberately NOT a ledger account: it was never platform money,
+    // it came out of a balance the campaign already owned (R7). It lives as columns on
+    // the payout row instead.
+    await ledgerEntryRepository.createIdempotent(
       {
         campaignId: payout.campaignId,
+        accountType: "campaign",
         refType: "payout",
-        refId: payout._id,
+        refId: payout._id as mongoose.Types.ObjectId,
         direction: "out",
         amountMinor: payout.amountMinor,
         currency,
-      } as unknown as Partial<import("../models/LedgerEntry").ILedgerEntry>,
+        monimeRef: payout.monimePayoutId ?? null,
+        description: `Withdrawal ${payout.id}`,
+      },
+      `payout:${payout.id}`,
       txn
     );
   }
@@ -233,7 +367,8 @@ export class PayoutService {
       await this.assertSufficientBalance(
         campaign.financial_account.id,
         input.amountMinor,
-        campaign.goal?.currency ?? "SLE"
+        campaign.goal?.currency ?? "SLE",
+        input.campaignId
       );
 
       // Check minimum withdrawal threshold
@@ -255,11 +390,21 @@ export class PayoutService {
       });
 
       // Create payout record first
+      // `quotedFeeMinor` records what the owner was shown when they confirmed, so a
+      // later dispute can be settled against the number they actually saw. The
+      // authoritative fee is written at completion from what Monime reports (R7/R12).
+      const quotedFee = computePayoutSplit({
+        requestedMinor: input.amountMinor,
+        payoutFeeBpsFallback: await settingService.getPayoutFeeEstimateBps(),
+      });
+
       const payout = await payoutRepository.create(
         {
           campaignId: input.campaignId,
           requestedBy: input.requestedBy,
           amountMinor: input.amountMinor,
+          currency: campaign.goal?.currency ?? "SLE",
+          quotedFeeMinor: quotedFee.feeMinor,
           method: input.method,
           status: initialStatus,
           policyCheck,
@@ -369,7 +514,11 @@ export class PayoutService {
         // above (before the payout row was created).
 
         // Create payout with Monime
-        const idempotencyKey = randomUUID();
+        // DETERMINISTIC, keyed on the payout row. A fresh `randomUUID()` per attempt —
+        // which this used to be — defeats Monime's idempotency entirely: every retry
+        // reads as a brand-new payout request, so retrying one that had actually
+        // succeeded would send the money a second time.
+        const idempotencyKey = `payout_${payout.id}`;
         console.log("[payout] sending to Monime", {
           payoutId: payout.id,
           destinationType: monimeRequest.destination.type,
@@ -414,7 +563,11 @@ export class PayoutService {
         // If Monime settled the payout synchronously, apply the completion
         // side-effects now (idempotent — webhook may also fire later).
         if (reconciledStatus === "completed") {
-          await this.applyPayoutCompletion(updatedPayout || payout, txn);
+          // A synchronous completion may already carry the fee; if not, the
+          // payout.completed webhook supplies it later.
+          await this.applyPayoutCompletion(updatedPayout || payout, txn, {
+            monimeFeeMinor: sumMonimeFees(monimePayout.fees),
+          });
         }
 
         return updatedPayout || payout;
@@ -471,29 +624,12 @@ export class PayoutService {
       );
       if (!updated) throw new Error("Failed to update payout status");
 
-      // Update campaign withdrawals
-      const incUpdate: Record<string, number> = {
-        "withdrawals.totalPaidMinor": payout.amountMinor,
-        "withdrawals.count": 1,
-      };
-      await campaignRepository.updateById(
-        payout.campaignId.toString(),
-        { $inc: incUpdate as never } as never,
-        txn
-      );
-
-      // Ledger entry
-      await ledgerEntryRepository.create(
-        {
-          campaignId: payout.campaignId,
-          refType: "payout",
-          refId: payout._id,
-          direction: "out",
-          amountMinor: payout.amountMinor,
-          currency: "UGX", // Consider storing per-campaign/base currency; adjust as needed
-        } as unknown as Partial<import("../models/LedgerEntry").ILedgerEntry>,
-        txn
-      );
+      // Route through the single completion path, which holds the atomic
+      // `completionApplied` claim. This used to duplicate the counter increment and the
+      // ledger write inline, bypassing that claim — so an admin marking an
+      // already-completed payout as paid double-counted the withdrawal AND wrote a second
+      // ledger row. It also hardcoded `currency: "UGX"` on a Sierra Leone platform.
+      await this.applyPayoutCompletion(updated, txn);
 
       return updated;
     }, session);
@@ -502,7 +638,9 @@ export class PayoutService {
   async updatePayoutStatus(
     monimePayoutId: string,
     status: string,
-    failureReason?: string
+    failureReason?: string,
+    /** Monime's reported payout fee. `null`/omitted = not reported, never zero. */
+    opts?: { monimeFeeMinor?: number | null }
   ): Promise<IPayout | null> {
     const payout = await payoutRepository.findOne({ monimePayoutId });
     if (!payout) {
@@ -538,7 +676,9 @@ export class PayoutService {
       // Idempotent: a duplicate payout.completed webhook (or a sync disburse that
       // already applied it) is a no-op and cannot double-count.
       if (newStatus === "completed") {
-        await this.applyPayoutCompletion(updated, txn);
+        await this.applyPayoutCompletion(updated, txn, {
+          monimeFeeMinor: opts?.monimeFeeMinor,
+        });
       }
 
       return updated;
@@ -793,11 +933,13 @@ export class PayoutService {
         await this.assertSufficientBalance(
           campaign.financial_account.id,
           payout.amountMinor,
-          campaign.goal?.currency ?? "SLE"
+          campaign.goal?.currency ?? "SLE",
+          payout.campaignId
         );
 
-        // Create payout with Monime
-        const idempotencyKey = randomUUID();
+        // Create payout with Monime — same deterministic key as requestPayout, so the
+        // two paths cannot create two Monime payouts for one payout row.
+        const idempotencyKey = `payout_${payoutId}`;
         console.log("[payout] processPayout sending to Monime", {
           payoutId,
           destinationType: monimeRequest.destination.type,
@@ -955,30 +1097,12 @@ export class PayoutService {
         throw new Error("Failed to add payment proof");
       }
 
-      // Update campaign withdrawals and create ledger entry
-      const incUpdate: Record<string, number> = {
-        "withdrawals.totalPaidMinor": payout.amountMinor,
-        "withdrawals.count": 1,
-      };
-      await campaignRepository.updateById(
-        payout.campaignId.toString(),
-        { $inc: incUpdate as never } as never,
-        txn
-      );
-
-      // Create ledger entry
-      await ledgerEntryRepository.create(
-        {
-          campaignId: payout.campaignId,
-          refType: "payout",
-          refId: payout._id,
-          direction: "out",
-          amountMinor: payout.amountMinor,
-          currency: "SLE", // TODO: Use campaign currency
-          description: `Payout completed with proof: ${proofUrl.split('/').pop()}`,
-        } as unknown as Partial<import("../models/LedgerEntry").ILedgerEntry>,
-        txn
-      );
+      // Route through the single completion path, which holds the atomic
+      // `completionApplied` claim. This used to increment the withdrawal counter and
+      // write the ledger row inline, bypassing that claim — so adding proof to a payout
+      // that had already completed via webhook double-counted both. It also hardcoded the
+      // currency.
+      await this.applyPayoutCompletion(updated, txn);
 
       return updated;
     }, session);

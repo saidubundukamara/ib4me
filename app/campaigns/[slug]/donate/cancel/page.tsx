@@ -9,20 +9,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import ProgressBar from "@/app/_components/ProgressBar";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatMajor } from "@/lib/currency";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
   searchParams?: Promise<{ donation_id?: string }>;
 };
 
-function formatAmount(amount: number, currency: string = "SLE") {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
 
 async function DonationCancelContent({ params }: PageProps) {
   const { slug } = await params;
@@ -32,8 +25,8 @@ async function DonationCancelContent({ params }: PageProps) {
   const currency = campaign.goal?.currency || "SLE";
   const raisedMinor = campaign.totals?.raisedMinor ?? 0;
   const goalMinor = campaign.goal?.amountMinor ?? 0;
-  const amountRaised = Math.max(0, Math.floor(raisedMinor) / 100);
-  const goalAmount = Math.max(0, Math.floor(goalMinor) / 100);
+  const amountRaised = Math.max(0, raisedMinor) / 100;
+  const goalAmount = Math.max(0, goalMinor) / 100;
   const progress = goalAmount > 0 ? Math.min(100, Math.round((amountRaised / goalAmount) * 100)) : 0;
   const campaignName = campaign.beneficiary?.name || campaign.details || "this campaign";
 
@@ -87,12 +80,12 @@ async function DonationCancelContent({ params }: PageProps) {
                 <div className="space-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center justify-between">
                     <span>Raised so far</span>
-                    <span className="font-medium text-foreground">{formatAmount(amountRaised, currency)}</span>
+                    <span className="font-medium text-foreground">{formatMajor(amountRaised, currency)}</span>
                   </div>
                   <ProgressBar value={progress} className="h-2" />
                   <div className="flex items-center justify-between">
                     <span>Goal</span>
-                    <span className="font-medium text-foreground">{formatAmount(goalAmount, currency)}</span>
+                    <span className="font-medium text-foreground">{formatMajor(goalAmount, currency)}</span>
                   </div>
                 </div>
               </CardContent>

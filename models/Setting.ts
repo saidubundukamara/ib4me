@@ -19,17 +19,25 @@ export interface ITieredFeeRate {
 }
 
 export interface IFeeSetting {
-  // Base fee - fixed amount per transaction (in minor units)
-  // Set to 0 by default - Monime's 1% fee is handled separately
-  baseFeeMinor?: number;           // e.g., 0 (not used, Monime deducts 1% automatically)
-
-  // Processing fee - percentage-based, tiered by campaign type
-  // This is the platform's fee, charged on top of the donation amount
+  /**
+   * The platform's own fee, tiered by campaign type. Charged as a percentage of what
+   * ARRIVES after Monime's cut, not of what the donor paid.
+   */
   processingFee?: ITieredFeeRate;
 
-  // Legacy fields (kept for backward compatibility)
-  platformFeeBps?: number;
-  mobileMoneyFeeBps?: number;
+  /**
+   * ESTIMATE ONLY. Used to quote a donation before Monime has told us what it actually
+   * took, and as a fallback when a settlement arrives with no fee reported.
+   *
+   * The recorded fee always wins. A configured rate that silently drives real money is
+   * how the whole defect class started — storing the true fee and then computing
+   * everything from an assumption is the same bug wearing a disguise (R13).
+   */
+  monimeCollectionFeeBpsEstimate?: number;
+
+  /** ESTIMATE ONLY, same rules — used to quote a withdrawal before `payout.completed`. */
+  payoutFeeBpsEstimate?: number;
+
 }
 
 export interface IPlatformFinancialAccount {
@@ -54,7 +62,6 @@ export interface IFeatureFlags {
   whatsAppAutoPost?: boolean;
   paypalEnabled?: boolean;
   emergencyPoolFund?: boolean;
-  donorFeeChoiceEnabled?: boolean; // Allow donors to choose whether to cover fees
   donationPresets?: number[];      // Quick-pick amounts on donate page (major units, e.g. [50,250,500])
 }
 
@@ -181,21 +188,19 @@ const settingSchema = new mongoose.Schema<ISetting>(
       monthlyLimitMinor: { type: Number },
     },
     fees: {
-      baseFeeMinor: { type: Number, default: 0 },  // Set to 0 - Monime deducts 1% automatically
       processingFee: {
         individualBps: { type: Number, default: 260 },     // 2.6%
         organizationBps: { type: Number, default: 200 },   // 2.0%
       },
-      // Legacy fields
-      platformFeeBps: { type: Number },
-      mobileMoneyFeeBps: { type: Number },
+      // Fallbacks for quoting only — the fee Monime reports always wins (R13).
+      monimeCollectionFeeBpsEstimate: { type: Number, default: 100 },  // 1%
+      payoutFeeBpsEstimate: { type: Number, default: 100 },            // 1%
     },
     features: {
       maintenanceMode: { type: Boolean, default: false },
       whatsAppAutoPost: { type: Boolean },
       paypalEnabled: { type: Boolean },
       emergencyPoolFund: { type: Boolean },
-      donorFeeChoiceEnabled: { type: Boolean, default: false },
       donationPresets: [{ type: Number }],
     },
     website: {

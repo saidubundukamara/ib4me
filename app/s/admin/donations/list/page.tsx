@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { formatMajor } from "@/lib/currency";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,14 +26,6 @@ const fromMinorUnits = (amountMinor: number, currency: string = "SLE"): number =
   return amountMinor / Math.pow(10, decimalPlaces);
 };
 
-const formatCurrency = (amount: number, currency: string = "SLE"): string => {
-  return new Intl.NumberFormat("en-SL", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-};
 import { 
   Search, 
   Eye, 
@@ -82,6 +75,12 @@ interface Donation {
   fees?: {
     paymentFeeMinor?: number;
     platformFeeMinor?: number;
+  };
+  settlement?: {
+    monimeFeeMinor?: number;
+    monimeFeeSource?: "reported" | "estimated";
+    platformFeeMinor?: number;
+    campaignReceivesMinor?: number;
   };
   netAmountMinor?: number;
   completedAt?: string;
@@ -459,7 +458,7 @@ export default function AdminDonationsListPage() {
                             {new Date(donation.createdAt).toLocaleString()}
                           </div>
                           <div className="font-semibold text-lg">
-                            {formatCurrency(fromMinorUnits(donation.amount.minor), donation.amount.currency)}
+                            {formatMajor(fromMinorUnits(donation.amount.minor), donation.amount.currency)}
                           </div>
                         </div>
 
@@ -494,17 +493,27 @@ export default function AdminDonationsListPage() {
                         )}
 
                         {/* Fourth Row - Fee Information */}
-                        {donation.fees && (
+                        {(donation.settlement || donation.fees) && (
                           <div className="text-xs text-muted-foreground flex gap-4">
-                            {donation.fees.paymentFeeMinor && (
-                              <span>
-                                Payment Fee: {formatCurrency(fromMinorUnits(donation.fees.paymentFeeMinor))}
-                              </span>
-                            )}
-                            {donation.netAmountMinor && (
-                              <span>
-                                Net Amount: {formatCurrency(fromMinorUnits(donation.netAmountMinor))}
-                              </span>
+                            {donation.settlement ? (
+                              <>
+                                <span>
+                                  Monime: -{formatMajor(fromMinorUnits(donation.settlement.monimeFeeMinor ?? 0))}
+                                  {donation.settlement.monimeFeeSource === "estimated" && " (est.)"}
+                                </span>
+                                <span>
+                                  Platform: -{formatMajor(fromMinorUnits(donation.settlement.platformFeeMinor ?? 0))}
+                                </span>
+                                <span>
+                                  Campaign: {formatMajor(fromMinorUnits(donation.settlement.campaignReceivesMinor ?? 0))}
+                                </span>
+                              </>
+                            ) : (
+                              donation.fees?.paymentFeeMinor ? (
+                                <span>
+                                  Payment Fee (legacy): {formatMajor(fromMinorUnits(donation.fees.paymentFeeMinor))}
+                                </span>
+                              ) : null
                             )}
                           </div>
                         )}

@@ -75,9 +75,31 @@ export interface MonimeApiResponse<T> {
   success: boolean;
 }
 
+/**
+ * Whatever Monime puts in a `fees` field.
+ *
+ * Documented as an ARRAY of `{ amount: { currency, value }, code }`; this codebase
+ * originally declared it as a `{ total, breakdown }` object. Both are accepted until a
+ * live payment confirms which is real — parse it with `sumMonimeFees` from `lib/fees`,
+ * which sums the array (never reads `[0]`) and returns `null`, not `0`, when nothing was
+ * reported.
+ */
+export type MonimeFees =
+  | Array<{ amount?: { currency?: string; value?: number } | null; code?: string; metadata?: unknown }>
+  | { total: number; breakdown?: Record<string, number> };
+
 export interface MonimePayment {
+  /** Monime's payment id (`spm-…`) — the per-capture key for fee corrections. */
   id: string;
-  checkoutSessionId: string;
+  /** Present on some payloads; prefer `resolveCheckoutSessionId()`. */
+  checkoutSessionId?: string;
+  /**
+   * Where the session id actually lives on `payment.processing_completed`:
+   * `{ owner: { type: "checkout_session", id } }`.
+   */
+  ownershipGraph?: {
+    owner?: { type?: string; id?: string };
+  };
   status: "pending" | "processing" | "completed" | "failed" | "refunded";
   amount: {
     currency: string;
@@ -87,14 +109,52 @@ export interface MonimePayment {
     type: "mobile_money" | "card" | "bank_transfer";
     provider?: string; // e.g., 'orange_money', 'afrimoney'
   };
-  reference: string;
-  fees?: {
-    total: number;
-    breakdown: Record<string, number>;
+  /** The rail the money came over; `channel.reference` is an MNO reconciliation key. */
+  channel?: {
+    type?: string;
+    provider?: string;
+    reference?: string;
+    phoneNumber?: string;
   };
+  reference: string;
+  /** Monime's strongest reconciliation key. */
+  financialTransactionReference?: string;
+  financialAccountId?: string;
+  fees?: MonimeFees;
   createdAt: string;
   completedAt?: string;
   failureReason?: string;
+}
+
+/**
+ * The checkout session a payment belongs to.
+ *
+ * `data.ownershipGraph.owner` is where the live API puts it; `checkoutSessionId` is the
+ * shape this codebase originally assumed. Try both.
+ */
+export function resolveCheckoutSessionId(
+  payment: Pick<MonimePayment, "ownershipGraph" | "checkoutSessionId">
+): string | undefined {
+  const owner = payment.ownershipGraph?.owner;
+  if (owner?.id && (!owner.type || owner.type === "checkout_session")) {
+    return owner.id;
+  }
+  return payment.checkoutSessionId;
+}
+
+/**
+ * Flatten a response that may be double-wrapped in `result`.
+ *
+ * Live checkout-session responses nest `status` / `metadata` / `reference` under a second
+ * `result`, which a flat test stub will not reproduce — so the nesting only ever bites in
+ * production. Unwrap defensively.
+ */
+export function unwrapResult<T extends Record<string, unknown>>(body: T): T {
+  const inner = (body as { result?: unknown })?.result;
+  if (inner && typeof inner === "object" && !Array.isArray(inner)) {
+    return { ...(inner as T), ...body };
+  }
+  return body;
 }
 
 export interface MonimeFinancialAccountRequest {
@@ -172,10 +232,8 @@ export interface MonimePayoutResponse {
     accountName?: string;
   };
   reference?: string;
-  fees?: {
-    total: number;
-    breakdown: Record<string, number>;
-  };
+  /** Same shape-tolerance as payments — parse with `sumMonimeFees`. */
+  fees?: MonimeFees;
   failureReason?: string;
   createdAt: string;
   completedAt?: string;
@@ -246,6 +304,13 @@ export interface MonimeWebhookEvent {
     | "checkout_session.failed"
     | "checkout_session.cancelled"
     | "checkout_session.expired"
+    /**
+     * The fee-bearing settlement event. `payment.processing_completed` is what the live
+     * API is documented to send; `payment.completed` is what this integration originally
+     * assumed and may never actually fire. Both are handled until a live payment settles
+     * the question — the handler is the same either way.
+     */
+    | "payment.processing_completed"
     | "payment.completed"
     | "payment.failed"
     | "payout.completed"
@@ -774,15 +839,8 @@ export function fromMinorUnits(
   return amountMinor / Math.pow(10, decimalPlaces);
 }
 
-// Helper function to format currency amounts
-export function formatCurrency(
-  amount: number,
-  currency: string = "SLE"
-): string {
-  return new Intl.NumberFormat("en-SL", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
+// Money formatting lives in lib/currency.ts — `formatMinor` / `formatMajor`.
+//
+// The version that used to live here rendered `minimumFractionDigits: 0`, so the same
+// payout showed as "SLE 500" in admin and "SLE 500.00" on the owner dashboard. Money is
+// always two decimals (MONIME-FEE-MODEL.md §8.9).

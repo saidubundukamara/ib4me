@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { formatMajor, formatMinor } from "@/lib/currency";
 
 type DonationStatus = "loading" | "pending" | "transferring" | "succeeded" | "failed";
 
@@ -18,14 +19,6 @@ interface DonationDetails {
   createdAt: string;
 }
 
-function formatAmount(amount: number, currency: string = "SLE") {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
 
 function formatDate(dateString: string) {
   return new Intl.DateTimeFormat("en-GB", {
@@ -46,6 +39,10 @@ interface SuccessClientProps {
   slug: string;
   initialStatus?: string;
   errorMessage?: string;
+  /** Resolved server-side in page.tsx — see lib/tipping.ts for why not useSettings(). */
+  tippingEnabled?: boolean;
+  /** Configured tip presets, in MINOR units. */
+  tipSuggestedAmounts?: number[];
 }
 
 // Map API status to display status
@@ -72,6 +69,8 @@ export default function SuccessClient({
   slug,
   initialStatus = "",
   errorMessage = "",
+  tippingEnabled = false,
+  tipSuggestedAmounts = [],
 }: SuccessClientProps) {
   // Track window.location.origin safely for SSR
   const [origin, setOrigin] = useState("");
@@ -409,7 +408,7 @@ export default function SuccessClient({
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Your donation:</span>
                       <span className="font-medium text-foreground">
-                        {formatAmount(details.amountMajor, details.currency)}
+                        {formatMajor(details.amountMajor, details.currency)}
                       </span>
                     </div>
                     {details.campaignReceivesMajor != null &&
@@ -417,7 +416,7 @@ export default function SuccessClient({
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Goes to campaign:</span>
                           <span className="font-medium text-foreground">
-                            {formatAmount(details.campaignReceivesMajor, details.currency)}
+                            {formatMajor(details.campaignReceivesMajor, details.currency)}
                           </span>
                         </div>
                       )}
@@ -528,6 +527,55 @@ export default function SuccessClient({
                 </Button>
               </div>
             </div>
+
+            {/*
+              Tip prompt.
+
+              Placed AFTER sharing on purpose: sharing grows the campaign the donor just
+              backed, which is the higher-value ask. This is a secondary, entirely optional
+              one.
+
+              It is a hand-off, not a payment form — every preset links to /tip, which owns
+              the tip transaction end to end. Nothing here touches the donation path, and
+              the donation is already complete by the time this renders.
+
+              Tips fund the platform, NOT this campaign. The copy has to be unambiguous
+              about that: the money goes to a different account, and a donor who thinks
+              they are topping up the campaign has been misled.
+            */}
+            {tippingEnabled && tipSuggestedAmounts.length > 0 && (
+              <>
+                <Separator />
+                <div className="space-y-4 text-center">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-foreground">
+                      Want to support ib4me itself?
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Tips keep the platform running. They go to ib4me, not to this
+                      campaign — your donation above is already on its way.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {tipSuggestedAmounts.map((amountMinor) => (
+                      <Button
+                        key={amountMinor}
+                        asChild
+                        variant="outline"
+                        className="h-10 rounded-2xl"
+                      >
+                        <Link href={`/tip?amount=${amountMinor}&ref=donation_success`}>
+                          {formatMinor(amountMinor)}
+                        </Link>
+                      </Button>
+                    ))}
+                    <Button asChild variant="ghost" className="h-10 rounded-2xl">
+                      <Link href="/tip?ref=donation_success">Other amount</Link>
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

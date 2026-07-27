@@ -89,25 +89,21 @@ export default function PaymentSettings() {
         </div>
       </div>
 
-      {/* Fee Settings */}
+      {/*
+        The editable fee input that used to live here has been removed.
+
+        It wrote `fees.platformFeeBps`, which no charge path has ever read — an admin
+        could change it and nothing about what donors were charged would move. The real,
+        tiered rates are on the Fees screen. Two independent fee models, one of them inert,
+        is worse than one.
+      */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium">Platform Fees</h3>
-        
-        <div className="space-y-2 max-w-md">
-          <Label htmlFor="platformFeeRate">Platform Fee (%)</Label>
-          <Input
-            id="platformFeeRate"
-            type="number"
-            min="0"
-            max="25"
-            step="0.1"
-            value={formData.platformFeeRate}
-            onChange={(e) => handleChange("platformFeeRate", parseFloat(e.target.value) || 0)}
-          />
-          <p className="text-sm text-muted-foreground">
-            Percentage fee charged on successful donations (0-25%).
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          Current platform fee: <strong>{formData.platformFeeRate}%</strong> for individual
+          campaigns. Fee rates are configured on the <strong>Fees</strong> tab, which sets
+          separate rates for individual and organization campaigns.
+        </p>
       </div>
 
       {/* Payment Methods */}

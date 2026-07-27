@@ -110,7 +110,24 @@ export default function PlatformAccountSettings() {
   const minorToMajor = (minor: number) => (minor / 100).toFixed(2);
 
   const isPlatformAccountConfigured = formData.platformId && formData.platformUvan;
-  const isTipAccountConfigured = formData.tipId && formData.tipUvan;
+
+  /**
+   * Whether the tip account is configured — read from SAVED settings, not `formData`.
+   *
+   * This used to read the form, so the Enable switch unlocked the moment an admin started
+   * typing an account id. They could then flip it on and save, and the panel would show
+   * tipping as enabled while every donor-facing surface correctly showed nothing, because
+   * the server requires BOTH id and uvan to be persisted. The panel was reporting on text
+   * in an input box rather than on the state of the platform.
+   */
+  const isTipAccountSaved = Boolean(
+    tipFinancialAccount?.id && tipFinancialAccount?.uvan
+  );
+
+  /** True when the account fields have been edited but not yet saved. */
+  const hasUnsavedTipAccount =
+    formData.tipId !== (tipFinancialAccount?.id || "") ||
+    formData.tipUvan !== (tipFinancialAccount?.uvan || "");
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -223,11 +240,13 @@ export default function PlatformAccountSettings() {
             </div>
           </div>
 
-          {!isTipAccountConfigured && (
+          {!isTipAccountSaved && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Tip account is not configured. Tipping will be disabled until both Account ID and UVAN are set.
+                Tip account is not configured. Tipping stays disabled until both Account ID
+                and UVAN are filled in <strong>and saved</strong> — donors see nothing until
+                then, because there is nowhere for a tip to land.
               </AlertDescription>
             </Alert>
           )}
@@ -256,9 +275,19 @@ export default function PlatformAccountSettings() {
             <Switch
               checked={formData.enabled}
               onCheckedChange={(checked) => handleChange("enabled", checked)}
-              disabled={!isTipAccountConfigured}
+              disabled={!isTipAccountSaved}
             />
           </div>
+
+          {!isTipAccountSaved && hasUnsavedTipAccount && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Save the tip account above first — the switch unlocks once both fields are
+                stored, not while they are being typed.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {formData.enabled && (
             <>
@@ -337,26 +366,33 @@ export default function PlatformAccountSettings() {
               </div>
             </div>
 
+            {/*
+              Status reflects what is SAVED, and specifically what donors would see. It
+              previously read the form, so it could claim "Tipping Active" against typed
+              but unsaved fields — the one place in this panel that most needed to tell
+              the truth.
+            */}
             <div className="flex items-center gap-4">
               <div
                 className={`w-3 h-3 rounded-full ${
-                  isTipAccountConfigured && formData.enabled ? "bg-green-500" : "bg-yellow-500"
+                  isTipAccountSaved && tipping?.enabled ? "bg-green-500" : "bg-yellow-500"
                 }`}
               />
               <div>
                 <p className="font-medium">
-                  {isTipAccountConfigured && formData.enabled
+                  {isTipAccountSaved && tipping?.enabled
                     ? "Tipping Active"
-                    : isTipAccountConfigured
+                    : isTipAccountSaved
                     ? "Tip Account Configured, Tipping Disabled"
                     : "Tipping Not Configured"}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {isTipAccountConfigured && formData.enabled
-                    ? "Donors can tip the platform at /tip"
-                    : isTipAccountConfigured
+                  {isTipAccountSaved && tipping?.enabled
+                    ? "Donors can tip the platform at /tip, and the Support us link is live"
+                    : isTipAccountSaved
                     ? "Enable tipping to allow donors to support IB4ME"
                     : "Configure the tip account to enable tipping"}
+                  {hasChanges && " (unsaved changes are not reflected here)"}
                 </p>
               </div>
             </div>

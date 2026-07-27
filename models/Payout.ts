@@ -29,7 +29,23 @@ export interface IPayoutPolicyCheck {
 export interface IPayout extends mongoose.Document {
   campaignId: mongoose.Types.ObjectId;
   requestedBy: mongoose.Types.ObjectId;
+  /** What was requested. This FULL amount leaves the campaign's balance. */
   amountMinor: number;
+  currency: string;
+  /**
+   * What Monime kept out of `amountMinor`. Written at COMPLETION from the fee Monime
+   * actually reported — at request time it is only an estimate, and telling a campaign
+   * owner a number they will not receive is the bug this field exists to prevent (R12).
+   *
+   * Deliberately a column and not a ledger account: the fee was never platform money, it
+   * comes out of a balance the campaign already owned (R7).
+   */
+  feeMinor: number;
+  /** What actually reached the owner's wallet: amountMinor − feeMinor. */
+  netAmountMinor: number;
+  feeSource: "reported" | "estimated";
+  /** The fee we showed the owner when they confirmed, kept for dispute handling. */
+  quotedFeeMinor: number;
   method: IPayoutMethodMobileMoney | IPayoutMethodBank;
   status: "processing" | "completed" | "failed" | "cancelled" | "in_review" | "approved" | "rejected" | "paid" | "threshold_review";
   monimePayoutId?: string;
@@ -59,6 +75,17 @@ const payoutSchema = new mongoose.Schema<IPayout>(
       required: true,
     },
     amountMinor: { type: Number, required: true, min: 0 },
+    // Written at request time from the campaign's own currency. Previously a `"UGX"`
+    // literal was hardcoded into the payout ledger entry on a Sierra Leone platform.
+    currency: { type: String, default: "SLE" },
+    feeMinor: { type: Number, default: 0 },
+    netAmountMinor: { type: Number, default: 0 },
+    feeSource: {
+      type: String,
+      enum: ["reported", "estimated"],
+      default: "estimated",
+    },
+    quotedFeeMinor: { type: Number, default: 0 },
     method: {
       type: {
         type: String,
@@ -77,7 +104,7 @@ const payoutSchema = new mongoose.Schema<IPayout>(
       default: "processing",
       index: true,
     },
-    monimePayoutId: { type: String, sparse: true },
+    monimePayoutId: { type: String },
     approvals: [
       {
         adminId: {
@@ -107,6 +134,16 @@ const payoutSchema = new mongoose.Schema<IPayout>(
     completionApplied: { type: Boolean, default: false },
   },
   { timestamps: true }
+);
+
+/**
+ * One Monime payout, one row. Backstop against a retried disbursement being recorded
+ * twice — the deterministic `payout_${id}` idempotency key sent to Monime is the primary
+ * defence, this catches anything that slips past it.
+ */
+payoutSchema.index(
+  { monimePayoutId: 1 },
+  { unique: true, partialFilterExpression: { monimePayoutId: { $type: "string" } } }
 );
 
 export default mongoose.models.Payout ||

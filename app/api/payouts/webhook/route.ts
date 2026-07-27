@@ -6,10 +6,10 @@ import {
   MonimePayoutResponse,
 } from "@/lib/monime";
 import { payoutService } from "@/services/PayoutService";
+import { webhookEventRepository } from "@/repositories";
+import { sumMonimeFees } from "@/lib/fees";
+import { formatMinor } from "@/lib/currency";
 import { createUserNotification } from "@/lib/createNotification";
-
-// Simple in-memory cache for webhook event IDs (in production, use Redis or database)
-const processedWebhooks = new Set<string>();
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,9 +36,16 @@ export async function POST(req: NextRequest) {
       timestamp: webhookPayload.timestamp,
     });
 
-    // Idempotency check - prevent processing the same webhook event twice
+    // Durable idempotency — see the note in the donations webhook. The in-memory Set
+    // this replaces was per-instance and lost on cold start.
     const eventId = webhookPayload.event.id;
-    if (processedWebhooks.has(eventId)) {
+    const idempotencyKey = `monime:${eventId}`;
+    const claimed = await webhookEventRepository.claim(
+      idempotencyKey,
+      "monime",
+      webhookPayload.event.name
+    );
+    if (!claimed) {
       console.log(`Webhook event ${eventId} already processed, skipping`);
       return NextResponse.json({
         success: true,
@@ -46,6 +53,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    try {
     // Handle different event types
     switch (webhookPayload.event.name) {
       case "payout.completed":
@@ -59,16 +67,15 @@ export async function POST(req: NextRequest) {
       default:
         console.log(`Unhandled payout webhook event: ${webhookPayload.event.name}`);
     }
-
-    // Mark event as processed
-    processedWebhooks.add(eventId);
-
-    // Clean up old processed events (keep last 1000 to prevent memory leaks)
-    if (processedWebhooks.size > 1000) {
-      const eventsArray = Array.from(processedWebhooks);
-      processedWebhooks.clear();
-      eventsArray.slice(-500).forEach((id) => processedWebhooks.add(id));
+    } catch (handlerError) {
+      await webhookEventRepository.markFailed(
+        idempotencyKey,
+        handlerError instanceof Error ? handlerError.message : String(handlerError)
+      );
+      throw handlerError;
     }
+
+    await webhookEventRepository.markProcessed(idempotencyKey);
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -123,22 +130,35 @@ async function handlePayoutCompleted(payload: MonimeWebhookPayload) {
   try {
     console.log(`Processing payout completed for Monime payout ${payout.id}`);
 
-    // Update payout status in our database
+    // The fee Monime actually kept out of the amount we sent. This event is the only
+    // place it is ever reported, and it was previously discarded — leaving the campaign
+    // owner looking at a gross figure they never received (R12).
+    const monimeFeeMinor = sumMonimeFees(payout.fees);
+
     const updatedPayout = await payoutService.updatePayoutStatus(
       payout.id,
-      "completed"
+      "completed",
+      undefined,
+      { monimeFeeMinor }
     );
 
     if (updatedPayout) {
       console.log(
         `Successfully updated payout ${updatedPayout.id} to completed status`
       );
-      const amountSLE = (updatedPayout.amountMinor / 100).toFixed(2);
+      // Tell them what they actually RECEIVED, not what they requested. Monime takes its
+      // fee out of the amount sent, so quoting the requested figure here would be the same
+      // "a number they will not receive" problem the payout columns exist to fix.
+      // netAmountMinor is written moments earlier by applyPayoutCompletion.
+      const receivedMinor =
+        updatedPayout.netAmountMinor || updatedPayout.amountMinor;
       createUserNotification({
         recipientId: updatedPayout.requestedBy,
         type: "payout",
         title: "Payout completed",
-        message: `Your withdrawal of SLE ${amountSLE} has been sent to your mobile money account.`,
+        message:
+          `${formatMinor(receivedMinor, updatedPayout.currency || "SLE")} has been sent ` +
+          `to your mobile money account.`,
         link: "/dashboard/withdrawals",
       }).catch(() => {});
     } else {

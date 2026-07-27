@@ -16,35 +16,35 @@ export default async function CampaignDonatePage({ params }: PageParams) {
   if (!campaign) return notFound();
 
   const currency = campaign.goal?.currency || "SLE";
-  const raisedMinor = campaign.totals?.raisedMinor ?? 0;
-  const goalMinor = campaign.goal?.amountMinor ?? 0;
-  const amountRaised = Math.max(0, Math.floor(raisedMinor) / 100);
-  const goalAmount = Math.max(0, Math.floor(goalMinor) / 100);
-  const progress = goalAmount > 0 ? Math.min(100, Math.round((amountRaised / goalAmount) * 100)) : 0;
+  // Minor units all the way to the render layer. These used to be divided by 100 here,
+  // which threw away the cents of a figure that is now a net amount with cents in it.
+  const amountRaisedMinor = Math.max(0, campaign.totals?.raisedMinor ?? 0);
+  const goalMinor = Math.max(0, campaign.goal?.amountMinor ?? 0);
+  const progress =
+    goalMinor > 0 ? Math.min(100, Math.round((amountRaisedMinor / goalMinor) * 100)) : 0;
   const title = campaign.title || slugToTitle(slug);
 
   const organizer = campaign.ownerId ? await userRepository.findById(String(campaign.ownerId)) : null;
   const isOwnerVerified = campaign.ownerVerification?.verified ?? false;
 
-  // Get fee settings for this campaign type
+  // Fee rates for this campaign type. Both come from the DB and are passed down so the
+  // donate page never hardcodes a percentage (MONIME-FEE-MODEL.md §8.2).
   const feeSettings = await settingService.getFeeSettings();
   const campaignId = String(campaign._id);
   const campaignType = await campaignService.getCampaignType(campaignId);
   const processingFeeBps = campaignType === "organization"
     ? feeSettings.processingFee.organizationBps
     : feeSettings.processingFee.individualBps;
+  const monimeFeeBpsEstimate = feeSettings.monimeCollectionFeeBpsEstimate;
 
-  // Get feature settings (donor fee choice + donation presets)
+  // Admin-configurable quick-pick amounts, from main.
   const featureSettings = await settingService.getFeatureSettings();
-  const donorFeeChoiceEnabled = featureSettings.donorFeeChoiceEnabled ?? false;
   const donationPresets = featureSettings.donationPresets ?? [50, 250, 500];
 
-  // Tip is only active when the feature is enabled AND a tip financial account is configured
-  const [tippingSettings, tipAccount] = await Promise.all([
-    settingService.getTippingSettings(),
-    settingService.getTipFinancialAccountSettings(),
-  ]);
-  const tipEnabled = tippingSettings.enabled && Boolean(tipAccount.id) && Boolean(tipAccount.uvan);
+  // No tip control here. The in-flow tip slider was removed: the amount it collected was
+  // added to the donor's charge but never recorded as a tip, never moved to the tip
+  // account, and never appeared in any report. Tipping is now offered after the donation
+  // completes, as its own properly-booked transaction.
 
   // Collect asset IDs: beneficiary photo (priority) and first document image (fallback)
   const assetIds: mongoose.Types.ObjectId[] = [];
@@ -111,13 +111,12 @@ export default async function CampaignDonatePage({ params }: PageParams) {
         title={title}
         organizerName={organizer?.name ?? null}
         progressPercent={progress}
-        amountRaised={amountRaised}
-        goalAmount={goalAmount}
+        amountRaisedMinor={amountRaisedMinor}
+        goalAmountMinor={goalMinor}
         imageUrl={imageUrl}
         processingFeeBps={processingFeeBps}
+        monimeFeeBpsEstimate={monimeFeeBpsEstimate}
         isOwnerVerified={isOwnerVerified}
-        donorFeeChoiceEnabled={donorFeeChoiceEnabled}
-        tipEnabled={tipEnabled}
         presetAmounts={donationPresets}
       />
     </main>

@@ -5,6 +5,7 @@ import Providers from "./providers";
 import HideOnRoutes from "./HideOnRoutes";
 import { Navbar } from "./_components/Navbar";
 import Footer from "./_components/Footer";
+import { getTippingState } from "@/lib/tipping";
 import { OfflineBanner } from "./_components/OfflineBanner";
 import { headers } from "next/headers";
 
@@ -96,6 +97,10 @@ export default async function RootLayout({
   // render the maintenance page without the public navbar/footer chrome.
   const isMaintenance = headersList.get('x-maintenance') === '1';
 
+  // Whether to offer tipping in the chrome. Cached ~60s so this does not add a database
+  // read to every page render — see lib/tipping.ts.
+  const { enabled: tippingEnabled } = await getTippingState();
+
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} ${sora.variable} antialiased`}>
@@ -108,11 +113,11 @@ export default async function RootLayout({
             // Main domain: full layout with navbar/footer
             <>
               <HideOnRoutes hidePrefixes={["/user", "/admin", "/dashboard", "/s", "/auth"]}>
-                <Navbar/>
+                <Navbar tippingEnabled={tippingEnabled} />
               </HideOnRoutes>
               <main>{children}</main>
               <HideOnRoutes hidePrefixes={["/user", "/admin", "/dashboard", "/s", "/auth"]}>
-               <Footer/>
+               <Footer tippingEnabled={tippingEnabled} />
               </HideOnRoutes>
             </>
           )}

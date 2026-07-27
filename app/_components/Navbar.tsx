@@ -54,6 +54,12 @@ interface NavbarProps {
         alt: string;
     };
     menu?: MenuItem[];
+    /**
+     * Whether platform tipping is live. Resolved server-side in the root layout, because
+     * the public settings provider is admin-authenticated and would report `false` to
+     * exactly the logged-out donors this link is for.
+     */
+    tippingEnabled?: boolean;
     mobileExtraLinks?: {
         name: string;
         url: string;
@@ -71,58 +77,80 @@ interface NavbarProps {
 }
 
 
+/**
+ * The default navigation. Built as a function rather than a literal default so the
+ * "Support IB4ME" entry can be omitted entirely when tipping is off — a link to a page
+ * that will only tell the visitor tipping is disabled is worse than no link.
+ *
+ * It sits under About rather than at top level: it is a platform link, not a way to find
+ * campaigns, and the footer carries the more prominent version.
+ */
+const buildDefaultMenu = (tippingEnabled: boolean): MenuItem[] => [
+    {
+        title: "Campaigns",
+        url: "/campaigns",
+    },
+    {
+        title: "Mobile Fundraisers",
+        url: "/mobile-fundraisers",
+    },
+    // Top level, not tucked inside the About dropdown. The entire point of this link is
+    // that the page was previously unreachable — a menu a visitor has to open first is
+    // barely more discoverable than no link at all.
+    ...(tippingEnabled
+        ? [
+              {
+                  title: "Support us",
+                  url: "/tip",
+              },
+          ]
+        : []),
+    {
+        title: "About",
+        url: "",
+        items: [
+            {
+                title: "How Ib4me Works",
+                description: "Learn how our platform operates and what you can do with it.",
+                icon: <MessageCircleQuestion className="size-5 shrink-0" />,
+                url: "/how-ib4me-works",
+            },
+            {
+                title: "Pricing",
+                description: "Explore our pricing.",
+                icon: <Banknote className="size-5 shrink-0" />,
+                url: "/pricing",
+            },
+            {
+                title: "Contact Us",
+                description: "Get in touch with our support team.",
+                icon: <PhoneCall className="size-5 shrink-0" />,
+                url: "/contact",
+            },
+            {
+                title: "About ib4me",
+                description: "Learn more about our mission and team.",
+                icon: <Heart className="size-5 shrink-0" />,
+                url: "/about"
+            },
+        ],
+    },
+];
+
 const Navbar = ({
     logo = {
         url: "/",
         src: Ib4meLogo,
         alt: "logo",
     },
-    menu = [
-        {
-            title: "Campaigns",
-            url: "/campaigns",
-        },
-        {
-            title: "Mobile Fundraisers",
-            url: "/mobile-fundraisers",
-        },
-        {
-            title: "About",
-            url: "",
-            items: [
-                {
-                    title: "How Ib4me Works",
-                    description: "Learn how our platform operates and what you can do with it.",
-                    icon: <MessageCircleQuestion className="size-5 shrink-0" />,
-                    url: "/how-ib4me-works",
-                },
-                {
-                    title: "Pricing",
-                    description: "Explore our pricing.",
-                    icon: <Banknote className="size-5 shrink-0" />,
-                    url: "/pricing",
-                },
-                {
-                    title: "Contact Us",
-                    description: "Get in touch with our support team.",
-                    icon: <PhoneCall className="size-5 shrink-0" />,
-                    url: "/contact",
-                },
-                {
-                    title: "About ib4me",
-                    description: "Learn more about our mission and team.",
-                    icon: <Heart className="size-5 shrink-0" />,
-                    url: "/about"
-                },
-            ],
-        },
-
-    ],
+    menu,
+    tippingEnabled = false,
     auth = {
         login: { text: "Log in", url: "/auth/signin" },
         startcampaign: { text: "Start a Campaign", url: "/dashboard/campaigns/new" },
     },
 }: NavbarProps) => {
+    const resolvedMenu = menu ?? buildDefaultMenu(tippingEnabled);
     const [hasScrolled, setHasScrolled] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchOpen, setSearchOpen] = useState(false);
@@ -165,7 +193,7 @@ const Navbar = ({
                             <Image src={logo.src} className="object-contain h-12 w-auto max-w-[180px]" alt={logo.alt} />
                         </a>
                         <div className="flex items-center font-Sora text-neutral-900 gap-1">
-                            {menu.map((item) => {
+                            {resolvedMenu.map((item) => {
                                 if (item.items) {
                                     return (
                                         <NavigationMenu key={item.title}>
@@ -281,7 +309,7 @@ const Navbar = ({
                                         collapsible
                                         className="flex w-full flex-col gap-4"
                                     >
-                                        {menu.map((item) => renderMobileMenuItem(item, pathname))}
+                                        {resolvedMenu.map((item) => renderMobileMenuItem(item, pathname))}
                                     </Accordion>
                                     <div className="flex flex-col gap-3">
                                         {(!mounted || status !== "authenticated") && (

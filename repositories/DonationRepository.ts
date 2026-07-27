@@ -404,15 +404,39 @@ export class DonationRepository extends BaseRepository<IDonation> {
       {
         $group: {
           _id: null,
-          // Gross amount charged to donors (donation + fees when donor covers them).
-          // Fall back to amount.minor for legacy donations missing totalChargedMinor.
+          // Gross charged to the donor. Since fees are deducted rather than added, this
+          // equals amount.minor for every donation taken under the current model.
           totalRevenue: { $sum: { $ifNull: ["$totalChargedMinor", "$amount.minor"] } },
           // What campaigns actually receive after fees.
-          campaignPayouts: { $sum: { $ifNull: ["$campaignReceivesMinor", "$amount.minor"] } },
-          // Payment processor (Monime) fee = base fee.
-          paymentFees: { $sum: { $ifNull: ["$fees.baseFeeMinor", 0] } },
-          // Platform (IB4ME) fee = processing fee.
-          platformFees: { $sum: { $ifNull: ["$fees.processingFeeMinor", 0] } }
+          campaignPayouts: {
+            $sum: {
+              $ifNull: [
+                "$settlement.campaignReceivesMinor",
+                { $ifNull: ["$campaignReceivesMinor", "$amount.minor"] },
+              ],
+            },
+          },
+          // What Monime actually kept, as RECORDED at settlement.
+          //
+          // This used to sum `fees.baseFeeMinor` — the ASSUMED 1%. Reporting a processor
+          // cost from an assumption while the real figure sits unread in the database is
+          // the same defect one level up: the dashboards look healthy while the float
+          // drains (MONIME-FEE-MODEL.md R13). Legacy rows with no settlement fall back to
+          // the old assumption so historical totals do not jump.
+          paymentFees: {
+            $sum: {
+              $ifNull: ["$settlement.monimeFeeMinor", { $ifNull: ["$fees.baseFeeMinor", 0] }],
+            },
+          },
+          // The platform's own fee, as recorded at settlement.
+          platformFees: {
+            $sum: {
+              $ifNull: [
+                "$settlement.platformFeeMinor",
+                { $ifNull: ["$fees.processingFeeMinor", 0] },
+              ],
+            },
+          }
         }
       }
     ];
