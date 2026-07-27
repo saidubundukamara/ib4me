@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { z } from "zod";
+import { getServerSession } from "next-auth";
+import type { Session } from "next-auth";
+import { authConfig } from "@/lib/auth-config";
 import { monimeService, toMinorUnits, MonimeApiError } from "@/lib/monime";
 import { tipService, settingService } from "@/services";
 
@@ -15,6 +19,8 @@ const createTipSchema = z.object({
     .optional(),
   isAnonymous: z.boolean().default(false),
   message: z.string().optional(),
+  /** Where the tip was started from, so the thank-you-page CTA can be measured. */
+  source: z.enum(["tip_page", "donation_success"]).default("tip_page"),
 });
 
 export async function POST(req: NextRequest) {
@@ -23,7 +29,7 @@ export async function POST(req: NextRequest) {
     const validatedData = createTipSchema.parse(body);
 
     // Get platform financial account from settings
-    const platformAccount = await tipService.getPlatformFinancialAccount();
+    const platformAccount = await tipService.getTipFinancialAccount();
     if (!platformAccount?.id) {
       return NextResponse.json(
         {
@@ -70,9 +76,18 @@ export async function POST(req: NextRequest) {
     // Generate unique reference
     const reference = `tip_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+    // Link the tip to the signed-in user when there is one. This was hardcoded to null,
+    // so a logged-in supporter's tip was never associated with their account and could
+    // never appear in their history. Anonymity is a separate, explicit choice
+    // (`isAnonymous`) about public display — not a reason to discard the association.
+    const session = (await getServerSession(authConfig)) as Session | null;
+    const tipperId = session?.user?.id
+      ? new mongoose.Types.ObjectId(session.user.id)
+      : null;
+
     // Create pending tip record
     const tip = await tipService.createPending({
-      tipperId: null,
+      tipperId,
       tipperSnapshot: validatedData.tipper || null,
       isAnonymous: validatedData.isAnonymous,
       message: validatedData.message || null,
@@ -83,6 +98,7 @@ export async function POST(req: NextRequest) {
         paymentId: undefined,
         checkoutSessionId: undefined,
       },
+      source: validatedData.source,
       idempotencyKey: reference,
     });
 
