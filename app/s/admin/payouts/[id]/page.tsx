@@ -71,6 +71,9 @@ interface Payout {
     email: string;
   };
   amountMinor: number;
+  feeMinor?: number;
+  netAmountMinor?: number;
+  feeSource?: "reported" | "estimated";
   method: PayoutMethod;
   status: string;
   policyCheck?: PolicyCheck;
@@ -499,10 +502,41 @@ export default function PayoutDetailPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium">Amount</label>
+                    <label className="text-sm font-medium">Amount Requested</label>
                     <p className="text-2xl font-bold">
                       {formatMinor(payout.amountMinor, payout.campaignId.goal?.currency)}
                     </p>
+                    {/*
+                      Monime takes its cut out of the amount sent, so the recipient
+                      receives less than they asked for. Showing only the requested
+                      figure means an admin handling a query cannot tell what actually
+                      landed in the recipient's wallet.
+
+                      Written at completion from the fee Monime reported; `estimated`
+                      means it was derived from the configured rate and has not been
+                      confirmed, which matters when reconciling.
+                    */}
+                    {payout.netAmountMinor ? (
+                      <div className="mt-2 space-y-1 text-sm">
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>
+                            Withdrawal fee
+                            {payout.feeSource === "estimated" && (
+                              <span className="ml-1 text-xs text-amber-600">estimated</span>
+                            )}
+                          </span>
+                          <span>
+                            -{formatMinor(payout.feeMinor ?? 0, payout.campaignId.goal?.currency)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between border-t pt-1 font-medium">
+                          <span>Recipient received</span>
+                          <span>
+                            {formatMinor(payout.netAmountMinor, payout.campaignId.goal?.currency)}
+                          </span>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                   
                   <div>

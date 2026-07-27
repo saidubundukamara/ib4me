@@ -40,6 +40,9 @@ interface Payout {
     email: string;
   };
   amountMinor: number;
+  feeMinor?: number;
+  netAmountMinor?: number;
+  feeSource?: "reported" | "estimated";
   method: PayoutMethod;
   status: string;
   policyCheck?: PolicyCheck;
@@ -318,6 +321,13 @@ export default function PayoutListPage() {
                             <div className="font-medium">
                               {formatMinor(payout.amountMinor, payout.campaignId.goal?.currency)}
                             </div>
+                            {/* What the recipient actually got, once it is known. */}
+                            {payout.netAmountMinor ? (
+                              <div className="text-xs text-muted-foreground">
+                                net {formatMinor(payout.netAmountMinor, payout.campaignId.goal?.currency)}
+                                {payout.feeSource === "estimated" && " (est.)"}
+                              </div>
+                            ) : null}
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
