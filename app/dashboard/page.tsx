@@ -15,19 +15,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { formatMinor } from "@/lib/currency";
 
-function formatCurrency(minor: number, currency: string): string {
-  const value = minor / 100;
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 2,
-    }).format(value);
-  } catch {
-    return `${currency} ${value.toFixed(2)}`;
-  }
-}
 
 export default async function UserDashboardPage() {
   await connectDB();
@@ -118,7 +107,7 @@ export default async function UserDashboardPage() {
             <div className="min-w-0">
               <div className="text-xs sm:text-sm text-muted-foreground">Total Raised</div>
               <div className="text-xl sm:text-2xl font-bold text-foreground truncate">
-                {formatCurrency(totalRaisedMinor, currency)}
+                {formatMinor(totalRaisedMinor, currency)}
               </div>
               <div className="text-[11px] sm:text-xs text-muted-foreground">{totalDonations} total donations</div>
             </div>
@@ -201,7 +190,7 @@ export default async function UserDashboardPage() {
             </div>
             <div>
               <div className="text-xs sm:text-sm text-muted-foreground">Avg. Donation</div>
-              <div className="text-xl sm:text-2xl font-bold text-foreground">{formatCurrency(avgDonationMinor, currency)}</div>
+              <div className="text-xl sm:text-2xl font-bold text-foreground">{formatMinor(avgDonationMinor, currency)}</div>
             </div>
           </div>
         </Card>
@@ -286,7 +275,7 @@ export default async function UserDashboardPage() {
                 <div className="text-xs text-muted-foreground flex items-center justify-between">
                   <span>{progress}%</span>
                   <span>
-                    {formatCurrency(raised, c.goal?.currency ?? currency)} / {goalMinor ? formatCurrency(goalMinor, c.goal?.currency ?? currency) : "No goal"}
+                    {formatMinor(raised, c.goal?.currency ?? currency)} / {goalMinor ? formatMinor(goalMinor, c.goal?.currency ?? currency) : "No goal"}
                   </span>
                 </div>
               </Card>
@@ -339,7 +328,7 @@ export default async function UserDashboardPage() {
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="text-base font-bold text-blaze-orange">{formatCurrency(d.amount.minor, d.amount.currency)}</div>
+                    <div className="text-base font-bold text-blaze-orange">{formatMinor(d.amount.minor, d.amount.currency)}</div>
                   </div>
                 </div>
               );

@@ -15,26 +15,26 @@ export default async function CampaignDonatePage({ params }: PageParams) {
   if (!campaign) return notFound();
 
   const currency = campaign.goal?.currency || "SLE";
-  const raisedMinor = campaign.totals?.raisedMinor ?? 0;
-  const goalMinor = campaign.goal?.amountMinor ?? 0;
-  const amountRaised = Math.max(0, Math.floor(raisedMinor) / 100);
-  const goalAmount = Math.max(0, Math.floor(goalMinor) / 100);
-  const progress = goalAmount > 0 ? Math.min(100, Math.round((amountRaised / goalAmount) * 100)) : 0;
+  // Minor units all the way to the render layer. These used to be divided by 100 here,
+  // which threw away the cents of a figure that is now a net amount with cents in it.
+  const amountRaisedMinor = Math.max(0, campaign.totals?.raisedMinor ?? 0);
+  const goalMinor = Math.max(0, campaign.goal?.amountMinor ?? 0);
+  const progress =
+    goalMinor > 0 ? Math.min(100, Math.round((amountRaisedMinor / goalMinor) * 100)) : 0;
   const title = campaign.beneficiary?.name || campaign.details || campaign.slug;
 
   const organizer = campaign.ownerId ? await userRepository.findById(String(campaign.ownerId)) : null;
   const isOwnerVerified = campaign.ownerVerification?.verified ?? false;
 
-  // Get fee settings for this campaign type
+  // Fee rates for this campaign type. Both come from the DB and are passed down so the
+  // donate page never hardcodes a percentage (MONIME-FEE-MODEL.md §8.2).
   const feeSettings = await settingService.getFeeSettings();
   const campaignId = String(campaign._id);
   const campaignType = await campaignService.getCampaignType(campaignId);
   const processingFeeBps = campaignType === "organization"
     ? feeSettings.processingFee.organizationBps
     : feeSettings.processingFee.individualBps;
-
-  // Get feature settings to check if donor fee choice is enabled
-  const donorFeeChoiceEnabled = await settingService.isDonorFeeChoiceEnabled();
+  const monimeFeeBpsEstimate = feeSettings.monimeCollectionFeeBpsEstimate;
 
   // Collect asset IDs: beneficiary photo (priority) and first document image (fallback)
   const assetIds: mongoose.Types.ObjectId[] = [];
@@ -101,12 +101,12 @@ export default async function CampaignDonatePage({ params }: PageParams) {
         title={title}
         organizerName={organizer?.name ?? null}
         progressPercent={progress}
-        amountRaised={amountRaised}
-        goalAmount={goalAmount}
+        amountRaisedMinor={amountRaisedMinor}
+        goalAmountMinor={goalMinor}
         imageUrl={imageUrl}
         processingFeeBps={processingFeeBps}
+        monimeFeeBpsEstimate={monimeFeeBpsEstimate}
         isOwnerVerified={isOwnerVerified}
-        donorFeeChoiceEnabled={donorFeeChoiceEnabled}
       />
     </main>
   );

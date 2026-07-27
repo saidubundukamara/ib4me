@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { formatMajor } from "@/lib/currency";
 
 type DonationStatus = "loading" | "pending" | "transferring" | "succeeded" | "failed";
 
@@ -17,14 +18,6 @@ interface DonationDetails {
   createdAt: string;
 }
 
-function formatAmount(amount: number, currency: string = "SLE") {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
 
 function formatDate(dateString: string) {
   return new Intl.DateTimeFormat("en-GB", {
@@ -368,7 +361,7 @@ export default function SuccessClient({
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Amount:</span>
                       <span className="font-medium text-foreground">
-                        {formatAmount(details.amountMajor, details.currency)}
+                        {formatMajor(details.amountMajor, details.currency)}
                       </span>
                     </div>
                     <div className="flex justify-between">

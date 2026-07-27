@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertTriangle, CheckCircle, Clock, XCircle, ArrowLeft, User, CreditCard, History, ShieldCheck, AlertCircle } from "lucide-react";
+import { formatMinor } from "@/lib/currency";
 
 interface PayoutMethod {
   type: "mobile_money" | "bank";
@@ -93,15 +94,6 @@ const statusConfig = {
   paid: { label: "Paid", color: "bg-green-500/15 text-green-700", icon: CheckCircle },
 };
 
-const formatCurrency = (amountMinor: number, currency: string = "SLE") => {
-  const amount = amountMinor / 100;
-  return new Intl.NumberFormat("en-SL", {
-    style: "currency",
-    currency: currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-};
 
 const getMethodLabel = (method: string) => {
   switch (method) {
@@ -338,7 +330,7 @@ export default function PayoutDetailPage() {
                       <DialogHeader>
                         <DialogTitle>Approve Payout</DialogTitle>
                         <DialogDescription>
-                          Approve this payout request of {formatCurrency(payout.amountMinor, payout.campaignId.goal?.currency)}.
+                          Approve this payout request of {formatMinor(payout.amountMinor, payout.campaignId.goal?.currency)}.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
@@ -424,7 +416,7 @@ export default function PayoutDetailPage() {
                             <div>
                               <div className="font-medium text-yellow-700">Threshold Warning</div>
                               <div className="text-sm text-yellow-700">
-                                Amount: {formatCurrency(payout.amountMinor, payout.campaignId.goal?.currency)} is below minimum threshold
+                                Amount: {formatMinor(payout.amountMinor, payout.campaignId.goal?.currency)} is below minimum threshold
                               </div>
                             </div>
                           </div>
@@ -463,7 +455,7 @@ export default function PayoutDetailPage() {
                       <DialogHeader>
                         <DialogTitle>Disburse Payout</DialogTitle>
                         <DialogDescription>
-                          Send {formatCurrency(payout.amountMinor, payout.campaignId.goal?.currency)} to the
+                          Send {formatMinor(payout.amountMinor, payout.campaignId.goal?.currency)} to the
                           beneficiary&apos;s {getMethodLabel(payout.method.type)} account via Monime. This moves
                           real funds and cannot be undone.
                         </DialogDescription>
@@ -509,7 +501,7 @@ export default function PayoutDetailPage() {
                   <div>
                     <label className="text-sm font-medium">Amount</label>
                     <p className="text-2xl font-bold">
-                      {formatCurrency(payout.amountMinor, payout.campaignId.goal?.currency)}
+                      {formatMinor(payout.amountMinor, payout.campaignId.goal?.currency)}
                     </p>
                   </div>
                   
@@ -570,7 +562,7 @@ export default function PayoutDetailPage() {
                   {payout.campaignId.goal && (
                     <div>
                       <label className="text-sm font-medium">Campaign Goal</label>
-                      <p>{formatCurrency(payout.campaignId.goal.targetMinor, payout.campaignId.goal.currency)}</p>
+                      <p>{formatMinor(payout.campaignId.goal.targetMinor, payout.campaignId.goal.currency)}</p>
                     </div>
                   )}
                 </CardContent>

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { formatMajor } from "@/lib/currency";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Share2, CheckCircle, ShieldAlert } from "lucide-react";
@@ -45,17 +46,7 @@ const CampaignCard = ({
 
   const currencyCode = (currency || "SLL").toUpperCase();
 
-  const formatCurrency = (value: number) => {
-    try {
-      return new Intl.NumberFormat(undefined, {
-        style: "currency",
-        currency: currencyCode,
-        maximumFractionDigits: 0,
-      }).format(value);
-    } catch {
-      return `${currencyCode} ${value.toLocaleString()}`;
-    }
-  };
+  const formatCurrency = (value: number) => formatMajor(value, currencyCode);
 
   const raisedLabel = formatCurrency(raised);
   const goalLabel = formatCurrency(goal);

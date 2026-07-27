@@ -11,6 +11,7 @@ import { userService, campaignService, mediaAssetService } from "@/services";
 import { CloudinaryService } from "@/lib/cloudinary";
 import { getOGImageFromCampaigns, buildPageMetadata } from "@/lib/metadata";
 import CreatorCampaignsGrid from "./CreatorCampaignsGrid";
+import { formatMajor } from "@/lib/currency";
 
 type PageParams = { params: Promise<{ id: string }> };
 
@@ -62,14 +63,6 @@ function formatDate(date: Date) {
   });
 }
 
-function formatAmount(amount: number, currency: string = "SLE") {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
 
 export default async function CreatorProfilePage({ params }: PageParams) {
   const { id } = await params;
@@ -175,8 +168,8 @@ export default async function CreatorProfilePage({ params }: PageParams) {
       slug: c.slug,
       title: titleBase,
       currency,
-      amountRaised: Math.max(0, Math.floor(raisedMinor) / 100),
-      goalAmount: Math.max(0, Math.floor(goalMinor) / 100),
+      amountRaised: Math.max(0, raisedMinor) / 100,
+      goalAmount: Math.max(0, goalMinor) / 100,
       donationsCount: c.totals?.donationCount ?? 0,
       imageUrl,
       verified: c.verification?.status === "approved",
@@ -250,7 +243,7 @@ export default async function CreatorProfilePage({ params }: PageParams) {
             </Card>
             <Card className="rounded-2xl border border-border/50">
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-primary">{formatAmount(totalRaised)}</p>
+                <p className="text-2xl font-bold text-primary">{formatMajor(totalRaised)}</p>
                 <p className="text-sm text-muted-foreground">Total Raised</p>
               </CardContent>
             </Card>

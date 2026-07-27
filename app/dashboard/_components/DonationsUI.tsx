@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Download, Heart, Users } from "lucide-react";
+import { formatMajor } from "@/lib/currency";
 
 export type DonationsUIProps = {
   totalRaised: number;
@@ -41,18 +42,6 @@ export type DonationsUIProps = {
   avgPct: number;
   primaryCurrency?: string;
 };
-
-function formatCurrency(valueMajor: number, currency: string) {
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 2,
-    }).format(valueMajor);
-  } catch {
-    return `${currency} ${valueMajor.toFixed(2)}`;
-  }
-}
 
 export default function DonationsUI({
   totalRaised,
@@ -117,7 +106,7 @@ export default function DonationsUI({
                 </div>
               </div>
               <p className="text-3xl font-bold text-primary">
-                {formatCurrency(totalRaised, primaryCurrency)}
+                {formatMajor(totalRaised, primaryCurrency)}
               </p>
               <p className="text-sm text-muted-foreground mt-2">
                 {donationCount} donations
@@ -129,7 +118,7 @@ export default function DonationsUI({
                 Average Donation
               </p>
               <p className="text-3xl font-bold text-foreground">
-                {formatCurrency(avgDonation, primaryCurrency)}
+                {formatMajor(avgDonation, primaryCurrency)}
               </p>
               <div className="mt-2">
                 <div className="w-full bg-muted rounded-full h-2">
@@ -186,7 +175,7 @@ export default function DonationsUI({
                           {d.status}
                         </Badge>
                         <span className="text-sm font-semibold text-foreground">
-                          {formatCurrency(
+                          {formatMajor(
                             d.amountMinor / 100,
                             d.currency ?? primaryCurrency,
                           )}
@@ -208,7 +197,7 @@ export default function DonationsUI({
             <Card className="p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] bg-gradient-to-br from-primary/10 to-primary/5">
               <p className="text-sm text-muted-foreground mb-1">Total Donated</p>
               <h3 className="text-3xl font-bold text-foreground">
-                {formatCurrency(totalDonated, primaryCurrency)}
+                {formatMajor(totalDonated, primaryCurrency)}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">
                 Across {campaignsSupported} campaigns
@@ -232,7 +221,7 @@ export default function DonationsUI({
                 Average Donation
               </p>
               <h3 className="text-3xl font-bold text-foreground">
-                {formatCurrency(avgDonation, primaryCurrency)}
+                {formatMajor(avgDonation, primaryCurrency)}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">
                 Across your successful donations
@@ -266,7 +255,7 @@ export default function DonationsUI({
                       </div>
                       <div className="flex flex-col sm:items-end gap-1">
                         <span className="text-sm font-semibold text-foreground">
-                          {formatCurrency(
+                          {formatMajor(
                             d.amountMinor / 100,
                             d.currency ?? primaryCurrency,
                           )}

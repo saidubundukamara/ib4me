@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { getCategoryIcon } from "@/lib/category-icons";
+import { formatMajor } from "@/lib/currency";
 
 export type CampaignGridItem = {
   id: string;
@@ -32,14 +33,6 @@ export type CampaignGridItem = {
   urgency?: "low" | "medium" | "high";
 };
 
-function formatAmount(amount: number, currency: string = "SLE") {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
 
 type CategoryInfo = { name: string; slug: string; icon: string | null };
 type Props = { items: CampaignGridItem[]; categories: CategoryInfo[] };
@@ -187,7 +180,7 @@ export default function CampaignsGrid({ items, categories }: Props) {
                 title: c.title,
                 text:
                   c.description ||
-                  `${formatAmount(c.amountRaised, c.currency)} raised of ${formatAmount(c.goalAmount, c.currency)} goal`,
+                  `${formatMajor(c.amountRaised, c.currency)} raised of ${formatMajor(c.goalAmount, c.currency)} goal`,
                 url,
               };
 

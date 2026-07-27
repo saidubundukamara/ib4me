@@ -2,6 +2,7 @@
 
 import { toast } from "sonner";
 import CampaignCard from "@/app/_components/CampaignCard";
+import { formatMajor } from "@/lib/currency";
 
 export type CreatorCampaignItem = {
   id: string;
@@ -16,14 +17,6 @@ export type CreatorCampaignItem = {
   ownerVerified?: boolean;
 };
 
-function formatAmount(amount: number, currency: string = "SLE") {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
 
 type Props = {
   campaigns: CreatorCampaignItem[];
@@ -37,7 +30,7 @@ export default function CreatorCampaignsGrid({ campaigns }: Props) {
         : `${window.location.origin}/campaigns/${campaign.slug}`;
     const shareData = {
       title: campaign.title,
-      text: `${formatAmount(campaign.amountRaised, campaign.currency)} raised of ${formatAmount(campaign.goalAmount, campaign.currency)} goal`,
+      text: `${formatMajor(campaign.amountRaised, campaign.currency)} raised of ${formatMajor(campaign.goalAmount, campaign.currency)} goal`,
       url,
     };
 

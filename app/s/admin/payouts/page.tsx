@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { formatMajor } from "@/lib/currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,14 +11,6 @@ const fromMinorUnits = (amountMinor: number, currency: string = "SLE"): number =
   return amountMinor / Math.pow(10, decimalPlaces);
 };
 
-const formatCurrency = (amount: number, currency: string = "SLE"): string => {
-  return new Intl.NumberFormat("en-SL", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-};
 import { 
   DollarSign, 
   TrendingUp, 
@@ -295,7 +288,7 @@ export default function AdminPayoutsPage() {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Amount</p>
                     <p className="text-2xl font-bold">
-                      {formatCurrency(fromMinorUnits(analytics.totalAmount))}
+                      {formatMajor(fromMinorUnits(analytics.totalAmount))}
                     </p>
                   </div>
                   <DollarSign className="h-8 w-8" style={{ color: "#FF6000" }} />
@@ -321,7 +314,7 @@ export default function AdminPayoutsPage() {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Average Payout</p>
                     <p className="text-2xl font-bold">
-                      {formatCurrency(fromMinorUnits(analytics.averagePayout))}
+                      {formatMajor(fromMinorUnits(analytics.averagePayout))}
                     </p>
                   </div>
                   <Users className="h-8 w-8" style={{ color: "#FBB03B" }} />
@@ -347,7 +340,7 @@ export default function AdminPayoutsPage() {
                   <div className="flex justify-between">
                     <span>Amount:</span>
                     <span className="font-semibold">
-                      {formatCurrency(fromMinorUnits(analytics.completedAmount))}
+                      {formatMajor(fromMinorUnits(analytics.completedAmount))}
                     </span>
                   </div>
                 </div>
@@ -367,7 +360,7 @@ export default function AdminPayoutsPage() {
                   <div className="flex justify-between">
                     <span>Amount:</span>
                     <span className="font-semibold">
-                      {formatCurrency(fromMinorUnits(analytics.pendingAmount))}
+                      {formatMajor(fromMinorUnits(analytics.pendingAmount))}
                     </span>
                   </div>
                 </div>
@@ -387,7 +380,7 @@ export default function AdminPayoutsPage() {
                   <div className="flex justify-between">
                     <span>Amount:</span>
                     <span className="font-semibold">
-                      {formatCurrency(fromMinorUnits(analytics.failedAmount))}
+                      {formatMajor(fromMinorUnits(analytics.failedAmount))}
                     </span>
                   </div>
                 </div>
@@ -427,7 +420,7 @@ export default function AdminPayoutsPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">
-                        {formatCurrency(fromMinorUnits(payout.amountMinor))}
+                        {formatMajor(fromMinorUnits(payout.amountMinor))}
                       </p>
                       {getStatusBadge(payout.status)}
                     </div>
@@ -472,7 +465,7 @@ export default function AdminPayoutsPage() {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold">
-                          {formatCurrency(fromMinorUnits(method.amount))}
+                          {formatMajor(fromMinorUnits(method.amount))}
                         </p>
                       </div>
                     </div>
@@ -510,7 +503,7 @@ export default function AdminPayoutsPage() {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold">
-                          {formatCurrency(fromMinorUnits(campaign.totalAmount))}
+                          {formatMajor(fromMinorUnits(campaign.totalAmount))}
                         </p>
                       </div>
                     </div>

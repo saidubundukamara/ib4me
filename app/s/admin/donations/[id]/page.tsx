@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { formatMajor } from "@/lib/currency";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,14 +25,6 @@ const fromMinorUnits = (amountMinor: number, currency: string = "SLE"): number =
   return amountMinor / Math.pow(10, decimalPlaces);
 };
 
-const formatCurrency = (amount: number, currency: string = "SLE"): string => {
-  return new Intl.NumberFormat("en-SL", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-};
 import { 
   ArrowLeft,
   Flag,
@@ -84,6 +77,16 @@ interface Donation {
   fees?: {
     paymentFeeMinor?: number;
     platformFeeMinor?: number;
+  };
+  campaignReceivesMinor?: number;
+  settlement?: {
+    grossMinor?: number;
+    monimeFeeMinor?: number;
+    monimeFeeSource?: "reported" | "estimated";
+    arrivedMinor?: number;
+    platformFeeBps?: number;
+    platformFeeMinor?: number;
+    campaignReceivesMinor?: number;
   };
   netAmountMinor?: number;
   completedAt?: string;
@@ -340,32 +343,76 @@ export default function AdminDonationDetailPage() {
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Amount:</span>
                 <span className="text-xl font-bold">
-                  {formatCurrency(fromMinorUnits(donation.amount.minor), donation.amount.currency)}
+                  {formatMajor(fromMinorUnits(donation.amount.minor), donation.amount.currency)}
                 </span>
               </div>
-              {donation.fees?.paymentFeeMinor && (
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Payment Fee:</span>
-                  <span>
-                    {formatCurrency(fromMinorUnits(donation.fees.paymentFeeMinor))}
-                  </span>
-                </div>
-              )}
-              {donation.fees?.platformFeeMinor && (
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Platform Fee:</span>
-                  <span>
-                    {formatCurrency(fromMinorUnits(donation.fees.platformFeeMinor))}
-                  </span>
-                </div>
-              )}
-              {donation.netAmountMinor && (
-                <div className="flex justify-between items-center border-t pt-2">
-                  <span className="font-medium">Net Amount:</span>
-                  <span className="font-bold">
-                    {formatCurrency(fromMinorUnits(donation.netAmountMinor))}
-                  </span>
-                </div>
+              {/*
+                The recorded waterfall, not a derivation. `monimeFeeSource` says whether
+                Monime reported the figure or we assumed it — a number reconstructed from a
+                configured rate must never be presented as one Monime confirmed (R12).
+                Legacy donations have no settlement and fall back to the old fee block.
+              */}
+              {donation.settlement ? (
+                <>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">
+                      Payment Fee (Monime)
+                      {donation.settlement.monimeFeeSource === "estimated" && (
+                        <span className="ml-1 text-xs text-amber-600">estimated</span>
+                      )}
+                      :
+                    </span>
+                    <span>
+                      -{formatMajor(fromMinorUnits(donation.settlement.monimeFeeMinor ?? 0), donation.amount.currency)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Arrived:</span>
+                    <span>
+                      {formatMajor(fromMinorUnits(donation.settlement.arrivedMinor ?? 0), donation.amount.currency)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">
+                      Platform Fee
+                      {donation.settlement.platformFeeBps != null &&
+                        ` (${(donation.settlement.platformFeeBps / 100).toFixed(1)}%)`}
+                      :
+                    </span>
+                    <span>
+                      -{formatMajor(fromMinorUnits(donation.settlement.platformFeeMinor ?? 0), donation.amount.currency)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center border-t pt-2">
+                    <span className="font-medium">Campaign Receives:</span>
+                    <span className="font-bold">
+                      {formatMajor(fromMinorUnits(donation.settlement.campaignReceivesMinor ?? 0), donation.amount.currency)}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {donation.fees?.paymentFeeMinor ? (
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Payment Fee (legacy):</span>
+                      <span>{formatMajor(fromMinorUnits(donation.fees.paymentFeeMinor))}</span>
+                    </div>
+                  ) : null}
+                  {donation.fees?.platformFeeMinor ? (
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Platform Fee (legacy):</span>
+                      <span>{formatMajor(fromMinorUnits(donation.fees.platformFeeMinor))}</span>
+                    </div>
+                  ) : null}
+                  {donation.campaignReceivesMinor ? (
+                    <div className="flex justify-between items-center border-t pt-2">
+                      <span className="font-medium">Campaign Receives:</span>
+                      <span className="font-bold">
+                        {formatMajor(fromMinorUnits(donation.campaignReceivesMinor), donation.amount.currency)}
+                      </span>
+                    </div>
+                  ) : null}
+                </>
               )}
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Provider:</span>
@@ -661,7 +708,7 @@ export default function AdminDonationDetailPage() {
               <AlertDialogDescription>
                 This will initiate a refund for this donation. Please provide a reason for the refund.
                 <br />
-                <strong>Amount to refund: {formatCurrency(fromMinorUnits(donation.amount.minor))}</strong>
+                <strong>Amount to refund: {formatMajor(fromMinorUnits(donation.amount.minor))}</strong>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="py-4">

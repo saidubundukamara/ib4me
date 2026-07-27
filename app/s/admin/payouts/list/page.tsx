@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, CheckCircle, Clock, XCircle, Filter, Search, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { formatMinor } from "@/lib/currency";
 
 interface PayoutMethod {
   type: "mobile_money" | "bank";
@@ -66,15 +67,6 @@ const statusConfig = {
   paid: { label: "Paid", color: "bg-green-500/15 text-green-700", icon: CheckCircle },
 };
 
-const formatCurrency = (amountMinor: number, currency: string = "SLE") => {
-  const amount = amountMinor / 100;
-  return new Intl.NumberFormat("en-SL", {
-    style: "currency",
-    currency: currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-};
 
 export default function PayoutListPage() {
   const router = useRouter();
@@ -324,7 +316,7 @@ export default function PayoutListPage() {
                           </TableCell>
                           <TableCell>
                             <div className="font-medium">
-                              {formatCurrency(payout.amountMinor, payout.campaignId.goal?.currency)}
+                              {formatMinor(payout.amountMinor, payout.campaignId.goal?.currency)}
                             </div>
                           </TableCell>
                           <TableCell>

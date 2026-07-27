@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { formatMinor } from "@/lib/currency";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -159,13 +160,6 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
     }
   };
 
-  const formatAmount = (amountMinor: number, currency: string = "SLE") => {
-    return new Intl.NumberFormat("en-SL", {
-      style: "currency",
-      currency,
-      minimumFractionDigits: 0,
-    }).format(amountMinor / 100);
-  };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "info"> = {
@@ -351,10 +345,10 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
                 </div>
                 <div className="flex justify-between items-center mt-2">
                   <span className="text-lg font-semibold text-foreground">
-                    {formatAmount(campaign.totals?.raisedMinor || 0, campaign.goal?.currency)}
+                    {formatMinor(campaign.totals?.raisedMinor || 0, campaign.goal?.currency)}
                   </span>
                   <span className="text-sm text-muted-foreground">
-                    Goal: {formatAmount(campaign.goal?.amountMinor || 0, campaign.goal?.currency)}
+                    Goal: {formatMinor(campaign.goal?.amountMinor || 0, campaign.goal?.currency)}
                   </span>
                 </div>
               </div>
@@ -375,7 +369,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-purple-600">
-                    {formatAmount(campaign.withdrawals?.totalPaidMinor || 0, campaign.goal?.currency)}
+                    {formatMinor(campaign.withdrawals?.totalPaidMinor || 0, campaign.goal?.currency)}
                   </p>
                   <p className="text-sm text-muted-foreground">Withdrawn</p>
                 </div>
@@ -416,7 +410,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold">
-                          {formatAmount(donation.amount.minor, donation.amount.currency)}
+                          {formatMinor(donation.amount.minor, donation.amount.currency)}
                         </p>
                         <Badge variant={donation.status === "succeeded" ? "success" : "warning"}>
                           {donation.status}
@@ -542,7 +536,7 @@ export default function AdminCampaignDetailPage({ params }: PageParams) {
                       <div className="flex justify-between items-start">
                         <div>
                           <p className="font-medium">
-                            {formatAmount(payout.amountMinor, campaign.goal?.currency)}
+                            {formatMinor(payout.amountMinor, campaign.goal?.currency)}
                           </p>
                           <p className="text-sm text-muted-foreground">
                             {new Date(payout.createdAt).toLocaleDateString()}

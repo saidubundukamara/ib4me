@@ -16,22 +16,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { formatMinor } from "@/lib/currency";
 
 interface TippingSettings {
   enabled: boolean;
   suggestedAmounts: number[];
   minAmountMinor: number;
   maxAmountMinor: number;
-}
-
-function formatAmount(amountMinor: number, currency: string = "SLE") {
-  const amount = amountMinor / 100;
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
 }
 
 export default function TipPage() {
@@ -102,12 +93,12 @@ export default function TipPage() {
     if (!settings) return;
 
     if (amountMinor < settings.minAmountMinor) {
-      setSubmitError(`Minimum tip amount is ${formatAmount(settings.minAmountMinor, currency)}`);
+      setSubmitError(`Minimum tip amount is ${formatMinor(settings.minAmountMinor, currency)}`);
       return;
     }
 
     if (amountMinor > settings.maxAmountMinor) {
-      setSubmitError(`Maximum tip amount is ${formatAmount(settings.maxAmountMinor, currency)}`);
+      setSubmitError(`Maximum tip amount is ${formatMinor(settings.maxAmountMinor, currency)}`);
       return;
     }
 
@@ -243,7 +234,7 @@ export default function TipPage() {
                     )}
                     onClick={() => setSelectedPreset(amount)}
                   >
-                    {formatAmount(amount, currency)}
+                    {formatMinor(amount, currency)}
                   </Button>
                 ))}
               </div>
@@ -275,8 +266,8 @@ export default function TipPage() {
                     className="h-12 rounded-2xl border-border/50"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Min: {formatAmount(settings?.minAmountMinor || 100, currency)} •
-                    Max: {formatAmount(settings?.maxAmountMinor || 10000000, currency)}
+                    Min: {formatMinor(settings?.minAmountMinor || 100, currency)} •
+                    Max: {formatMinor(settings?.maxAmountMinor || 10000000, currency)}
                   </p>
                 </div>
               )}
@@ -363,11 +354,11 @@ export default function TipPage() {
             <div className="rounded-2xl bg-muted/50 p-4 space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span>Your tip</span>
-                <span className="font-medium">{formatAmount(amountMinor, currency)}</span>
+                <span className="font-medium">{formatMinor(amountMinor, currency)}</span>
               </div>
               <div className="flex items-center justify-between border-t border-border/40 pt-2">
                 <span className="font-semibold">Total</span>
-                <span className="font-semibold text-lg">{formatAmount(amountMinor, currency)}</span>
+                <span className="font-semibold text-lg">{formatMinor(amountMinor, currency)}</span>
               </div>
             </div>
 
@@ -386,7 +377,7 @@ export default function TipPage() {
               ) : (
                 <>
                   <Heart className="mr-2 h-4 w-4" />
-                  Tip {formatAmount(amountMinor, currency)}
+                  Tip {formatMinor(amountMinor, currency)}
                 </>
               )}
             </Button>
