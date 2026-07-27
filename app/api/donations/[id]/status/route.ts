@@ -46,8 +46,17 @@ export async function GET(
         // Auto-advance donation to payment_received if checkout session is completed
         if (checkoutSession.result.status === "completed" && donation.status === "pending") {
           try {
-            await donationService.markPaymentReceived(donationId, {
-              paymentId: checkoutSession.result.id,
+            // A polled read carries no fee data (MONIME-FEE-MODEL.md §2.10), so this
+            // settles on an ESTIMATE — `monimeFeeMinor: null`, never 0. The payment
+            // webhook corrects it when the real fee arrives.
+            //
+            // Note we no longer write `checkoutSession.result.id` into
+            // `provider.paymentId`: that field holds Monime's `spm-…` PAYMENT id, which
+            // is the per-capture key the correction path keys on. Writing the session id
+            // there made it useless.
+            await donationService.applySettlement(donationId, {
+              source: "status_poll",
+              monimeFeeMinor: null,
               paymentMethod: { type: "checkout_session", provider: "MONIME" },
               completedAt: new Date().toISOString(),
             });

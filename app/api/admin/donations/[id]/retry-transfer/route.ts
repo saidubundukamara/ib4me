@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateAdminAuth, AdminAuthError } from "@/lib/admin-auth";
-import { donationService, settingService, campaignService } from "@/services";
-import { monimeService } from "@/lib/monime";
+import { donationService } from "@/services";
 
 const MAX_RETRY_ATTEMPTS = 5;
 
@@ -61,123 +60,51 @@ export async function POST(
       );
     }
 
-    // Get campaign to retrieve financial account
-    const campaign = await campaignService.getById(donation.campaignId.toString());
-    if (!campaign) {
-      return NextResponse.json(
-        { error: "Campaign not found" },
-        { status: 404 }
-      );
+    // Delegate to settleTransfer — the single transfer implementation. It resolves the
+    // platform and campaign accounts itself, moves the persisted split rather than the
+    // gross (R14), and reuses the deterministic `donation_transfer_<id>` idempotency key.
+    //
+    // That last part is the point of this rewrite. This route previously built its key as
+    // `transfer_retry_<id>_<Date.now()>` — a fresh key on every attempt, which defeats
+    // Monime's idempotency entirely: each retry was a NEW transfer request, so retrying a
+    // transfer that had actually succeeded would send the money a second time.
+    console.log(
+      `[Admin] Retrying internal transfer for donation ${donationId}, ` +
+        `attempt ${currentRetryCount + 1}, by ${adminContext.adminId.toString()}`
+    );
+
+    const outcome = await donationService.settleTransfer(donationId, {
+      source: "admin_retry",
+    });
+
+    if (outcome.status === "completed") {
+      return NextResponse.json({
+        success: true,
+        message: "Transfer completed successfully",
+        transferId: outcome.transferId,
+        donationStatus: "succeeded",
+      });
     }
 
-    if (!campaign.financial_account?.id) {
+    if (outcome.status === "failed") {
       return NextResponse.json(
-        { error: "Campaign financial account not configured" },
+        {
+          success: false,
+          error: "Transfer failed",
+          failureReason: outcome.reason,
+          transferId: outcome.transferId,
+          retryCount: currentRetryCount + 1,
+        },
         { status: 400 }
       );
     }
 
-    // Get platform account
-    const platformAccount = await settingService.getPlatformAccountSettings();
-    if (!platformAccount?.id) {
-      return NextResponse.json(
-        { error: "Platform financial account not configured" },
-        { status: 500 }
-      );
-    }
-
-    // Attempt transfer
-    const transferAmount = donation.amount.minor;
-    const idempotencyKey = `transfer_retry_${donationId}_${Date.now()}`;
-
-    try {
-      console.log(`[Admin] Retrying internal transfer for donation ${donationId}, attempt ${currentRetryCount + 1}`);
-
-      // Update transfer status to pending
-      await donationService.updateTransferStatus(donationId, {
-        status: "pending",
-        initiatedAt: new Date(),
-        retryCount: currentRetryCount + 1
-      });
-
-      const transfer = await monimeService.createInternalTransfer({
-        amount: {
-          currency: donation.amount.currency,
-          value: transferAmount,
-        },
-        sourceFinancialAccount: {
-          id: platformAccount.id,
-        },
-        destinationFinancialAccount: {
-          id: campaign.financial_account.id,
-        },
-        description: `Donation transfer retry for ${donationId}`,
-        metadata: {
-          donationId,
-          type: "donation_transfer_retry",
-          retryCount: currentRetryCount + 1,
-          retryInitiatedBy: adminContext.adminId.toString(),
-        },
-      }, idempotencyKey);
-
-      console.log(`[Admin] Internal transfer created: ${transfer.id}, status: ${transfer.status}`);
-
-      if (transfer.status === "completed") {
-        // Complete the donation
-        await donationService.completeWithTransfer(donationId, transfer.id);
-
-        return NextResponse.json({
-          success: true,
-          message: "Transfer completed successfully",
-          transferId: transfer.id,
-          donationStatus: "succeeded"
-        });
-      } else if (transfer.status === "failed") {
-        await donationService.updateTransferStatus(donationId, {
-          id: transfer.id,
-          status: "failed",
-          failureReason: transfer.failureReason || "Transfer failed",
-          retryCount: currentRetryCount + 1
-        });
-
-        return NextResponse.json({
-          success: false,
-          error: "Transfer failed",
-          failureReason: transfer.failureReason,
-          transferId: transfer.id,
-          retryCount: currentRetryCount + 1
-        }, { status: 400 });
-      } else {
-        // Transfer is pending/processing
-        await donationService.updateTransferStatus(donationId, {
-          id: transfer.id,
-          status: "pending",
-          retryCount: currentRetryCount + 1
-        });
-
-        return NextResponse.json({
-          success: true,
-          message: `Transfer initiated, status: ${transfer.status}`,
-          transferId: transfer.id,
-          transferStatus: transfer.status
-        });
-      }
-    } catch (transferError) {
-      console.error(`[Admin] Transfer retry failed for donation ${donationId}:`, transferError);
-
-      await donationService.updateTransferStatus(donationId, {
-        status: "failed",
-        failureReason: transferError instanceof Error ? transferError.message : "Transfer API error",
-        retryCount: currentRetryCount + 1
-      });
-
-      return NextResponse.json({
-        success: false,
-        error: "Transfer failed",
-        message: transferError instanceof Error ? transferError.message : "Unknown error",
-        retryCount: currentRetryCount + 1
-      }, { status: 500 });
-    }
+    return NextResponse.json({
+      success: true,
+      message: "Transfer initiated, still pending",
+      transferId: outcome.transferId,
+      transferStatus: "pending",
+    });
   } catch (error) {
     console.error("Error in retry-transfer endpoint:", error);
     return NextResponse.json(

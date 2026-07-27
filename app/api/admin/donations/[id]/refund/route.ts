@@ -32,7 +32,7 @@ export async function POST(
       );
     }
 
-    const donation = await donationService.refundDonation(
+    const donation = await donationService.markRefundedOffPlatform(
       id, 
       reason, 
       new mongoose.Types.ObjectId(refundedBy)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { monimeService, toMinorUnits, fromMinorUnits, MonimeApiError } from "@/lib/monime";
+import { monimeService, toMinorUnits, MonimeApiError } from "@/lib/monime";
+import { computeDonationSplit } from "@/lib/fees";
 import { donationService, settingService, campaignService } from "@/services";
 
 const createDonationSchema = z.object({
@@ -15,7 +16,6 @@ const createDonationSchema = z.object({
   isAnonymous: z.boolean().default(false),
   message: z.string().optional(),
   paymentMethods: z.array(z.string()).optional(), // ['mobile_money', 'card']
-  donorCoversFee: z.boolean().optional(), // Whether donor wants to cover the fee
 });
 
 export async function POST(req: NextRequest) {
@@ -64,29 +64,28 @@ export async function POST(req: NextRequest) {
     // Convert donation amount to minor units
     const donationAmountMinor = toMinorUnits(validatedData.amount, validatedData.currency);
 
-    // Get fee settings and determine campaign type
+    // Resolve the platform rate ONCE and persist it on the donation, so settlement can
+    // reuse the rate that was quoted rather than whatever is configured by then (R4/R10).
     const feeSettings = await settingService.getFeeSettings();
     const campaignId = String(campaign._id);
     const campaignType = await campaignService.getCampaignType(campaignId);
+    const platformFeeBps =
+      campaignType === "organization"
+        ? feeSettings.processingFee.organizationBps
+        : feeSettings.processingFee.individualBps;
 
-    // Determine fee choice based on feature flag and user preference
-    // If feature is disabled, always use donor covers fee (current behavior preserved)
-    // If feature is enabled and user didn't specify, default to NOT covering fee (fees from donation)
-    const donorFeeChoiceEnabled = await settingService.isDonorFeeChoiceEnabled();
-    const donorCoversFee = donorFeeChoiceEnabled
-      ? (validatedData.donorCoversFee ?? false) // If feature enabled, use submitted value (default false)
-      : true; // If feature disabled, always donor covers fee (backward compat)
+    // An ESTIMATE. Monime's fee isn't known until it settles, and the platform fee is a
+    // percentage of what survives it — so the campaign figure here is approximate and is
+    // labelled as such everywhere it is shown. The authoritative split is computed once,
+    // at settlement, from the fee Monime actually reports.
+    const quote = computeDonationSplit({
+      grossMinor: donationAmountMinor,
+      platformFeeBps,
+      monimeFeeBpsFallback: feeSettings.monimeCollectionFeeBpsEstimate,
+    });
 
-    // Calculate fees based on fee choice
-    const calculatedFees = settingService.calculateDonationFees(
-      donationAmountMinor,
-      campaignType,
-      feeSettings,
-      donorCoversFee
-    );
-
-    // Total amount to charge donor depends on fee choice
-    const totalChargedMinor = calculatedFees.totalChargedMinor;
+    // The donor pays exactly what they typed. Fees come out of it, never on top of it.
+    const totalChargedMinor = donationAmountMinor;
 
     // Generate unique reference for this donation
     const reference = `donation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -98,23 +97,24 @@ export async function POST(req: NextRequest) {
       donorSnapshot: validatedData.donor || null,
       isAnonymous: validatedData.isAnonymous,
       message: validatedData.message || null,
-      amountMinor: donationAmountMinor,                           // What donor entered
-      totalChargedMinor,                                           // What donor pays
-      campaignReceivesMinor: calculatedFees.campaignReceivesMinor, // What campaign gets
-      donorCoversFee,                                              // Whether donor covers fee
+      amountMinor: donationAmountMinor,  // What the donor entered, and is charged
+      totalChargedMinor,
+      campaignReceivesMinor: quote.campaignReceivesMinor,  // Estimate until settlement
       currency: validatedData.currency,
       provider: {
         name: "MONIME",
         paymentId: undefined,
         checkoutSessionId: undefined, // Will be updated after session creation
       },
-      fees: {
-        baseFeeMinor: calculatedFees.baseFeeMinor,
-        processingFeeMinor: calculatedFees.processingFeeMinor,
-        processingFeeBps: calculatedFees.processingFeeBps,
-        campaignType: calculatedFees.campaignType,
-        totalFeeMinor: calculatedFees.totalFeeMinor,
+      quote: {
+        grossMinor: quote.grossMinor,
+        monimeFeeBpsEstimate: feeSettings.monimeCollectionFeeBpsEstimate,
+        monimeFeeMinorEstimate: quote.monimeFeeMinor,
+        platformFeeBps: quote.platformFeeBps,
+        platformFeeMinorEstimate: quote.platformFeeMinor,
+        campaignReceivesMinorEstimate: quote.campaignReceivesMinor,
       },
+      campaignType,
       idempotencyKey: reference,
     });
 
@@ -126,9 +126,9 @@ export async function POST(req: NextRequest) {
     const cancelUrl = `${baseUrl}/api/donations/cancel?donation_id=${donationIdStr}&campaign_slug=${encodeURIComponent(validatedData.campaignSlug)}`;
     // const webhookUrl = `${baseUrl}/api/donations/webhook`;
 
-    // Create Monime checkout session with idempotency key
-    // Note: We charge totalChargedMinor (donation + fees) to the donor
-    // The campaign's financial account receives this amount, and we track fees separately
+    // Create Monime checkout session with idempotency key.
+    // The donor is charged exactly the amount they entered — Monime nets its cut out of
+    // it before settlement, and the platform fee comes out of what remains.
     // Build line item description (Monime has 100 char limit)
     const baseDescription = `Donation for ${campaign.details || 'campaign'}`;
     let lineItemDescription = baseDescription;
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
         name: `Donation for ${campaign.beneficiary?.name || campaign.details || "campaign"}`,
         price: {
           currency: validatedData.currency,
-          value: totalChargedMinor,  // Charge total amount (donation + fees) to donor
+          value: totalChargedMinor,  // Exactly what the donor entered
         },
         quantity: 1,
         description: lineItemDescription,
@@ -168,10 +168,10 @@ export async function POST(req: NextRequest) {
         // Campaign financial account for internal transfer after payment
         campaignFinancialAccountId: campaign.financial_account.id,
         platformFinancialAccountId: platformAccount.id,
-        // Fee metadata for transparency
+        // Fee metadata for transparency (estimates — see the quote above)
         donationAmountMinor: donationAmountMinor.toString(),
-        totalFeeMinor: calculatedFees.totalFeeMinor.toString(),
-        campaignType: calculatedFees.campaignType,
+        platformFeeBps: platformFeeBps.toString(),
+        campaignType,
       },
       callbackState: reference,
     }, reference); // Use reference as idempotency key
@@ -187,18 +187,21 @@ export async function POST(req: NextRequest) {
         checkoutUrl: checkoutSession.redirectUrl,
         checkoutSessionId: checkoutSession.id,
         expiresAt: checkoutSession.expiresAt,
-        // Fee breakdown for display
+        // Fee breakdown, in MINOR UNITS plus the rates. The client formats; it never
+        // redoes the arithmetic. A client that recomputes bps on major units disagrees
+        // with the server on almost every amount (MONIME-FEE-MODEL.md §8.8).
         fees: {
-          donationAmount: fromMinorUnits(donationAmountMinor, validatedData.currency),
-          campaignReceives: fromMinorUnits(calculatedFees.campaignReceivesMinor, validatedData.currency),
-          baseFee: fromMinorUnits(calculatedFees.baseFeeMinor, validatedData.currency),
-          processingFee: fromMinorUnits(calculatedFees.processingFeeMinor, validatedData.currency),
-          processingFeeRate: calculatedFees.processingFeeBps / 100, // As percentage
-          totalFees: fromMinorUnits(calculatedFees.totalFeeMinor, validatedData.currency),
-          totalCharged: fromMinorUnits(totalChargedMinor, validatedData.currency),
           currency: validatedData.currency,
-          campaignType: calculatedFees.campaignType,
-          donorCoversFee,
+          campaignType,
+          grossMinor: quote.grossMinor,
+          totalChargedMinor,
+          monimeFeeMinorEstimate: quote.monimeFeeMinor,
+          monimeFeeBps: feeSettings.monimeCollectionFeeBpsEstimate,
+          platformFeeMinorEstimate: quote.platformFeeMinor,
+          platformFeeBps: quote.platformFeeBps,
+          campaignReceivesMinorEstimate: quote.campaignReceivesMinor,
+          /** Every campaign-side figure above is an estimate until Monime settles. */
+          isEstimate: true,
         }
       }
     });
