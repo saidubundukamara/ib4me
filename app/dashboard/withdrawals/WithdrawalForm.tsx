@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { formatMinor, toMinor } from "@/lib/currency";
+import { computePayoutSplit } from "@/lib/fees";
 import { Smartphone, CreditCard, Ban, Loader2, CheckCircle2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
@@ -23,19 +25,6 @@ interface CampaignOption {
   availableMinor: number;
 }
 
-function formatCurrency(minor: number, currency: string): string {
-  const value = minor / 100;
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 2,
-    }).format(value);
-  } catch {
-    return `${currency} ${value.toFixed(2)}`;
-  }
-}
-
 interface WithdrawalBlockStatus {
   blocked: boolean;
   reason?: string;
@@ -48,8 +37,16 @@ interface WithdrawalFormProps {
   withdrawalBlockStatus?: WithdrawalBlockStatus;
 }
 
-// 99% of available balance can be withdrawn (1% buffer reserved)
-const WITHDRAWAL_BUFFER_PERCENT = 0.99;
+/**
+ * There is no client-side buffer any more.
+ *
+ * This used to reserve 1% (`WITHDRAWAL_BUFFER_PERCENT = 0.99`) as a stand-in for Monime's
+ * payout fee. It was worse than useless: the server never enforced it, so anyone could
+ * bypass it by posting to /api/payouts directly, and it displayed two different
+ * "available" numbers on the same screen. Monime takes its fee out of the amount sent, so
+ * withdrawing the full balance is legal — and the fee is now quoted explicitly instead of
+ * being silently withheld (MONIME-FEE-MODEL.md §8.7).
+ */
 
 export function WithdrawalForm({
   campaignOptions,
@@ -128,21 +125,33 @@ export function WithdrawalForm({
     : "No campaigns available";
   const isWithdrawalsBlocked = withdrawalBlockStatus?.blocked ?? false;
 
-  // Calculate max withdrawable amount with buffer
   const selectedCampaignOption = useMemo(
     () => campaignOptions.find((c) => c.id === selectedCampaign),
     [campaignOptions, selectedCampaign],
   );
+  // One "available" number on this screen, and it is the whole balance.
   const availableMinor = selectedCampaignOption?.availableMinor ?? 0;
-  const maxWithdrawableMinor = Math.floor(availableMinor * WITHDRAWAL_BUFFER_PERCENT);
-  const maxWithdrawable = maxWithdrawableMinor / 100; // Convert to major units
+  const maxWithdrawable = availableMinor / 100;
+  const currency = selectedCampaignOption?.currency ?? "SLE";
 
   // Amount validation
   const amountValue = parseFloat(amount) || 0;
-  const isAmountExceeded = amountValue > maxWithdrawable && maxWithdrawable > 0;
+  const amountMinor = toMinor(amountValue);
+  const isAmountExceeded = amountMinor > availableMinor && availableMinor > 0;
   const isAmountValid = amountValue > 0 && !isAmountExceeded;
 
-  const hasNoFundsAvailable = !!(selectedCampaign && selectedCampaign !== "__none" && maxWithdrawable <= 0);
+  const hasNoFundsAvailable = !!(selectedCampaign && selectedCampaign !== "__none" && availableMinor <= 0);
+
+  /**
+   * The quote: requested / fee / you receive. Never a silent deduction.
+   *
+   * Computed with the same function the server runs, on minor units, so the two cannot
+   * disagree. The exact fee is confirmed by Monime when the payout settles.
+   */
+  const quote = useMemo(
+    () => computePayoutSplit({ requestedMinor: amountMinor }),
+    [amountMinor],
+  );
 
   const isSubmitDisabled =
     isSubmitting ||
@@ -188,7 +197,7 @@ export function WithdrawalForm({
         <div className="flex max-w-xs flex-col text-left">
           <span className="font-medium truncate">{c.title}</span>
           <span className="text-xs text-muted-foreground">
-            Available {formatCurrency(c.availableMinor, c.currency)}
+            Available {formatMinor(c.availableMinor, c.currency)}
           </span>
         </div>
       </SelectItem>
@@ -238,7 +247,9 @@ export function WithdrawalForm({
       } else {
         const errorMessage = result.error || "Failed to submit payout request";
         const description = errorMessage.includes("Insufficient funds")
-          ? `Available balance: ${formatCurrency(maxWithdrawableMinor, selectedCampaignOption?.currency ?? "SLE")}`
+          // Report the real balance, not a buffered figure — this used to quote the
+          // 99% number back as if it were the balance.
+          ? `Available balance: ${formatMinor(availableMinor, currency)}`
           : "Please check your information and try again.";
 
         toast.error(errorMessage, { description });
@@ -331,15 +342,51 @@ export function WithdrawalForm({
             }`}
             placeholder={maxWithdrawable > 0 ? `Max: ${maxWithdrawable.toFixed(2)}` : "200"}
           />
+          {selectedCampaignOption && availableMinor > 0 && (
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">
+                Available {formatMinor(availableMinor, currency)}
+              </span>
+              <button
+                type="button"
+                className="font-medium text-primary hover:underline"
+                onClick={() => setAmount((availableMinor / 100).toFixed(2))}
+              >
+                Withdraw all
+              </button>
+            </div>
+          )}
           {isAmountExceeded && selectedCampaignOption && (
             <p className="text-sm text-red-500">
-              Maximum withdrawable is {formatCurrency(maxWithdrawableMinor, selectedCampaignOption.currency)} (1% buffer reserved)
+              You can withdraw up to {formatMinor(availableMinor, currency)}.
             </p>
           )}
-          {selectedCampaignOption && !isAmountExceeded && maxWithdrawable > 0 && (
-            <p className="text-xs text-muted-foreground">
-              Max withdrawable: {formatCurrency(maxWithdrawableMinor, selectedCampaignOption.currency)}
-            </p>
+          {/*
+            The withdrawal fee, stated before they commit. Monime takes it out of the
+            amount sent, so the owner receives less than they requested — saying so up
+            front is the whole point (§8.7).
+          */}
+          {selectedCampaignOption && isAmountValid && (
+            <div className="space-y-1 rounded-xl border border-border/50 bg-muted/30 px-3 py-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">You requested</span>
+                <span className="font-medium">{formatMinor(quote.requestedMinor, currency)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Withdrawal fee</span>
+                <span className="font-medium">≈ -{formatMinor(quote.feeMinor, currency)}</span>
+              </div>
+              <div className="flex items-center justify-between border-t border-border/40 pt-1">
+                <span className="font-medium text-foreground">You&apos;ll receive</span>
+                <span className="font-semibold text-foreground">
+                  ≈ {formatMinor(quote.netAmountMinor, currency)}
+                </span>
+              </div>
+              <p className="pt-1 text-[11px] text-muted-foreground">
+                Mobile money providers charge a fee on every withdrawal. The exact amount
+                is confirmed when the payout settles.
+              </p>
+            </div>
           )}
           {hasNoFundsAvailable && selectedCampaignOption && (
             <p className="text-sm text-amber-600">

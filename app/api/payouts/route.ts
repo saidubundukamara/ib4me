@@ -49,13 +49,27 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    // const raised = campaign.totals?.raisedMinor ?? 0;
-    // const paid = campaign.withdrawals?.totalPaidMinor ?? 0;
-    // const availableMinor = Math.max(0, raised - paid);
-
     const amountMinor = Math.round(Number(amountStr) * 100);
     if (!Number.isFinite(amountMinor) || amountMinor <= 0) {
       return NextResponse.json({ error: "Please enter a valid amount" }, { status: 400 });
+    }
+
+    // Enforce the available balance HERE, on the server.
+    //
+    // The old check was commented out and the only remaining guard was a client-side
+    // buffer in the withdrawal form — which anyone can bypass by posting to this endpoint
+    // directly. `payoutService` still runs its own fail-closed pre-flight against the
+    // live Monime balance before money moves; this is the early, friendlier rejection.
+    const availableMinor = await payoutService.getAvailableBalanceMinor(campaignIdStr);
+    if (amountMinor > availableMinor) {
+      return NextResponse.json(
+        {
+          error:
+            `You can withdraw up to ${campaign.goal?.currency ?? "SLE"} ` +
+            `${(availableMinor / 100).toFixed(2)}.`,
+        },
+        { status: 400 }
+      );
     }
 
     // Bank withdrawals are disabled until a separate bank-KYC mechanism exists.
