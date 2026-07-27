@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { tipRepository, settingRepository } from "../repositories";
 import { ITip } from "../models/Tip";
 import type { TipFilters, TipListOptions } from "../repositories/TipRepository";
+import { sumMonimeFees } from "../lib/fees";
 
 export interface CreateTipInput {
   tipperId?: mongoose.Types.ObjectId | null;
@@ -76,7 +77,8 @@ export class TipService {
     paymentDetails: {
       paymentId: string;
       paymentMethod: { type: string; provider?: string };
-      fees?: { total: number; breakdown: Record<string, number> };
+      /** Whatever Monime sent — shape-tolerant, parsed by `sumMonimeFees`. */
+      fees?: unknown;
       completedAt?: string;
     }
   ): Promise<ITip> {
@@ -87,13 +89,14 @@ export class TipService {
       throw new Error("Cannot mark tip as succeeded from current status");
     }
 
-    const fees = paymentDetails.fees
-      ? {
-          paymentFeeMinor: Math.round(paymentDetails.fees.total),
-        }
-      : undefined;
+    // Was `Math.round(paymentDetails.fees.total)`, which assumes Monime reports a
+    // `{ total, breakdown }` object. If it reports the documented array instead, `.total`
+    // is `undefined` and this wrote `NaN` into the tip's net amount. `sumMonimeFees`
+    // handles both shapes and returns null — not 0 — when nothing was reported.
+    const paymentFeeMinor = sumMonimeFees(paymentDetails.fees);
+    const fees = paymentFeeMinor === null ? undefined : { paymentFeeMinor };
 
-    const netAmountMinor = tip.amount.minor - (fees?.paymentFeeMinor || 0);
+    const netAmountMinor = tip.amount.minor - (paymentFeeMinor ?? 0);
 
     const updated = await tipRepository.updateById(tipId, {
       $set: {

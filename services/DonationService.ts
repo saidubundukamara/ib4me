@@ -4,14 +4,15 @@ import {
   campaignRepository,
   ledgerEntryRepository,
 } from "../repositories";
-import { IDonation, IDonationTransfer } from "../models/Donation";
+import { IDonation, IDonationTransfer, IDonationQuote } from "../models/Donation";
 import { runInTransaction, ServiceSession } from "./ServiceTransaction";
 import type { DonationFilters, DonationListOptions } from "../repositories/DonationRepository";
 import { auditLogService } from "./AuditLogService";
 import type { AuditContext } from "../lib/admin-auth";
-import type { ILedgerEntry } from "../models/LedgerEntry";
+
 import { monimeService } from "../lib/monime";
 import { settingService } from "./SettingService";
+import { computeDonationSplit, type DonationSplit } from "../lib/fees";
 
 export type ReconcileAction =
   | "advanced_to_succeeded"
@@ -32,28 +33,45 @@ export interface ReconcileResult {
   reason?: string;
 }
 
-export interface DonationFeeInput {
-  baseFeeMinor: number;
-  processingFeeMinor: number;
-  processingFeeBps: number;
-  campaignType: "individual" | "organization";
-  totalFeeMinor: number;
-}
-
 export interface CreateDonationInput {
   campaignId: mongoose.Types.ObjectId;
   donorId?: mongoose.Types.ObjectId | null;
   donorSnapshot?: { name?: string; email?: string } | null;
   isAnonymous?: boolean;
   message?: string | null;
-  amountMinor: number;              // Donation amount (what donor entered)
-  totalChargedMinor?: number;       // Total charged to donor
-  campaignReceivesMinor?: number;   // What campaign actually receives after fees
-  donorCoversFee?: boolean;         // Whether donor chose to cover fees
+  /** What the donor entered — and, since fees are deducted, what they are charged. */
+  amountMinor: number;
+  totalChargedMinor?: number;
+  /** The quote's estimate; replaced by the authoritative split at settlement. */
+  campaignReceivesMinor?: number;
   currency: string;
   provider: { name: string; paymentId?: string; checkoutSessionId?: string };
-  fees?: DonationFeeInput;          // Fee breakdown
+  /** The estimated split shown to the donor, persisted for the receipt and for R10. */
+  quote?: IDonationQuote;
+  campaignType?: "individual" | "organization";
   idempotencyKey?: string | null;
+}
+
+/**
+ * How much of this donation belongs to the campaign — the ONE place that answers it.
+ *
+ * Read from the persisted settlement split and never recomputed at the call site. The
+ * amount we move must equal the amount we booked: it is easy to compute a correct net,
+ * write it to the ledger, and then transfer a different variable — typically the gross,
+ * because that is the one already in scope. The books then say one thing while the money
+ * does another, and the discrepancy stays invisible until the source account runs dry
+ * (MONIME-FEE-MODEL.md R14).
+ *
+ * The fallback chain lets pre-settlement rows and legacy donations read through
+ * unchanged: old donations were charged under "fees added on top", so their
+ * `campaignReceivesMinor` genuinely equals `amount.minor`.
+ */
+export function payableToCampaignMinor(donation: IDonation): number {
+  return (
+    donation.settlement?.campaignReceivesMinor ??
+    donation.campaignReceivesMinor ??
+    donation.amount.minor
+  );
 }
 
 export class DonationService {
@@ -63,20 +81,6 @@ export class DonationService {
       : null;
     if (existing) return existing;
 
-    // Build fee object if fees are provided
-    const fees = input.fees ? {
-      baseFeeMinor: input.fees.baseFeeMinor,
-      processingFeeMinor: input.fees.processingFeeMinor,
-      processingFeeBps: input.fees.processingFeeBps,
-      campaignType: input.fees.campaignType,
-      totalFeeMinor: input.fees.totalFeeMinor,
-      // Legacy fields
-      paymentFeeMinor: 0,
-      platformFeeMinor: input.fees.totalFeeMinor, // For backward compat
-    } : undefined;
-
-    // Calculate campaign receives amount
-    const donorCoversFee = input.donorCoversFee ?? true; // Default to donor covers fee for backward compat
     const campaignReceivesMinor = input.campaignReceivesMinor ?? input.amountMinor;
 
     return donationRepository.create({
@@ -87,52 +91,16 @@ export class DonationService {
       message: input.message ?? null,
       amount: { currency: input.currency, minor: input.amountMinor },
       totalChargedMinor: input.totalChargedMinor ?? input.amountMinor,
+      // The quote's estimate. Overwritten with the authoritative figure once Monime
+      // settles and `applySettlement` computes the real split.
       campaignReceivesMinor,
-      donorCoversFee,
-      fees,
-      netAmountMinor: campaignReceivesMinor, // For backward compat, use what campaign receives
+      quote: input.quote,
+      // Kept only so the legacy fee block still records which rate tier applied.
+      fees: input.campaignType ? { campaignType: input.campaignType } : undefined,
       provider: input.provider,
       status: "pending",
       idempotencyKey: input.idempotencyKey ?? null,
     } as unknown as Partial<IDonation>);
-  }
-
-  async markSucceeded(
-    donationId: string,
-    session?: ServiceSession
-  ): Promise<IDonation> {
-    return runInTransaction<IDonation>(async (txn) => {
-      const donation = await donationRepository.findById(donationId);
-      if (!donation) throw new Error("Donation not found");
-      if (donation.status === "succeeded") return donation;
-      if (donation.status === "failed" || donation.status === "refunded") {
-        throw new Error(
-          "Cannot mark donation as succeeded from current status"
-        );
-      }
-
-      const updated = await donationRepository.updateById(
-        donation.id,
-        { $set: { status: "succeeded" } } as never,
-        txn
-      );
-      if (!updated) throw new Error("Failed to update donation status");
-
-      // Ledger entry
-      await ledgerEntryRepository.create(
-        {
-          campaignId: donation.campaignId,
-          refType: "donation",
-          refId: donation._id,
-          direction: "in",
-          amountMinor: donation.amount.minor,
-          currency: donation.amount.currency,
-        } as unknown as Partial<import("../models/LedgerEntry").ILedgerEntry>,
-        txn
-      );
-
-      return updated;
-    }, session);
   }
 
   async getById(donationId: string): Promise<IDonation | null> {
@@ -185,15 +153,36 @@ export class DonationService {
   }
 
   /**
-   * Mark donation as payment_received (payment completed, transfer pending)
-   * This is the intermediate status before the internal transfer to campaign
+   * Record that Monime settled a payment, and compute the authoritative split.
+   *
+   * This is the single settlement entry point — the webhook, the success redirect, the
+   * status poll and the reconciliation sweep all come through here so they cannot
+   * disagree about what a donation is worth.
+   *
+   * ## `monimeFeeMinor: null` means UNKNOWN, and must never be written as 0
+   *
+   * Monime fires TWO events for one payment: `checkout_session.completed`, which carries
+   * no fees, and `payment.processing_completed`, which does. Either can arrive first.
+   * Conflating "I wasn't told the fee" with "the fee was zero" means the fee-less event
+   * clobbers the real fee roughly half the time (MONIME-FEE-MODEL.md R6). Hence the four
+   * cases below.
    */
-  async markPaymentReceived(
+  async applySettlement(
     donationId: string,
-    paymentDetails: {
-      paymentId: string;
-      paymentMethod: { type: string; provider?: string };
-      fees?: { total: number; breakdown: Record<string, number> };
+    input: {
+      source:
+        | "webhook_payment"
+        | "webhook_session"
+        | "success_redirect"
+        | "status_poll"
+        | "reconcile";
+      /** Monime's reported collection fee. `null`/omitted = NOT REPORTED, never zero. */
+      monimeFeeMinor?: number | null;
+      /** Monime's `spm-…` payment id — the per-capture correction key. */
+      monimePaymentId?: string | null;
+      financialTransactionReference?: string | null;
+      channelReference?: string | null;
+      paymentMethod?: { type: string; provider?: string };
       completedAt?: string;
     },
     session?: ServiceSession
@@ -202,56 +191,324 @@ export class DonationService {
       const donation = await donationRepository.findById(donationId);
       if (!donation) throw new Error("Donation not found");
 
-      if (donation.status !== "pending") {
-        throw new Error(`Cannot mark donation as payment_received from status: ${donation.status}`);
+      if (donation.status === "failed" || donation.status === "refunded") {
+        throw new Error(`Cannot settle a ${donation.status} donation`);
       }
 
-      // Preserve existing fee data and add payment processor fees
-      const existingFees = donation.fees || {};
-      const paymentProcessorFee = paymentDetails.fees ? Math.round(paymentDetails.fees.total) : 0;
+      const reportedFee =
+        typeof input.monimeFeeMinor === "number" ? input.monimeFeeMinor : null;
+      const existing = donation.settlement;
+      const alreadyApplied = Boolean(existing?.appliedAt);
 
-      const fees = {
-        baseFeeMinor: existingFees.baseFeeMinor || 0,
-        processingFeeMinor: existingFees.processingFeeMinor || 0,
-        processingFeeBps: existingFees.processingFeeBps,
-        campaignType: existingFees.campaignType,
-        totalFeeMinor: existingFees.totalFeeMinor || 0,
-        paymentFeeMinor: paymentProcessorFee,
-        platformFeeMinor: existingFees.platformFeeMinor || existingFees.totalFeeMinor || 0,
+      // ---- Case B: a second event that tells us nothing new. Write nothing. ----
+      // This is the clobber fix. The old code called through here and wrote
+      // `paymentFeeMinor: 0`, destroying a fee the other event had already recorded.
+      if (alreadyApplied && reportedFee === null) {
+        return donation;
+      }
+
+      // ---- Case D: replay of a fee we have already recorded. ----
+      if (alreadyApplied && existing?.monimeFeeSource === "reported") {
+        return donation;
+      }
+
+      // ---- Case C: a reported fee arriving after we settled on an estimate. ----
+      if (alreadyApplied && reportedFee !== null) {
+        return this.applyLateFeeCorrection(donation, reportedFee, input, txn);
+      }
+
+      // ---- Case A: first application. ----
+      // The platform rate comes from the donation's own quote, not from current settings:
+      // an admin changing the fee between the donor paying and Monime settling must not
+      // move the goalposts on a donation already in flight (R4/R10).
+      const platformFeeBps =
+        donation.quote?.platformFeeBps ??
+        donation.fees?.processingFeeBps ??
+        (await settingService.getPlatformFeeBps(
+          donation.fees?.campaignType ?? "individual"
+        ));
+
+      const split = computeDonationSplit({
+        grossMinor: donation.amount.minor,
+        platformFeeBps,
+        monimeFeeMinor: reportedFee,
+        monimeFeeBpsFallback:
+          donation.quote?.monimeFeeBpsEstimate ??
+          (await settingService.getMonimeFeeEstimateBps()),
+      });
+
+      if (split.monimeFeeSource === "estimated") {
+        // Loud and greppable on purpose. A donation settled from a polled read carries no
+        // fee data, so we are over-crediting the campaign until a correction arrives
+        // (MONIME-FEE-MODEL.md §14.2).
+        console.warn(
+          `[settlement] donation ${donationId} settled with an ESTIMATED Monime fee ` +
+            `(source=${input.source}). Campaign credited ${split.campaignReceivesMinor}, ` +
+            `which will be wrong if Monime's actual fee differs from ${split.monimeFeeMinor}.`
+        );
+      }
+
+      const settlement = {
+        grossMinor: split.grossMinor,
+        monimeFeeMinor: split.monimeFeeMinor,
+        monimeFeeSource: split.monimeFeeSource,
+        arrivedMinor: split.arrivedMinor,
+        platformFeeBps: split.platformFeeBps,
+        platformFeeMinor: split.platformFeeMinor,
+        campaignReceivesMinor: split.campaignReceivesMinor,
+        monimePaymentId: input.monimePaymentId ?? undefined,
+        financialTransactionReference: input.financialTransactionReference ?? undefined,
+        channelReference: input.channelReference ?? undefined,
+        appliedAt: new Date(),
+        frozen: false,
       };
+
+      const set: Record<string, unknown> = {
+        settlement,
+        campaignReceivesMinor: split.campaignReceivesMinor,
+        updatedAt: new Date(),
+      };
+      if (donation.status === "pending") set.status = "payment_received";
+      // Only the `spm-…` payment id belongs here. Three call sites used to write the
+      // CHECKOUT SESSION id into this field, which made the per-capture correction key
+      // useless.
+      if (input.monimePaymentId) set["provider.paymentId"] = input.monimePaymentId;
+      if (input.completedAt) set.completedAt = new Date(input.completedAt);
 
       const updated = await donationRepository.updateById(
         donationId,
+        { $set: set } as never,
+        txn
+      );
+      if (!updated) throw new Error("Failed to apply settlement");
+
+      // The campaign is credited the NET — what actually reaches its account.
+      await campaignRepository.updateById(
+        donation.campaignId.toString(),
         {
-          $set: {
-            status: "payment_received",
-            "provider.paymentId": paymentDetails.paymentId,
-            fees,
-            updatedAt: new Date()
-          }
+          $inc: {
+            "totals.raisedMinor": split.campaignReceivesMinor,
+            "totals.donationCount": 1,
+          } as never,
+          $set: { "totals.lastDonationAt": new Date() } as never,
         } as never,
         txn
       );
-      if (!updated) throw new Error("Failed to mark donation as payment_received");
 
-      // Update campaign totals now that payment is confirmed
-      const campaignReceivesAmount = donation.campaignReceivesMinor ?? donation.amount.minor;
-      const incUpdate: Record<string, number> = {
-        "totals.raisedMinor": campaignReceivesAmount,
-        "totals.donationCount": 1,
-      };
-      const setUpdate: Record<string, unknown> = {
-        "totals.lastDonationAt": new Date(),
-      };
-
-      await campaignRepository.updateById(
-        donation.campaignId.toString(),
-        { $inc: incUpdate as never, $set: setUpdate as never } as never,
-        txn
-      );
+      await this.postSettlementLedger(donation, split, txn);
 
       return updated;
     }, session);
+  }
+
+  /**
+   * Ledger entries 1-3: the money arriving and being split, before any transfer.
+   *
+   * Booking the gross in and the processor fee out (rather than just booking the net)
+   * keeps Monime's cost queryable from the ledger instead of derivable only from an
+   * assumed rate — which is what R13 is about. The arithmetic is identical either way:
+   * receipt − processorFee − transferOut leaves exactly the platform fee, which is
+   * precisely what physically remains in the platform account.
+   */
+  private async postSettlementLedger(
+    donation: IDonation,
+    split: DonationSplit,
+    txn: ServiceSession
+  ): Promise<void> {
+    const id = String(donation._id);
+    const currency = donation.amount.currency;
+
+    await ledgerEntryRepository.createIdempotent(
+      {
+        accountType: "platform",
+        refType: "platform_receipt",
+        refId: donation._id as mongoose.Types.ObjectId,
+        direction: "in",
+        amountMinor: split.grossMinor,
+        currency,
+        monimeRef: donation.settlement?.monimePaymentId ?? null,
+        description: `Payment collected for donation ${id}`,
+      },
+      `donation-receipt:${id}`,
+      txn
+    );
+
+    await ledgerEntryRepository.createIdempotent(
+      {
+        accountType: "platform",
+        refType: "processor_fee",
+        refId: donation._id as mongoose.Types.ObjectId,
+        direction: "out",
+        amountMinor: split.monimeFeeMinor,
+        currency,
+        description: `Monime collection fee for donation ${id}`,
+      },
+      `donation-processor-fee:${id}`,
+      txn
+    );
+
+    await ledgerEntryRepository.createIdempotent(
+      {
+        accountType: "platform_revenue",
+        campaignId: donation.campaignId,
+        refType: "platform_fee",
+        refId: donation._id as mongoose.Types.ObjectId,
+        direction: "in",
+        amountMinor: split.platformFeeMinor,
+        currency,
+        description: `Platform fee for donation ${id}`,
+      },
+      `donation-platform-fee:${id}`,
+      txn
+    );
+  }
+
+  /**
+   * A reported fee arrived after we had already settled on an estimate (R6).
+   *
+   * Which way we correct depends on whether the money has physically moved yet.
+   */
+  private async applyLateFeeCorrection(
+    donation: IDonation,
+    reportedFee: number,
+    input: { monimePaymentId?: string | null; source: string },
+    txn: ServiceSession
+  ): Promise<IDonation> {
+    const id = String(donation._id);
+    const prev = donation.settlement!;
+    // Key PER CAPTURE, not per donation: a payment settled in more than one capture is
+    // charged a separately-rounded fee each time, and a donation-scoped key would swallow
+    // every correction after the first.
+    const captureRef = input.monimePaymentId ?? prev.monimePaymentId ?? "unknown";
+
+    const corrected = computeDonationSplit({
+      grossMinor: donation.amount.minor,
+      platformFeeBps: prev.platformFeeBps,
+      monimeFeeMinor: reportedFee,
+    });
+
+    const feeDelta = corrected.monimeFeeMinor - prev.monimeFeeMinor;
+    if (feeDelta === 0) {
+      // Same number we already assumed — just record that it is now confirmed.
+      const updated = await donationRepository.updateById(
+        id,
+        {
+          $set: {
+            "settlement.monimeFeeSource": "reported",
+            "settlement.monimePaymentId": captureRef,
+            "settlement.correctedAt": new Date(),
+          },
+        } as never,
+        txn
+      );
+      return updated ?? donation;
+    }
+
+    if (prev.frozen) {
+      // The money has already moved at the old numbers. Rewriting the split now would
+      // make the books disagree with the transfer that actually happened (R14), so the
+      // campaign's figure stands and the difference is booked as a platform variance.
+      console.warn(
+        `[settlement] donation ${id}: Monime reported a fee of ${reportedFee} after the ` +
+          `transfer had completed at an assumed ${prev.monimeFeeMinor}. ` +
+          `Booking a ${feeDelta} variance against the platform account.`
+      );
+
+      await ledgerEntryRepository.createIdempotent(
+        {
+          accountType: "platform",
+          refType: "platform_fee_variance",
+          campaignId: donation.campaignId,
+          refId: donation._id as mongoose.Types.ObjectId,
+          direction: feeDelta > 0 ? "out" : "in",
+          amountMinor: Math.abs(feeDelta),
+          currency: donation.amount.currency,
+          monimeRef: captureRef,
+          description: `Late Monime fee correction for donation ${id}`,
+        },
+        `donation-fee-variance:${id}:${captureRef}`,
+        txn
+      );
+
+      const updated = await donationRepository.updateById(
+        id,
+        {
+          $set: {
+            "settlement.monimeFeeMinor": corrected.monimeFeeMinor,
+            "settlement.monimeFeeSource": "reported",
+            "settlement.monimePaymentId": captureRef,
+            "settlement.correctedAt": new Date(),
+          },
+        } as never,
+        txn
+      );
+      return updated ?? donation;
+    }
+
+    // Nothing has moved yet, so correct the split properly and let the transfer read it.
+    const moved = await ledgerEntryRepository.createIdempotent(
+      {
+        accountType: "platform",
+        refType: "processor_fee",
+        refId: donation._id as mongoose.Types.ObjectId,
+        direction: feeDelta > 0 ? "out" : "in",
+        amountMinor: Math.abs(feeDelta),
+        currency: donation.amount.currency,
+        monimeRef: captureRef,
+        description: `Monime fee correction for donation ${id}`,
+      },
+      `donation-fee-correction-proc:${id}:${captureRef}`,
+      txn
+    );
+
+    // Mirror onto the donation ONLY if the ledger actually moved. Incrementing
+    // unconditionally lets a replayed webhook claim the same correction twice (R6).
+    if (!moved && feeDelta !== 0) return donation;
+
+    const platformDelta = corrected.platformFeeMinor - prev.platformFeeMinor;
+    await ledgerEntryRepository.createIdempotent(
+      {
+        accountType: "platform_revenue",
+        campaignId: donation.campaignId,
+        refType: "platform_fee",
+        refId: donation._id as mongoose.Types.ObjectId,
+        direction: platformDelta > 0 ? "in" : "out",
+        amountMinor: Math.abs(platformDelta),
+        currency: donation.amount.currency,
+        monimeRef: captureRef,
+        description: `Platform fee correction for donation ${id}`,
+      },
+      `donation-fee-correction-fee:${id}:${captureRef}`,
+      txn
+    );
+
+    const receivesDelta =
+      corrected.campaignReceivesMinor - prev.campaignReceivesMinor;
+    if (receivesDelta !== 0) {
+      await campaignRepository.updateById(
+        donation.campaignId.toString(),
+        { $inc: { "totals.raisedMinor": receivesDelta } as never } as never,
+        txn
+      );
+    }
+
+    const updated = await donationRepository.updateById(
+      id,
+      {
+        $set: {
+          "settlement.monimeFeeMinor": corrected.monimeFeeMinor,
+          "settlement.monimeFeeSource": "reported",
+          "settlement.arrivedMinor": corrected.arrivedMinor,
+          "settlement.platformFeeMinor": corrected.platformFeeMinor,
+          "settlement.campaignReceivesMinor": corrected.campaignReceivesMinor,
+          "settlement.monimePaymentId": captureRef,
+          "settlement.correctedAt": new Date(),
+          campaignReceivesMinor: corrected.campaignReceivesMinor,
+        },
+      } as never,
+      txn
+    );
+    return updated ?? donation;
   }
 
   /**
@@ -284,8 +541,15 @@ export class DonationService {
   }
 
   /**
-   * Complete a donation after successful internal transfer
-   * Creates ledger entries and updates campaign totals
+   * Complete a donation once the internal transfer to the campaign has landed.
+   *
+   * Posts the two transfer legs and FREEZES the settlement split: after this point the
+   * money has physically moved at these numbers, so a late fee correction may no longer
+   * rewrite them (R14) — it books a variance instead. See `applyLateFeeCorrection`.
+   *
+   * Campaign totals are NOT incremented here. `applySettlement` is the single place that
+   * credits `raisedMinor`; this used to carry a second increment for the case where
+   * settlement had been skipped, which was a double-count waiting to happen.
    */
   async completeWithTransfer(
     donationId: string,
@@ -296,16 +560,25 @@ export class DonationService {
       const donation = await donationRepository.findById(donationId);
       if (!donation) throw new Error("Donation not found");
 
+      if (donation.status === "succeeded") return donation;
       if (donation.status !== "payment_received" && donation.status !== "pending") {
         throw new Error(`Cannot complete donation from status: ${donation.status}`);
       }
-      const enteredFromPending = donation.status === "pending";
 
-      // Calculate what campaign actually receives
-      // For backward compat with old donations, use donation.amount.minor if campaignReceivesMinor not set
-      const campaignReceivesAmount = donation.campaignReceivesMinor ?? donation.amount.minor;
+      // A donation reaching here without a settlement means the transfer completed before
+      // Monime told us anything about the payment. Settle it now (on an estimate) so the
+      // campaign is credited exactly once and the ledger has a split to post against.
+      if (!donation.settlement?.appliedAt) {
+        await this.applySettlement(
+          donationId,
+          { source: "reconcile", monimeFeeMinor: null },
+          txn
+        );
+      }
 
-      // Update donation to succeeded
+      const fresh = (await donationRepository.findById(donationId)) ?? donation;
+      const campaignReceivesAmount = payableToCampaignMinor(fresh);
+
       const updated = await donationRepository.updateById(
         donationId,
         {
@@ -314,10 +587,11 @@ export class DonationService {
             transfer: {
               id: transferId,
               status: "completed" as const,
-              initiatedAt: donation.transfer?.initiatedAt || new Date(),
+              initiatedAt: fresh.transfer?.initiatedAt || new Date(),
               completedAt: new Date(),
-              retryCount: donation.transfer?.retryCount || 0
+              retryCount: fresh.transfer?.retryCount || 0
             },
+            "settlement.frozen": true,
             completedAt: new Date(),
             updatedAt: new Date()
           }
@@ -326,75 +600,39 @@ export class DonationService {
       );
       if (!updated) throw new Error("Failed to complete donation");
 
-      // Create platform receipt ledger entry
-      await ledgerEntryRepository.create({
-        accountType: "platform",
-        refType: "platform_receipt",
-        refId: donation._id,
-        direction: "in",
-        amountMinor: donation.totalChargedMinor || donation.amount.minor,
-        currency: donation.amount.currency,
-        description: `Payment received for donation ${donationId}`,
-      } as unknown as Partial<ILedgerEntry>, txn);
-
-      // Create platform fee ledger entry (if there are fees)
-      const totalFees = donation.fees?.totalFeeMinor || 0;
-      if (totalFees > 0) {
-        await ledgerEntryRepository.create({
+      // Ledger legs 4 and 5: the money leaving the platform account and arriving in the
+      // campaign's. Both are the SAME figure, and the same one that was transferred.
+      await ledgerEntryRepository.createIdempotent(
+        {
           accountType: "platform",
           campaignId: donation.campaignId,
-          refType: "platform_fee",
-          refId: donation._id,
-          direction: "in",
-          amountMinor: totalFees,
+          refType: "platform_transfer_out",
+          refId: donation._id as mongoose.Types.ObjectId,
+          direction: "out",
+          amountMinor: campaignReceivesAmount,
           currency: donation.amount.currency,
-          description: `Platform fee for donation ${donationId}`,
-        } as unknown as Partial<ILedgerEntry>, txn);
-      }
+          transferId,
+          description: `Transfer to campaign for donation ${donationId}`,
+        },
+        `donation-transfer-out:${donationId}`,
+        txn
+      );
 
-      // Create platform transfer out ledger entry
-      await ledgerEntryRepository.create({
-        accountType: "platform",
-        campaignId: donation.campaignId,
-        refType: "platform_transfer_out",
-        refId: donation._id,
-        direction: "out",
-        amountMinor: campaignReceivesAmount,
-        currency: donation.amount.currency,
-        transferId,
-        description: `Transfer to campaign for donation ${donationId}`,
-      } as unknown as Partial<ILedgerEntry>, txn);
-
-      // Create campaign transfer in ledger entry
-      await ledgerEntryRepository.create({
-        accountType: "campaign",
-        campaignId: donation.campaignId,
-        refType: "campaign_transfer_in",
-        refId: donation._id,
-        direction: "in",
-        amountMinor: campaignReceivesAmount,
-        currency: donation.amount.currency,
-        transferId,
-        description: `Donation received from transfer ${transferId}`,
-      } as unknown as Partial<ILedgerEntry>, txn);
-
-      // Normal flow: campaign totals were already incremented in markPaymentReceived().
-      // Idempotency-branch flow (e.g. webhook/process-transfer recovering a donation
-      // whose transfer was completed externally but whose status was still pending):
-      // markPaymentReceived was skipped, so we must update totals here to avoid silent loss.
-      if (enteredFromPending) {
-        await campaignRepository.updateById(
-          donation.campaignId.toString(),
-          {
-            $inc: {
-              "totals.raisedMinor": campaignReceivesAmount,
-              "totals.donationCount": 1,
-            } as never,
-            $set: { "totals.lastDonationAt": new Date() } as never,
-          } as never,
-          txn
-        );
-      }
+      await ledgerEntryRepository.createIdempotent(
+        {
+          accountType: "campaign",
+          campaignId: donation.campaignId,
+          refType: "campaign_transfer_in",
+          refId: donation._id as mongoose.Types.ObjectId,
+          direction: "in",
+          amountMinor: campaignReceivesAmount,
+          currency: donation.amount.currency,
+          transferId,
+          description: `Donation received from transfer ${transferId}`,
+        },
+        `donation-transfer-in:${donationId}`,
+        txn
+      );
 
       return updated;
     }, session);
@@ -479,7 +717,16 @@ export class DonationService {
     const maxAttempts = opts?.maxAttempts ?? 10;
     const pollIntervalMs = opts?.pollIntervalMs ?? 1000;
     const idempotencyKey = `donation_transfer_${donationId}`;
-    const transferAmount = donation.amount.minor; // fees are charged on top
+    // R14: the persisted split, never the gross and never a recomputed figure.
+    const transferAmount = payableToCampaignMinor(donation);
+
+    // A donation can legitimately have nothing left to move — a tiny amount whose fees
+    // consume it entirely. Zero-value movements are illegal (R5), so settle the donation
+    // and stop rather than asking Monime to transfer nothing forever.
+    if (transferAmount <= 0) {
+      await this.completeWithTransfer(donationId, donation.transfer?.id ?? "");
+      return { status: "completed", transferId: donation.transfer?.id };
+    }
 
     try {
       await this.updateTransferStatus(donationId, {
@@ -568,93 +815,6 @@ export class DonationService {
       } as never,
       { query: { sort: { createdAt: 1 }, limit } as never }
     );
-  }
-
-  async markSucceededWithPaymentDetails(
-    donationId: string,
-    paymentDetails: {
-      paymentId: string;
-      paymentMethod: { type: string; provider?: string };
-      fees?: { total: number; breakdown: Record<string, number> };
-      completedAt?: string;
-    },
-    session?: ServiceSession
-  ): Promise<IDonation> {
-    return runInTransaction<IDonation>(async (txn) => {
-      const donation = await donationRepository.findById(donationId);
-      if (!donation) throw new Error("Donation not found");
-      if (donation.status === "succeeded") return donation;
-      if (donation.status === "failed" || donation.status === "refunded") {
-        throw new Error(
-          "Cannot mark donation as succeeded from current status"
-        );
-      }
-
-      // Preserve existing fee data (from donation creation) and add payment processor fees
-      const existingFees = donation.fees || {};
-      const paymentProcessorFee = paymentDetails.fees ? Math.round(paymentDetails.fees.total) : 0;
-
-      const fees = {
-        // Preserve platform fees from donation creation
-        baseFeeMinor: existingFees.baseFeeMinor || 0,
-        processingFeeMinor: existingFees.processingFeeMinor || 0,
-        processingFeeBps: existingFees.processingFeeBps,
-        campaignType: existingFees.campaignType,
-        totalFeeMinor: existingFees.totalFeeMinor || 0,
-        // Add payment processor fees from Monime
-        paymentFeeMinor: paymentProcessorFee,
-        platformFeeMinor: existingFees.platformFeeMinor || existingFees.totalFeeMinor || 0,
-      };
-
-      // Net amount = donation amount (campaign receives full amount since fees are added on top)
-      const netAmountMinor = donation.amount.minor;
-
-      const updated = await donationRepository.updateById(
-        donation.id,
-        {
-          $set: {
-            status: "succeeded",
-            "provider.paymentId": paymentDetails.paymentId,
-            fees,
-            netAmountMinor,
-            completedAt: paymentDetails.completedAt ? new Date(paymentDetails.completedAt) : new Date(),
-            updatedAt: new Date()
-          }
-        } as never,
-        txn
-      );
-      if (!updated) throw new Error("Failed to update donation status");
-
-      // Update campaign totals
-      const incUpdate: Record<string, number> = {
-        "totals.raisedMinor": donation.amount.minor,
-        "totals.donationCount": 1,
-      };
-      const setUpdate: Record<string, unknown> = {
-        "totals.lastDonationAt": new Date(),
-      };
-
-      await campaignRepository.updateById(
-        donation.campaignId.toString(),
-        { $inc: incUpdate as never, $set: setUpdate as never } as never,
-        txn
-      );
-
-      // Ledger entry
-      await ledgerEntryRepository.create(
-        {
-          campaignId: donation.campaignId,
-          refType: "donation",
-          refId: donation._id,
-          direction: "in",
-          amountMinor: donation.amount.minor,
-          currency: donation.amount.currency,
-        } as unknown as Partial<import("../models/LedgerEntry").ILedgerEntry>,
-        txn
-      );
-
-      return updated;
-    }, session);
   }
 
   /**
@@ -755,107 +915,44 @@ export class DonationService {
       };
     }
 
-    await this.markPaymentReceived(donationId, {
-      paymentId: session.result.id,
+    // Reconciliation reads the session, which carries no fee data (§2.10) — settle on
+    // an estimate and let the payment webhook correct it.
+    await this.applySettlement(donationId, {
+      source: "reconcile",
+      monimeFeeMinor: null,
       paymentMethod: { type: "checkout_session", provider: "MONIME" },
       completedAt: new Date().toISOString(),
     });
 
-    const campaignFinancialAccountId = session.result.metadata?.campaignFinancialAccountId;
-    if (typeof campaignFinancialAccountId !== "string" || !campaignFinancialAccountId) {
-      await this.updateTransferStatus(donationId, {
-        status: "failed",
-        failureReason: "Missing campaign financial account ID in checkout session metadata",
-        initiatedAt: new Date(),
-        retryCount: 0,
-      });
+    // Delegate to settleTransfer — the single transfer implementation.
+    //
+    // This used to be a second copy of it, and the copy had drifted twice: it resolved
+    // the destination account from checkout-session metadata rather than from the
+    // campaign record (authoritative), and it moved `fresh.amount.minor` — the gross —
+    // rather than the persisted split. Both divergences go away with the duplicate.
+    const outcome = await this.settleTransfer(donationId, { source: "reconciliation" });
+
+    if (outcome.status === "completed") {
       return {
         donationId,
-        action: "advanced_to_payment_received",
+        action: "advanced_to_succeeded",
         fromStatus: "pending",
-        toStatus: "payment_received",
+        toStatus: "succeeded",
         monimeSessionStatus: sessionStatus,
-        reason: "transfer not attempted: missing campaign account id in metadata",
       };
     }
 
-    const platformAccount = await settingService.getPlatformAccountSettings();
-    if (!platformAccount?.id) {
-      await this.updateTransferStatus(donationId, {
-        status: "failed",
-        failureReason: "Platform financial account not configured",
-        initiatedAt: new Date(),
-        retryCount: 0,
-      });
-      return {
-        donationId,
-        action: "advanced_to_payment_received",
-        fromStatus: "pending",
-        toStatus: "payment_received",
-        monimeSessionStatus: sessionStatus,
-        reason: "transfer not attempted: platform account not configured",
-      };
-    }
-
-    const fresh = await donationRepository.findById(donationId);
-    if (!fresh) throw new Error(`Donation ${donationId} disappeared after markPaymentReceived`);
-
-    try {
-      await this.updateTransferStatus(donationId, {
-        status: "pending",
-        initiatedAt: new Date(),
-        retryCount: 0,
-      });
-
-      const transfer = await monimeService.createInternalTransfer({
-        amount: { currency: fresh.amount.currency, value: fresh.amount.minor },
-        sourceFinancialAccount: { id: platformAccount.id },
-        destinationFinancialAccount: { id: campaignFinancialAccountId },
-        description: `Donation transfer for ${donationId}`,
-        metadata: { donationId, type: "donation_transfer", source: "reconciliation" },
-      }, `donation_transfer_${donationId}`);
-
-      if (transfer.status === "completed") {
-        await this.completeWithTransfer(donationId, transfer.id);
-        return {
-          donationId,
-          action: "advanced_to_succeeded",
-          fromStatus: "pending",
-          toStatus: "succeeded",
-          monimeSessionStatus: sessionStatus,
-        };
-      }
-
-      await this.updateTransferStatus(donationId, {
-        id: transfer.id,
-        status: transfer.status === "failed" ? "failed" : "pending",
-        failureReason: transfer.status === "failed" ? (transfer.failureReason || "Transfer failed") : undefined,
-      });
-
-      return {
-        donationId,
-        action: "advanced_to_payment_received",
-        fromStatus: "pending",
-        toStatus: "payment_received",
-        monimeSessionStatus: sessionStatus,
-        reason: `transfer ${transfer.status}, will be resolved on next reconciliation tick`,
-      };
-    } catch (transferError) {
-      const message = transferError instanceof Error ? transferError.message : "Transfer API error";
-      await this.updateTransferStatus(donationId, {
-        status: "failed",
-        failureReason: message,
-        retryCount: 1,
-      });
-      return {
-        donationId,
-        action: "advanced_to_payment_received",
-        fromStatus: "pending",
-        toStatus: "payment_received",
-        monimeSessionStatus: sessionStatus,
-        reason: `transfer error: ${message}`,
-      };
-    }
+    return {
+      donationId,
+      action: "advanced_to_payment_received",
+      fromStatus: "pending",
+      toStatus: "payment_received",
+      monimeSessionStatus: sessionStatus,
+      reason:
+        outcome.status === "failed"
+          ? `transfer failed: ${outcome.reason ?? "unknown"}`
+          : "transfer pending, will be resolved on next reconciliation tick",
+    };
   }
 
   async listByCampaign(
@@ -1061,7 +1158,30 @@ export class DonationService {
     return updated;
   }
 
-  async refundDonation(
+  /**
+   * Mark a donation refunded and reverse its accounting.
+   *
+   * NAMED "off platform" deliberately: **no money moves here.** Sending the donor their
+   * money back is still a manual operation — this method only makes the books agree with
+   * a refund that happened (or is about to happen) elsewhere. The original
+   * `refundDonation` name read as though it issued a provider refund, which it never did.
+   *
+   * The reversal is pro-rata against the RECORDED split, never recomputed from a rate
+   * (MONIME-FEE-MODEL.md R11): a full refund then reverses exactly what was posted. The
+   * old code decremented `raisedMinor` by the GROSS while the campaign had only ever been
+   * credited the NET, so every refund quietly pushed the campaign's total below zero by
+   * the fee amount.
+   *
+   * ## The unowned ~2%
+   *
+   * The donor is owed `grossMinor`, but only `arrivedMinor` ever reached us — Monime kept
+   * its cut on the way in and will keep another on the way out, since a refund is sent as
+   * a fresh payout. So roughly 2% of a refunded donation has no assigned owner. Whose
+   * balance absorbs it is a policy decision, not an accounting one, and it is deliberately
+   * NOT decided here (§14.1). What this method does guarantee is that the campaign is
+   * debited exactly what it was credited.
+   */
+  async markRefundedOffPlatform(
     donationId: string,
     refundReason: string,
     refundedBy: mongoose.Types.ObjectId,
@@ -1080,19 +1200,45 @@ export class DonationService {
 
       const previousStatus = donation.status;
 
-      // TODO: Implement actual refund via payment provider
-      // For now, just mark as refunded in database
-      
+      // Reverse exactly what was posted — never a rate.
+      const campaignReceivesMinor = payableToCampaignMinor(donation);
+      const platformFeeMinor = donation.settlement?.platformFeeMinor ?? 0;
+
+      // Refuse to drive the campaign's balance negative. If the owner has already
+      // withdrawn the money, correcting here would claim funds that are genuinely gone —
+      // that needs an operator, not a silent negative balance.
+      const ledger = await ledgerEntryRepository.getCampaignBalance(donation.campaignId);
+      if (ledger.balance < campaignReceivesMinor) {
+        await auditLogService.record({
+          actor: { userId: refundedBy, role: "admin" },
+          action: "refund.clawback_required",
+          target: { type: "donation", id: new mongoose.Types.ObjectId(donationId) },
+          diff: {
+            donationId,
+            campaignId: donation.campaignId?.toString(),
+            campaignBalanceMinor: ledger.balance,
+            requiredMinor: campaignReceivesMinor,
+            reason: "Campaign balance cannot cover the refund; funds already withdrawn.",
+          },
+          ip: auditContext?.ip,
+          userAgent: auditContext?.userAgent,
+        });
+        throw new Error(
+          "This campaign's balance can no longer cover the refund — the funds have " +
+            "already been withdrawn. This needs manual recovery."
+        );
+      }
+
       const updated = await donationRepository.updateById(
         donationId,
-        { 
-          $set: { 
+        {
+          $set: {
             status: "refunded",
             refundReason,
             refundedBy,
             refundedAt: new Date(),
             updatedAt: new Date()
-          } 
+          }
         } as never,
         txn
       );
@@ -1101,19 +1247,18 @@ export class DonationService {
         throw new Error("Failed to mark donation as refunded");
       }
 
-      // Reverse campaign totals
-      const decUpdate: Record<string, number> = {
-        "totals.raisedMinor": -donation.amount.minor,
-        "totals.donationCount": -1,
-      };
-
+      // Decrement by what was CREDITED (the net), not the gross.
       await campaignRepository.updateById(
         donation.campaignId.toString(),
-        { $inc: decUpdate as never } as never,
+        {
+          $inc: {
+            "totals.raisedMinor": -campaignReceivesMinor,
+            "totals.donationCount": -1,
+          } as never,
+        } as never,
         txn
       );
 
-      // Log audit trail
       await auditLogService.record({
         actor: {
           userId: refundedBy,
@@ -1131,7 +1276,9 @@ export class DonationService {
           donationId,
           campaignId: donation.campaignId?.toString(),
           donorId: donation.donorId?.toString(),
-          refundAmount: donation.amount?.minor,
+          grossMinor: donation.amount?.minor,
+          campaignDebitedMinor: campaignReceivesMinor,
+          platformFeeReversedMinor: platformFeeMinor,
           currency: donation.amount?.currency,
           originalDonationDate: donation.createdAt?.toISOString(),
           refundedAt: new Date().toISOString()
@@ -1140,17 +1287,35 @@ export class DonationService {
         userAgent: auditContext?.userAgent
       });
 
-      // Create reverse ledger entry
-      await ledgerEntryRepository.create(
+      // Take the money back out of the campaign's account…
+      await ledgerEntryRepository.createIdempotent(
         {
           campaignId: donation.campaignId,
+          accountType: "campaign",
           refType: "donation_refund",
-          refId: donation._id,
+          refId: donation._id as mongoose.Types.ObjectId,
           direction: "out",
-          amountMinor: donation.amount.minor,
+          amountMinor: campaignReceivesMinor,
           currency: donation.amount.currency,
           description: `Refund for donation ${donationId}: ${refundReason}`,
-        } as unknown as Partial<import("../models/LedgerEntry").ILedgerEntry>,
+        },
+        `donation-refund:${donationId}`,
+        txn
+      );
+
+      // …and give back the fee we charged on it. Omitted when it floored to zero (R5).
+      await ledgerEntryRepository.createIdempotent(
+        {
+          campaignId: donation.campaignId,
+          accountType: "platform_revenue",
+          refType: "donation_refund",
+          refId: donation._id as mongoose.Types.ObjectId,
+          direction: "out",
+          amountMinor: platformFeeMinor,
+          currency: donation.amount.currency,
+          description: `Platform fee reversal for donation ${donationId}`,
+        },
+        `donation-refund-fee:${donationId}`,
         txn
       );
 
