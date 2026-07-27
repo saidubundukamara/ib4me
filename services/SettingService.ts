@@ -624,6 +624,23 @@ export class SettingService {
     const settings = await this.getOrCreatePlatform();
     const currentTipping = settings.tipping || {};
 
+    // Refuse to enable tipping without somewhere for the money to land.
+    //
+    // The admin switch now gates on saved settings, but a client-side gate the server
+    // does not enforce is worth nothing — anyone can PUT this endpoint directly, and that
+    // is precisely the shape of bug the withdrawal buffer turned out to be. Persisting
+    // `enabled: true` against an unconfigured account produces a panel that claims
+    // tipping is on while every donor-facing surface correctly shows nothing.
+    if (updates.enabled === true) {
+      const account = settings.tipFinancialAccount;
+      if (!account?.id || !account?.uvan) {
+        throw new Error(
+          "Cannot enable tipping until the tip financial account is saved. " +
+            "Both the account ID and the UVAN are required."
+        );
+      }
+    }
+
     await this.updatePlatformSettings({
       tipping: { ...currentTipping, ...updates }
     } as Partial<ISetting>, adminUserId);
