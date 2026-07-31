@@ -165,7 +165,7 @@ export default async function UserDashboardPage() {
 
           <div className="mt-4">
             <div
-              className="h-20 sm:h-24 w-full rounded-xl bg-muted grid grid-cols-6 items-end gap-2 p-2"
+              className="h-16 w-full rounded-xl bg-muted grid grid-cols-6 items-end gap-2 p-2"
               role="img"
               aria-label="Monthly raised totals bar chart"
             >
