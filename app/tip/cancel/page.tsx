@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Heart, XCircle } from "lucide-react";
+import { Heart } from "lucide-react";
 import Ib4meContentLoader from "@/components/Ib4meContentLoader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,34 +14,14 @@ async function TipCancelContent({ searchParams }: PageProps) {
   const tipId = resolvedSearchParams.tip_id;
 
   return (
-    <>
-      {/* Green wave hero */}
-      <section className="relative overflow-hidden bg-fun-green py-14 sm:py-20 px-4">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-          <div className="absolute top-0 right-0 w-72 h-72 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/4" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-blaze-orange/10 translate-y-1/2 -translate-x-1/4" />
-        </div>
-        <div className="relative mx-auto max-w-3xl text-center">
-          <div className="inline-flex items-center gap-2 bg-white/15 text-white px-4 py-2 rounded-full mb-5 text-sm font-semibold">
-            <XCircle className="w-4 h-4" />
-            Payment Cancelled
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-4">
-            Tip <span className="text-blaze-orange">Cancelled</span>
-          </h1>
-          <p className="text-lg text-white/80 leading-relaxed max-w-xl mx-auto">
-            No worries — your tip was not completed. You can try again anytime.
+    <main className="container mx-auto max-w-2xl px-4 py-12">
+      <div className="text-center space-y-8">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold text-foreground">Tip Cancelled</h1>
+          <p className="text-lg text-muted-foreground">
+            Your tip to ib4me was not completed.
           </p>
         </div>
-        <div className="absolute -bottom-px left-0 right-0" aria-hidden="true">
-          <svg viewBox="0 0 1440 56" fill="none" xmlns="http://www.w3.org/2000/svg" className="block w-full" preserveAspectRatio="none">
-            <path d="M0 56h1440V28c-240-28-480-28-720 0S240 56 0 28v28Z" className="fill-background" />
-          </svg>
-        </div>
-      </section>
-
-      <main className="container mx-auto max-w-2xl px-4 py-12">
-      <div className="text-center space-y-8">
 
         {/* Reason Info */}
         <Card className="rounded-3xl border border-border/40 shadow-lg">
@@ -83,14 +63,10 @@ async function TipCancelContent({ searchParams }: PageProps) {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button asChild className="rounded-2xl h-12 px-8">
-            <Link href="/tip">
-              Try Again
-            </Link>
+            <Link href="/tip">Try Again</Link>
           </Button>
           <Button asChild variant="outline" className="rounded-2xl h-12 px-8">
-            <Link href="/campaigns">
-              Browse Campaigns
-            </Link>
+            <Link href="/campaigns">Browse Campaigns</Link>
           </Button>
         </div>
 
@@ -128,8 +104,7 @@ async function TipCancelContent({ searchParams }: PageProps) {
           </div>
         </div>
       </div>
-      </main>
-    </>
+    </main>
   );
 }
 

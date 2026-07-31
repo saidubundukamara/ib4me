@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Heart, Lock, Loader2, ArrowLeft } from "lucide-react";
-import Ib4meContentLoader from "@/components/Ib4meContentLoader";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -220,14 +219,7 @@ export default function TipClient({
   );
 
   if (loading) {
-    return (
-      <>
-        {hero}
-        <div className="container mx-auto max-w-2xl px-4 py-12">
-          <Ib4meContentLoader />
-        </div>
-      </>
-    );
+    return hero;
   }
 
   if (error) {
