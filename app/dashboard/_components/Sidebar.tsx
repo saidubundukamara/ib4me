@@ -120,7 +120,7 @@ export function Sidebar({ className, onNavigate, variant = "desktop" }: SidebarP
               className={cn(
                 "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
                 active
-                  ? "bg-gradient-to-r from-primary to-primary/90 text-white shadow-[0_20px_38px_-24px_rgba(36,173,85,0.65)]"
+                  ? "bg-primary text-white shadow-[0_8px_20px_-8px_rgba(36,173,85,0.45)]"
                   : "text-muted-foreground hover:bg-primary/10 hover:text-primary",
                 isMobileVariant && "rounded-xl px-3 py-2 text-sm",
               )}
