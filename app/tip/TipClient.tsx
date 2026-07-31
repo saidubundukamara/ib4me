@@ -198,17 +198,23 @@ export default function TipClient({
         <div className="absolute top-0 right-0 w-72 h-72 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/4" />
         <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-blaze-orange/10 translate-y-1/2 -translate-x-1/4" />
       </div>
-      <div className="relative mx-auto max-w-3xl text-center">
-        <div className="inline-flex items-center gap-2 bg-white/15 text-white px-4 py-2 rounded-full mb-5 text-sm font-semibold">
-          <Heart className="w-4 h-4" />
-          Support the Platform
+      <div className="relative mx-auto max-w-3xl">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors mb-6">
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Link>
+        <div className="text-center">
+          <div className="inline-flex items-center gap-2 bg-white/15 text-white px-4 py-2 rounded-full mb-5 text-sm font-semibold">
+            <Heart className="w-4 h-4" />
+            Support the Platform
+          </div>
+          <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-4">
+            Support <span className="text-blaze-orange">ib4me</span>
+          </h1>
+          <p className="text-lg text-white/80 leading-relaxed max-w-xl mx-auto">
+            Your tip helps us maintain the platform and support more campaigns in Sierra Leone.
+          </p>
         </div>
-        <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-4">
-          Support <span className="text-blaze-orange">ib4me</span>
-        </h1>
-        <p className="text-lg text-white/80 leading-relaxed max-w-xl mx-auto">
-          Your tip helps us maintain the platform and support more campaigns in Sierra Leone.
-        </p>
       </div>
       <div className="absolute -bottom-px left-0 right-0" aria-hidden="true">
         <svg viewBox="0 0 1440 56" fill="none" xmlns="http://www.w3.org/2000/svg" className="block w-full" preserveAspectRatio="none">
@@ -243,11 +249,6 @@ export default function TipClient({
       {hero}
       <main className="container mx-auto max-w-2xl px-4 py-10">
       <div className="space-y-8">
-        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Link>
-
         {/* Tip Form */}
         <Card className="rounded-3xl border border-border/40 shadow-xl">
           <CardHeader>
