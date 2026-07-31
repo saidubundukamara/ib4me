@@ -10,7 +10,7 @@ import Link from "next/link";
 interface CampaignCardProps {
   title: string;
   description?: string;
-  imageUrl: string;
+  imageUrl?: string | null;
   raised: number;
   goal: number;
   donors: number;
@@ -65,7 +65,7 @@ const CampaignCard = ({
       {/* Image */}
       <div className="relative aspect-video overflow-hidden bg-muted">
         <Image
-          src={imageUrl}
+          src={imageUrl || "/assets/campaignplaceholderimage.png"}
           alt={title}
           width={800}
           height={450}
