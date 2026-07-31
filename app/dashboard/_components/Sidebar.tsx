@@ -69,12 +69,7 @@ export function Sidebar({ className, onNavigate, variant = "desktop" }: SidebarP
         className,
       )}
     >
-      <div
-        className={cn(
-          "flex items-center gap-3 rounded-2xl bg-primary/5 px-4 py-3",
-          isMobileVariant && "gap-2 rounded-xl px-3 py-2",
-        )}
-      >
+      <div className={cn("flex items-center gap-3", isMobileVariant && "gap-2")}>
         <Image
           src={Ib4meLogo}
           alt="ib4me logo"
@@ -82,20 +77,10 @@ export function Sidebar({ className, onNavigate, variant = "desktop" }: SidebarP
           priority
         />
         <div>
-          <p
-            className={cn(
-              "leading-tight text-sm font-semibold text-primary",
-              isMobileVariant && "text-xs",
-            )}
-          >
-            ib4me Dashboard
+          <p className={cn("leading-tight text-sm font-semibold text-primary", isMobileVariant && "text-xs")}>
+            ib4me
           </p>
-          <p
-            className={cn(
-              "text-xs text-muted-foreground leading-tight",
-              isMobileVariant && "text-[11px]",
-            )}
-          >
+          <p className={cn("text-xs text-muted-foreground leading-tight", isMobileVariant && "text-[11px]")}>
             <span className="italic font-Sora">Help Start Ya</span>
           </p>
         </div>
@@ -120,7 +105,7 @@ export function Sidebar({ className, onNavigate, variant = "desktop" }: SidebarP
               className={cn(
                 "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
                 active
-                  ? "bg-gradient-to-r from-primary to-primary/90 text-white shadow-[0_20px_38px_-24px_rgba(36,173,85,0.65)]"
+                  ? "bg-primary text-white shadow-[0_8px_20px_-8px_rgba(36,173,85,0.45)]"
                   : "text-muted-foreground hover:bg-primary/10 hover:text-primary",
                 isMobileVariant && "rounded-xl px-3 py-2 text-sm",
               )}
@@ -175,14 +160,6 @@ export function Sidebar({ className, onNavigate, variant = "desktop" }: SidebarP
             <p className="truncate text-xs text-muted-foreground">{email}</p>
           </div>
         </div>
-        <p
-          className={cn(
-            "mt-3 text-xs text-muted-foreground/80",
-            isMobileVariant && "mt-2 text-[11px]",
-          )}
-        >
-          Track your campaigns, donations, and withdrawals all in one place.
-        </p>
       </div>
     </div>
   );

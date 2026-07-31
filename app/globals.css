@@ -71,6 +71,10 @@
   --shadow-lift: 0 8px 24px -6px rgba(15, 23, 42, 0.14), 0 16px 48px -12px rgba(15, 23, 42, 0.12);
 }
 
+body {
+  font-family: var(--font-sora, 'Sora', sans-serif);
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

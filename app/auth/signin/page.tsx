@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { FormEvent, useState } from "react";
-import { ArrowRight, Eye, EyeOff, Sparkles } from "lucide-react";
+import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -59,12 +59,6 @@ export default function SignInPage() {
     <AuthLayout
       title="Welcome back"
       subtitle="Sign in to keep supporting lifesaving campaigns."
-      highlight={
-        <p className="flex items-center justify-center gap-2 text-sm font-medium text-blaze-orange md:justify-start">
-          We&apos;re glad you&apos;re here
-          <Sparkles className="h-4 w-4 text-accent" />
-        </p>
-      }
       lead={
         <div className="space-y-4 sm:space-y-5">
           <p className="text-center text-xs text-muted-foreground">Social login coming soon</p>

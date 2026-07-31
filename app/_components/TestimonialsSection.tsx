@@ -47,7 +47,7 @@ export default function TestimonialsSection() {
       <section className="bg-background py-14 px-4 sm:py-18 sm:px-6 lg:py-24 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-10 space-y-3 text-center sm:mb-14 sm:space-y-4">
-            <h2 className="text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl">
+            <h2 className="text-2xl font-bold text-foreground sm:text-3xl lg:text-4xl">
               Stories of <span className="text-fun-green">Hope</span>
             </h2>
             <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
@@ -87,7 +87,7 @@ export default function TestimonialsSection() {
       <section className="bg-background py-14 px-4 sm:py-18 sm:px-6 lg:py-24 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-10 space-y-3 text-center sm:mb-14 sm:space-y-4">
-            <h2 className="text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl">
+            <h2 className="text-2xl font-bold text-foreground sm:text-3xl lg:text-4xl">
               Stories of <span className="text-fun-green">Hope</span>
             </h2>
             <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
@@ -115,7 +115,7 @@ export default function TestimonialsSection() {
     <section className="bg-background py-14 px-4 sm:py-18 sm:px-6 lg:py-24 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-10 space-y-3 text-center sm:mb-14 sm:space-y-4">
-          <h2 className="text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl">
+          <h2 className="text-2xl font-bold text-foreground sm:text-3xl lg:text-4xl">
             Stories of <span className="text-fun-green">Hope</span>
           </h2>
           <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
