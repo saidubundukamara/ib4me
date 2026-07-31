@@ -153,10 +153,10 @@ export default async function CreatorProfilePage({ params }: PageParams) {
     const beneficiaryPhotoId = campaignToBeneficiaryPhotoId.get(campaignId);
     const docImageId = campaignToFirstDocImageId.get(campaignId);
     const imageUrl = beneficiaryPhotoId
-      ? assetIdToImage.get(beneficiaryPhotoId) || "/assets/Hero.png"
+      ? assetIdToImage.get(beneficiaryPhotoId) || "/assets/campaignplaceholderimage.png"
       : docImageId
-        ? assetIdToImage.get(docImageId) || "/assets/Hero.png"
-        : "/assets/Hero.png";
+        ? assetIdToImage.get(docImageId) || "/assets/campaignplaceholderimage.png"
+        : "/assets/campaignplaceholderimage.png";
 
     return {
       id: campaignId,

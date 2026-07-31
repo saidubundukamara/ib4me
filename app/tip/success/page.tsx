@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Heart, CheckCircle } from "lucide-react";
+import { Heart } from "lucide-react";
+import Ib4meContentLoader from "@/components/Ib4meContentLoader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -15,16 +16,11 @@ async function TipSuccessContent({ searchParams }: PageProps) {
   return (
     <main className="container mx-auto max-w-2xl px-4 py-12">
       <div className="text-center space-y-8">
-        {/* Success Icon */}
-        <div className="mx-auto h-20 w-20 rounded-full bg-green-100 flex items-center justify-center">
-          <CheckCircle className="h-12 w-12 text-green-500" />
-        </div>
-
         {/* Success Message */}
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-gray-900">Thank You!</h1>
-          <p className="text-lg text-gray-600">
-            Your generous tip to IB4ME has been received.
+          <h1 className="text-3xl font-bold text-foreground">Thank You!</h1>
+          <p className="text-lg text-muted-foreground">
+            Your generous tip to ib4me has been received.
           </p>
         </div>
 
@@ -53,27 +49,20 @@ async function TipSuccessContent({ searchParams }: PageProps) {
         </Card>
 
         {/* What Happens Next */}
-        <Card className="rounded-3xl border border-blue-200 bg-blue-50">
+        <Card className="rounded-3xl border border-border/40">
           <CardContent className="p-6 text-left">
-            <h3 className="font-semibold text-blue-900 mb-3">What happens next?</h3>
-            <ul className="space-y-2 text-sm text-blue-800">
+            <h3 className="font-semibold text-foreground mb-3">What happens next?</h3>
+            <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
-                <span className="inline-block h-2 w-2 rounded-full bg-blue-500 mt-2" />
+                <span className="inline-block h-2 w-2 rounded-full bg-primary mt-2" />
                 Your tip is being processed and will be confirmed shortly
               </li>
-              {/*
-                This used to promise "you'll receive a confirmation receipt". There is no
-                email infrastructure in this codebase at all — no tip receipt, and
-                DonationService.resendReceipt is still a console.log TODO — so it was a
-                straightforward false promise. Point at the reference shown above instead,
-                which is real. Restore a receipt line only when something actually sends one.
-              */}
               <li className="flex items-start gap-2">
-                <span className="inline-block h-2 w-2 rounded-full bg-blue-500 mt-2" />
+                <span className="inline-block h-2 w-2 rounded-full bg-primary mt-2" />
                 Keep the reference above if you need to ask us about this tip
               </li>
               <li className="flex items-start gap-2">
-                <span className="inline-block h-2 w-2 rounded-full bg-blue-500 mt-2" />
+                <span className="inline-block h-2 w-2 rounded-full bg-primary mt-2" />
                 Your contribution will go directly towards supporting the platform
               </li>
             </ul>
@@ -100,10 +89,10 @@ async function TipSuccessContent({ searchParams }: PageProps) {
             Help us reach more people in need:
           </p>
           <div className="flex gap-4 justify-center">
-            <button className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white text-sm hover:bg-blue-700 transition-colors">
+            <button className="inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-white text-sm hover:bg-primary/90 transition-colors">
               Share on Facebook
             </button>
-            <button className="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-white text-sm hover:bg-green-700 transition-colors">
+            <button className="inline-flex items-center gap-2 rounded-2xl bg-blaze-orange px-4 py-2 text-white text-sm hover:bg-blaze-orange/90 transition-colors">
               Share on WhatsApp
             </button>
           </div>
@@ -118,13 +107,7 @@ export default function TipSuccessPage({ searchParams }: PageProps) {
     <Suspense
       fallback={
         <div className="container mx-auto max-w-2xl px-4 py-12">
-          <div className="animate-pulse space-y-6">
-            <div className="mx-auto h-20 w-20 rounded-full bg-gray-200" />
-            <div className="space-y-3">
-              <div className="h-8 bg-gray-200 rounded w-1/2 mx-auto" />
-              <div className="h-4 bg-gray-200 rounded w-2/3 mx-auto" />
-            </div>
-          </div>
+          <Ib4meContentLoader />
         </div>
       }
     >

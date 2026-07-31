@@ -4,7 +4,7 @@ import { mediaAssetService } from "@/services";
 import { CloudinaryService } from "@/lib/cloudinary";
 
 const DEFAULT_OG_IMAGE = {
-  url: "https://ib4me.org/assets/Hero.png",
+  url: "https://ib4me.org/assets/campaignplaceholderimage.png",
   width: 1200,
   height: 630,
   alt: "ib4me - Crowdfunding for Social Good",

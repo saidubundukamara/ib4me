@@ -56,7 +56,7 @@ export default async function CampaignDonatePage({ params }: PageParams) {
     assetIds.push(firstImageDoc.assetId as unknown as mongoose.Types.ObjectId);
   }
 
-  let imageUrl = "/assets/Hero.png";
+  let imageUrl = "/assets/campaignplaceholderimage.png";
   if (assetIds.length > 0) {
     const assets = await mediaAssetService.listByIds(assetIds);
     const assetMap = new Map(assets.map((a) => [String(a._id), a]));
