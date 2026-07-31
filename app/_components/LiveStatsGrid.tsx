@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import CountUp from "react-countup";
-import { Users, Heart, Banknote, TrendingUp } from "lucide-react";
 
 interface PlatformStats {
   totalCampaigns: number;
@@ -35,7 +34,6 @@ export function getStatItems(data: PlatformStats | null) {
 
   return [
     {
-      icon: Banknote,
       value: totalRaised,
       label: "Funds Raised",
       color: "#FF6000",
@@ -43,19 +41,16 @@ export function getStatItems(data: PlatformStats | null) {
       prefix: "SLE ",
     },
     {
-      icon: Users,
       value: data?.totalDonors ?? 0,
       label: "Registered Users",
       color: "#FBB03B",
     },
     {
-      icon: Heart,
       value: data?.totalDonations ?? 0,
       label: "Donations Made",
       color: "#00712D",
     },
     {
-      icon: TrendingUp,
       value: data?.totalCampaigns ?? 0,
       label: "Active Campaigns",
       color: "#80E10A",
@@ -74,15 +69,8 @@ export function StatItem({
   stat: ReturnType<typeof getStatItems>[number];
   loaded: boolean;
 }) {
-  const Icon = stat.icon;
   return (
     <>
-      <div
-        className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full sm:mb-4 sm:h-14 sm:w-14"
-        style={{ backgroundColor: `${stat.color}20` }}
-      >
-        <Icon className="h-6 w-6 sm:h-7 sm:w-7" style={{ color: stat.color }} aria-hidden="true" />
-      </div>
       <div
         className="mb-1.5 text-xl font-bold sm:mb-2 sm:text-2xl lg:text-3xl xl:text-4xl"
         style={{ color: stat.color }}
