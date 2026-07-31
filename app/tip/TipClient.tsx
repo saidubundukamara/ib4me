@@ -430,26 +430,6 @@ export default function TipClient({
           </CardContent>
         </Card>
 
-        {/* Info Section */}
-        <Card className="rounded-3xl border border-border/40">
-          <CardContent className="p-6">
-            <h3 className="font-semibold mb-3">Why tip ib4me?</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <span className="inline-block h-2 w-2 rounded-full bg-primary mt-2" />
-                Help us maintain and improve the platform
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="inline-block h-2 w-2 rounded-full bg-primary mt-2" />
-                Support our team in verifying campaigns
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="inline-block h-2 w-2 rounded-full bg-primary mt-2" />
-                Enable us to reach more people in need across Sierra Leone
-              </li>
-            </ul>
-          </CardContent>
-        </Card>
       </div>
       </main>
     </>
