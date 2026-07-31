@@ -175,14 +175,6 @@ export function Sidebar({ className, onNavigate, variant = "desktop" }: SidebarP
             <p className="truncate text-xs text-muted-foreground">{email}</p>
           </div>
         </div>
-        <p
-          className={cn(
-            "mt-3 text-xs text-muted-foreground/80",
-            isMobileVariant && "mt-2 text-[11px]",
-          )}
-        >
-          Track your campaigns, donations, and withdrawals all in one place.
-        </p>
       </div>
     </div>
   );
