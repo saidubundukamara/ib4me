@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { Heart } from "lucide-react";
+import Ib4meContentLoader from "@/components/Ib4meContentLoader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -117,13 +118,7 @@ export default function TipCancelPage({ searchParams }: PageProps) {
     <Suspense
       fallback={
         <div className="container mx-auto max-w-2xl px-4 py-12">
-          <div className="animate-pulse space-y-6">
-            <div className="mx-auto h-20 w-20 rounded-full bg-gray-200" />
-            <div className="space-y-3">
-              <div className="h-8 bg-gray-200 rounded w-1/2 mx-auto" />
-              <div className="h-4 bg-gray-200 rounded w-2/3 mx-auto" />
-            </div>
-          </div>
+          <Ib4meContentLoader />
         </div>
       }
     >
