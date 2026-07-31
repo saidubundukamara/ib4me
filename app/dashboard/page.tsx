@@ -78,6 +78,25 @@ export default async function UserDashboardPage() {
   }
   const maxMinor = Math.max(1, ...months.map((m) => m.totalMinor));
 
+  // Monthly unique donor counts — derived from the same donations already fetched
+  const monthlyDonorSets: Map<string, Set<string>> = new Map(
+    months.map((m) => [m.key, new Set()])
+  );
+  for (const d of donations) {
+    const dt = new Date(d.createdAt);
+    const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+    const set = monthlyDonorSets.get(key);
+    if (set) {
+      if (d.donorId) set.add(String(d.donorId));
+      else if (d.donorSnapshot?.email) set.add(d.donorSnapshot.email.toLowerCase());
+    }
+  }
+  const monthlyUniqueDonors = months.map((m) => ({
+    ...m,
+    count: monthlyDonorSets.get(m.key)?.size ?? 0,
+  }));
+  const maxUniqueDonors = Math.max(1, ...monthlyUniqueDonors.map((m) => m.count));
+
   const recentDonations = campaignIds.length
     ? await donationRepository.listRecentSucceededByCampaignIds(campaignIds, 6)
     : [];
@@ -147,7 +166,29 @@ export default async function UserDashboardPage() {
 
         <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
           <div className="text-xs sm:text-sm text-muted-foreground mb-1">Unique Donors</div>
-          <div className="text-xl sm:text-2xl font-bold text-foreground">{uniqueDonorCount}</div>
+          <div className="text-xl sm:text-2xl font-bold text-foreground mb-4">{uniqueDonorCount}</div>
+          <div
+            className="h-16 w-full rounded-xl bg-muted grid grid-cols-6 items-end gap-1.5 p-2"
+            role="img"
+            aria-label="Monthly unique donors bar chart"
+          >
+            {monthlyUniqueDonors.map((m, idx) => {
+              const pct = Math.round((m.count / maxUniqueDonors) * 100);
+              const isKeyTick = idx === 0 || idx === Math.floor(monthlyUniqueDonors.length / 2) || idx === monthlyUniqueDonors.length - 1;
+              return (
+                <div key={m.key} className="flex flex-col items-center gap-1">
+                  <div
+                    className="w-full rounded-md bg-fun-green/40"
+                    style={{ height: `${Math.max(6, pct)}%` }}
+                    aria-label={`${m.label}: ${m.count} donors`}
+                  />
+                  <span className={`text-[10px] text-muted-foreground ${isKeyTick ? "block" : "hidden md:block"}`}>
+                    {m.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </Card>
 
         <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
