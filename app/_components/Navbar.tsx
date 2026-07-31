@@ -222,7 +222,7 @@ const Navbar = ({
                             <button
                                 type="button"
                                 onClick={() => { setSearchOpen((v) => !v); setTimeout(() => searchRef.current?.focus(), 50); }}
-                                className="absolute left-0 z-10 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                                className="absolute left-0 z-10 flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
                                 aria-label="Open search"
                             >
                                 <Search className="h-4 w-4" />
@@ -242,10 +242,10 @@ const Navbar = ({
                             <Userprofile />
                         ) : (
                             <>
-                                <Button asChild variant="outline" size="sm">
+                                <Button asChild variant="outline" size="sm" className="min-h-[44px]">
                                     <a href={auth.login.url}>{auth.login.text}</a>
                                 </Button>
-                                <Button asChild size="sm">
+                                <Button asChild size="sm" className="min-h-[44px]">
                                     <a href={auth.startcampaign.url}>{auth.startcampaign.text}</a>
                                 </Button>
                             </>
@@ -314,10 +314,10 @@ const Navbar = ({
                                     <div className="flex flex-col gap-3">
                                         {(!mounted || status !== "authenticated") && (
                                             <>
-                                                <Button asChild variant="outline" size="sm">
+                                                <Button asChild variant="outline" size="sm" className="min-h-[44px]">
                                                     <a href={auth.login.url}>{auth.login.text}</a>
                                                 </Button>
-                                                <Button asChild size="sm">
+                                                <Button asChild size="sm" className="min-h-[44px]">
                                                     <a href={auth.startcampaign.url}>{auth.startcampaign.text}</a>
                                                 </Button>
                                             </>
