@@ -55,3 +55,4 @@ CLAUDE.md
 
 # Local scratch notes that hold credentials — must never be committed
 z.txt
+.gstack/
