@@ -97,6 +97,42 @@ export default async function UserDashboardPage() {
   }));
   const maxUniqueDonors = Math.max(1, ...monthlyUniqueDonors.map((m) => m.count));
 
+  // Monthly donation counts (for Total Donations card)
+  const monthlyCountMap = new Map<string, number>(months.map((m) => [m.key, 0]));
+  for (const d of donations) {
+    const dt = new Date(d.createdAt);
+    const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+    if (monthlyCountMap.has(key)) monthlyCountMap.set(key, (monthlyCountMap.get(key) ?? 0) + 1);
+  }
+  const monthlyDonationCounts = months.map((m) => ({ ...m, count: monthlyCountMap.get(m.key) ?? 0 }));
+  const maxDonationCount = Math.max(1, ...monthlyDonationCounts.map((m) => m.count));
+
+  // Monthly average donation amount (for Avg. Donation card)
+  const monthlyAvgBuckets = new Map<string, { sum: number; count: number }>(
+    months.map((m) => [m.key, { sum: 0, count: 0 }])
+  );
+  for (const d of donations) {
+    const dt = new Date(d.createdAt);
+    const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+    const bucket = monthlyAvgBuckets.get(key);
+    if (bucket) { bucket.sum += d.campaignReceivesMinor ?? d.amount.minor; bucket.count += 1; }
+  }
+  const monthlyAvgDonations = months.map((m) => {
+    const b = monthlyAvgBuckets.get(m.key)!;
+    return { ...m, avgMinor: b.count ? Math.round(b.sum / b.count) : 0 };
+  });
+  const maxAvgMinor = Math.max(1, ...monthlyAvgDonations.map((m) => m.avgMinor));
+
+  // Monthly unique campaigns with at least one donation (for Campaigns Supported card)
+  const monthlyCampaignSets = new Map<string, Set<string>>(months.map((m) => [m.key, new Set()]));
+  for (const d of donations) {
+    const dt = new Date(d.createdAt);
+    const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+    monthlyCampaignSets.get(key)?.add(String(d.campaignId));
+  }
+  const monthlyCampaignActivity = months.map((m) => ({ ...m, count: monthlyCampaignSets.get(m.key)?.size ?? 0 }));
+  const maxCampaignActivity = Math.max(1, ...monthlyCampaignActivity.map((m) => m.count));
+
   const recentDonations = campaignIds.length
     ? await donationRepository.listRecentSucceededByCampaignIds(campaignIds, 6)
     : [];
@@ -191,17 +227,88 @@ export default async function UserDashboardPage() {
           </div>
         </Card>
 
+        {/* Total Donations — monthly count sparkline */}
         <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
           <div className="text-xs sm:text-sm text-muted-foreground mb-1">Total Donations</div>
-          <div className="text-xl sm:text-2xl font-bold text-foreground">{totalDonations}</div>
+          <div className="text-xl sm:text-2xl font-bold text-foreground mb-4">{totalDonations}</div>
+          <div
+            className="h-16 w-full rounded-xl bg-muted grid grid-cols-6 items-end gap-1.5 p-2"
+            role="img"
+            aria-label="Monthly donation count bar chart"
+          >
+            {monthlyDonationCounts.map((m, idx) => {
+              const pct = Math.round((m.count / maxDonationCount) * 100);
+              const isKeyTick = idx === 0 || idx === Math.floor(monthlyDonationCounts.length / 2) || idx === monthlyDonationCounts.length - 1;
+              return (
+                <div key={m.key} className="flex flex-col items-center gap-1">
+                  <div
+                    className="w-full rounded-md bg-blaze-orange/40"
+                    style={{ height: `${Math.max(6, pct)}%` }}
+                    aria-label={`${m.label}: ${m.count} donations`}
+                  />
+                  <span className={`text-[10px] text-muted-foreground ${isKeyTick ? "block" : "hidden md:block"}`}>
+                    {m.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </Card>
+
+        {/* Avg. Donation — monthly average sparkline */}
         <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
           <div className="text-xs sm:text-sm text-muted-foreground mb-1">Avg. Donation</div>
-          <div className="text-xl sm:text-2xl font-bold text-foreground">{formatMinor(avgDonationMinor, currency)}</div>
+          <div className="text-xl sm:text-2xl font-bold text-foreground mb-4">{formatMinor(avgDonationMinor, currency)}</div>
+          <div
+            className="h-16 w-full rounded-xl bg-muted grid grid-cols-6 items-end gap-1.5 p-2"
+            role="img"
+            aria-label="Monthly average donation bar chart"
+          >
+            {monthlyAvgDonations.map((m, idx) => {
+              const pct = Math.round((m.avgMinor / maxAvgMinor) * 100);
+              const isKeyTick = idx === 0 || idx === Math.floor(monthlyAvgDonations.length / 2) || idx === monthlyAvgDonations.length - 1;
+              return (
+                <div key={m.key} className="flex flex-col items-center gap-1">
+                  <div
+                    className="w-full rounded-md bg-chartereuse/60"
+                    style={{ height: `${Math.max(6, pct)}%` }}
+                    aria-label={`${m.label}: avg ${formatMinor(m.avgMinor, currency)}`}
+                  />
+                  <span className={`text-[10px] text-muted-foreground ${isKeyTick ? "block" : "hidden md:block"}`}>
+                    {m.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </Card>
+
+        {/* Campaigns Supported — monthly active campaigns sparkline */}
         <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
           <div className="text-xs sm:text-sm text-muted-foreground mb-1">Campaigns Supported</div>
-          <div className="text-xl sm:text-2xl font-bold text-foreground">{campaignsSupported}</div>
+          <div className="text-xl sm:text-2xl font-bold text-foreground mb-4">{campaignsSupported}</div>
+          <div
+            className="h-16 w-full rounded-xl bg-muted grid grid-cols-6 items-end gap-1.5 p-2"
+            role="img"
+            aria-label="Monthly campaigns with donations bar chart"
+          >
+            {monthlyCampaignActivity.map((m, idx) => {
+              const pct = Math.round((m.count / maxCampaignActivity) * 100);
+              const isKeyTick = idx === 0 || idx === Math.floor(monthlyCampaignActivity.length / 2) || idx === monthlyCampaignActivity.length - 1;
+              return (
+                <div key={m.key} className="flex flex-col items-center gap-1">
+                  <div
+                    className="w-full rounded-md bg-primary/20"
+                    style={{ height: `${Math.max(6, pct)}%` }}
+                    aria-label={`${m.label}: ${m.count} campaigns`}
+                  />
+                  <span className={`text-[10px] text-muted-foreground ${isKeyTick ? "block" : "hidden md:block"}`}>
+                    {m.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </Card>
       </div>
 
