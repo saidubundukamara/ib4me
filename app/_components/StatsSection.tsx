@@ -16,7 +16,7 @@ export default function StatsSection() {
     <section className="border-b border-border bg-muted/20 py-14 sm:py-18 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="relative z-10 mx-auto max-w-2xl space-y-4 text-center sm:space-y-6">
-          <h2 className="font-Sora text-3xl font-semibold sm:text-4xl lg:text-5xl">
+          <h2 className="font-Sora text-2xl font-semibold sm:text-3xl lg:text-4xl">
             ib4me in <span className="text-fun-green">numbers</span>
           </h2>
           <p className="text-sm text-muted-foreground sm:text-base lg:text-lg">
