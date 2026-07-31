@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { XCircle, Heart } from "lucide-react";
+import { Heart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -15,24 +15,19 @@ async function TipCancelContent({ searchParams }: PageProps) {
   return (
     <main className="container mx-auto max-w-2xl px-4 py-12">
       <div className="text-center space-y-8">
-        {/* Cancel Icon */}
-        <div className="mx-auto h-20 w-20 rounded-full bg-orange-100 flex items-center justify-center">
-          <XCircle className="h-12 w-12 text-orange-500" />
-        </div>
-
         {/* Cancel Message */}
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-gray-900">Tip Cancelled</h1>
-          <p className="text-lg text-gray-600">
-            Your tip to IB4ME was not completed.
+          <h1 className="text-3xl font-bold text-foreground">Tip Cancelled</h1>
+          <p className="text-lg text-muted-foreground">
+            Your tip to ib4me was not completed.
           </p>
         </div>
 
         {/* Reason Info */}
         <Card className="rounded-3xl border border-border/40 shadow-lg">
           <CardContent className="p-6 text-left">
-            <h3 className="font-semibold text-gray-900 mb-3">What happened?</h3>
-            <div className="text-sm text-gray-700 space-y-2">
+            <h3 className="font-semibold text-foreground mb-3">What happened?</h3>
+            <div className="text-sm text-muted-foreground space-y-2">
               <p>Your tip was cancelled. This could happen for several reasons:</p>
               <ul className="list-disc list-inside space-y-1 ml-2">
                 <li>You chose to cancel the payment</li>
@@ -52,14 +47,14 @@ async function TipCancelContent({ searchParams }: PageProps) {
         </Card>
 
         {/* Encourage to Try Again */}
-        <Card className="rounded-3xl border border-blue-200 bg-blue-50">
+        <Card className="rounded-3xl border border-border/40">
           <CardContent className="p-6 text-center">
-            <div className="flex items-center justify-center gap-2 text-blue-900 mb-3">
-              <Heart className="h-5 w-5" />
+            <div className="flex items-center justify-center gap-2 text-foreground mb-3">
+              <Heart className="h-5 w-5 text-primary" />
               <span className="font-semibold">Your support still matters!</span>
             </div>
-            <p className="text-sm text-blue-800">
-              IB4ME helps connect people in Sierra Leone with donors who can fund their
+            <p className="text-sm text-muted-foreground">
+              ib4me helps connect people in Sierra Leone with donors who can fund their
               causes. Every tip helps us maintain and improve the platform.
             </p>
           </CardContent>
@@ -81,30 +76,30 @@ async function TipCancelContent({ searchParams }: PageProps) {
 
         {/* Alternative Ways to Help */}
         <div className="pt-6 border-t">
-          <h3 className="font-semibold text-gray-900 mb-4">Other ways you can help:</h3>
+          <h3 className="font-semibold text-foreground mb-4">Other ways you can help:</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <Card className="rounded-2xl">
               <CardContent className="p-4 text-left">
-                <h4 className="font-medium text-gray-900 mb-2">Donate to a Campaign</h4>
-                <p className="text-gray-600 mb-3">
+                <h4 className="font-medium text-foreground mb-2">Donate to a Campaign</h4>
+                <p className="text-muted-foreground mb-3">
                   Support people directly by donating to their campaigns.
                 </p>
-                <Button asChild variant="secondary" size="sm" className="rounded-lg">
+                <Button asChild variant="secondary" size="sm" className="rounded-xl">
                   <Link href="/campaigns">View Campaigns</Link>
                 </Button>
               </CardContent>
             </Card>
             <Card className="rounded-2xl">
               <CardContent className="p-4 text-left">
-                <h4 className="font-medium text-gray-900 mb-2">Share IB4ME</h4>
-                <p className="text-gray-600 mb-3">
-                  Help spread the word about IB4ME to your network.
+                <h4 className="font-medium text-foreground mb-2">Share ib4me</h4>
+                <p className="text-muted-foreground mb-3">
+                  Help spread the word about ib4me to your network.
                 </p>
                 <div className="flex gap-2">
-                  <button className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors">
+                  <button className="text-xs bg-primary text-white px-3 py-1.5 rounded-xl hover:bg-primary/90 transition-colors">
                     Facebook
                   </button>
-                  <button className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors">
+                  <button className="text-xs bg-blaze-orange text-white px-3 py-1.5 rounded-xl hover:bg-blaze-orange/90 transition-colors">
                     WhatsApp
                   </button>
                 </div>

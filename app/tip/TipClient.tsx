@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Heart, Lock, Gift, Loader2, ArrowLeft } from "lucide-react";
+import { Heart, Lock, Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -210,9 +210,6 @@ export default function TipClient({
       <main className="container mx-auto max-w-2xl px-4 py-12">
         <Card className="rounded-3xl border border-border/40 shadow-xl">
           <CardContent className="p-8 text-center">
-            <div className="mx-auto h-16 w-16 rounded-full bg-orange-100 flex items-center justify-center mb-6">
-              <Gift className="h-8 w-8 text-orange-500" />
-            </div>
             <h1 className="text-2xl font-bold mb-2">Tipping Unavailable</h1>
             <p className="text-muted-foreground">{error}</p>
           </CardContent>
@@ -230,25 +227,17 @@ export default function TipClient({
         </Link>
 
         {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="mx-auto h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
-            <Heart className="h-10 w-10 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">Support ib4me</h1>
-            <p className="text-muted-foreground mt-2">
-              Your tip helps us maintain the platform and support more campaigns in Sierra Leone.
-            </p>
-          </div>
+        <div className="text-center space-y-3">
+          <h1 className="text-3xl font-bold">Support ib4me</h1>
+          <p className="text-muted-foreground">
+            Your tip helps us maintain the platform and support more campaigns in Sierra Leone.
+          </p>
         </div>
 
         {/* Tip Form */}
         <Card className="rounded-3xl border border-border/40 shadow-xl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Gift className="h-5 w-5" />
-              Leave a Tip
-            </CardTitle>
+            <CardTitle>Leave a Tip</CardTitle>
             <CardDescription>
               100% of your tip goes directly to supporting ib4me&apos;s mission.
             </CardDescription>
