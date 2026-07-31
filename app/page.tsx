@@ -1,7 +1,7 @@
 ﻿import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Heart, Banknote, Search, UserPlus, Settings, Smartphone, Share2, FileText, Shield, Wallet, Headphones, Globe } from "lucide-react";
+import { ArrowRight, Heart, Banknote } from "lucide-react";
 import Logo from "@/public/assets/ib4melogowhite.png";
 import StatsSection from "./_components/StatsSection";
 import CategoriesSection from "./_components/CategoriesSection";
@@ -131,97 +131,76 @@ function HeroSection() {
 }
 
 /* ─────────────────────────────────────────────────────────
-   How ib4me Works
+   How ib4me Works — horizontal timeline, no icon circles
    ───────────────────────────────────────────────────────── */
 function GetStartedSection() {
   const steps = [
     {
-      icon: Search,
+      number: "01",
       title: "Find a Campaign",
       description:
-        "Browse campaigns and find a cause that resonates with you.",
-      color: "text-primary",
-      bgColor: "bg-primary/10",
+        "Browse causes in education, health, and community. Filter by urgency or category to find what resonates.",
     },
     {
-      icon: UserPlus,
+      number: "02",
       title: "Create Your Profile",
       description:
-        "Sign up and create your donor profile to start making a difference.",
-      color: "text-blaze-orange",
-      bgColor: "bg-blaze-orange/10",
+        "Sign up in under a minute. Your profile lets you track donations and receive campaign impact updates.",
     },
     {
-      icon: Banknote,
-      title: "Make a Donation",
+      number: "03",
+      title: "Donate Securely",
       description:
-        "Choose your amount and securely contribute to a cause that matters.",
-      color: "text-blaze-orange",
-      bgColor: "bg-blaze-orange/10",
+        "Pay with Orange Money, AfriMoney, or card. Every fee is itemised before you confirm — no surprises.",
     },
     {
-      icon: Heart,
-      title: "Track Your Impact",
+      number: "04",
+      title: "See Your Impact",
       description:
-        "Follow the campaigns you support and see the real-world impact of your generosity.",
-      color: "text-chartereuse-dark",
-      bgColor: "bg-chartereuse/10",
+        "Get automated updates from the campaigns you support. See exactly where your contribution goes.",
     },
   ];
 
   return (
     <section className="bg-background py-14 px-4 sm:py-18 sm:px-6 lg:py-24 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        {/* Section Header */}
-        <div className="mb-10 space-y-3 text-center sm:mb-14 sm:space-y-4">
-          <h2 className="text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl">
+        <div className="mb-12 space-y-3 text-center sm:mb-16">
+          <h2 className="text-2xl font-bold text-foreground sm:text-3xl lg:text-4xl">
             How <span className="text-blaze-orange">ib4me</span> Works
           </h2>
-          <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
-            Making a difference is simple. Follow these easy steps to start
-            changing lives today.
+          <p className="mx-auto max-w-xl text-base text-muted-foreground">
+            Four steps. Start to finish in under two minutes.
           </p>
         </div>
 
-        {/* Steps Grid */}
-        <div className="grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-4">
-          {steps.map((step, index) => {
-            const Icon = step.icon;
-            return (
-              <div key={index} className="group relative">
-                {/* Connecting Line (lg+) */}
-                {index < steps.length - 1 && (
-                  <div className="absolute left-[60%] top-16 hidden h-0.5 w-full bg-gradient-to-r from-border to-transparent lg:block" />
-                )}
+        {/* Timeline */}
+        <div className="relative grid grid-cols-1 gap-10 md:grid-cols-4 md:gap-0">
+          {/* Connecting line — desktop only */}
+          <div
+            aria-hidden="true"
+            className="absolute left-[12.5%] right-[12.5%] top-8 hidden h-px bg-border md:block"
+          />
 
-                {/* Step Card */}
-                <div className="relative h-full rounded-3xl border border-border bg-card p-6 text-center transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[var(--shadow-lift)] sm:p-8">
-                  {/* Step Number */}
-                  <div className="absolute -right-3 -top-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary font-bold text-primary-foreground shadow-lg sm:-right-4 sm:-top-4 sm:h-12 sm:w-12 sm:text-lg">
-                    {index + 1}
-                  </div>
-
-                  {/* Icon */}
-                  <div
-                    className={`${step.bgColor} ${step.color} mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-105 sm:h-20 sm:w-20`}
-                  >
-                    <Icon
-                      className="h-8 w-8 sm:h-10 sm:w-10"
-                      aria-hidden="true"
-                    />
-                  </div>
-
-                  {/* Content */}
-                  <h3 className="mb-2.5 text-lg font-bold text-foreground sm:mb-3 sm:text-xl">
-                    {step.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground sm:text-base">
-                    {step.description}
-                  </p>
-                </div>
+          {steps.map((step, index) => (
+            <div
+              key={index}
+              className="relative flex flex-col items-center text-center md:px-6"
+            >
+              {/* Step number dot on the line */}
+              <div className="relative z-10 mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-background ring-2 ring-border">
+                <span className="text-xl font-bold text-blaze-orange">
+                  {step.number}
+                </span>
               </div>
-            );
-          })}
+
+              <h3 className="mb-2 text-base font-bold text-foreground sm:text-lg">
+                {step.title}
+              </h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {step.description}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
     </section>
@@ -229,43 +208,47 @@ function GetStartedSection() {
 }
 
 /* ─────────────────────────────────────────────────────────
-   Why ib4me?
+   Why ib4me? — dark green section, 3 bold claims, no icon grid
    ───────────────────────────────────────────────────────── */
 function WhyIb4meSection() {
-  const features = [
-    { icon: Settings, title: "Easy set up and management", color: "text-primary", bg: "bg-primary/10" },
-    { icon: Smartphone, title: "Mobile money donations", color: "text-blaze-orange", bg: "bg-blaze-orange/10" },
-    { icon: Share2, title: "Share campaign with a single click", color: "text-chartereuse-dark", bg: "bg-chartereuse/10" },
-    { icon: FileText, title: "Automated campaign reports", color: "text-primary", bg: "bg-primary/10" },
-    { icon: Shield, title: "Enhance donations security", color: "text-blaze-orange", bg: "bg-blaze-orange/10" },
-    { icon: Wallet, title: "Flexible withdrawal options", color: "text-chartereuse-dark", bg: "bg-chartereuse/10" },
-    { icon: Headphones, title: "Live customer care", color: "text-primary", bg: "bg-primary/10" },
-    { icon: Globe, title: "Global & Monthly donation options", color: "text-blaze-orange", bg: "bg-blaze-orange/10" },
+  const claims = [
+    {
+      heading: "Mobile money, first-class.",
+      body: "Orange Money and AfriMoney are primary payment methods — not an afterthought. No bank account required to donate or withdraw.",
+    },
+    {
+      heading: "Every fee shown before you give.",
+      body: "We itemise the platform fee, payment processing, and net amount before you confirm. Zero hidden charges, ever.",
+    },
+    {
+      heading: "Automated reports for every campaign.",
+      body: "Organizers and donors both receive progress updates automatically. No chasing for numbers.",
+    },
   ];
 
   return (
-    <section className="bg-muted/30 py-14 px-4 sm:py-18 sm:px-6 lg:py-24 lg:px-8 font-Sora">
+    <section className="bg-fun-green py-14 px-4 sm:py-18 sm:px-6 lg:py-24 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-10 space-y-3 text-center sm:mb-14">
-          <h2 className="text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl">
+        <div className="mb-10 space-y-3 sm:mb-14">
+          <h2 className="text-2xl font-bold text-white sm:text-3xl lg:text-4xl">
             Why <span className="text-blaze-orange">ib4me</span>?
           </h2>
-          <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
-            Everything you need to raise funds and support causes that matter.
+          <p className="max-w-xl text-base text-white/70">
+            Built specifically for Sierra Leone. Three things that set us apart.
           </p>
         </div>
-        <div className="grid grid-cols-1 gap-6 min-[480px]:grid-cols-2 md:grid-cols-4">
-          {features.map((f, i) => {
-            const Icon = f.icon;
-            return (
-              <div key={i} className="flex flex-col items-center gap-3 rounded-3xl border border-border bg-card p-6 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]">
-                <div className={`flex h-16 w-16 items-center justify-center rounded-full ${f.bg}`}>
-                  <Icon className={`h-8 w-8 ${f.color}`} aria-hidden="true" />
-                </div>
-                <p className="text-sm font-semibold text-foreground leading-snug">{f.title}</p>
-              </div>
-            );
-          })}
+
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-12">
+          {claims.map((claim, i) => (
+            <div key={i} className="border-t border-white/20 pt-8">
+              <h3 className="mb-3 text-xl font-bold text-white sm:text-2xl">
+                {claim.heading}
+              </h3>
+              <p className="text-base leading-relaxed text-white/70">
+                {claim.body}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
     </section>
