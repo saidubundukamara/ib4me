@@ -190,14 +190,36 @@ export default async function UserDashboardPage() {
         </Card>
 
         <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
-          <div className="mb-4">
+          <div className="mb-3">
             <div className="text-xs sm:text-sm text-muted-foreground mb-1">Active Campaigns</div>
             <div className="text-xl sm:text-2xl font-bold text-foreground">{activeCampaigns.length}</div>
           </div>
-          <div>
+          <div className="mb-3">
             <ProgressBar value={averageProgressPct} className="w-full" aria-label="Average campaign progress" />
-            <div className="mt-2 text-[11px] sm:text-xs text-muted-foreground">{averageProgressPct}% average progress</div>
+            <div className="mt-1.5 text-[11px] sm:text-xs text-muted-foreground">{averageProgressPct}% average progress</div>
           </div>
+          {activeCampaigns.length > 0 && (
+            <div className="space-y-2.5 border-t border-border/40 pt-3">
+              {activeCampaigns.slice(0, 3).map((c) => {
+                const raised = c.totals?.raisedMinor ?? 0;
+                const goal = c.goal?.amountMinor ?? 0;
+                const pct = goal ? Math.min(100, Math.round((raised / goal) * 100)) : 0;
+                const name = c.beneficiary?.name || c.details || c.slug;
+                return (
+                  <div key={String(c._id)} className="min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-[11px] text-foreground font-medium truncate">{name}</span>
+                      <span className="text-[11px] text-muted-foreground shrink-0">{pct}%</span>
+                    </div>
+                    <ProgressBar value={pct} className="h-1.5 w-full" aria-label={`${name} progress`} />
+                  </div>
+                );
+              })}
+              {activeCampaigns.length > 3 && (
+                <p className="text-[11px] text-muted-foreground">+{activeCampaigns.length - 3} more</p>
+              )}
+            </div>
+          )}
         </Card>
 
         <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
