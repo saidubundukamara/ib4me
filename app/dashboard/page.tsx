@@ -340,16 +340,28 @@ export default async function UserDashboardPage() {
             const progress = goalMinor ? Math.min(100, Math.round((raised / goalMinor) * 100)) : 0;
             const title = c.beneficiary?.name || c.details || c.slug;
             const campaignId = String(c._id);
+            const status = (c.status as string | undefined) ?? "draft";
+            const statusStyles: Record<string, string> = {
+              active: "bg-primary/10 text-primary",
+              paused: "bg-blaze-orange/10 text-blaze-orange",
+              completed: "bg-chartereuse/20 text-fun-green",
+              draft: "bg-muted text-muted-foreground",
+              archived: "bg-muted text-muted-foreground",
+            };
+            const statusStyle = statusStyles[status] ?? statusStyles.draft;
             return (
               <Card key={campaignId} className="p-4 rounded-2xl border-0 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-lift)] transition-all">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                    <Heart className="w-4 h-4 text-primary" />
+                {/* Title + status + dropdown */}
+                <div className="flex items-start gap-2 mb-3 min-w-0">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-sm leading-snug truncate" title={title}>{title}</div>
+                    <span className={`mt-1 inline-block text-[10px] font-medium px-2 py-0.5 rounded-full ${statusStyle}`}>
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </span>
                   </div>
-                  <div className="font-medium text-sm truncate flex-1" title={title}>{title}</div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 rounded-full">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 rounded-full -mt-0.5">
                         <MoreVertical className="h-4 w-4" />
                         <span className="sr-only">Campaign actions</span>
                       </Button>
@@ -378,12 +390,20 @@ export default async function UserDashboardPage() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
+
                 <ProgressBar value={progress} className="w-full mb-2" />
-                <div className="text-xs text-muted-foreground flex items-center justify-between">
-                  <span>{progress}%</span>
-                  <span>
-                    {formatMinor(raised, c.goal?.currency ?? currency)} / {goalMinor ? formatMinor(goalMinor, c.goal?.currency ?? currency) : "No goal"}
-                  </span>
+
+                {/* Raised amount + % — stacked to avoid overflow on narrow cards */}
+                <div className="min-w-0">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-sm font-bold text-blaze-orange truncate">
+                      {formatMinor(raised, c.goal?.currency ?? currency)}
+                    </span>
+                    <span className="text-xs text-muted-foreground shrink-0">{progress}%</span>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground truncate">
+                    of {goalMinor ? formatMinor(goalMinor, c.goal?.currency ?? currency) : "No goal set"}
+                  </div>
                 </div>
               </Card>
             );
