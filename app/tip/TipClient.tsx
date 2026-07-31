@@ -416,11 +416,13 @@ export default function TipClient({
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processing...
                 </>
-              ) : (
+              ) : amountMinor > 0 ? (
                 <>
                   <Heart className="mr-2 h-4 w-4" />
                   Tip {formatMinor(amountMinor, currency)}
                 </>
+              ) : (
+                "Enter an amount to continue"
               )}
             </Button>
 
