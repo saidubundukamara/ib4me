@@ -28,15 +28,8 @@ export default function Home() {
    ───────────────────────────────────────────────────────── */
 function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-fun-green py-12 sm:py-16 md:py-24 lg:py-32">
-      {/* Decorative blobs */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-white/5 blur-3xl sm:h-96 sm:w-96" />
-        <div className="absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-blaze-orange/10 blur-3xl sm:h-[28rem] sm:w-[28rem]" />
-        <div className="absolute left-1/2 top-1/3 h-48 w-48 -translate-x-1/2 rounded-full bg-chartereuse/10 blur-3xl sm:h-64 sm:w-64" />
-      </div>
-
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <section className="bg-fun-green py-12 sm:py-16 md:py-24 lg:py-32">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center">
           {/* Badge */}
           <div className="animate-fade-up mb-4 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-primary sm:mb-6 sm:px-4 sm:py-2 sm:text-sm">
@@ -111,21 +104,6 @@ function HeroSection() {
         </div>
       </div>
 
-      {/* Bottom wave divider */}
-      <div className="absolute -bottom-px left-0 right-0">
-        <svg
-          viewBox="0 0 1440 56"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="block w-full"
-          preserveAspectRatio="none"
-        >
-          <path
-            d="M0 56h1440V28c-240-28-480-28-720 0S240 56 0 28v28Z"
-            fill="white"
-          />
-        </svg>
-      </div>
     </section>
   );
 }
