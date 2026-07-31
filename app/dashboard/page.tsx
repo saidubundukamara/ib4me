@@ -342,9 +342,6 @@ export default async function UserDashboardPage() {
         </div>
         {campaigns.length === 0 && (
           <div className="flex flex-col items-center py-10 text-center">
-            <div className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-4">
-              <Heart className="w-7 h-7 text-muted-foreground/40" />
-            </div>
             <p className="text-sm font-medium text-foreground mb-1">No campaigns yet</p>
             <p className="text-xs text-muted-foreground mb-4">Start your first campaign and reach donors.</p>
             <Link
@@ -442,9 +439,6 @@ export default async function UserDashboardPage() {
         <div className="space-y-4">
           {recentDonations.length === 0 ? (
             <div className="flex flex-col items-center py-8 text-center">
-              <div className="w-14 h-14 bg-muted rounded-full flex items-center justify-center mb-4">
-                <Heart className="w-7 h-7 text-muted-foreground/40" />
-              </div>
               <p className="text-sm font-medium text-foreground mb-1">No recent donations yet</p>
               <p className="text-xs text-muted-foreground mb-4">
                 Share your campaigns to start receiving donations.
