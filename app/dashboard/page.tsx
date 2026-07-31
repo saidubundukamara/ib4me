@@ -457,8 +457,8 @@ export default async function UserDashboardPage() {
               return (
                 <div key={String(d._id)} className="flex justify-between items-center p-4 bg-muted/30 rounded-2xl gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-blaze-orange/10 flex items-center justify-center shrink-0">
-                      <Heart className="w-4 h-4 text-blaze-orange" />
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-[11px] font-semibold text-primary select-none">
+                      {donorName === "Anonymous" ? "?" : donorName.slice(0, 2).toUpperCase()}
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-foreground text-sm truncate">{donorName}</p>
