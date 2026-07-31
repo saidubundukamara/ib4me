@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { FormEvent, useState } from "react";
-import { ArrowRight, Eye, EyeOff, Sparkles, Building, User } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Building, User } from "lucide-react";
 import { toast } from "sonner";
 
 function getPasswordStrength(pwd: string): { score: number; label: string } {
@@ -159,12 +159,6 @@ export default function RegisterPage() {
     <AuthLayout
       title="Create your account"
       subtitle="Join ib4me to support causes that matter."
-      highlight={
-        <p className="flex items-center justify-center gap-2 text-sm font-medium text-blaze-orange md:justify-start">
-          Start making a difference today
-          <Sparkles className="h-4 w-4 text-accent" />
-        </p>
-      }
       lead={
         <div className="space-y-4 sm:space-y-5">
           <p className="text-center text-xs text-muted-foreground">Social login coming soon</p>
