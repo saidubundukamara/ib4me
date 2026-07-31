@@ -69,12 +69,7 @@ export function Sidebar({ className, onNavigate, variant = "desktop" }: SidebarP
         className,
       )}
     >
-      <div
-        className={cn(
-          "flex items-center gap-3 rounded-2xl bg-primary/5 px-4 py-3",
-          isMobileVariant && "gap-2 rounded-xl px-3 py-2",
-        )}
-      >
+      <div className={cn("flex items-center gap-3", isMobileVariant && "gap-2")}>
         <Image
           src={Ib4meLogo}
           alt="ib4me logo"
@@ -82,20 +77,10 @@ export function Sidebar({ className, onNavigate, variant = "desktop" }: SidebarP
           priority
         />
         <div>
-          <p
-            className={cn(
-              "leading-tight text-sm font-semibold text-primary",
-              isMobileVariant && "text-xs",
-            )}
-          >
-            ib4me Dashboard
+          <p className={cn("leading-tight text-sm font-semibold text-primary", isMobileVariant && "text-xs")}>
+            ib4me
           </p>
-          <p
-            className={cn(
-              "text-xs text-muted-foreground leading-tight",
-              isMobileVariant && "text-[11px]",
-            )}
-          >
+          <p className={cn("text-xs text-muted-foreground leading-tight", isMobileVariant && "text-[11px]")}>
             <span className="italic font-Sora">Help Start Ya</span>
           </p>
         </div>
