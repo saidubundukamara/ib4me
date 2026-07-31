@@ -125,7 +125,7 @@ async function getActiveCampaigns(): Promise<CampaignListItem[]> {
         ? assetIdToImage.get(docImageId)
         : undefined;
 
-    const imageUrl = img?.src || "/assets/Hero.png";
+    const imageUrl = img?.src || "/assets/campaignplaceholderimage.png";
     const imageSrcSet = img?.srcSet;
     const imageSizes = img?.sizes;
 

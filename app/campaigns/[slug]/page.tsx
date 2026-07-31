@@ -73,7 +73,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
   const pageUrl = `https://ib4me.org/campaigns/${slug}`;
 
   // Build og:image from Cloudinary — fast, CDN-cached, no server timeout
-  let imageUrl = 'https://ib4me.org/assets/Hero.png';
+  let imageUrl = 'https://ib4me.org/assets/campaignplaceholderimage.png';
   const ogAssetIds: mongoose.Types.ObjectId[] = [];
   if (campaign.beneficiary?.photoAssetId) {
     ogAssetIds.push(campaign.beneficiary.photoAssetId as mongoose.Types.ObjectId);
@@ -156,7 +156,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
   }
 
   // Fetch assets in batch
-  let heroUrl = "/assets/Hero.png";
+  let heroUrl = "/assets/campaignplaceholderimage.png";
   let heroSrcSet: string | undefined;
   let heroSizes: string | undefined;
   if (assetIds.length > 0) {
@@ -257,7 +257,7 @@ export default async function CampaignDetailPage({ params }: PageParams) {
     const asset = img?.assetId ? similarAssetMap.get(String(img.assetId)) : null;
     const imgUrl = asset?.storage?.key
       ? CloudinaryService.generateTransformationUrl(asset.storage.key, { width: 768, crop: "fill", gravity: "auto", aspect_ratio: "16:9", fetch_format: "auto", quality: "auto" })
-      : asset?.url || "/assets/Hero.png";
+      : asset?.url || "/assets/campaignplaceholderimage.png";
     const raisedMinor = (c.totals as unknown as { raisedMinor?: number })?.raisedMinor ?? 0;
     const goalMinor = (c.goal as unknown as { amountMinor?: number })?.amountMinor ?? 0;
     const cur = (c.goal as unknown as { currency?: string })?.currency || "SLE";

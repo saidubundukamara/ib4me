@@ -101,7 +101,7 @@ export async function GET(req: NextRequest) {
     const currency = (c.goal as unknown as { currency?: string })?.currency || "SLE";
     const titleBase = (c as { title?: string }).title?.trim() || slugToTitle(c.slug || "");
     const imageAssetId = campaignIdToFirstImageAssetId.get(String(c._id));
-    const imageUrl = (imageAssetId && assetIdToUrl.get(imageAssetId)) || "/assets/Hero.png";
+    const imageUrl = (imageAssetId && assetIdToUrl.get(imageAssetId)) || "/assets/campaignplaceholderimage.png";
     return {
       id: String(c._id),
       slug: c.slug,

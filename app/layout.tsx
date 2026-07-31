@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     description: 'Raise and donate for causes that matter in Sierra Leone. Secure donations via mobile money and cards.',
     images: [
       {
-        url: '/assets/Hero.png',
+        url: '/assets/campaignplaceholderimage.png',
         width: 1200,
         height: 630,
         alt: 'ib4me - Crowdfunding for Social Good',
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'ib4me - Crowdfunding Platform for Social Good',
     description: 'Raise and donate for causes that matter in Sierra Leone.',
-    images: ['/assets/Hero.png'],
+    images: ['/assets/campaignplaceholderimage.png'],
   },
   robots: {
     index: true,
