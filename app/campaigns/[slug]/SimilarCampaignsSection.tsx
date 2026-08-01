@@ -2,6 +2,7 @@
 
 import { toast } from "sonner";
 import CampaignCard from "@/app/_components/CampaignCard";
+import { formatMajor } from "@/lib/currency";
 
 export type SimilarCampaign = {
   id: string;
@@ -18,21 +19,12 @@ export type SimilarCampaign = {
   urgency?: "low" | "medium" | "high";
 };
 
-function formatAmount(amount: number, currency: string = "SLE") {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
 function handleShare(c: SimilarCampaign) {
   if (typeof window === "undefined") return;
   const url = `${window.location.origin}/campaigns/${c.slug}?ref=similar`;
   const shareData = {
     title: c.title,
-    text: `Help ${c.title.replace(/^help\s+/i, "")} — ${formatAmount(c.amountRaised, c.currency)} raised of ${formatAmount(c.goalAmount, c.currency)} goal`,
+    text: `Help ${c.title.replace(/^help\s+/i, "")} — ${formatMajor(c.amountRaised, c.currency)} raised of ${formatMajor(c.goalAmount, c.currency)} goal`,
     url,
   };
 
