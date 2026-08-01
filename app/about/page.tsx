@@ -224,9 +224,9 @@ const About = () => {
                                         />
                                         <div
                                             className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-fun-green p-2 text-white shadow-lg"
-                                            aria-hidden="true"
                                         >
-                                            <CheckCircle size={16} />
+                                            <CheckCircle size={16} aria-hidden="true" />
+                                            <span className="sr-only">Verified</span>
                                         </div>
                                     </div>
 
@@ -258,9 +258,9 @@ const About = () => {
                                         />
                                         <div
                                             className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-fun-green p-2 text-white shadow-lg"
-                                            aria-hidden="true"
                                         >
-                                            <CheckCircle size={16} />
+                                            <CheckCircle size={16} aria-hidden="true" />
+                                            <span className="sr-only">Verified</span>
                                         </div>
                                     </div>
 

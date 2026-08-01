@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import CampaignCard from "./CampaignCard";
 import { toast } from "sonner";
+import { formatMajor } from "@/lib/currency";
 
 type CampaignItem = {
   id: string;
@@ -98,15 +99,12 @@ export default function DiscoverCampaigns() {
     setActiveFilter((prev) => (prev === key ? "" : key));
   };
 
-  const formatAmount = (amount: number, currency: string = "SLE") =>
-    new Intl.NumberFormat("en-GB", { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
-
   const handleShare = (campaign: CampaignItem) => {
     if (typeof window === "undefined") return;
     const url = `${window.location.origin}/campaigns/${campaign.slug}?ref=discover`;
     const shareData = {
       title: campaign.title,
-      text: `Help ${campaign.title.replace(/^help\s+/i, "")} — ${formatAmount(campaign.amountRaised, campaign.currency)} raised of ${formatAmount(campaign.goalAmount, campaign.currency)} goal`,
+      text: `Help ${campaign.title.replace(/^help\s+/i, "")} — ${formatMajor(campaign.amountRaised, campaign.currency)} raised of ${formatMajor(campaign.goalAmount, campaign.currency)} goal`,
       url,
     };
     if (navigator.share) {
