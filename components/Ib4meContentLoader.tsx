@@ -3,7 +3,7 @@ import Logo from "@/public/assets/ib4melogo.png";
 
 export default function Ib4meContentLoader() {
   return (
-    <div className="flex min-h-[360px] w-full flex-col items-center justify-center gap-5">
+    <div className="flex min-h-[200px] sm:min-h-[280px] w-full flex-col items-center justify-center gap-5">
       <div
         className="rounded-2xl bg-white px-7 py-5"
         style={{

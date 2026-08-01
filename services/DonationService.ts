@@ -465,7 +465,7 @@ export class DonationService {
 
     // Mirror onto the donation ONLY if the ledger actually moved. Incrementing
     // unconditionally lets a replayed webhook claim the same correction twice (R6).
-    if (!moved && feeDelta !== 0) return donation;
+    if (!moved) return donation;
 
     const platformDelta = corrected.platformFeeMinor - prev.platformFeeMinor;
     await ledgerEntryRepository.createIdempotent(
@@ -756,7 +756,7 @@ export class DonationService {
     // consume it entirely. Zero-value movements are illegal (R5), so settle the donation
     // and stop rather than asking Monime to transfer nothing forever.
     if (transferAmount <= 0) {
-      await this.completeWithTransfer(donationId, donation.transfer?.id ?? "");
+      await this.completeWithTransfer(donationId, donation.transfer?.id ?? "zero:fees-consumed");
       return { status: "completed", transferId: donation.transfer?.id };
     }
 

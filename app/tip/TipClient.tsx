@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Heart, Lock, Loader2, ArrowLeft } from "lucide-react";
-import Ib4meContentLoader from "@/components/Ib4meContentLoader";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -193,43 +192,63 @@ export default function TipClient({
     amountMinor <= settings.maxAmountMinor &&
     (anonymous || name.trim());
 
+  const hero = (
+    <section className="relative overflow-hidden bg-fun-green py-14 sm:py-20 px-4">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+        <div className="absolute top-0 right-0 w-72 h-72 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/4" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-blaze-orange/10 translate-y-1/2 -translate-x-1/4" />
+      </div>
+      <div className="relative mx-auto max-w-3xl">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors mb-6">
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Link>
+        <div className="text-center">
+          <div className="inline-flex items-center gap-2 bg-white/15 text-white px-4 py-2 rounded-full mb-5 text-sm font-semibold">
+            <Heart className="w-4 h-4" />
+            Support the Platform
+          </div>
+          <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-4">
+            Support <span className="text-blaze-orange">ib4me</span>
+          </h1>
+          <p className="text-lg text-white/80 leading-relaxed max-w-xl mx-auto">
+            Your tip helps us maintain the platform and support more campaigns in Sierra Leone.
+          </p>
+        </div>
+      </div>
+      <div className="absolute -bottom-px left-0 right-0" aria-hidden="true">
+        <svg viewBox="0 0 1440 56" fill="none" xmlns="http://www.w3.org/2000/svg" className="block w-full" preserveAspectRatio="none">
+          <path d="M0 56h1440V28c-240-28-480-28-720 0S240 56 0 28v28Z" className="fill-background" />
+        </svg>
+      </div>
+    </section>
+  );
+
   if (loading) {
-    return (
-      <main className="container mx-auto max-w-2xl px-4 py-12">
-        <Ib4meContentLoader />
-      </main>
-    );
+    return hero;
   }
 
   if (error) {
     return (
-      <main className="container mx-auto max-w-2xl px-4 py-12">
-        <Card className="rounded-3xl border border-border/40 shadow-xl">
-          <CardContent className="p-8 text-center">
-            <h1 className="text-2xl font-bold mb-2">Tipping Unavailable</h1>
-            <p className="text-muted-foreground">{error}</p>
-          </CardContent>
-        </Card>
-      </main>
+      <>
+        {hero}
+        <main className="container mx-auto max-w-2xl px-4 py-12">
+          <Card className="rounded-3xl border border-border/40 shadow-xl">
+            <CardContent className="p-8 text-center">
+              <h2 className="text-2xl font-bold mb-2">Tipping Unavailable</h2>
+              <p className="text-muted-foreground">{error}</p>
+            </CardContent>
+          </Card>
+        </main>
+      </>
     );
   }
 
   return (
-    <main className="container mx-auto max-w-2xl px-4 py-12">
+    <>
+      {hero}
+      <main className="container mx-auto max-w-2xl px-4 py-10">
       <div className="space-y-8">
-        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Link>
-
-        {/* Header */}
-        <div className="text-center space-y-3">
-          <h1 className="text-3xl font-bold">Support ib4me</h1>
-          <p className="text-muted-foreground">
-            Your tip helps us maintain the platform and support more campaigns in Sierra Leone.
-          </p>
-        </div>
-
         {/* Tip Form */}
         <Card className="rounded-3xl border border-border/40 shadow-xl">
           <CardHeader>
@@ -397,11 +416,13 @@ export default function TipClient({
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processing...
                 </>
-              ) : (
+              ) : amountMinor > 0 ? (
                 <>
                   <Heart className="mr-2 h-4 w-4" />
                   Tip {formatMinor(amountMinor, currency)}
                 </>
+              ) : (
+                "Enter an amount to continue"
               )}
             </Button>
 
@@ -411,27 +432,8 @@ export default function TipClient({
           </CardContent>
         </Card>
 
-        {/* Info Section */}
-        <Card className="rounded-3xl border border-border/40">
-          <CardContent className="p-6">
-            <h3 className="font-semibold mb-3">Why tip ib4me?</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <span className="inline-block h-2 w-2 rounded-full bg-primary mt-2" />
-                Help us maintain and improve the platform
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="inline-block h-2 w-2 rounded-full bg-primary mt-2" />
-                Support our team in verifying campaigns
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="inline-block h-2 w-2 rounded-full bg-primary mt-2" />
-                Enable us to reach more people in need across Sierra Leone
-              </li>
-            </ul>
-          </CardContent>
-        </Card>
       </div>
-    </main>
+      </main>
+    </>
   );
 }

@@ -16,7 +16,6 @@ async function TipSuccessContent({ searchParams }: PageProps) {
   return (
     <main className="container mx-auto max-w-2xl px-4 py-12">
       <div className="text-center space-y-8">
-        {/* Success Message */}
         <div className="space-y-2">
           <h1 className="text-3xl font-bold text-foreground">Thank You!</h1>
           <p className="text-lg text-muted-foreground">
@@ -72,14 +71,10 @@ async function TipSuccessContent({ searchParams }: PageProps) {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button asChild className="rounded-2xl h-12 px-8">
-            <Link href="/campaigns">
-              Browse Campaigns
-            </Link>
+            <Link href="/campaigns">Browse Campaigns</Link>
           </Button>
           <Button asChild variant="outline" className="rounded-2xl h-12 px-8">
-            <Link href="/">
-              Back to Home
-            </Link>
+            <Link href="/">Back to Home</Link>
           </Button>
         </div>
 
