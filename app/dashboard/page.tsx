@@ -165,24 +165,19 @@ export default async function UserDashboardPage() {
 
           <div className="mt-4">
             <div
-              className="h-16 w-full rounded-xl bg-muted grid grid-cols-6 items-end gap-2 p-2"
+              className="h-16 w-full rounded-xl bg-muted flex items-end gap-1 px-2 pb-2"
               role="img"
               aria-label="Monthly raised totals bar chart"
             >
-              {months.map((m, idx) => {
-                const pct = Math.round((m.totalMinor / maxMinor) * 100);
-                const isKeyTick = idx === 0 || idx === Math.floor(months.length / 2) || idx === months.length - 1;
+              {months.map((m) => {
+                const pct = Math.max(8, Math.round((m.totalMinor / maxMinor) * 100));
                 return (
-                  <div key={m.key} className="flex flex-col items-center gap-1">
-                    <div
-                      className="w-full rounded-md bg-primary/30"
-                      style={{ height: `${Math.max(6, pct)}%` }}
-                      aria-label={`${m.label} ${pct}% of max`}
-                    />
-                    <span className={`text-[10px] text-muted-foreground ${isKeyTick ? 'block' : 'hidden md:block'}`}>
-                      {m.label}
-                    </span>
-                  </div>
+                  <div
+                    key={m.key}
+                    className="flex-1 rounded-t-sm bg-primary/40 transition-all"
+                    style={{ height: `${pct}%` }}
+                    aria-label={`${m.label}: ${pct}% of max`}
+                  />
                 );
               })}
             </div>
@@ -226,24 +221,19 @@ export default async function UserDashboardPage() {
           <div className="text-xs sm:text-sm text-muted-foreground mb-1">Unique Donors</div>
           <div className="text-xl sm:text-2xl font-bold text-foreground mb-4">{uniqueDonorCount}</div>
           <div
-            className="h-16 w-full rounded-xl bg-muted grid grid-cols-6 items-end gap-1.5 p-2"
+            className="h-16 w-full rounded-xl bg-muted flex items-end gap-1 px-2 pb-2"
             role="img"
             aria-label="Monthly unique donors bar chart"
           >
-            {monthlyUniqueDonors.map((m, idx) => {
-              const pct = Math.round((m.count / maxUniqueDonors) * 100);
-              const isKeyTick = idx === 0 || idx === Math.floor(monthlyUniqueDonors.length / 2) || idx === monthlyUniqueDonors.length - 1;
+            {monthlyUniqueDonors.map((m) => {
+              const pct = Math.max(8, Math.round((m.count / maxUniqueDonors) * 100));
               return (
-                <div key={m.key} className="flex flex-col items-center gap-1">
-                  <div
-                    className="w-full rounded-md bg-fun-green/40"
-                    style={{ height: `${Math.max(6, pct)}%` }}
-                    aria-label={`${m.label}: ${m.count} donors`}
-                  />
-                  <span className={`text-[10px] text-muted-foreground ${isKeyTick ? "block" : "hidden md:block"}`}>
-                    {m.label}
-                  </span>
-                </div>
+                <div
+                  key={m.key}
+                  className="flex-1 rounded-t-sm bg-fun-green/40 transition-all"
+                  style={{ height: `${pct}%` }}
+                  aria-label={`${m.label}: ${m.count} donors`}
+                />
               );
             })}
           </div>
@@ -254,24 +244,19 @@ export default async function UserDashboardPage() {
           <div className="text-xs sm:text-sm text-muted-foreground mb-1">Total Donations</div>
           <div className="text-xl sm:text-2xl font-bold text-foreground mb-4">{totalDonations}</div>
           <div
-            className="h-16 w-full rounded-xl bg-muted grid grid-cols-6 items-end gap-1.5 p-2"
+            className="h-16 w-full rounded-xl bg-muted flex items-end gap-1 px-2 pb-2"
             role="img"
             aria-label="Monthly donation count bar chart"
           >
-            {monthlyDonationCounts.map((m, idx) => {
-              const pct = Math.round((m.count / maxDonationCount) * 100);
-              const isKeyTick = idx === 0 || idx === Math.floor(monthlyDonationCounts.length / 2) || idx === monthlyDonationCounts.length - 1;
+            {monthlyDonationCounts.map((m) => {
+              const pct = Math.max(8, Math.round((m.count / maxDonationCount) * 100));
               return (
-                <div key={m.key} className="flex flex-col items-center gap-1">
-                  <div
-                    className="w-full rounded-md bg-blaze-orange/40"
-                    style={{ height: `${Math.max(6, pct)}%` }}
-                    aria-label={`${m.label}: ${m.count} donations`}
-                  />
-                  <span className={`text-[10px] text-muted-foreground ${isKeyTick ? "block" : "hidden md:block"}`}>
-                    {m.label}
-                  </span>
-                </div>
+                <div
+                  key={m.key}
+                  className="flex-1 rounded-t-sm bg-blaze-orange/40 transition-all"
+                  style={{ height: `${pct}%` }}
+                  aria-label={`${m.label}: ${m.count} donations`}
+                />
               );
             })}
           </div>
@@ -282,24 +267,19 @@ export default async function UserDashboardPage() {
           <div className="text-xs sm:text-sm text-muted-foreground mb-1">Avg. Donation</div>
           <div className="text-xl sm:text-2xl font-bold text-foreground mb-4">{formatMinor(avgDonationMinor, currency)}</div>
           <div
-            className="h-16 w-full rounded-xl bg-muted grid grid-cols-6 items-end gap-1.5 p-2"
+            className="h-16 w-full rounded-xl bg-muted flex items-end gap-1 px-2 pb-2"
             role="img"
             aria-label="Monthly average donation bar chart"
           >
-            {monthlyAvgDonations.map((m, idx) => {
-              const pct = Math.round((m.avgMinor / maxAvgMinor) * 100);
-              const isKeyTick = idx === 0 || idx === Math.floor(monthlyAvgDonations.length / 2) || idx === monthlyAvgDonations.length - 1;
+            {monthlyAvgDonations.map((m) => {
+              const pct = Math.max(8, Math.round((m.avgMinor / maxAvgMinor) * 100));
               return (
-                <div key={m.key} className="flex flex-col items-center gap-1">
-                  <div
-                    className="w-full rounded-md bg-chartereuse/60"
-                    style={{ height: `${Math.max(6, pct)}%` }}
-                    aria-label={`${m.label}: avg ${formatMinor(m.avgMinor, currency)}`}
-                  />
-                  <span className={`text-[10px] text-muted-foreground ${isKeyTick ? "block" : "hidden md:block"}`}>
-                    {m.label}
-                  </span>
-                </div>
+                <div
+                  key={m.key}
+                  className="flex-1 rounded-t-sm bg-chartereuse/60 transition-all"
+                  style={{ height: `${pct}%` }}
+                  aria-label={`${m.label}: avg ${formatMinor(m.avgMinor, currency)}`}
+                />
               );
             })}
           </div>
@@ -310,24 +290,19 @@ export default async function UserDashboardPage() {
           <div className="text-xs sm:text-sm text-muted-foreground mb-1">Campaigns Supported</div>
           <div className="text-xl sm:text-2xl font-bold text-foreground mb-4">{campaignsSupported}</div>
           <div
-            className="h-16 w-full rounded-xl bg-muted grid grid-cols-6 items-end gap-1.5 p-2"
+            className="h-16 w-full rounded-xl bg-muted flex items-end gap-1 px-2 pb-2"
             role="img"
             aria-label="Monthly campaigns with donations bar chart"
           >
-            {monthlyCampaignActivity.map((m, idx) => {
-              const pct = Math.round((m.count / maxCampaignActivity) * 100);
-              const isKeyTick = idx === 0 || idx === Math.floor(monthlyCampaignActivity.length / 2) || idx === monthlyCampaignActivity.length - 1;
+            {monthlyCampaignActivity.map((m) => {
+              const pct = Math.max(8, Math.round((m.count / maxCampaignActivity) * 100));
               return (
-                <div key={m.key} className="flex flex-col items-center gap-1">
-                  <div
-                    className="w-full rounded-md bg-primary/20"
-                    style={{ height: `${Math.max(6, pct)}%` }}
-                    aria-label={`${m.label}: ${m.count} campaigns`}
-                  />
-                  <span className={`text-[10px] text-muted-foreground ${isKeyTick ? "block" : "hidden md:block"}`}>
-                    {m.label}
-                  </span>
-                </div>
+                <div
+                  key={m.key}
+                  className="flex-1 rounded-t-sm bg-primary/20 transition-all"
+                  style={{ height: `${pct}%` }}
+                  aria-label={`${m.label}: ${m.count} campaigns`}
+                />
               );
             })}
           </div>
